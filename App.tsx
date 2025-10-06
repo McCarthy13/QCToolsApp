@@ -1,8 +1,14 @@
 import { StatusBar } from "expo-status-bar";
-import { Text, View } from "react-native";
+import { Pressable } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "./src/navigation/types";
+import CalculatorScreen from "./src/screens/CalculatorScreen";
+import ResultsScreen from "./src/screens/ResultsScreen";
+import HistoryScreen from "./src/screens/HistoryScreen";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -25,17 +31,57 @@ const openai_api_key = Constants.expoConfig.extra.apikey;
 
 */
 
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
 export default function App() {
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
         <NavigationContainer>
-          <View className="flex-1 items-center justify-center">
-            <Text className="text-center text-red-500">
-              This screen will be replaced with your app when the agent is done building it.
-            </Text>
-            <StatusBar style="auto" />
-          </View>
+          <Stack.Navigator
+            initialRouteName="Calculator"
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: '#FFFFFF',
+              },
+              headerTintColor: '#111827',
+              headerTitleStyle: {
+                fontWeight: '600',
+              },
+              headerShadowVisible: false,
+            }}
+          >
+            <Stack.Screen
+              name="Calculator"
+              component={CalculatorScreen}
+              options={({ navigation }) => ({
+                title: "Camber Calculator",
+                headerRight: () => (
+                  <Pressable
+                    onPress={() => navigation.navigate('History')}
+                    className="mr-1"
+                  >
+                    <Ionicons name="time-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="Results"
+              component={ResultsScreen}
+              options={{
+                title: "Results",
+              }}
+            />
+            <Stack.Screen
+              name="History"
+              component={HistoryScreen}
+              options={{
+                title: "History",
+              }}
+            />
+          </Stack.Navigator>
+          <StatusBar style="auto" />
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>

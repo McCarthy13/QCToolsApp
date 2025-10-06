@@ -1,0 +1,241 @@
+/**
+ * Precast Concrete Camber Calculation Utilities
+ * 
+ * Camber is the upward deflection built into precast concrete members to counteract
+ * deflection under dead load and provide aesthetically pleasing straight lines.
+ */
+
+export interface CamberInputs {
+  span: number; // Length in feet
+  memberType: 'beam' | 'double-tee' | 'hollow-core' | 'single-tee';
+  concreteStrength: number; // f'c in psi
+  modulusOfElasticity?: number; // Ec in psi (optional, can be calculated)
+  momentOfInertia: number; // I in in^4
+  deadLoad: number; // Uniform dead load in lb/ft
+  liveLoad?: number; // Uniform live load in lb/ft (optional)
+  calculationMethod: 'pci' | 'aci' | 'simple';
+}
+
+export interface CamberResult {
+  initialCamber: number; // inches
+  deadLoadDeflection: number; // inches
+  liveLoadDeflection?: number; // inches
+  longTermDeflection: number; // inches
+  finalCamber: number; // inches
+  recommendedCamber: number; // inches
+  modulusOfElasticity: number; // psi
+  creepFactor: number;
+  shrinkageFactor: number;
+}
+
+/**
+ * Calculate modulus of elasticity based on ACI 318
+ * Ec = 33 * w^1.5 * sqrt(f'c) for normal weight concrete (w = 145 pcf)
+ */
+export function calculateModulusOfElasticity(
+  concreteStrength: number,
+  unitWeight: number = 145
+): number {
+  return 33 * Math.pow(unitWeight, 1.5) * Math.sqrt(concreteStrength);
+}
+
+/**
+ * Calculate initial deflection due to uniform load
+ * δ = (5 * w * L^4) / (384 * E * I)
+ * where w is in lb/in, L is in inches
+ */
+export function calculateDeflection(
+  load: number, // lb/ft
+  span: number, // feet
+  modulusOfElasticity: number, // psi
+  momentOfInertia: number // in^4
+): number {
+  const loadPerInch = load / 12; // Convert lb/ft to lb/in
+  const spanInches = span * 12; // Convert feet to inches
+  
+  const deflection = (5 * loadPerInch * Math.pow(spanInches, 4)) / 
+                     (384 * modulusOfElasticity * momentOfInertia);
+  
+  return deflection;
+}
+
+/**
+ * Get creep factor based on member type and time duration
+ * PCI Design Handbook recommendations
+ */
+export function getCreepFactor(memberType: string): number {
+  const creepFactors: Record<string, number> = {
+    'beam': 2.0,
+    'double-tee': 2.0,
+    'hollow-core': 1.8,
+    'single-tee': 2.0,
+  };
+  
+  return creepFactors[memberType] || 2.0;
+}
+
+/**
+ * Get shrinkage factor based on member type
+ */
+export function getShrinkageFactor(memberType: string): number {
+  const shrinkageFactors: Record<string, number> = {
+    'beam': 0.2,
+    'double-tee': 0.2,
+    'hollow-core': 0.15,
+    'single-tee': 0.2,
+  };
+  
+  return shrinkageFactors[memberType] || 0.2;
+}
+
+/**
+ * Calculate long-term deflection including creep and shrinkage
+ * Per ACI 318: Long-term deflection = λΔ * initial deflection
+ * where λΔ depends on time and compression reinforcement
+ */
+export function calculateLongTermDeflection(
+  initialDeflection: number,
+  creepFactor: number,
+  shrinkageFactor: number
+): number {
+  // Multiplier includes creep and shrinkage effects
+  const multiplier = 1 + creepFactor + shrinkageFactor;
+  return initialDeflection * multiplier;
+}
+
+/**
+ * Calculate recommended camber
+ * Typically 1.5 to 2.0 times the dead load deflection for good practice
+ */
+export function calculateRecommendedCamber(
+  deadLoadDeflection: number,
+  longTermDeflection: number,
+  method: string
+): number {
+  let multiplier = 1.75; // Default multiplier
+  
+  if (method === 'pci') {
+    // PCI recommends camber equal to dead load deflection plus 1/2 live load deflection
+    // For conservatism, use 1.5x to 2.0x dead load deflection
+    multiplier = 1.75;
+  } else if (method === 'aci') {
+    // ACI approach considers long-term effects
+    multiplier = 1.5;
+  } else {
+    // Simple method
+    multiplier = 2.0;
+  }
+  
+  // Consider long-term effects
+  const recommendedCamber = longTermDeflection * 0.7; // Offset 70% of long-term deflection
+  
+  return Math.max(deadLoadDeflection * multiplier, recommendedCamber);
+}
+
+/**
+ * Main camber calculation function
+ */
+export function calculateCamber(inputs: CamberInputs): CamberResult {
+  // Calculate or use provided modulus of elasticity
+  const modulusOfElasticity = inputs.modulusOfElasticity || 
+                               calculateModulusOfElasticity(inputs.concreteStrength);
+  
+  // Calculate deflections
+  const deadLoadDeflection = calculateDeflection(
+    inputs.deadLoad,
+    inputs.span,
+    modulusOfElasticity,
+    inputs.momentOfInertia
+  );
+  
+  const liveLoadDeflection = inputs.liveLoad
+    ? calculateDeflection(
+        inputs.liveLoad,
+        inputs.span,
+        modulusOfElasticity,
+        inputs.momentOfInertia
+      )
+    : undefined;
+  
+  // Get factors
+  const creepFactor = getCreepFactor(inputs.memberType);
+  const shrinkageFactor = getShrinkageFactor(inputs.memberType);
+  
+  // Calculate long-term deflection
+  const longTermDeflection = calculateLongTermDeflection(
+    deadLoadDeflection,
+    creepFactor,
+    shrinkageFactor
+  );
+  
+  // Calculate recommended camber
+  const recommendedCamber = calculateRecommendedCamber(
+    deadLoadDeflection,
+    longTermDeflection,
+    inputs.calculationMethod
+  );
+  
+  // Initial camber at release (typically equals recommended camber)
+  const initialCamber = recommendedCamber;
+  
+  // Final camber after all deflections
+  const finalCamber = initialCamber - longTermDeflection;
+  
+  return {
+    initialCamber,
+    deadLoadDeflection,
+    liveLoadDeflection,
+    longTermDeflection,
+    finalCamber,
+    recommendedCamber,
+    modulusOfElasticity,
+    creepFactor,
+    shrinkageFactor,
+  };
+}
+
+/**
+ * Validate inputs
+ */
+export function validateInputs(inputs: Partial<CamberInputs>): string[] {
+  const errors: string[] = [];
+  
+  if (!inputs.span || inputs.span <= 0) {
+    errors.push("Span must be greater than 0");
+  }
+  
+  if (!inputs.concreteStrength || inputs.concreteStrength < 3000 || inputs.concreteStrength > 10000) {
+    errors.push("Concrete strength must be between 3000 and 10000 psi");
+  }
+  
+  if (!inputs.momentOfInertia || inputs.momentOfInertia <= 0) {
+    errors.push("Moment of inertia must be greater than 0");
+  }
+  
+  if (!inputs.deadLoad || inputs.deadLoad <= 0) {
+    errors.push("Dead load must be greater than 0");
+  }
+  
+  if (inputs.liveLoad && inputs.liveLoad < 0) {
+    errors.push("Live load cannot be negative");
+  }
+  
+  return errors;
+}
+
+/**
+ * Get typical moment of inertia values for common sections
+ */
+export function getTypicalMomentOfInertia(memberType: string, span: number): number {
+  // These are approximate values for typical sections
+  const spanFactor = Math.pow(span / 30, 1.5); // Scale with span
+  
+  const baseValues: Record<string, number> = {
+    'beam': 8000 * spanFactor,
+    'double-tee': 15000 * spanFactor,
+    'hollow-core': 5000 * spanFactor,
+    'single-tee': 12000 * spanFactor,
+  };
+  
+  return baseValues[memberType] || 10000 * spanFactor;
+}
