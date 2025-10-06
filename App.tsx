@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "./src/navigation/types";
+// Import screens
 import { CalculatorScreen, ResultsScreen, HistoryScreen } from "./src/screens";
 
 /*
