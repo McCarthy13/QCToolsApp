@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from './src/navigation/types';
-import { CalculationRecord } from './src/state/calculatorStore';
+import { RootStackParamList } from '../navigation/types';
+import { CalculationRecord } from '../state/calculatorStore';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 
 type ResultsRouteProp = RouteProp<RootStackParamList, 'Results'>;

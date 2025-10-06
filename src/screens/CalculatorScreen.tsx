@@ -12,16 +12,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useCalculatorStore } from './src/state/calculatorStore';
+import { useCalculatorStore } from '../state/calculatorStore';
 import {
   calculateCamber,
   validateInputs,
   getTypicalMomentOfInertia,
   CamberInputs,
-} from './src/utils/camber-calculations';
+} from '../utils/camber-calculations';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from './src/navigation/types';
+import { RootStackParamList } from '../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Calculator'>;
 

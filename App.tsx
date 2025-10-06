@@ -6,9 +6,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "./src/navigation/types";
-import CalculatorScreen from "./CalculatorScreen";
-import ResultsScreen from "./ResultsScreen";
-import HistoryScreen from "./HistoryScreen";
+import CalculatorScreen from "./src/screens/CalculatorScreen";
+import ResultsScreen from "./src/screens/ResultsScreen";
+import HistoryScreen from "./src/screens/HistoryScreen";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -87,5 +87,3 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
-// Force reload
-Mon Oct  6 23:44:34 UTC 2025

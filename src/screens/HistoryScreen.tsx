@@ -4,10 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from './src/navigation/types';
-import { useCalculatorStore } from './src/state/calculatorStore';
+import { RootStackParamList } from '../navigation/types';
+import { useCalculatorStore } from '../state/calculatorStore';
 import { format } from 'date-fns';
-import ConfirmModal from './src/components/ConfirmModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'History'>;
 
