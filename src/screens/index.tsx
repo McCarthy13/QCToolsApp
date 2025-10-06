@@ -1,5 +1,3 @@
-import CalculatorScreen from './CalculatorScreen';
-import ResultsScreen from './ResultsScreen';
-import HistoryScreen from './HistoryScreen';
-
-export { CalculatorScreen, ResultsScreen, HistoryScreen };
+export { default as CalculatorScreen } from './CalculatorScreen';
+export { default as ResultsScreen } from './ResultsScreen';
+export { default as HistoryScreen } from './HistoryScreen';
