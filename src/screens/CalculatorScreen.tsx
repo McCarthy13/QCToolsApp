@@ -44,7 +44,9 @@ export default function CalculatorScreen() {
   const { currentInputs, addCalculation } = useCalculatorStore();
   
   const [projectName, setProjectName] = useState('');
-  const [span, setSpan] = useState(currentInputs.span?.toString() || '');
+  const [spanFeet, setSpanFeet] = useState('');
+  const [spanInches, setSpanInches] = useState('');
+  const [spanFraction, setSpanFraction] = useState('0');
   const [memberType, setMemberType] = useState(currentInputs.memberType || 'double-tee');
   const [concreteStrength, setConcreteStrength] = useState(
     currentInputs.concreteStrength?.toString() || '5000'
@@ -59,9 +61,32 @@ export default function CalculatorScreen() {
   );
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Convert feet/inches/fraction to decimal feet
+  const getSpanInFeet = (): number => {
+    const feet = parseFloat(spanFeet) || 0;
+    const inches = parseFloat(spanInches) || 0;
+    const fractionValue = parseFraction(spanFraction);
+    return feet + (inches + fractionValue) / 12;
+  };
+
+  // Parse fraction string like "1/2" to decimal
+  const parseFraction = (fraction: string): number => {
+    if (!fraction || fraction === '0') return 0;
+    const parts = fraction.split('/');
+    if (parts.length === 2) {
+      const numerator = parseFloat(parts[0]);
+      const denominator = parseFloat(parts[1]);
+      if (denominator !== 0) {
+        return numerator / denominator;
+      }
+    }
+    return 0;
+  };
+
   const handleEstimateMomentOfInertia = () => {
-    if (span && !isNaN(parseFloat(span))) {
-      const estimated = getTypicalMomentOfInertia(memberType, parseFloat(span));
+    const spanInFeet = getSpanInFeet();
+    if (spanInFeet > 0) {
+      const estimated = getTypicalMomentOfInertia(memberType, spanInFeet);
       setMomentOfInertia(Math.round(estimated).toString());
     } else {
       setErrors(["Please enter span first to estimate moment of inertia"]);
@@ -69,8 +94,9 @@ export default function CalculatorScreen() {
   };
 
   const handleCalculate = () => {
+    const spanInFeet = getSpanInFeet();
     const inputs: Partial<CamberInputs> = {
-      span: parseFloat(span),
+      span: spanInFeet,
       memberType: memberType as CamberInputs['memberType'],
       concreteStrength: parseFloat(concreteStrength),
       momentOfInertia: parseFloat(momentOfInertia),
@@ -178,16 +204,60 @@ export default function CalculatorScreen() {
             {/* Span Input */}
             <View className="mb-5">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Span (feet)
+                Span
               </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 40"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                value={span}
-                onChangeText={setSpan}
-              />
+              <View className="flex-row gap-2">
+                {/* Feet */}
+                <View className="flex-1">
+                  <Text className="text-xs text-gray-600 mb-1">Feet</Text>
+                  <TextInput
+                    className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                    placeholder="40"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={spanFeet}
+                    onChangeText={setSpanFeet}
+                  />
+                </View>
+                
+                {/* Inches */}
+                <View className="flex-1">
+                  <Text className="text-xs text-gray-600 mb-1">Inches</Text>
+                  <TextInput
+                    className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                    placeholder="0"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={spanInches}
+                    onChangeText={setSpanInches}
+                  />
+                </View>
+                
+                {/* Fraction */}
+                <View className="flex-1">
+                  <Text className="text-xs text-gray-600 mb-1">Fraction</Text>
+                  <Pressable
+                    onPress={() => {
+                      const fractions = ['0', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
+                      const currentIndex = fractions.indexOf(spanFraction);
+                      const nextIndex = (currentIndex + 1) % fractions.length;
+                      setSpanFraction(fractions[nextIndex]);
+                    }}
+                    className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 items-center justify-center"
+                  >
+                    <Text className="text-base text-gray-900 font-medium">
+                      {spanFraction === '0' ? '0' : spanFraction}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+              
+              {/* Display total in decimal */}
+              {(spanFeet || spanInches || spanFraction !== '0') && (
+                <Text className="text-xs text-gray-500 mt-2">
+                  Total: {getSpanInFeet().toFixed(3)} feet
+                </Text>
+              )}
             </View>
 
             {/* Concrete Strength */}
