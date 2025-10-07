@@ -20,7 +20,6 @@ import {
   getTypicalMomentOfInertia,
   CamberInputs,
 } from '../utils/camber-calculations';
-import { STRAND_PATTERNS, getStrandPattern } from '../utils/strand-patterns';
 import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -106,10 +105,8 @@ export default function CalculatorScreen() {
   const handleCalculate = () => {
     const spanInFeet = getSpanInFeet();
     
-    // Get selected pattern (check both standard and custom)
-    const standardPattern = getStrandPattern(strandPattern);
-    const customPattern = customPatterns.find(p => p.id === strandPattern);
-    const selectedPattern = standardPattern || customPattern;
+    // Get selected custom pattern
+    const selectedPattern = customPatterns.find(p => p.id === strandPattern);
     
     const inputs: Partial<CamberInputs> = {
       span: spanInFeet,
@@ -385,7 +382,7 @@ export default function CalculatorScreen() {
               >
                 <View className="flex-1 flex-row items-center gap-2">
                   <Text className={`text-base ${strandPattern ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {strandPattern ? (getStrandPattern(strandPattern)?.name || customPatterns.find(p => p.id === strandPattern)?.name) : 'Select strand pattern'}
+                    {strandPattern ? `${customPatterns.find(p => p.id === strandPattern)?.patternId} - ${customPatterns.find(p => p.id === strandPattern)?.name}` : 'Select strand pattern'}
                   </Text>
                   {strandPattern && customPatterns.find(p => p.id === strandPattern) && (
                     <View className={`px-2 py-1 rounded ${
@@ -405,19 +402,32 @@ export default function CalculatorScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </Pressable>
-              {strandPattern && getStrandPattern(strandPattern) && (
-                <View className="mt-2 bg-blue-50 rounded-lg p-3">
-                  <Text className="text-xs font-semibold text-blue-900 mb-1">Pattern Details:</Text>
-                  {getStrandPattern(strandPattern)?.strands.map((strand, idx) => (
-                    <Text key={idx} className="text-xs text-blue-800">
-                      • {strand.count}× {strand.size}" strands
+              {strandPattern && customPatterns.find(p => p.id === strandPattern) && (
+                <View className="mt-2 bg-purple-50 rounded-lg p-3">
+                  <Text className="text-xs font-semibold text-purple-900 mb-1">Pattern Details:</Text>
+                  {customPatterns.find(p => p.id === strandPattern)!.strand_3_8 > 0 && (
+                    <Text className="text-xs text-purple-800">
+                      • {customPatterns.find(p => p.id === strandPattern)!.strand_3_8}× 3/8" strands
                     </Text>
-                  ))}
-                  <Text className="text-xs text-blue-800 mt-1">
-                    • e value: {getStrandPattern(strandPattern)?.eValue}"
+                  )}
+                  {customPatterns.find(p => p.id === strandPattern)!.strand_1_2 > 0 && (
+                    <Text className="text-xs text-purple-800">
+                      • {customPatterns.find(p => p.id === strandPattern)!.strand_1_2}× 1/2" strands
+                    </Text>
+                  )}
+                  {customPatterns.find(p => p.id === strandPattern)!.strand_0_6 > 0 && (
+                    <Text className="text-xs text-purple-800">
+                      • {customPatterns.find(p => p.id === strandPattern)!.strand_0_6}× 0.6" strands
+                    </Text>
+                  )}
+                  <Text className="text-xs text-purple-800 mt-1">
+                    • e value: {customPatterns.find(p => p.id === strandPattern)!.eValue}"
                   </Text>
-                  <Text className="text-xs text-blue-800">
-                    • Total area: {getStrandPattern(strandPattern)?.totalArea.toFixed(3)} in²
+                  <Text className="text-xs text-purple-800">
+                    • Pulling force: {customPatterns.find(p => p.id === strandPattern)!.pullingForce}%
+                  </Text>
+                  <Text className="text-xs text-purple-800">
+                    • Total area: {customPatterns.find(p => p.id === strandPattern)!.totalArea.toFixed(3)} in²
                   </Text>
                 </View>
               )}
@@ -527,66 +537,11 @@ export default function CalculatorScreen() {
             </View>
             
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
-              {/* Standard Patterns */}
-              <Text className="text-sm font-bold text-gray-900 mb-3">Standard Patterns</Text>
-                {STRAND_PATTERNS.map((pattern) => (
-                  <Pressable
-                    key={pattern.id}
-                    onPress={() => {
-                      setStrandPattern(pattern.id);
-                      setShowStrandModal(false);
-                    }}
-                    className={`mb-3 p-4 rounded-xl border ${
-                      strandPattern === pattern.id
-                        ? 'bg-blue-50 border-blue-500'
-                        : 'bg-white border-gray-300'
-                    }`}
-                  >
-                    <View className="flex-row items-center justify-between mb-2">
-                      <Text className={`text-base font-semibold ${
-                        strandPattern === pattern.id ? 'text-blue-900' : 'text-gray-900'
-                      }`}>
-                        {pattern.name}
-                      </Text>
-                      {strandPattern === pattern.id && (
-                        <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
-                      )}
-                    </View>
-                    
-                    {pattern.strands.length > 0 && (
-                      <View className="mt-2">
-                        <Text className={`text-xs font-semibold mb-1 ${
-                          strandPattern === pattern.id ? 'text-blue-800' : 'text-gray-600'
-                        }`}>
-                          Configuration:
-                        </Text>
-                        {pattern.strands.map((strand, idx) => (
-                          <Text key={idx} className={`text-xs ${
-                            strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
-                          }`}>
-                            • {strand.count} strands of {strand.size}" diameter
-                          </Text>
-                        ))}
-                        <Text className={`text-xs mt-1 ${
-                          strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
-                        }`}>
-                          • e value: {pattern.eValue}"
-                        </Text>
-                        <Text className={`text-xs ${
-                          strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
-                        }`}>
-                          • Total strand area: {pattern.totalArea.toFixed(3)} in²
-                        </Text>
-                      </View>
-                    )}
-                  </Pressable>
-                ))}
-                
-                {/* Custom Patterns */}
-                {customPatterns.length > 0 && (
-                  <>
-                    <Text className="text-sm font-bold text-gray-900 mb-3 mt-4">Custom Patterns</Text>
-                    {customPatterns.map((pattern) => (
+              {/* Strand Patterns */}
+              {customPatterns.length > 0 ? (
+                <>
+                  <Text className="text-sm font-bold text-gray-900 mb-3">Strand Patterns</Text>
+                  {customPatterns.map((pattern) => (
                       <Pressable
                         key={pattern.id}
                         onPress={() => {
@@ -671,6 +626,18 @@ export default function CalculatorScreen() {
                       </Pressable>
                     ))}
                   </>
+                ) : (
+                  <View className="items-center py-12">
+                    <View className="bg-gray-100 rounded-full p-6 mb-4">
+                      <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
+                    </View>
+                    <Text className="text-lg font-semibold text-gray-900 mb-2">
+                      No Strand Patterns
+                    </Text>
+                    <Text className="text-sm text-gray-600 text-center mb-4">
+                      Create custom strand patterns in the{'\n'}Strand Patterns tab
+                    </Text>
+                  </View>
                 )}
                 
                 {/* Clear Selection Button */}
