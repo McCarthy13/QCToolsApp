@@ -21,6 +21,7 @@ interface StrandPatternState {
   addPattern: (pattern: Omit<CustomStrandPattern, 'id'>) => void;
   updatePattern: (id: string, pattern: Omit<CustomStrandPattern, 'id'>) => void;
   removePattern: (id: string) => void;
+  clearAllPatterns: () => void;
   getPatternById: (id: string) => CustomStrandPattern | undefined;
   getPatternByPatternId: (patternId: string) => CustomStrandPattern | undefined;
   getPatternsByPosition: (position: 'Top' | 'Bottom' | 'Both') => CustomStrandPattern[];
@@ -52,6 +53,11 @@ export const useStrandPatternStore = create<StrandPatternState>()(
       removePattern: (id) =>
         set((state) => ({
           customPatterns: state.customPatterns.filter((p) => p.id !== id),
+        })),
+      
+      clearAllPatterns: () =>
+        set(() => ({
+          customPatterns: [],
         })),
       
       getPatternById: (id) => {

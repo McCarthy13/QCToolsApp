@@ -19,11 +19,12 @@ import ConfirmModal from '../components/ConfirmModal';
 
 export default function StrandPatternsScreen() {
   const insets = useSafeAreaInsets();
-  const { customPatterns, addPattern, removePattern, updatePattern } = useStrandPatternStore();
+  const { customPatterns, addPattern, removePattern, updatePattern, clearAllPatterns } = useStrandPatternStore();
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPattern, setEditingPattern] = useState<CustomStrandPattern | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleAddPattern = () => {
     setEditingPattern(null);
@@ -222,6 +223,19 @@ export default function StrandPatternsScreen() {
             </Pressable>
           </View>
 
+          {/* Clear All Button - Temporary for cleanup */}
+          {customPatterns.length > 0 && (
+            <Pressable
+              onPress={() => setShowClearConfirm(true)}
+              className="bg-red-500 rounded-xl py-3 items-center active:bg-red-600 flex-row justify-center mb-3"
+            >
+              <Ionicons name="trash-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold ml-2">
+                Clear All Patterns (Reset)
+              </Text>
+            </Pressable>
+          )}
+
           {/* Copy/Paste Buttons - Better for Desktop Transfer */}
           <View className="flex-row gap-3 mb-5">
             <Pressable
@@ -411,6 +425,21 @@ export default function StrandPatternsScreen() {
         confirmStyle="destructive"
         onConfirm={() => deleteConfirmId && handleDeletePattern(deleteConfirmId)}
         onCancel={() => setDeleteConfirmId(null)}
+      />
+
+      {/* Clear All Confirmation */}
+      <ConfirmModal
+        visible={showClearConfirm}
+        title="Clear All Patterns"
+        message="This will delete ALL strand patterns permanently. This action cannot be undone. Are you sure?"
+        confirmText="Clear All"
+        cancelText="Cancel"
+        confirmStyle="destructive"
+        onConfirm={() => {
+          clearAllPatterns();
+          setShowClearConfirm(false);
+        }}
+        onCancel={() => setShowClearConfirm(false)}
       />
     </View>
   );
