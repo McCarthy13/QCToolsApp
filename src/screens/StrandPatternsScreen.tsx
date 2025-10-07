@@ -225,8 +225,44 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [strand_3_8, setStrand_3_8] = useState(pattern?.strand_3_8.toString() || '0');
   const [strand_1_2, setStrand_1_2] = useState(pattern?.strand_1_2.toString() || '0');
   const [strand_0_6, setStrand_0_6] = useState(pattern?.strand_0_6.toString() || '0');
+  const [plankThickness, setPlankThickness] = useState('');
+  const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Parse fraction or decimal input
+  const parseFractionOrDecimal = (input: string): number => {
+    if (!input || input.trim() === '') return 0;
+    
+    // Check if input contains a fraction (e.g., "2 1/8" or "1/8")
+    const fractionMatch = input.match(/(\d+)?\s*(\d+)\/(\d+)/);
+    if (fractionMatch) {
+      const whole = parseInt(fractionMatch[1] || '0');
+      const numerator = parseInt(fractionMatch[2]);
+      const denominator = parseInt(fractionMatch[3]);
+      return whole + (numerator / denominator);
+    }
+    
+    // Otherwise parse as decimal
+    return parseFloat(input) || 0;
+  };
+
+  // Auto-calculate e value when plank thickness or strand height changes
+  const calculateEValue = () => {
+    const thickness = parseFractionOrDecimal(plankThickness);
+    const height = parseFractionOrDecimal(strandHeight);
+    
+    if (thickness > 0 && height > 0) {
+      const centroid = thickness / 2;
+      const e = centroid - height;
+      setEValue(e.toFixed(3));
+    }
+  };
+
+  // Update e value whenever plank thickness or strand height changes
+  React.useEffect(() => {
+    calculateEValue();
+  }, [plankThickness, strandHeight]);
 
   const STRAND_AREAS = {
     '3/8': 0.085,
@@ -417,14 +453,48 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
               </View>
             </View>
 
-            {/* e Value */}
+            {/* Plank Thickness */}
             <View className="mb-4">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
-                e Value (inches)
+                Plank Thickness (inches)
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                Centroid of cross section minus height from bottom to strand center{'\n'}
-                Example: 12" plank (6" centroid) - 2.125" strand = 3.875" e value
+                Enter as decimal or fraction (e.g., 12 or 11 7/8)
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
+                placeholder="e.g., 12 or 11 7/8"
+                placeholderTextColor="#9CA3AF"
+                value={plankThickness}
+                onChangeText={setPlankThickness}
+              />
+            </View>
+
+            {/* Strand Height */}
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Strand Height from Bottom (inches)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Enter as decimal or fraction (e.g., 2.125 or 2 1/8)
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
+                placeholder="e.g., 2.125 or 2 1/8"
+                placeholderTextColor="#9CA3AF"
+                value={strandHeight}
+                onChangeText={setStrandHeight}
+              />
+            </View>
+
+            {/* e Value (Auto-calculated or manual) */}
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                e Value (inches) - Auto-calculated
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Calculated as: (Plank thickness ÷ 2) - Strand height{'\n'}
+                Or enter manually
               </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
