@@ -20,7 +20,8 @@ export interface CamberInputs {
 }
 
 export interface CamberResult {
-  initialCamber: number; // inches
+  initialCamber: number; // inches - Prestress camber (built into form)
+  netInitialCamber: number; // inches - Measured camber at release (after dead load)
   deadLoadDeflection: number; // inches
   liveLoadDeflection?: number; // inches
   longTermDeflection: number; // inches
@@ -191,11 +192,15 @@ export function calculateCamber(inputs: CamberInputs): CamberResult {
   // Initial camber at release (typically equals recommended camber)
   const initialCamber = recommendedCamber;
   
+  // Net initial camber (what you actually measure at release after dead load acts)
+  const netInitialCamber = initialCamber - deadLoadDeflection;
+  
   // Final camber after all deflections
   const finalCamber = initialCamber - longTermDeflection;
   
   return {
     initialCamber,
+    netInitialCamber,
     deadLoadDeflection,
     liveLoadDeflection,
     longTermDeflection,
