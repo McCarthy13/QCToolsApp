@@ -9,6 +9,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import {
   getTypicalMomentOfInertia,
   CamberInputs,
 } from '../utils/camber-calculations';
+import { STRAND_PATTERNS, getStrandPattern } from '../utils/strand-patterns';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -63,6 +65,8 @@ export default function CalculatorScreen() {
   const [calculationMethod, setCalculationMethod] = useState(
     currentInputs.calculationMethod || 'pci'
   );
+  const [strandPattern, setStrandPattern] = useState<string>('');
+  const [showStrandModal, setShowStrandModal] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
   // Convert feet/inches/fraction to decimal feet
@@ -99,6 +103,8 @@ export default function CalculatorScreen() {
 
   const handleCalculate = () => {
     const spanInFeet = getSpanInFeet();
+    const selectedPattern = strandPattern ? getStrandPattern(strandPattern) : undefined;
+    
     const inputs: Partial<CamberInputs> = {
       span: spanInFeet,
       memberType: memberType as CamberInputs['memberType'],
@@ -108,6 +114,8 @@ export default function CalculatorScreen() {
       deadLoad: parseFloat(deadLoad),
       liveLoad: liveLoad ? parseFloat(liveLoad) : undefined,
       calculationMethod: calculationMethod as CamberInputs['calculationMethod'],
+      strandPattern: strandPattern || undefined,
+      strandEValue: selectedPattern?.eValue,
     };
 
     const validationErrors = validateInputs(inputs);
@@ -357,6 +365,41 @@ export default function CalculatorScreen() {
               />
             </View>
 
+            {/* Strand Pattern (Optional) */}
+            <View className="mb-5">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Strand Pattern - Optional
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Select prestressing strand configuration
+              </Text>
+              <Pressable
+                onPress={() => setShowStrandModal(true)}
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 flex-row items-center justify-between"
+              >
+                <Text className={`text-base ${strandPattern ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {strandPattern ? getStrandPattern(strandPattern)?.name : 'Select strand pattern'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </Pressable>
+              {strandPattern && getStrandPattern(strandPattern) && (
+                <View className="mt-2 bg-blue-50 rounded-lg p-3">
+                  <Text className="text-xs font-semibold text-blue-900 mb-1">Pattern Details:</Text>
+                  {getStrandPattern(strandPattern)?.strands.map((strand, idx) => (
+                    <Text key={idx} className="text-xs text-blue-800">
+                      • {strand.count}× {strand.size}" strands
+                    </Text>
+                  ))}
+                  <Text className="text-xs text-blue-800 mt-1">
+                    • e value: {getStrandPattern(strandPattern)?.eValue}" from bottom
+                  </Text>
+                  <Text className="text-xs text-blue-800">
+                    • Total area: {getStrandPattern(strandPattern)?.totalArea.toFixed(3)} in²
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {/* Calculation Method */}
             <View className="mb-6">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
@@ -414,6 +457,101 @@ export default function CalculatorScreen() {
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+
+      {/* Strand Pattern Selection Modal */}
+      <Modal
+        visible={showStrandModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStrandModal(false)}
+      >
+        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View className="bg-white rounded-t-3xl" style={{ maxHeight: '80%' }}>
+            <View className="p-5 border-b border-gray-200">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xl font-bold text-gray-900">
+                  Select Strand Pattern
+                </Text>
+                <Pressable onPress={() => setShowStrandModal(false)}>
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </Pressable>
+              </View>
+            </View>
+            
+            <ScrollView className="flex-1">
+              <View className="p-5">
+                {STRAND_PATTERNS.map((pattern) => (
+                  <Pressable
+                    key={pattern.id}
+                    onPress={() => {
+                      setStrandPattern(pattern.id);
+                      setShowStrandModal(false);
+                    }}
+                    className={`mb-3 p-4 rounded-xl border ${
+                      strandPattern === pattern.id
+                        ? 'bg-blue-50 border-blue-500'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <View className="flex-row items-center justify-between mb-2">
+                      <Text className={`text-base font-semibold ${
+                        strandPattern === pattern.id ? 'text-blue-900' : 'text-gray-900'
+                      }`}>
+                        {pattern.name}
+                      </Text>
+                      {strandPattern === pattern.id && (
+                        <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+                      )}
+                    </View>
+                    
+                    {pattern.strands.length > 0 && (
+                      <View className="mt-2">
+                        <Text className={`text-xs font-semibold mb-1 ${
+                          strandPattern === pattern.id ? 'text-blue-800' : 'text-gray-600'
+                        }`}>
+                          Configuration:
+                        </Text>
+                        {pattern.strands.map((strand, idx) => (
+                          <Text key={idx} className={`text-xs ${
+                            strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
+                          }`}>
+                            • {strand.count} strands of {strand.size}" diameter
+                          </Text>
+                        ))}
+                        <Text className={`text-xs mt-1 ${
+                          strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
+                        }`}>
+                          • e value: {pattern.eValue}" from bottom
+                        </Text>
+                        <Text className={`text-xs ${
+                          strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
+                        }`}>
+                          • Total strand area: {pattern.totalArea.toFixed(3)} in²
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+                
+                {/* Clear Selection Button */}
+                {strandPattern && (
+                  <Pressable
+                    onPress={() => {
+                      setStrandPattern('');
+                      setShowStrandModal(false);
+                    }}
+                    className="mt-2 p-4 rounded-xl border border-red-300 bg-red-50"
+                  >
+                    <Text className="text-center text-red-600 font-semibold">
+                      Clear Selection
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

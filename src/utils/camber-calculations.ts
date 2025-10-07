@@ -15,6 +15,8 @@ export interface CamberInputs {
   deadLoad: number; // Uniform dead load in lb/ft
   liveLoad?: number; // Uniform live load in lb/ft (optional)
   calculationMethod: 'pci' | 'aci' | 'simple';
+  strandPattern?: string; // Strand pattern ID (optional)
+  strandEValue?: number; // Distance from bottom to center of strand (optional)
 }
 
 export interface CamberResult {
