@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -126,6 +127,49 @@ export default function StrandPatternsScreen() {
     }
   };
 
+  const handleCopyToClipboard = async () => {
+    try {
+      const jsonData = JSON.stringify(customPatterns, null, 2);
+      await Clipboard.setStringAsync(jsonData);
+      Alert.alert('Success', 'Patterns copied to clipboard! You can now paste this text on your computer.');
+    } catch (error) {
+      console.error('Copy error:', error);
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const clipboardText = await Clipboard.getStringAsync();
+      
+      if (!clipboardText) {
+        Alert.alert('Error', 'Clipboard is empty');
+        return;
+      }
+
+      const patterns = JSON.parse(clipboardText);
+      
+      if (!Array.isArray(patterns)) {
+        Alert.alert('Error', 'Invalid data format. Please paste valid JSON array.');
+        return;
+      }
+
+      let importedCount = 0;
+      patterns.forEach((pattern: CustomStrandPattern) => {
+        const exists = customPatterns.find(p => p.id === pattern.id);
+        if (!exists) {
+          addPattern(pattern);
+          importedCount++;
+        }
+      });
+
+      Alert.alert('Success', `Imported ${importedCount} pattern(s). Duplicates were skipped.`);
+    } catch (error) {
+      console.error('Paste error:', error);
+      Alert.alert('Error', 'Failed to parse clipboard data. Make sure you copied valid JSON.');
+    }
+  };
+
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView
@@ -155,7 +199,7 @@ export default function StrandPatternsScreen() {
           </Pressable>
 
           {/* Import/Export Buttons */}
-          <View className="flex-row gap-3 mb-5">
+          <View className="flex-row gap-3 mb-3">
             <Pressable
               onPress={handleImportPatterns}
               className="flex-1 bg-green-500 rounded-xl py-3 items-center active:bg-green-600 flex-row justify-center"
@@ -178,6 +222,30 @@ export default function StrandPatternsScreen() {
             </Pressable>
           </View>
 
+          {/* Copy/Paste Buttons - Better for Desktop Transfer */}
+          <View className="flex-row gap-3 mb-5">
+            <Pressable
+              onPress={handleCopyToClipboard}
+              className="flex-1 bg-orange-500 rounded-xl py-3 items-center active:bg-orange-600 flex-row justify-center"
+              disabled={customPatterns.length === 0}
+              style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
+            >
+              <Ionicons name="copy-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold ml-2">
+                Copy Text
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handlePasteFromClipboard}
+              className="flex-1 bg-teal-500 rounded-xl py-3 items-center active:bg-teal-600 flex-row justify-center"
+            >
+              <Ionicons name="clipboard-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold ml-2">
+                Paste Text
+              </Text>
+            </Pressable>
+          </View>
+
           {/* Info Box */}
           <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
             <View className="flex-row items-start">
@@ -191,7 +259,7 @@ export default function StrandPatternsScreen() {
                   Example: 101-75 (Pattern 101, 75% pulling force){'\n\n'}
                   e Value = Section centroid - Strand height from bottom{'\n'}
                   Example: 12" plank (6" centroid) - 2.125" = 3.875"{'\n\n'}
-                  Tip: Use Export/Import to backup or share patterns as JSON files
+                  Desktop Transfer: Use Copy Text on phone, paste into text editor on PC, edit, copy from PC, then use Paste Text on phone
                 </Text>
               </View>
             </View>
