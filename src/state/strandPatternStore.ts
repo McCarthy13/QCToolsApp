@@ -77,6 +77,14 @@ export const useStrandPatternStore = create<StrandPatternState>()(
     {
       name: 'strand-pattern-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        // Filter out patterns that don't have momentOfInertia (old format)
+        if (state?.customPatterns) {
+          state.customPatterns = state.customPatterns.filter(
+            (pattern) => pattern.momentOfInertia !== undefined && pattern.momentOfInertia > 0
+          );
+        }
+      },
     }
   )
 );
