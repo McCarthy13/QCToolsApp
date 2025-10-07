@@ -33,6 +33,7 @@ const openai_api_key = Constants.expoConfig.extra.apikey;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// App version: force reload
 export default function App() {
   return (
     <GestureHandlerRootView className="flex-1">
