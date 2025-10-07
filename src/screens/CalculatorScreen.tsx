@@ -48,6 +48,7 @@ export default function CalculatorScreen() {
   const [spanInches, setSpanInches] = useState('');
   const [spanFraction, setSpanFraction] = useState('0');
   const [memberType, setMemberType] = useState(currentInputs.memberType || 'double-tee');
+  const [releaseStrength, setReleaseStrength] = useState('3500');
   const [concreteStrength, setConcreteStrength] = useState(
     currentInputs.concreteStrength?.toString() || '5000'
   );
@@ -98,6 +99,7 @@ export default function CalculatorScreen() {
     const inputs: Partial<CamberInputs> = {
       span: spanInFeet,
       memberType: memberType as CamberInputs['memberType'],
+      releaseStrength: parseFloat(releaseStrength),
       concreteStrength: parseFloat(concreteStrength),
       momentOfInertia: parseFloat(momentOfInertia),
       deadLoad: parseFloat(deadLoad),
@@ -260,10 +262,31 @@ export default function CalculatorScreen() {
               )}
             </View>
 
-            {/* Concrete Strength */}
+            {/* Release Strength */}
             <View className="mb-5">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Concrete Strength f&apos;c (psi)
+                Release Strength f&apos;ci (psi)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Concrete strength at time of release/detensioning
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                placeholder="e.g., 3500"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="numeric"
+                value={releaseStrength}
+                onChangeText={setReleaseStrength}
+              />
+            </View>
+
+            {/* 28-Day Concrete Strength */}
+            <View className="mb-5">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                28-Day Strength f&apos;c (psi)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Design concrete strength at 28 days
               </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"

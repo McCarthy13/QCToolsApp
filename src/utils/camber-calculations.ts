@@ -8,7 +8,8 @@
 export interface CamberInputs {
   span: number; // Length in feet
   memberType: 'beam' | 'double-tee' | 'hollow-core' | 'single-tee';
-  concreteStrength: number; // f'c in psi
+  releaseStrength: number; // f'ci in psi (strength at release)
+  concreteStrength: number; // f'c in psi (28-day strength)
   modulusOfElasticity?: number; // Ec in psi (optional, can be calculated)
   momentOfInertia: number; // I in in^4
   deadLoad: number; // Uniform dead load in lb/ft
@@ -23,7 +24,8 @@ export interface CamberResult {
   longTermDeflection: number; // inches
   finalCamber: number; // inches
   recommendedCamber: number; // inches
-  modulusOfElasticity: number; // psi
+  releaseModulusOfElasticity: number; // psi (Eci at release)
+  modulusOfElasticity: number; // psi (Ec at 28 days)
   creepFactor: number;
   shrinkageFactor: number;
 }
@@ -136,15 +138,18 @@ export function calculateRecommendedCamber(
  * Main camber calculation function
  */
 export function calculateCamber(inputs: CamberInputs): CamberResult {
-  // Calculate or use provided modulus of elasticity
-  const modulusOfElasticity = inputs.modulusOfElasticity || 
-                               calculateModulusOfElasticity(inputs.concreteStrength);
+  // Calculate modulus of elasticity at release (using release strength)
+  const releaseModulusOfElasticity = inputs.modulusOfElasticity || 
+                               calculateModulusOfElasticity(inputs.releaseStrength);
   
-  // Calculate deflections
+  // Calculate modulus of elasticity at 28 days (using 28-day strength)
+  const modulusOfElasticity28Day = calculateModulusOfElasticity(inputs.concreteStrength);
+  
+  // Calculate initial deflections at release (using release Ec)
   const deadLoadDeflection = calculateDeflection(
     inputs.deadLoad,
     inputs.span,
-    modulusOfElasticity,
+    releaseModulusOfElasticity,
     inputs.momentOfInertia
   );
   
@@ -152,7 +157,7 @@ export function calculateCamber(inputs: CamberInputs): CamberResult {
     ? calculateDeflection(
         inputs.liveLoad,
         inputs.span,
-        modulusOfElasticity,
+        modulusOfElasticity28Day, // Use 28-day for live load
         inputs.momentOfInertia
       )
     : undefined;
@@ -188,7 +193,8 @@ export function calculateCamber(inputs: CamberInputs): CamberResult {
     longTermDeflection,
     finalCamber,
     recommendedCamber,
-    modulusOfElasticity,
+    releaseModulusOfElasticity,
+    modulusOfElasticity: modulusOfElasticity28Day,
     creepFactor,
     shrinkageFactor,
   };
@@ -204,8 +210,16 @@ export function validateInputs(inputs: Partial<CamberInputs>): string[] {
     errors.push("Span must be greater than 0");
   }
   
+  if (!inputs.releaseStrength || inputs.releaseStrength < 3000 || inputs.releaseStrength > 10000) {
+    errors.push("Release strength must be between 3000 and 10000 psi");
+  }
+  
   if (!inputs.concreteStrength || inputs.concreteStrength < 3000 || inputs.concreteStrength > 10000) {
-    errors.push("Concrete strength must be between 3000 and 10000 psi");
+    errors.push("28-day strength must be between 3000 and 10000 psi");
+  }
+  
+  if (inputs.releaseStrength && inputs.concreteStrength && inputs.releaseStrength > inputs.concreteStrength) {
+    errors.push("Release strength cannot be greater than 28-day strength");
   }
   
   if (!inputs.momentOfInertia || inputs.momentOfInertia <= 0) {
