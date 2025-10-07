@@ -383,9 +383,26 @@ export default function CalculatorScreen() {
                 onPress={() => setShowStrandModal(true)}
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 flex-row items-center justify-between"
               >
-                <Text className={`text-base ${strandPattern ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {strandPattern ? getStrandPattern(strandPattern)?.name : 'Select strand pattern'}
-                </Text>
+                <View className="flex-1 flex-row items-center gap-2">
+                  <Text className={`text-base ${strandPattern ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {strandPattern ? (getStrandPattern(strandPattern)?.name || customPatterns.find(p => p.id === strandPattern)?.name) : 'Select strand pattern'}
+                  </Text>
+                  {strandPattern && customPatterns.find(p => p.id === strandPattern) && (
+                    <View className={`px-2 py-1 rounded ${
+                      customPatterns.find(p => p.id === strandPattern)?.position === 'Top' ? 'bg-blue-100' : 
+                      customPatterns.find(p => p.id === strandPattern)?.position === 'Bottom' ? 'bg-green-100' : 
+                      'bg-purple-100'
+                    }`}>
+                      <Text className={`text-xs font-semibold ${
+                        customPatterns.find(p => p.id === strandPattern)?.position === 'Top' ? 'text-blue-700' : 
+                        customPatterns.find(p => p.id === strandPattern)?.position === 'Bottom' ? 'text-green-700' : 
+                        'text-purple-700'
+                      }`}>
+                        {customPatterns.find(p => p.id === strandPattern)?.position}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </Pressable>
               {strandPattern && getStrandPattern(strandPattern) && (
@@ -583,12 +600,25 @@ export default function CalculatorScreen() {
                         }`}
                       >
                         <View className="flex-row items-center justify-between mb-2">
-                          <View className="flex-1">
+                          <View className="flex-1 flex-row items-center gap-2">
                             <Text className={`text-base font-semibold ${
                               strandPattern === pattern.id ? 'text-purple-900' : 'text-gray-900'
                             }`}>
                               {pattern.patternId} - {pattern.name}
                             </Text>
+                            <View className={`px-2 py-1 rounded ${
+                              pattern.position === 'Top' ? 'bg-blue-100' : 
+                              pattern.position === 'Bottom' ? 'bg-green-100' : 
+                              'bg-purple-100'
+                            }`}>
+                              <Text className={`text-xs font-semibold ${
+                                pattern.position === 'Top' ? 'text-blue-700' : 
+                                pattern.position === 'Bottom' ? 'text-green-700' : 
+                                'text-purple-700'
+                              }`}>
+                                {pattern.position}
+                              </Text>
+                            </View>
                           </View>
                           {strandPattern === pattern.id && (
                             <Ionicons name="checkmark-circle" size={24} color="#9333EA" />

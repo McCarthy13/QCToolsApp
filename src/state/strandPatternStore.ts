@@ -6,6 +6,7 @@ export interface CustomStrandPattern {
   id: string;
   patternId: string; // Format: "101-75" (pattern number - pulling force %)
   name: string;
+  position: 'Top' | 'Bottom' | 'Both'; // Where strands are positioned
   strand_3_8: number; // Count of 3/8" strands
   strand_1_2: number; // Count of 1/2" strands
   strand_0_6: number; // Count of 0.6" strands
@@ -21,6 +22,7 @@ interface StrandPatternState {
   removePattern: (id: string) => void;
   getPatternById: (id: string) => CustomStrandPattern | undefined;
   getPatternByPatternId: (patternId: string) => CustomStrandPattern | undefined;
+  getPatternsByPosition: (position: 'Top' | 'Bottom' | 'Both') => CustomStrandPattern[];
 }
 
 export const useStrandPatternStore = create<StrandPatternState>()(
@@ -57,6 +59,12 @@ export const useStrandPatternStore = create<StrandPatternState>()(
       
       getPatternByPatternId: (patternId) => {
         return get().customPatterns.find((p) => p.patternId === patternId);
+      },
+      
+      getPatternsByPosition: (position) => {
+        return get().customPatterns.filter((p) => 
+          p.position === position || p.position === 'Both'
+        );
       },
     }),
     {

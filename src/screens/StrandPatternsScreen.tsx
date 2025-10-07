@@ -291,9 +291,24 @@ export default function StrandPatternsScreen() {
                 >
                   <View className="flex-row items-center justify-between mb-3">
                     <View className="flex-1">
-                      <Text className="text-lg font-bold text-gray-900 mb-1">
-                        {pattern.patternId}
-                      </Text>
+                      <View className="flex-row items-center gap-2 mb-1">
+                        <Text className="text-lg font-bold text-gray-900">
+                          {pattern.patternId}
+                        </Text>
+                        <View className={`px-2 py-1 rounded ${
+                          pattern.position === 'Top' ? 'bg-blue-100' : 
+                          pattern.position === 'Bottom' ? 'bg-green-100' : 
+                          'bg-purple-100'
+                        }`}>
+                          <Text className={`text-xs font-semibold ${
+                            pattern.position === 'Top' ? 'text-blue-700' : 
+                            pattern.position === 'Bottom' ? 'text-green-700' : 
+                            'text-purple-700'
+                          }`}>
+                            {pattern.position}
+                          </Text>
+                        </View>
+                      </View>
                       <Text className="text-sm text-gray-600">
                         {pattern.name}
                       </Text>
@@ -407,6 +422,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
     pattern?.pullingForce.toString() || '75'
   );
   const [name, setName] = useState(pattern?.name || '');
+  const [position, setPosition] = useState<'Top' | 'Bottom' | 'Both'>(pattern?.position || 'Bottom');
   const [strand_3_8, setStrand_3_8] = useState(pattern?.strand_3_8.toString() || '0');
   const [strand_1_2, setStrand_1_2] = useState(pattern?.strand_1_2.toString() || '0');
   const [strand_0_6, setStrand_0_6] = useState(pattern?.strand_0_6.toString() || '0');
@@ -510,6 +526,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
     onSave({
       patternId,
       name: name.trim(),
+      position,
       strand_3_8: count_3_8,
       strand_1_2: count_1_2,
       strand_0_6: count_0_6,
@@ -591,6 +608,60 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 value={name}
                 onChangeText={setName}
               />
+            </View>
+
+            {/* Position Selector */}
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Strand Position
+              </Text>
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={() => setPosition('Bottom')}
+                  className={`flex-1 rounded-xl py-3 items-center border-2 ${
+                    position === 'Bottom' 
+                      ? 'bg-green-50 border-green-500' 
+                      : 'bg-white border-gray-300'
+                  }`}
+                >
+                  <Text className={`font-semibold ${
+                    position === 'Bottom' ? 'text-green-700' : 'text-gray-600'
+                  }`}>
+                    Bottom
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPosition('Top')}
+                  className={`flex-1 rounded-xl py-3 items-center border-2 ${
+                    position === 'Top' 
+                      ? 'bg-blue-50 border-blue-500' 
+                      : 'bg-white border-gray-300'
+                  }`}
+                >
+                  <Text className={`font-semibold ${
+                    position === 'Top' ? 'text-blue-700' : 'text-gray-600'
+                  }`}>
+                    Top
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPosition('Both')}
+                  className={`flex-1 rounded-xl py-3 items-center border-2 ${
+                    position === 'Both' 
+                      ? 'bg-purple-50 border-purple-500' 
+                      : 'bg-white border-gray-300'
+                  }`}
+                >
+                  <Text className={`font-semibold ${
+                    position === 'Both' ? 'text-purple-700' : 'text-gray-600'
+                  }`}>
+                    Both
+                  </Text>
+                </Pressable>
+              </View>
+              <Text className="text-xs text-gray-500 mt-1">
+                Select where these strands are positioned in the member
+              </Text>
             </View>
 
             {/* Strand Counts */}
