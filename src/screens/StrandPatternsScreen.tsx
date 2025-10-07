@@ -258,7 +258,7 @@ export default function StrandPatternsScreen() {
                   Pattern ID: [2-3 digit number]-[2 digit pulling force %]{'\n'}
                   Example: 101-75 (Pattern 101, 75% pulling force){'\n\n'}
                   e Value = Section centroid - Strand height from bottom{'\n'}
-                  Example: 12" plank (6" centroid) - 2.125" = 3.875"{'\n\n'}
+                  Example: 6" centroid - 2.125" strand height = 3.875" e value{'\n\n'}
                   Desktop Transfer: Use Copy Text on phone, paste into text editor on PC, edit, copy from PC, then use Paste Text on phone
                 </Text>
               </View>
@@ -426,7 +426,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [strand_3_8, setStrand_3_8] = useState(pattern?.strand_3_8.toString() || '0');
   const [strand_1_2, setStrand_1_2] = useState(pattern?.strand_1_2.toString() || '0');
   const [strand_0_6, setStrand_0_6] = useState(pattern?.strand_0_6.toString() || '0');
-  const [plankThickness, setPlankThickness] = useState('');
+  const [centroid, setCentroid] = useState('');
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
   const [errors, setErrors] = useState<string[]>([]);
@@ -448,22 +448,21 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
     return parseFloat(input) || 0;
   };
 
-  // Auto-calculate e value when plank thickness or strand height changes
+  // Auto-calculate e value when centroid or strand height changes
   const calculateEValue = () => {
-    const thickness = parseFractionOrDecimal(plankThickness);
+    const centroidValue = parseFractionOrDecimal(centroid);
     const height = parseFractionOrDecimal(strandHeight);
     
-    if (thickness > 0 && height > 0) {
-      const centroid = thickness / 2;
-      const e = centroid - height;
+    if (centroidValue > 0 && height > 0) {
+      const e = centroidValue - height;
       setEValue(e.toFixed(3));
     }
   };
 
-  // Update e value whenever plank thickness or strand height changes
+  // Update e value whenever centroid or strand height changes
   React.useEffect(() => {
     calculateEValue();
-  }, [plankThickness, strandHeight]);
+  }, [centroid, strandHeight]);
 
   const STRAND_AREAS = {
     '3/8': 0.085,
@@ -709,20 +708,20 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
               </View>
             </View>
 
-            {/* Plank Thickness */}
+            {/* Centroid */}
             <View className="mb-4">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Plank Thickness (inches)
+                Section Centroid (inches from bottom)
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                Enter as decimal or fraction (e.g., 12 or 11 7/8)
+                Enter as decimal or fraction (e.g., 6 or 5 7/8)
               </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-                placeholder="e.g., 12 or 11 7/8"
+                placeholder="e.g., 6 or 5 7/8"
                 placeholderTextColor="#9CA3AF"
-                value={plankThickness}
-                onChangeText={setPlankThickness}
+                value={centroid}
+                onChangeText={setCentroid}
               />
             </View>
 
@@ -749,7 +748,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 e Value (inches) - Auto-calculated
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                Calculated as: (Plank thickness ÷ 2) - Strand height{'\n'}
+                Calculated as: Centroid - Strand height{'\n'}
                 Or enter manually
               </Text>
               <TextInput
