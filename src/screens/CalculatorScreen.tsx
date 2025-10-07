@@ -397,7 +397,7 @@ export default function CalculatorScreen() {
                     </Text>
                   ))}
                   <Text className="text-xs text-blue-800 mt-1">
-                    • e value: {getStrandPattern(strandPattern)?.eValue}" from bottom
+                    • e value: {getStrandPattern(strandPattern)?.eValue}"
                   </Text>
                   <Text className="text-xs text-blue-800">
                     • Total area: {getStrandPattern(strandPattern)?.totalArea.toFixed(3)} in²
@@ -444,7 +444,7 @@ export default function CalculatorScreen() {
               </Text>
             </Pressable>
 
-            {/* Info Section */}
+            {/* Info Section - About Camber */}
             <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6">
               <View className="flex-row items-start">
                 <Ionicons name="information-circle" size={20} color="#3B82F6" />
@@ -458,6 +458,30 @@ export default function CalculatorScreen() {
                     pleasing straight lines.
                   </Text>
                 </View>
+              </View>
+            </View>
+
+            {/* Camber Formula Reference */}
+            <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-3 mb-6">
+              <View className="flex-row items-start mb-2">
+                <Ionicons name="calculator" size={20} color="#6B7280" />
+                <Text className="text-sm font-semibold text-gray-900 ml-2">
+                  Camber Formula
+                </Text>
+              </View>
+              <View className="ml-7">
+                <Text className="text-xs text-gray-700 font-mono mb-2">
+                  δ = (5 × w × L⁴) / (384 × E × I)
+                </Text>
+                <Text className="text-xs text-gray-600 mb-1">Where:</Text>
+                <Text className="text-xs text-gray-600">• δ = Deflection (inches)</Text>
+                <Text className="text-xs text-gray-600">• w = Load (lb/in)</Text>
+                <Text className="text-xs text-gray-600">• L = Span (inches)</Text>
+                <Text className="text-xs text-gray-600">• E = Modulus of Elasticity (psi)</Text>
+                <Text className="text-xs text-gray-600">• I = Moment of Inertia (in⁴)</Text>
+                <Text className="text-xs text-gray-600 mt-2">
+                  Long-term deflection includes creep and shrinkage effects.
+                </Text>
               </View>
             </View>
           </View>
@@ -529,7 +553,7 @@ export default function CalculatorScreen() {
                         <Text className={`text-xs mt-1 ${
                           strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
                         }`}>
-                          • e value: {pattern.eValue}" from bottom
+                          • e value: {pattern.eValue}"
                         </Text>
                         <Text className={`text-xs ${
                           strandPattern === pattern.id ? 'text-blue-700' : 'text-gray-600'
@@ -601,7 +625,7 @@ export default function CalculatorScreen() {
                           <Text className={`text-xs mt-1 ${
                             strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
                           }`}>
-                            • e value: {pattern.eValue}" from bottom
+                            • e value: {pattern.eValue}"
                           </Text>
                           <Text className={`text-xs ${
                             strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'

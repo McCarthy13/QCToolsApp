@@ -68,11 +68,13 @@ export default function StrandPatternsScreen() {
               <Ionicons name="information-circle" size={20} color="#3B82F6" />
               <View className="flex-1 ml-2">
                 <Text className="text-sm text-blue-900 font-semibold mb-1">
-                  Pattern Format
+                  Pattern Format & e Value
                 </Text>
                 <Text className="text-sm text-blue-800">
                   Pattern ID: [2-3 digit number]-[2 digit pulling force %]{'\n'}
-                  Example: 101-75 (Pattern 101, 75% pulling force)
+                  Example: 101-75 (Pattern 101, 75% pulling force){'\n\n'}
+                  e Value = Section centroid - Strand height from bottom{'\n'}
+                  Example: 12" plank (6" centroid) - 2.125" = 3.875"
                 </Text>
               </View>
             </View>
@@ -421,11 +423,12 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 e Value (inches)
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                Distance from bottom of plank to center of strand
+                Centroid of cross section minus height from bottom to strand center{'\n'}
+                Example: 12" plank (6" centroid) - 2.125" strand = 3.875" e value
               </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-                placeholder="e.g., 2.5"
+                placeholder="e.g., 3.875"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="decimal-pad"
                 value={eValue}
