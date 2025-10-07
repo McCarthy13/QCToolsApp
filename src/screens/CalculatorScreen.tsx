@@ -30,6 +30,9 @@ const memberTypes = [
   { value: 'double-tee', label: 'Double Tee' },
   { value: 'hollow-core', label: 'Hollow Core' },
   { value: 'single-tee', label: 'Single Tee' },
+  { value: 'solid-slab', label: 'Solid Slab' },
+  { value: 'wall-panel', label: 'Wall Panel' },
+  { value: 'stadia', label: 'Stadia' },
 ] as const;
 
 const calculationMethods = [
@@ -50,7 +53,7 @@ export default function CalculatorScreen() {
   const [memberType, setMemberType] = useState(currentInputs.memberType || 'double-tee');
   const [releaseStrength, setReleaseStrength] = useState('3500');
   const [concreteStrength, setConcreteStrength] = useState(
-    currentInputs.concreteStrength?.toString() || '5000'
+    currentInputs.concreteStrength?.toString() || '9000'
   );
   const [momentOfInertia, setMomentOfInertia] = useState(
     currentInputs.momentOfInertia?.toString() || ''
@@ -290,7 +293,7 @@ export default function CalculatorScreen() {
               </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 5000"
+                placeholder="e.g., 9000"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="numeric"
                 value={concreteStrength}

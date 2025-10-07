@@ -24,7 +24,7 @@ interface CalculatorState {
 const defaultInputs: Partial<CamberInputs> = {
   memberType: 'double-tee',
   releaseStrength: 3500,
-  concreteStrength: 5000,
+  concreteStrength: 9000,
   calculationMethod: 'pci',
 };
 

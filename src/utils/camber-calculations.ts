@@ -7,7 +7,7 @@
 
 export interface CamberInputs {
   span: number; // Length in feet
-  memberType: 'beam' | 'double-tee' | 'hollow-core' | 'single-tee';
+  memberType: 'beam' | 'double-tee' | 'hollow-core' | 'single-tee' | 'solid-slab' | 'wall-panel' | 'stadia';
   releaseStrength: number; // f'ci in psi (strength at release)
   concreteStrength: number; // f'c in psi (28-day strength)
   modulusOfElasticity?: number; // Ec in psi (optional, can be calculated)
@@ -71,6 +71,9 @@ export function getCreepFactor(memberType: string): number {
     'double-tee': 2.0,
     'hollow-core': 1.8,
     'single-tee': 2.0,
+    'solid-slab': 2.2,
+    'wall-panel': 1.5,
+    'stadia': 2.0,
   };
   
   return creepFactors[memberType] || 2.0;
@@ -85,6 +88,9 @@ export function getShrinkageFactor(memberType: string): number {
     'double-tee': 0.2,
     'hollow-core': 0.15,
     'single-tee': 0.2,
+    'solid-slab': 0.25,
+    'wall-panel': 0.15,
+    'stadia': 0.2,
   };
   
   return shrinkageFactors[memberType] || 0.2;
@@ -249,6 +255,9 @@ export function getTypicalMomentOfInertia(memberType: string, span: number): num
     'double-tee': 15000 * spanFactor,
     'hollow-core': 5000 * spanFactor,
     'single-tee': 12000 * spanFactor,
+    'solid-slab': 6000 * spanFactor,
+    'wall-panel': 4000 * spanFactor,
+    'stadia': 10000 * spanFactor,
   };
   
   return baseValues[memberType] || 10000 * spanFactor;
