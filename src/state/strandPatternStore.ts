@@ -14,6 +14,7 @@ export interface CustomStrandPattern {
   pullingForce: number; // Percentage of break strength (1-99%)
   totalArea: number; // Total strand area in in²
   momentOfInertia: number; // Moment of inertia (in⁴)
+  deadLoad: number; // Dead load (lb/ft)
 }
 
 interface StrandPatternState {
@@ -78,10 +79,14 @@ export const useStrandPatternStore = create<StrandPatternState>()(
       name: 'strand-pattern-storage',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
-        // Filter out patterns that don't have momentOfInertia (old format)
+        // Filter out patterns that don't have momentOfInertia or deadLoad (old format)
         if (state?.customPatterns) {
           state.customPatterns = state.customPatterns.filter(
-            (pattern) => pattern.momentOfInertia !== undefined && pattern.momentOfInertia > 0
+            (pattern) => 
+              pattern.momentOfInertia !== undefined && 
+              pattern.momentOfInertia > 0 &&
+              pattern.deadLoad !== undefined &&
+              pattern.deadLoad > 0
           );
         }
       },

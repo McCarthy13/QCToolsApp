@@ -390,6 +390,12 @@ export default function StrandPatternsScreen() {
                           {pattern.momentOfInertia.toLocaleString()} in⁴
                         </Text>
                       </View>
+                      <View className="bg-gray-50 rounded-lg px-3 py-2">
+                        <Text className="text-xs text-gray-600">Dead Load</Text>
+                        <Text className="text-sm font-semibold text-gray-900">
+                          {pattern.deadLoad.toLocaleString()} lb/ft
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -465,6 +471,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
   const [momentOfInertia, setMomentOfInertia] = useState(pattern?.momentOfInertia.toString() || '');
+  const [deadLoad, setDeadLoad] = useState(pattern?.deadLoad.toString() || '');
   const [errors, setErrors] = useState<string[]>([]);
 
   // Parse fraction or decimal input
@@ -557,6 +564,12 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       validationErrors.push('Moment of inertia must be greater than 0');
     }
 
+    // Validate dead load
+    const dl = parseFloat(deadLoad);
+    if (!deadLoad || isNaN(dl) || dl <= 0) {
+      validationErrors.push('Dead load must be greater than 0');
+    }
+
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
@@ -575,6 +588,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       pullingForce: force,
       totalArea: calculateTotalArea(),
       momentOfInertia: moi,
+      deadLoad: dl,
     });
   };
 
@@ -819,6 +833,24 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 keyboardType="number-pad"
                 value={momentOfInertia}
                 onChangeText={setMomentOfInertia}
+              />
+            </View>
+
+            {/* Dead Load */}
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Dead Load (lb/ft)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Enter the dead load for this member size
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
+                placeholder="e.g., 800"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="decimal-pad"
+                value={deadLoad}
+                onChangeText={setDeadLoad}
               />
             </View>
 

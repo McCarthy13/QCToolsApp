@@ -57,7 +57,6 @@ export default function CalculatorScreen() {
   const [concreteStrength, setConcreteStrength] = useState(
     currentInputs.concreteStrength?.toString() || '9000'
   );
-  const [deadLoad, setDeadLoad] = useState(currentInputs.deadLoad?.toString() || '');
   const [liveLoad, setLiveLoad] = useState(currentInputs.liveLoad?.toString() || '');
   const [calculationMethod, setCalculationMethod] = useState(
     currentInputs.calculationMethod || 'pci'
@@ -100,7 +99,7 @@ export default function CalculatorScreen() {
       releaseStrength: parseFloat(releaseStrength),
       concreteStrength: parseFloat(concreteStrength),
       momentOfInertia: selectedPattern?.momentOfInertia || 0,
-      deadLoad: parseFloat(deadLoad),
+      deadLoad: selectedPattern?.deadLoad || 0,
       liveLoad: liveLoad ? parseFloat(liveLoad) : undefined,
       calculationMethod: calculationMethod as CamberInputs['calculationMethod'],
       strandPattern: strandPattern || undefined,
@@ -298,21 +297,6 @@ export default function CalculatorScreen() {
               />
             </View>
 
-            {/* Dead Load */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Dead Load (lb/ft)
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 500"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                value={deadLoad}
-                onChangeText={setDeadLoad}
-              />
-            </View>
-
             {/* Live Load (Optional) */}
             <View className="mb-5">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
@@ -385,6 +369,9 @@ export default function CalculatorScreen() {
                   </Text>
                   <Text className="text-xs text-purple-800">
                     • Moment of inertia: {customPatterns.find(p => p.id === strandPattern)!.momentOfInertia.toLocaleString()} in⁴
+                  </Text>
+                  <Text className="text-xs text-purple-800">
+                    • Dead load: {customPatterns.find(p => p.id === strandPattern)!.deadLoad.toLocaleString()} lb/ft
                   </Text>
                   <Text className="text-xs text-purple-800">
                     • Pulling force: {customPatterns.find(p => p.id === strandPattern)!.pullingForce}%
@@ -574,6 +561,16 @@ export default function CalculatorScreen() {
                             strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
                           }`}>
                             • e value: {pattern.eValue}"
+                          </Text>
+                          <Text className={`text-xs ${
+                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                          }`}>
+                            • Moment of inertia: {pattern.momentOfInertia.toLocaleString()} in⁴
+                          </Text>
+                          <Text className={`text-xs ${
+                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                          }`}>
+                            • Dead load: {pattern.deadLoad.toLocaleString()} lb/ft
                           </Text>
                           <Text className={`text-xs ${
                             strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
