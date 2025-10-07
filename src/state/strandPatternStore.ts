@@ -13,6 +13,7 @@ export interface CustomStrandPattern {
   eValue: number; // Distance from bottom to center of strand (inches)
   pullingForce: number; // Percentage of break strength (1-99%)
   totalArea: number; // Total strand area in in²
+  momentOfInertia: number; // Moment of inertia (in⁴)
 }
 
 interface StrandPatternState {

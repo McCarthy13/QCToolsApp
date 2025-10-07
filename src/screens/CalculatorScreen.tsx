@@ -17,7 +17,6 @@ import { useCalculatorStore } from '../state/calculatorStore';
 import {
   calculateCamber,
   validateInputs,
-  getTypicalMomentOfInertia,
   CamberInputs,
 } from '../utils/camber-calculations';
 import { useStrandPatternStore } from '../state/strandPatternStore';
@@ -58,9 +57,6 @@ export default function CalculatorScreen() {
   const [concreteStrength, setConcreteStrength] = useState(
     currentInputs.concreteStrength?.toString() || '9000'
   );
-  const [momentOfInertia, setMomentOfInertia] = useState(
-    currentInputs.momentOfInertia?.toString() || ''
-  );
   const [deadLoad, setDeadLoad] = useState(currentInputs.deadLoad?.toString() || '');
   const [liveLoad, setLiveLoad] = useState(currentInputs.liveLoad?.toString() || '');
   const [calculationMethod, setCalculationMethod] = useState(
@@ -92,16 +88,6 @@ export default function CalculatorScreen() {
     return 0;
   };
 
-  const handleEstimateMomentOfInertia = () => {
-    const spanInFeet = getSpanInFeet();
-    if (spanInFeet > 0) {
-      const estimated = getTypicalMomentOfInertia(memberType, spanInFeet);
-      setMomentOfInertia(Math.round(estimated).toString());
-    } else {
-      setErrors(["Please enter span first to estimate moment of inertia"]);
-    }
-  };
-
   const handleCalculate = () => {
     const spanInFeet = getSpanInFeet();
     
@@ -113,7 +99,7 @@ export default function CalculatorScreen() {
       memberType: memberType as CamberInputs['memberType'],
       releaseStrength: parseFloat(releaseStrength),
       concreteStrength: parseFloat(concreteStrength),
-      momentOfInertia: parseFloat(momentOfInertia),
+      momentOfInertia: selectedPattern?.momentOfInertia || 0,
       deadLoad: parseFloat(deadLoad),
       liveLoad: liveLoad ? parseFloat(liveLoad) : undefined,
       calculationMethod: calculationMethod as CamberInputs['calculationMethod'],
@@ -312,32 +298,6 @@ export default function CalculatorScreen() {
               />
             </View>
 
-            {/* Moment of Inertia */}
-            <View className="mb-5">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-sm font-semibold text-gray-700">
-                  Moment of Inertia I (in⁴)
-                </Text>
-                <Pressable
-                  onPress={handleEstimateMomentOfInertia}
-                  className="flex-row items-center"
-                >
-                  <Ionicons name="calculator-outline" size={16} color="#3B82F6" />
-                  <Text className="text-sm font-medium text-blue-500 ml-1">
-                    Estimate
-                  </Text>
-                </Pressable>
-              </View>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 15000"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                value={momentOfInertia}
-                onChangeText={setMomentOfInertia}
-              />
-            </View>
-
             {/* Dead Load */}
             <View className="mb-5">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
@@ -422,6 +382,9 @@ export default function CalculatorScreen() {
                   )}
                   <Text className="text-xs text-purple-800 mt-1">
                     • e value: {customPatterns.find(p => p.id === strandPattern)!.eValue}"
+                  </Text>
+                  <Text className="text-xs text-purple-800">
+                    • Moment of inertia: {customPatterns.find(p => p.id === strandPattern)!.momentOfInertia.toLocaleString()} in⁴
                   </Text>
                   <Text className="text-xs text-purple-800">
                     • Pulling force: {customPatterns.find(p => p.id === strandPattern)!.pullingForce}%

@@ -370,6 +370,12 @@ export default function StrandPatternsScreen() {
                           {pattern.totalArea.toFixed(3)} in²
                         </Text>
                       </View>
+                      <View className="bg-gray-50 rounded-lg px-3 py-2">
+                        <Text className="text-xs text-gray-600">Moment of Inertia</Text>
+                        <Text className="text-sm font-semibold text-gray-900">
+                          {pattern.momentOfInertia.toLocaleString()} in⁴
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -429,6 +435,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [centroid, setCentroid] = useState('');
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
+  const [momentOfInertia, setMomentOfInertia] = useState(pattern?.momentOfInertia.toString() || '');
   const [errors, setErrors] = useState<string[]>([]);
 
   // Parse fraction or decimal input
@@ -515,6 +522,12 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       validationErrors.push('e value must be greater than 0');
     }
 
+    // Validate moment of inertia
+    const moi = parseFloat(momentOfInertia);
+    if (!momentOfInertia || isNaN(moi) || moi <= 0) {
+      validationErrors.push('Moment of inertia must be greater than 0');
+    }
+
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
@@ -532,6 +545,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       eValue: e,
       pullingForce: force,
       totalArea: calculateTotalArea(),
+      momentOfInertia: moi,
     });
   };
 
@@ -758,6 +772,24 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 keyboardType="decimal-pad"
                 value={eValue}
                 onChangeText={setEValue}
+              />
+            </View>
+
+            {/* Moment of Inertia */}
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Moment of Inertia (in⁴)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Enter the moment of inertia for the member cross-section
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
+                placeholder="e.g., 3804"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="number-pad"
+                value={momentOfInertia}
+                onChangeText={setMomentOfInertia}
               />
             </View>
 
