@@ -5,9 +5,14 @@ import {
   ScrollView,
   Pressable,
   TextInput,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { useStrandPatternStore, CustomStrandPattern } from '../state/strandPatternStore';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -34,6 +39,93 @@ export default function StrandPatternsScreen() {
     setDeleteConfirmId(null);
   };
 
+  const handleExportPatterns = async () => {
+    try {
+      const jsonData = JSON.stringify(customPatterns, null, 2);
+      
+      if (Platform.OS === 'web') {
+        // Web: Download as file
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `strand-patterns-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // Mobile: Share file
+        const fileName = `strand-patterns-${new Date().toISOString().split('T')[0]}.json`;
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+        await FileSystem.writeAsStringAsync(fileUri, jsonData);
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri);
+        }
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+    }
+  };
+
+  const handleImportPatterns = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        // Web: File input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = async (e: any) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event: any) => {
+              try {
+                const patterns = JSON.parse(event.target.result);
+                if (Array.isArray(patterns)) {
+                  patterns.forEach((pattern: CustomStrandPattern) => {
+                    // Check if pattern already exists
+                    const exists = customPatterns.find(p => p.id === pattern.id);
+                    if (!exists) {
+                      addPattern(pattern);
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('JSON parse error:', error);
+              }
+            };
+            reader.readAsText(file);
+          }
+        };
+        input.click();
+      } else {
+        // Mobile: Document picker
+        const result = await DocumentPicker.getDocumentAsync({
+          type: 'application/json',
+          copyToCacheDirectory: true,
+        });
+        
+        if (result.canceled === false && result.assets && result.assets.length > 0) {
+          const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+          const patterns = JSON.parse(fileContent);
+          
+          if (Array.isArray(patterns)) {
+            patterns.forEach((pattern: CustomStrandPattern) => {
+              const exists = customPatterns.find(p => p.id === pattern.id);
+              if (!exists) {
+                addPattern(pattern);
+              }
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+    }
+  };
+
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView
@@ -54,13 +146,37 @@ export default function StrandPatternsScreen() {
           {/* Add New Button */}
           <Pressable
             onPress={handleAddPattern}
-            className="bg-blue-500 rounded-xl py-4 items-center mb-5 active:bg-blue-600 flex-row justify-center"
+            className="bg-blue-500 rounded-xl py-4 items-center mb-3 active:bg-blue-600 flex-row justify-center"
           >
             <Ionicons name="add-circle-outline" size={24} color="white" />
             <Text className="text-white text-base font-semibold ml-2">
               Add New Pattern
             </Text>
           </Pressable>
+
+          {/* Import/Export Buttons */}
+          <View className="flex-row gap-3 mb-5">
+            <Pressable
+              onPress={handleImportPatterns}
+              className="flex-1 bg-green-500 rounded-xl py-3 items-center active:bg-green-600 flex-row justify-center"
+            >
+              <Ionicons name="cloud-upload-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold ml-2">
+                Import JSON
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleExportPatterns}
+              className="flex-1 bg-purple-500 rounded-xl py-3 items-center active:bg-purple-600 flex-row justify-center"
+              disabled={customPatterns.length === 0}
+              style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
+            >
+              <Ionicons name="cloud-download-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold ml-2">
+                Export JSON
+              </Text>
+            </Pressable>
+          </View>
 
           {/* Info Box */}
           <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
@@ -74,7 +190,8 @@ export default function StrandPatternsScreen() {
                   Pattern ID: [2-3 digit number]-[2 digit pulling force %]{'\n'}
                   Example: 101-75 (Pattern 101, 75% pulling force){'\n\n'}
                   e Value = Section centroid - Strand height from bottom{'\n'}
-                  Example: 12" plank (6" centroid) - 2.125" = 3.875"
+                  Example: 12" plank (6" centroid) - 2.125" = 3.875"{'\n\n'}
+                  Tip: Use Export/Import to backup or share patterns as JSON files
                 </Text>
               </View>
             </View>
