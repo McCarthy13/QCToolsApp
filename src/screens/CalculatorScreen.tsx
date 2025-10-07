@@ -512,21 +512,23 @@ export default function CalculatorScreen() {
         animationType="slide"
         onRequestClose={() => setShowStrandModal(false)}
       >
-        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View className="bg-white rounded-t-3xl" style={{ maxHeight: '80%' }}>
-            <View className="p-5 border-b border-gray-200">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-xl font-bold text-gray-900">
-                  Select Strand Pattern
-                </Text>
-                <Pressable onPress={() => setShowStrandModal(false)}>
-                  <Ionicons name="close" size={24} color="#6B7280" />
-                </Pressable>
-              </View>
-            </View>
-            
-            <ScrollView className="flex-1">
-              <View className="p-5">
+        <TouchableWithoutFeedback onPress={() => setShowStrandModal(false)}>
+          <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View className="bg-white rounded-t-3xl" style={{ maxHeight: '80%' }}>
+                <View className="p-5 border-b border-gray-200">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-xl font-bold text-gray-900">
+                      Select Strand Pattern
+                    </Text>
+                    <Pressable onPress={() => setShowStrandModal(false)}>
+                      <Ionicons name="close" size={24} color="#6B7280" />
+                    </Pressable>
+                  </View>
+                </View>
+                
+                <ScrollView className="flex-1">
+                  <View className="p-5">
                 {/* Standard Patterns */}
                 <Text className="text-sm font-bold text-gray-900 mb-3">Standard Patterns</Text>
                 {STRAND_PATTERNS.map((pattern) => (
@@ -689,8 +691,10 @@ export default function CalculatorScreen() {
                 )}
               </View>
             </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </KeyboardAvoidingView>
   );
