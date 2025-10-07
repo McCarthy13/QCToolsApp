@@ -1,0 +1,67 @@
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export interface CustomStrandPattern {
+  id: string;
+  patternId: string; // Format: "101-75" (pattern number - pulling force %)
+  name: string;
+  strand_3_8: number; // Count of 3/8" strands
+  strand_1_2: number; // Count of 1/2" strands
+  strand_0_6: number; // Count of 0.6" strands
+  eValue: number; // Distance from bottom to center of strand (inches)
+  pullingForce: number; // Percentage of break strength (1-99%)
+  totalArea: number; // Total strand area in in²
+}
+
+interface StrandPatternState {
+  customPatterns: CustomStrandPattern[];
+  addPattern: (pattern: Omit<CustomStrandPattern, 'id'>) => void;
+  updatePattern: (id: string, pattern: Omit<CustomStrandPattern, 'id'>) => void;
+  removePattern: (id: string) => void;
+  getPatternById: (id: string) => CustomStrandPattern | undefined;
+  getPatternByPatternId: (patternId: string) => CustomStrandPattern | undefined;
+}
+
+export const useStrandPatternStore = create<StrandPatternState>()(
+  persist(
+    (set, get) => ({
+      customPatterns: [],
+      
+      addPattern: (pattern) =>
+        set((state) => ({
+          customPatterns: [
+            ...state.customPatterns,
+            {
+              ...pattern,
+              id: Date.now().toString(),
+            },
+          ],
+        })),
+      
+      updatePattern: (id, pattern) =>
+        set((state) => ({
+          customPatterns: state.customPatterns.map((p) =>
+            p.id === id ? { ...pattern, id } : p
+          ),
+        })),
+      
+      removePattern: (id) =>
+        set((state) => ({
+          customPatterns: state.customPatterns.filter((p) => p.id !== id),
+        })),
+      
+      getPatternById: (id) => {
+        return get().customPatterns.find((p) => p.id === id);
+      },
+      
+      getPatternByPatternId: (patternId) => {
+        return get().customPatterns.find((p) => p.patternId === patternId);
+      },
+    }),
+    {
+      name: 'strand-pattern-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);

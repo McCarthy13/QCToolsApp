@@ -21,6 +21,7 @@ import {
   CamberInputs,
 } from '../utils/camber-calculations';
 import { STRAND_PATTERNS, getStrandPattern } from '../utils/strand-patterns';
+import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -47,6 +48,7 @@ export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { currentInputs, addCalculation } = useCalculatorStore();
+  const { customPatterns } = useStrandPatternStore();
   
   const [projectName, setProjectName] = useState('');
   const [spanFeet, setSpanFeet] = useState('');
@@ -103,7 +105,11 @@ export default function CalculatorScreen() {
 
   const handleCalculate = () => {
     const spanInFeet = getSpanInFeet();
-    const selectedPattern = strandPattern ? getStrandPattern(strandPattern) : undefined;
+    
+    // Get selected pattern (check both standard and custom)
+    const standardPattern = getStrandPattern(strandPattern);
+    const customPattern = customPatterns.find(p => p.id === strandPattern);
+    const selectedPattern = standardPattern || customPattern;
     
     const inputs: Partial<CamberInputs> = {
       span: spanInFeet,
@@ -480,6 +486,8 @@ export default function CalculatorScreen() {
             
             <ScrollView className="flex-1">
               <View className="p-5">
+                {/* Standard Patterns */}
+                <Text className="text-sm font-bold text-gray-900 mb-3">Standard Patterns</Text>
                 {STRAND_PATTERNS.map((pattern) => (
                   <Pressable
                     key={pattern.id}
@@ -532,6 +540,84 @@ export default function CalculatorScreen() {
                     )}
                   </Pressable>
                 ))}
+                
+                {/* Custom Patterns */}
+                {customPatterns.length > 0 && (
+                  <>
+                    <Text className="text-sm font-bold text-gray-900 mb-3 mt-4">Custom Patterns</Text>
+                    {customPatterns.map((pattern) => (
+                      <Pressable
+                        key={pattern.id}
+                        onPress={() => {
+                          setStrandPattern(pattern.id);
+                          setShowStrandModal(false);
+                        }}
+                        className={`mb-3 p-4 rounded-xl border ${
+                          strandPattern === pattern.id
+                            ? 'bg-purple-50 border-purple-500'
+                            : 'bg-white border-gray-300'
+                        }`}
+                      >
+                        <View className="flex-row items-center justify-between mb-2">
+                          <View className="flex-1">
+                            <Text className={`text-base font-semibold ${
+                              strandPattern === pattern.id ? 'text-purple-900' : 'text-gray-900'
+                            }`}>
+                              {pattern.patternId} - {pattern.name}
+                            </Text>
+                          </View>
+                          {strandPattern === pattern.id && (
+                            <Ionicons name="checkmark-circle" size={24} color="#9333EA" />
+                          )}
+                        </View>
+                        
+                        <View className="mt-2">
+                          <Text className={`text-xs font-semibold mb-1 ${
+                            strandPattern === pattern.id ? 'text-purple-800' : 'text-gray-600'
+                          }`}>
+                            Configuration:
+                          </Text>
+                          {pattern.strand_3_8 > 0 && (
+                            <Text className={`text-xs ${
+                              strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                            }`}>
+                              • {pattern.strand_3_8} strands of 3/8" diameter
+                            </Text>
+                          )}
+                          {pattern.strand_1_2 > 0 && (
+                            <Text className={`text-xs ${
+                              strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                            }`}>
+                              • {pattern.strand_1_2} strands of 1/2" diameter
+                            </Text>
+                          )}
+                          {pattern.strand_0_6 > 0 && (
+                            <Text className={`text-xs ${
+                              strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                            }`}>
+                              • {pattern.strand_0_6} strands of 0.6" diameter
+                            </Text>
+                          )}
+                          <Text className={`text-xs mt-1 ${
+                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                          }`}>
+                            • e value: {pattern.eValue}" from bottom
+                          </Text>
+                          <Text className={`text-xs ${
+                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                          }`}>
+                            • Pulling force: {pattern.pullingForce}%
+                          </Text>
+                          <Text className={`text-xs ${
+                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
+                          }`}>
+                            • Total strand area: {pattern.totalArea.toFixed(3)} in²
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </>
+                )}
                 
                 {/* Clear Selection Button */}
                 {strandPattern && (

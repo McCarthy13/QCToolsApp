@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,6 +9,7 @@ import { RootStackParamList } from "./src/navigation/types";
 import CalculatorScreen from "./src/screens/CalculatorScreen";
 import ResultsScreen from "./src/screens/ResultsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
+import StrandPatternsScreen from "./src/screens/StrandPatternsScreen";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -58,12 +59,18 @@ export default function App() {
               options={({ navigation }) => ({
                 title: "Camber Calculator",
                 headerRight: () => (
-                  <Pressable
-                    onPress={() => navigation.navigate('History')}
-                    className="mr-1"
-                  >
-                    <Ionicons name="time-outline" size={24} color="#111827" />
-                  </Pressable>
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable
+                      onPress={() => navigation.navigate('StrandPatterns')}
+                    >
+                      <Ionicons name="albums-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => navigation.navigate('History')}
+                    >
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
                 ),
               })}
             />
@@ -79,6 +86,13 @@ export default function App() {
               component={HistoryScreen}
               options={{
                 title: "History",
+              }}
+            />
+            <Stack.Screen
+              name="StrandPatterns"
+              component={StrandPatternsScreen}
+              options={{
+                title: "Strand Patterns",
               }}
             />
           </Stack.Navigator>
