@@ -14,7 +14,6 @@ export interface CamberInputs {
   momentOfInertia: number; // I in in^4
   deadLoad: number; // Uniform dead load in lb/ft
   liveLoad?: number; // Uniform live load in lb/ft (optional)
-  calculationMethod: 'pci' | 'aci' | 'simple';
   strandPattern?: string; // Strand pattern ID (optional)
   strandEValue?: number; // Distance from bottom to center of strand (optional)
 }
@@ -116,31 +115,16 @@ export function calculateLongTermDeflection(
 
 /**
  * Calculate recommended camber
- * Typically 1.5 to 2.0 times the dead load deflection for good practice
+ * Based on PCI Design Handbook recommendations
+ * Camber should offset approximately 70-80% of long-term deflection
  */
 export function calculateRecommendedCamber(
   deadLoadDeflection: number,
-  longTermDeflection: number,
-  method: string
+  longTermDeflection: number
 ): number {
-  let multiplier = 1.75; // Default multiplier
-  
-  if (method === 'pci') {
-    // PCI recommends camber equal to dead load deflection plus 1/2 live load deflection
-    // For conservatism, use 1.5x to 2.0x dead load deflection
-    multiplier = 1.75;
-  } else if (method === 'aci') {
-    // ACI approach considers long-term effects
-    multiplier = 1.5;
-  } else {
-    // Simple method
-    multiplier = 2.0;
-  }
-  
-  // Consider long-term effects
-  const recommendedCamber = longTermDeflection * 0.7; // Offset 70% of long-term deflection
-  
-  return Math.max(deadLoadDeflection * multiplier, recommendedCamber);
+  // PCI recommends camber to offset 70-80% of long-term deflection
+  // This provides a slight upward camber in service while preventing sag
+  return longTermDeflection * 0.75;
 }
 
 /**
@@ -185,8 +169,7 @@ export function calculateCamber(inputs: CamberInputs): CamberResult {
   // Calculate recommended camber
   const recommendedCamber = calculateRecommendedCamber(
     deadLoadDeflection,
-    longTermDeflection,
-    inputs.calculationMethod
+    longTermDeflection
   );
   
   // Initial camber at release (typically equals recommended camber)

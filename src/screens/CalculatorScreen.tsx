@@ -36,12 +36,6 @@ const memberTypes = [
   { value: 'stadia', label: 'Stadia' },
 ] as const;
 
-const calculationMethods = [
-  { value: 'pci', label: 'PCI Method' },
-  { value: 'aci', label: 'ACI Method' },
-  { value: 'simple', label: 'Simple Method' },
-] as const;
-
 export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
@@ -58,9 +52,6 @@ export default function CalculatorScreen() {
     currentInputs.concreteStrength?.toString() || '9000'
   );
   const [liveLoad, setLiveLoad] = useState(currentInputs.liveLoad?.toString() || '');
-  const [calculationMethod, setCalculationMethod] = useState(
-    currentInputs.calculationMethod || 'pci'
-  );
   const [strandPattern, setStrandPattern] = useState<string>('');
   const [showStrandModal, setShowStrandModal] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -101,7 +92,6 @@ export default function CalculatorScreen() {
       momentOfInertia: selectedPattern?.momentOfInertia || 0,
       deadLoad: selectedPattern?.deadLoad || 0,
       liveLoad: liveLoad ? parseFloat(liveLoad) : undefined,
-      calculationMethod: calculationMethod as CamberInputs['calculationMethod'],
       strandPattern: strandPattern || undefined,
       strandEValue: selectedPattern?.eValue,
     };
@@ -383,34 +373,6 @@ export default function CalculatorScreen() {
               )}
             </View>
 
-            {/* Calculation Method */}
-            <View className="mb-6">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Calculation Method
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {calculationMethods.map((method) => (
-                  <Pressable
-                    key={method.value}
-                    onPress={() => setCalculationMethod(method.value)}
-                    className={`px-4 py-3 rounded-xl border ${
-                      calculationMethod === method.value
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'bg-white border-gray-300'
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm font-medium ${
-                        calculationMethod === method.value ? 'text-white' : 'text-gray-700'
-                      }`}
-                    >
-                      {method.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
             {/* Calculate Button */}
             <Pressable
               onPress={handleCalculate}
@@ -421,25 +383,8 @@ export default function CalculatorScreen() {
               </Text>
             </Pressable>
 
-            {/* Info Section - About Camber */}
-            <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6">
-              <View className="flex-row items-start">
-                <Ionicons name="information-circle" size={20} color="#3B82F6" />
-                <View className="flex-1 ml-2">
-                  <Text className="text-sm text-blue-900 font-semibold mb-1">
-                    About Camber
-                  </Text>
-                  <Text className="text-sm text-blue-800">
-                    Camber is the upward deflection built into precast members to
-                    counteract deflection under dead load and provide aesthetically
-                    pleasing straight lines.
-                  </Text>
-                </View>
-              </View>
-            </View>
-
             {/* Camber Formula Reference */}
-            <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-3 mb-6">
+            <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-6 mb-6">
               <View className="flex-row items-start mb-2">
                 <Ionicons name="calculator" size={20} color="#6B7280" />
                 <Text className="text-sm font-semibold text-gray-900 ml-2">

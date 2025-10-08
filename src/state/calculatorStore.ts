@@ -25,7 +25,6 @@ const defaultInputs: Partial<CamberInputs> = {
   memberType: 'double-tee',
   releaseStrength: 3500,
   concreteStrength: 9000,
-  calculationMethod: 'pci',
 };
 
 export const useCalculatorStore = create<CalculatorState>()(
