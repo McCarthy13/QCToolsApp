@@ -213,6 +213,8 @@ export default function ChangePasswordScreen({
                     secureTextEntry={!showNewPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    autoComplete="password-new"
+                    textContentType="newPassword"
                     returnKeyType="next"
                   />
                   <Pressable
@@ -248,6 +250,8 @@ export default function ChangePasswordScreen({
                     secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    autoComplete="password-new"
+                    textContentType="newPassword"
                     onSubmitEditing={handleChangePassword}
                     returnKeyType="go"
                   />

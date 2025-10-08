@@ -108,6 +108,8 @@ export default function LoginScreen({
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
                 returnKeyType="next"
               />
             </View>
@@ -130,6 +132,8 @@ export default function LoginScreen({
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  autoComplete="password"
+                  textContentType="password"
                   onSubmitEditing={handleLogin}
                   returnKeyType="go"
                 />
