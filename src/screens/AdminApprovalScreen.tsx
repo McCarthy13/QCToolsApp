@@ -290,8 +290,7 @@ export default function AdminApprovalScreen({
         cancelText="Cancel"
         onConfirm={confirmDeny}
         onCancel={() => setShowDenyModal(false)}
-        destructive
-        loading={actionLoading}
+        confirmStyle="destructive"
       />
     </View>
   );
