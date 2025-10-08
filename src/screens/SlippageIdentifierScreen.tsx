@@ -62,10 +62,10 @@ export default function SlippageIdentifierScreen() {
     const depthY = depth * 0.5; // sin(30°)
 
     // 8048 Cross-section based on provided image
-    // 6 hollow cores with keyways on top
+    // 6 hollow cores with keyways on sides
     const coreSpacing = plankWidth / 7;
-    const coreRadius = 9;
-    const coreY = plankHeight * 0.55; // Slightly above center
+    const coreRadius = 14; // MUCH larger - cores take up most of the height
+    const coreY = plankHeight * 0.5; // Centered vertically
     
     const cores = Array.from({ length: 6 }, (_, i) => ({
       cx: coreSpacing * (i + 1),
@@ -96,14 +96,14 @@ export default function SlippageIdentifierScreen() {
       const x = startX + offsetX;
       const y = startY + offsetY;
       
-      // Keyway dimensions (on the SIDES, indenting IN)
-      const keywayWidth = 4;
-      const keywayDepth = 2;
-      const keywayFromTop = 8;
+      // Keyway dimensions (on the SIDES, indenting IN) - larger and more rectangular
+      const keywayWidth = 8; // Taller
+      const keywayDepth = 3; // Deeper indent
+      const keywayFromTop = 6;
       
-      // Draft angle - WIDER at bottom, NARROWER at top (taper inward going up)
-      const topInset = 5; // How much narrower at top
-      const lipRadius = 3; // Pronounced rounded lips at bottom corners
+      // Draft angle - WIDER at bottom, NARROWER at top (more subtle taper)
+      const topInset = 2; // Reduced for more subtle draft angle
+      const lipRadius = 4; // More pronounced rounded lips at bottom corners
 
       // Build the outline path with correct draft angle and bottom lips
       let pathData = `M ${x + lipRadius} ${y + plankHeight}`; // Start at bottom left after lip
