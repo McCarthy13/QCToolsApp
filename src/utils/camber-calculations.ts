@@ -16,6 +16,10 @@ export interface CamberInputs {
   liveLoad?: number; // Uniform live load in lb/ft (optional)
   strandPattern?: string; // Strand pattern ID (optional)
   strandEValue?: number; // Distance from bottom to center of strand (optional)
+  topStrandPattern?: string; // Top strand pattern ID (optional)
+  projectNumber?: string; // Project # (optional)
+  markNumber?: string; // Mark # (optional)
+  idNumber?: string; // ID # (optional)
 }
 
 export interface CamberResult {

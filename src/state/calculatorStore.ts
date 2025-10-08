@@ -26,7 +26,7 @@ interface CalculatorState {
 }
 
 const defaultInputs: Partial<CamberInputs> = {
-  memberType: 'double-tee',
+  memberType: 'hollow-core',
   releaseStrength: 3500,
   concreteStrength: 9000,
 };
