@@ -124,6 +124,33 @@ export default function HistoryScreen() {
                         </Text>
                       </View>
                     </View>
+
+                    {calculation.actualMeasuredCamber !== undefined && (
+                      <View className="bg-green-50 rounded-lg px-3 py-2 mt-2">
+                        <View className="flex-row items-center justify-between mb-1">
+                          <Text className="text-xs text-green-700 font-medium">
+                            Actual Measured
+                          </Text>
+                          <Text className="text-sm font-bold text-green-700">
+                            {calculation.actualMeasuredCamber.toFixed(3)} in
+                          </Text>
+                        </View>
+                        {calculation.variance !== undefined && (
+                          <View className="flex-row items-center justify-between">
+                            <Text className="text-xs text-gray-600">
+                              Variance
+                            </Text>
+                            <Text className={`text-xs font-semibold ${
+                              Math.abs(calculation.variance) < 0.0625 
+                                ? 'text-green-600' 
+                                : 'text-orange-600'
+                            }`}>
+                              {calculation.variance >= 0 ? '+' : ''}{calculation.variance.toFixed(3)}"
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
                   </View>
 
                   <View className="flex-row items-center justify-end mt-3">

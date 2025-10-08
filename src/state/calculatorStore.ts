@@ -9,12 +9,16 @@ export interface CalculationRecord {
   inputs: CamberInputs;
   results: CamberResult;
   projectName?: string;
+  actualMeasuredCamber?: number;  // Actual measured camber from field
+  variance?: number;               // Actual - Recommended
+  measurementDate?: number;        // When it was measured
 }
 
 interface CalculatorState {
   history: CalculationRecord[];
   currentInputs: Partial<CamberInputs>;
   addCalculation: (record: CalculationRecord) => void;
+  updateCalculation: (id: string, updates: Partial<CalculationRecord>) => void;
   removeCalculation: (id: string) => void;
   clearHistory: () => void;
   updateCurrentInputs: (inputs: Partial<CamberInputs>) => void;
@@ -36,6 +40,13 @@ export const useCalculatorStore = create<CalculatorState>()(
       addCalculation: (record) =>
         set((state) => ({
           history: [record, ...state.history].slice(0, 50), // Keep last 50 calculations
+        })),
+      
+      updateCalculation: (id, updates) =>
+        set((state) => ({
+          history: state.history.map((calc) =>
+            calc.id === id ? { ...calc, ...updates } : calc
+          ),
         })),
       
       removeCalculation: (id) =>
