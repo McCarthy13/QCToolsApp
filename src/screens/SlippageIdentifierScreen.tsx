@@ -100,21 +100,47 @@ export default function SlippageIdentifierScreen() {
       const keywayWidth = 4;
       const keywayDepth = 2;
       const keywayFromTop = 8;
+      
+      // Draft angle - sides slope outward going up
+      const bottomInset = 3; // How much narrower at bottom
+      const cornerRadius = 2; // Rounded bottom corners
 
-      // Build the outline path - simple rectangle with side keyways INDENTING IN
-      let pathData = `M ${x} ${y + plankHeight}`; // Start at bottom left
-      pathData += ` L ${x} ${y + keywayFromTop + keywayWidth}`; // Up left side to below keyway
-      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop + keywayWidth}`; // INTO left keyway (moving RIGHT)
-      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop}`; // Up in keyway
-      pathData += ` L ${x} ${y + keywayFromTop}`; // Back out of keyway (moving LEFT)
-      pathData += ` L ${x} ${y}`; // Continue up to top left corner
-      pathData += ` L ${x + plankWidth} ${y}`; // Across the top (FLAT)
-      pathData += ` L ${x + plankWidth} ${y + keywayFromTop}`; // Down right side to keyway
-      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop}`; // INTO right keyway (moving LEFT)
-      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop + keywayWidth}`; // Down in keyway
-      pathData += ` L ${x + plankWidth} ${y + keywayFromTop + keywayWidth}`; // Back out (moving RIGHT)
-      pathData += ` L ${x + plankWidth} ${y + plankHeight}`; // Continue down to bottom right
-      pathData += ` Z`; // Close path back to bottom left
+      // Build the outline path with draft angle and rounded corners
+      let pathData = `M ${x + bottomInset + cornerRadius} ${y + plankHeight}`; // Start at bottom left after corner
+      
+      // Bottom left corner (rounded)
+      pathData += ` Q ${x + bottomInset} ${y + plankHeight} ${x + bottomInset} ${y + plankHeight - cornerRadius}`;
+      
+      // Up left side with draft angle to below keyway
+      pathData += ` L ${x} ${y + keywayFromTop + keywayWidth}`;
+      
+      // Left keyway (indent IN)
+      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop}`;
+      pathData += ` L ${x} ${y + keywayFromTop}`;
+      
+      // Continue up to top left corner
+      pathData += ` L ${x} ${y}`;
+      
+      // Across the top (FLAT)
+      pathData += ` L ${x + plankWidth} ${y}`;
+      
+      // Down right side to keyway
+      pathData += ` L ${x + plankWidth} ${y + keywayFromTop}`;
+      
+      // Right keyway (indent IN)
+      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop}`;
+      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      pathData += ` L ${x + plankWidth} ${y + keywayFromTop + keywayWidth}`;
+      
+      // Down right side with draft angle
+      pathData += ` L ${x + plankWidth - bottomInset} ${y + plankHeight - cornerRadius}`;
+      
+      // Bottom right corner (rounded)
+      pathData += ` Q ${x + plankWidth - bottomInset} ${y + plankHeight} ${x + plankWidth - bottomInset - cornerRadius} ${y + plankHeight}`;
+      
+      // Bottom edge
+      pathData += ` Z`; // Close path
 
       return (
         <React.Fragment>
