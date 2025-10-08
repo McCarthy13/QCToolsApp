@@ -87,3 +87,37 @@ export function parseMeasurementInput(input: string): number | null {
 
   return null;
 }
+
+/**
+ * Convert decimal feet to formatted span display
+ * @param decimalFeet - span in decimal feet (e.g., 40.583)
+ * @returns formatted string like "40'-7" (40.583 ft)"
+ */
+export function formatSpanDisplay(decimalFeet: number): string {
+  const feet = Math.floor(decimalFeet);
+  const remainingInches = (decimalFeet - feet) * 12;
+  let wholeInches = Math.floor(remainingInches);
+  const fractionalInches = remainingInches - wholeInches;
+  
+  // Round to nearest 1/16
+  let sixteenths = Math.round(fractionalInches * 16);
+  
+  // Handle rounding up to next inch
+  if (sixteenths === 16) {
+    wholeInches += 1;
+    sixteenths = 0;
+  }
+  
+  let inchDisplay = '';
+  if (wholeInches > 0 && sixteenths > 0) {
+    inchDisplay = `${wholeInches} ${sixteenths}/16"`;
+  } else if (wholeInches > 0) {
+    inchDisplay = `${wholeInches}"`;
+  } else if (sixteenths > 0) {
+    inchDisplay = `${sixteenths}/16"`;
+  } else {
+    inchDisplay = `0"`;
+  }
+  
+  return `${feet}'-${inchDisplay} (${decimalFeet.toFixed(3)} ft)`;
+}

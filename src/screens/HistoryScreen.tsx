@@ -8,6 +8,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useCalculatorStore } from '../state/calculatorStore';
 import { format } from 'date-fns';
 import ConfirmModal from '../components/ConfirmModal';
+import { formatInchesWithFraction, formatSpanDisplay, decimalToFraction } from '../utils/cn';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'History'>;
 
@@ -89,6 +90,31 @@ export default function HistoryScreen() {
                       <Text className="text-base font-semibold text-gray-900 mb-1">
                         {calculation.projectName || 'Unnamed Project'}
                       </Text>
+                      {(calculation.inputs.projectNumber || calculation.inputs.markNumber || calculation.inputs.idNumber) && (
+                        <View className="flex-row flex-wrap gap-2 mb-1">
+                          {calculation.inputs.projectNumber && (
+                            <View className="bg-gray-100 px-2 py-0.5 rounded">
+                              <Text className="text-xs text-gray-700">
+                                Proj: {calculation.inputs.projectNumber}
+                              </Text>
+                            </View>
+                          )}
+                          {calculation.inputs.markNumber && (
+                            <View className="bg-gray-100 px-2 py-0.5 rounded">
+                              <Text className="text-xs text-gray-700">
+                                Mark: {calculation.inputs.markNumber}
+                              </Text>
+                            </View>
+                          )}
+                          {calculation.inputs.idNumber && (
+                            <View className="bg-gray-100 px-2 py-0.5 rounded">
+                              <Text className="text-xs text-gray-700">
+                                ID: {calculation.inputs.idNumber}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
                       <Text className="text-xs text-gray-500">
                         {format(new Date(calculation.timestamp), 'MMM dd, yyyy • h:mm a')}
                       </Text>
@@ -110,17 +136,17 @@ export default function HistoryScreen() {
                         </Text>
                       </View>
                       <Text className="text-sm text-gray-600">
-                        {calculation.inputs.span} ft span
+                        {formatSpanDisplay(calculation.inputs.span)}
                       </Text>
                     </View>
 
                     <View className="bg-blue-50 rounded-lg px-3 py-2 mt-2">
                       <View className="flex-row items-center justify-between">
                         <Text className="text-xs text-blue-700 font-medium">
-                          Recommended Camber
+                          Calculated Camber at Release
                         </Text>
                         <Text className="text-base font-bold text-blue-700">
-                          {calculation.results.recommendedCamber.toFixed(3)} in
+                          {formatInchesWithFraction(calculation.results.netInitialCamber)}
                         </Text>
                       </View>
                     </View>
@@ -129,10 +155,10 @@ export default function HistoryScreen() {
                       <View className="bg-green-50 rounded-lg px-3 py-2 mt-2">
                         <View className="flex-row items-center justify-between mb-1">
                           <Text className="text-xs text-green-700 font-medium">
-                            Actual Measured
+                            Measured Camber
                           </Text>
                           <Text className="text-sm font-bold text-green-700">
-                            {calculation.actualMeasuredCamber.toFixed(3)} in
+                            {formatInchesWithFraction(calculation.actualMeasuredCamber)}
                           </Text>
                         </View>
                         {calculation.variance !== undefined && (
@@ -145,7 +171,7 @@ export default function HistoryScreen() {
                                 ? 'text-green-600' 
                                 : 'text-orange-600'
                             }`}>
-                              {calculation.variance >= 0 ? '+' : ''}{calculation.variance.toFixed(3)}"
+                              {calculation.variance >= 0 ? '+' : ''}{calculation.variance.toFixed(3)}" (≈{calculation.variance >= 0 ? '+' : ''}{decimalToFraction(Math.abs(calculation.variance))})
                             </Text>
                           </View>
                         )}
