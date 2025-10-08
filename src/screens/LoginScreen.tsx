@@ -44,15 +44,15 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       >
         {/* Logo/Icon */}
         <View className="bg-white rounded-full p-6 mb-8 shadow-lg">
-          <Ionicons name="calculator" size={64} color="#3B82F6" />
+          <Ionicons name="construct" size={64} color="#3B82F6" />
         </View>
 
         {/* Title */}
         <Text className="text-white text-4xl font-bold mb-2 text-center">
-          Camber Calculator
+          Precast Quality Tools
         </Text>
         <Text className="text-blue-100 text-base mb-12 text-center">
-          Company Internal Tool
+          Company Internal Tools
         </Text>
 
         {/* Login Card */}

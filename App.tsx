@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "./src/navigation/types";
+import DashboardScreen from "./src/screens/DashboardScreen";
 import CalculatorScreen from "./src/screens/CalculatorScreen";
 import ResultsScreen from "./src/screens/ResultsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
@@ -92,7 +93,7 @@ export default function App() {
       <SafeAreaProvider>
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName="Calculator"
+            initialRouteName="Dashboard"
             screenOptions={{
               headerStyle: {
                 backgroundColor: '#FFFFFF',
@@ -104,6 +105,14 @@ export default function App() {
               headerShadowVisible: false,
             }}
           >
+            <Stack.Screen
+              name="Dashboard"
+              component={DashboardScreen}
+              options={{
+                title: "Precast Quality Tools",
+                headerShown: true,
+              }}
+            />
             <Stack.Screen
               name="Calculator"
               component={CalculatorScreen}
