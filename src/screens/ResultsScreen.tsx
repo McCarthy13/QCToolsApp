@@ -417,20 +417,26 @@ interface CamberDiagramProps {
 
 function CamberDiagram({ calculation }: CamberDiagramProps) {
   const width = 320;
-  const height = 180;
+  const height = 200;
   const padding = 20;
   const beamLength = width - 2 * padding;
   const centerY = height / 2;
 
   const { netInitialCamber, finalCamber } = calculation.results;
+  const { actualMeasuredCamber } = calculation;
   
-  // Scale factor for visual representation
-  const maxDeflection = Math.max(Math.abs(netInitialCamber), Math.abs(finalCamber));
+  // Scale factor for visual representation - include measured camber in scale calculation
+  const maxDeflection = Math.max(
+    Math.abs(netInitialCamber), 
+    Math.abs(finalCamber),
+    actualMeasuredCamber ? Math.abs(actualMeasuredCamber) : 0
+  );
   const scale = maxDeflection > 0 ? 30 / maxDeflection : 1;
 
   // Calculate y positions (negative is up)
   const initialCamberY = centerY - (netInitialCamber * scale);
   const finalCamberY = centerY - (finalCamber * scale);
+  const measuredCamberY = actualMeasuredCamber ? centerY - (actualMeasuredCamber * scale) : null;
 
   // Create curved path for camber using quadratic bezier
   const createCamberPath = (camberY: number) => {
@@ -452,13 +458,23 @@ function CamberDiagram({ calculation }: CamberDiagramProps) {
           strokeDasharray="4,4"
         />
 
-        {/* Initial camber (upward curve) */}
+        {/* Calculated camber curve (blue solid line) */}
         <Path
           d={createCamberPath(initialCamberY)}
           stroke="#3B82F6"
           strokeWidth="2"
           fill="none"
         />
+
+        {/* Measured camber curve (orange solid line) - if available */}
+        {measuredCamberY !== null && (
+          <Path
+            d={createCamberPath(measuredCamberY)}
+            stroke="#F97316"
+            strokeWidth="2"
+            fill="none"
+          />
+        )}
 
         {/* Final camber (slight upward curve) */}
         {finalCamber > 0 && (
@@ -475,7 +491,7 @@ function CamberDiagram({ calculation }: CamberDiagramProps) {
         <Circle cx={padding} cy={centerY} r="4" fill="#6B7280" />
         <Circle cx={padding + beamLength} cy={centerY} r="4" fill="#6B7280" />
 
-        {/* Dimension arrows and labels */}
+        {/* Dimension line and label for calculated camber */}
         <Line
           x1={padding + beamLength / 2}
           y1={centerY}
@@ -485,14 +501,53 @@ function CamberDiagram({ calculation }: CamberDiagramProps) {
           strokeWidth="1"
         />
         <Circle cx={padding + beamLength / 2} cy={initialCamberY} r="3" fill="#3B82F6" />
+
+        {/* Dimension line and label for measured camber - if available */}
+        {measuredCamberY !== null && (
+          <>
+            <Line
+              x1={padding + beamLength / 2 + 40}
+              y1={centerY}
+              x2={padding + beamLength / 2 + 40}
+              y2={measuredCamberY}
+              stroke="#F97316"
+              strokeWidth="1"
+            />
+            <Circle cx={padding + beamLength / 2 + 40} cy={measuredCamberY} r="3" fill="#F97316" />
+          </>
+        )}
       </Svg>
 
+      {/* Value labels below the SVG */}
+      <View className="flex-row justify-center gap-4 mt-2 mb-2">
+        <View className="items-center">
+          <Text className="text-xs font-semibold text-blue-600">
+            {netInitialCamber.toFixed(3)}"
+          </Text>
+          <Text className="text-xs text-gray-500">Calculated</Text>
+        </View>
+        {actualMeasuredCamber !== undefined && (
+          <View className="items-center">
+            <Text className="text-xs font-semibold text-orange-600">
+              {actualMeasuredCamber.toFixed(3)}"
+            </Text>
+            <Text className="text-xs text-gray-500">Measured</Text>
+          </View>
+        )}
+      </View>
+
       {/* Legend */}
-      <View className="mt-4 space-y-2">
+      <View className="mt-2 space-y-2">
         <View className="flex-row items-center">
           <View className="w-8 h-0.5 bg-blue-500 mr-2" />
-          <Text className="text-xs text-gray-600">Measured at release (after dead load)</Text>
+          <Text className="text-xs text-gray-600">Calculated camber at release</Text>
         </View>
+        {actualMeasuredCamber !== undefined && (
+          <View className="flex-row items-center">
+            <View className="w-8 h-0.5 bg-orange-500 mr-2" />
+            <Text className="text-xs text-gray-600">Measured camber at release</Text>
+          </View>
+        )}
         {finalCamber > 0 && (
           <View className="flex-row items-center">
             <View className="w-8 border-b border-dashed border-green-500 mr-2" />
