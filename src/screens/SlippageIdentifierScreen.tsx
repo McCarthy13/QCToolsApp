@@ -74,28 +74,33 @@ export default function SlippageIdentifierScreen() {
       cy: coreY,
     }));
 
-    // Helper function to draw a "head-shaped" core (wider at top, narrower at bottom)
+    // Helper function to draw a core shape: rounded top, straight sides, flat bottom
     const drawHeadShapedCore = (cx: number, cy: number) => {
-      const topRadius = coreWidth / 2; // Wider at top
-      const bottomRadius = coreWidth / 3.5; // Much narrower at bottom
+      const width = coreWidth / 2; // Half width for left/right
       const halfHeight = coreHeight / 2;
+      const topRadius = width; // Radius for the rounded top
+      const bottomCornerRadius = 1; // Small radius for bottom corners
       
-      // Start at top center, draw clockwise
-      let corePath = `M ${cx} ${cy - halfHeight}`; // Top point
+      // Start at bottom left corner
+      let corePath = `M ${cx - width + bottomCornerRadius} ${cy + halfHeight}`;
       
-      // Top right curve (rounded top like head)
-      corePath += ` C ${cx + topRadius} ${cy - halfHeight} ${cx + topRadius} ${cy - halfHeight * 0.5} ${cx + topRadius * 0.8} ${cy}`;
+      // Bottom left corner (small radius)
+      corePath += ` Q ${cx - width} ${cy + halfHeight} ${cx - width} ${cy + halfHeight - bottomCornerRadius}`;
       
-      // Right side tapering down to chin
-      corePath += ` C ${cx + topRadius * 0.6} ${cy + halfHeight * 0.5} ${cx + bottomRadius} ${cy + halfHeight * 0.8} ${cx} ${cy + halfHeight}`;
+      // Straight up left side
+      corePath += ` L ${cx - width} ${cy - halfHeight + topRadius}`;
       
-      // Bottom point (chin)
+      // Rounded top (arc from left to right)
+      corePath += ` A ${topRadius} ${topRadius} 0 0 1 ${cx + width} ${cy - halfHeight + topRadius}`;
       
-      // Left side tapering up from chin
-      corePath += ` C ${cx - bottomRadius} ${cy + halfHeight * 0.8} ${cx - topRadius * 0.6} ${cy + halfHeight * 0.5} ${cx - topRadius * 0.8} ${cy}`;
+      // Straight down right side
+      corePath += ` L ${cx + width} ${cy + halfHeight - bottomCornerRadius}`;
       
-      // Top left curve (rounded top like head)
-      corePath += ` C ${cx - topRadius} ${cy - halfHeight * 0.5} ${cx - topRadius} ${cy - halfHeight} ${cx} ${cy - halfHeight}`;
+      // Bottom right corner (small radius)
+      corePath += ` Q ${cx + width} ${cy + halfHeight} ${cx + width - bottomCornerRadius} ${cy + halfHeight}`;
+      
+      // Bottom edge (flat)
+      corePath += ` L ${cx - width + bottomCornerRadius} ${cy + halfHeight}`;
       
       corePath += ` Z`;
       
