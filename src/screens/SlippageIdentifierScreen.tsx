@@ -43,112 +43,218 @@ export default function SlippageIdentifierScreen() {
     );
   };
 
-  // Generic cross-section: Simple rectangular hollow-core shape with 4 strands
+  // 3D Isometric view of hollow-core plank with strands
   const GenericCrossSection = () => {
-    const width = 300;
-    const height = 200;
-    const padding = 40;
+    const svgWidth = 350;
+    const svgHeight = 280;
 
-    // Strand positions (y-coordinates from top)
-    const strands = [
-      { id: "1", y: 150 }, // Bottom left
-      { id: "2", y: 150 }, // Bottom right  
-      { id: "3", y: 60 }, // Top left
-      { id: "4", y: 60 }, // Top right
+    // Isometric projection parameters
+    const depth = 220; // Length of plank
+    const width = 120; // Width of cross-section
+    const height = 80; // Height of cross-section
+    
+    // Starting position for near face
+    const startX = 50;
+    const startY = 60;
+
+    // Isometric angle offsets
+    const depthX = depth * 0.866; // cos(30°) ≈ 0.866
+    const depthY = depth * 0.5; // sin(30°) ≈ 0.5
+
+    // Define 5 hollow cores (circles) in cross-section
+    const cores = [
+      { cx: 20, cy: 65 },
+      { cx: 40, cy: 65 },
+      { cx: 60, cy: 65 },
+      { cx: 80, cy: 65 },
+      { cx: 100, cy: 65 },
     ];
+    const coreRadius = 8;
+
+    // Define 5 strands matching the cores
+    const strandPositions = cores.map((core, idx) => ({
+      id: String(idx + 1),
+      x: core.cx,
+      y: core.cy,
+    }));
 
     return (
       <View className="items-center my-6">
         <Text className="text-gray-700 text-sm font-semibold mb-4">
-          CROSS-SECTION VIEW (Generic Product)
+          3D VIEW - Generic Hollow Core Plank
         </Text>
-        <View>
-          <Svg width={width + padding * 2} height={height + 40}>
-            {/* Hollow plank outline */}
-            <Rect
-              x={padding}
-              y={20}
-              width={width}
-              height={height}
-              stroke="#1F2937"
-              strokeWidth={3}
-              fill="none"
-            />
+        <Svg width={svgWidth} height={svgHeight}>
+          {/* NEAR FACE (front cross-section) */}
+          {/* Outer rectangle */}
+          <Line
+            x1={startX}
+            y1={startY}
+            x2={startX + width}
+            y2={startY}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+          <Line
+            x1={startX + width}
+            y1={startY}
+            x2={startX + width}
+            y2={startY + height}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+          <Line
+            x1={startX + width}
+            y1={startY + height}
+            x2={startX}
+            y2={startY + height}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+          <Line
+            x1={startX}
+            y1={startY + height}
+            x2={startX}
+            y2={startY}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
 
-            {/* Inner hollow void */}
-            <Rect
-              x={padding + 40}
-              y={50}
-              width={width - 80}
-              height={height - 60}
-              stroke="#1F2937"
+          {/* Hollow cores on near face */}
+          {cores.map((core, idx) => (
+            <Circle
+              key={`near-core-${idx}`}
+              cx={startX + core.cx}
+              cy={startY + core.cy}
+              r={coreRadius}
+              stroke="#2563EB"
               strokeWidth={2}
               fill="none"
             />
-
-            {/* Strands running through (left to right) */}
-            {strands.map((strand) => {
-              const yPosition = strand.y;
-
-              return (
-                <React.Fragment key={strand.id}>
-                  {/* Strand line running through */}
-                  <Line
-                    x1={padding}
-                    y1={yPosition}
-                    x2={padding + width}
-                    y2={yPosition}
-                    stroke="#EF4444"
-                    strokeWidth={3}
-                    strokeDasharray="5,5"
-                  />
-
-                  {/* Left end circle */}
-                  <Circle
-                    cx={padding}
-                    cy={yPosition}
-                    r={6}
-                    fill="#EF4444"
-                    stroke="#991B1B"
-                    strokeWidth={2}
-                  />
-
-                  {/* Right end circle */}
-                  <Circle
-                    cx={padding + width}
-                    cy={yPosition}
-                    r={6}
-                    fill="#EF4444"
-                    stroke="#991B1B"
-                    strokeWidth={2}
-                  />
-                </React.Fragment>
-              );
-            })}
-          </Svg>
-          
-          {/* Strand labels positioned absolutely */}
-          {strands.map((strand) => (
-            <View
-              key={`label-${strand.id}`}
-              style={{
-                position: "absolute",
-                top: strand.y - 18,
-                left: width / 2 + padding - 25,
-              }}
-            >
-              <Text
-                style={{
-                  color: "#EF4444",
-                  fontSize: 11,
-                  fontWeight: "bold",
-                }}
-              >
-                Strand {strand.id}
-              </Text>
-            </View>
           ))}
-        </View>
+
+          {/* FAR FACE (back cross-section) - offset by isometric depth */}
+          {/* Outer rectangle */}
+          <Line
+            x1={startX + depthX}
+            y1={startY - depthY}
+            x2={startX + width + depthX}
+            y2={startY - depthY}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+          <Line
+            x1={startX + width + depthX}
+            y1={startY - depthY}
+            x2={startX + width + depthX}
+            y2={startY + height - depthY}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+          <Line
+            x1={startX + width + depthX}
+            y1={startY + height - depthY}
+            x2={startX + depthX}
+            y2={startY + height - depthY}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+          <Line
+            x1={startX + depthX}
+            y1={startY + height - depthY}
+            x2={startX + depthX}
+            y2={startY - depthY}
+            stroke="#2563EB"
+            strokeWidth={2.5}
+          />
+
+          {/* Hollow cores on far face */}
+          {cores.map((core, idx) => (
+            <Circle
+              key={`far-core-${idx}`}
+              cx={startX + core.cx + depthX}
+              cy={startY + core.cy - depthY}
+              r={coreRadius}
+              stroke="#2563EB"
+              strokeWidth={2}
+              fill="none"
+            />
+          ))}
+
+          {/* CONNECTING EDGES (to show 3D depth) */}
+          {/* Top left corner */}
+          <Line
+            x1={startX}
+            y1={startY}
+            x2={startX + depthX}
+            y2={startY - depthY}
+            stroke="#2563EB"
+            strokeWidth={2}
+            strokeDasharray="4,4"
+          />
+          {/* Top right corner */}
+          <Line
+            x1={startX + width}
+            y1={startY}
+            x2={startX + width + depthX}
+            y2={startY - depthY}
+            stroke="#2563EB"
+            strokeWidth={2}
+            strokeDasharray="4,4"
+          />
+          {/* Bottom right corner */}
+          <Line
+            x1={startX + width}
+            y1={startY + height}
+            x2={startX + width + depthX}
+            y2={startY + height - depthY}
+            stroke="#2563EB"
+            strokeWidth={2}
+            strokeDasharray="4,4"
+          />
+          {/* Bottom left corner */}
+          <Line
+            x1={startX}
+            y1={startY + height}
+            x2={startX + depthX}
+            y2={startY + height - depthY}
+            stroke="#2563EB"
+            strokeWidth={2}
+            strokeDasharray="4,4"
+          />
+
+          {/* STRANDS running through the plank (dashed red lines) */}
+          {strandPositions.map((strand) => (
+            <React.Fragment key={`strand-${strand.id}`}>
+              <Line
+                x1={startX + strand.x}
+                y1={startY + strand.y}
+                x2={startX + strand.x + depthX}
+                y2={startY + strand.y - depthY}
+                stroke="#EF4444"
+                strokeWidth={2.5}
+                strokeDasharray="6,4"
+              />
+              
+              {/* Circles at strand ends for input points */}
+              <Circle
+                cx={startX + strand.x}
+                cy={startY + strand.y}
+                r={5}
+                fill="#EF4444"
+                stroke="#991B1B"
+                strokeWidth={2}
+              />
+              <Circle
+                cx={startX + strand.x + depthX}
+                cy={startY + strand.y - depthY}
+                r={5}
+                fill="#EF4444"
+                stroke="#991B1B"
+                strokeWidth={2}
+              />
+            </React.Fragment>
+          ))}
+        </Svg>
       </View>
     );
   };
