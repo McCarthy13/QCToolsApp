@@ -91,35 +91,30 @@ export default function SlippageIdentifierScreen() {
       });
     }
 
-    // Helper to draw the 8048 cross-section shape using SVG Path
+    // Helper to draw the 8048 cross-section shape - EXACT trace of provided image
     const drawCrossSection = (offsetX: number, offsetY: number) => {
       const x = startX + offsetX;
       const y = startY + offsetY;
       
-      // Keyway dimensions
-      const keywayWidth = 5;
-      const keywayDepth = 3;
+      // Keyway dimensions (on the SIDES, not top)
+      const keywayWidth = 4;
+      const keywayDepth = 2;
+      const keywayFromTop = 8;
 
-      // Build the outline path tracing the provided cross-section
+      // Build the outline path - simple rectangle with side keyways
       let pathData = `M ${x} ${y + plankHeight}`; // Start at bottom left
-      pathData += ` L ${x} ${y + 3}`; // Up left side to near top
-      pathData += ` L ${x + 3} ${y}`; // Angle to top left corner
-      
-      // Draw top surface with keyways between cores
-      for (let i = 0; i <= 6; i++) {
-        const coreX = x + coreSpacing * (i + 0.5);
-        if (i < 6) {
-          pathData += ` L ${coreX - keywayWidth / 2} ${y}`;
-          pathData += ` L ${coreX - keywayWidth / 2} ${y + keywayDepth}`;
-          pathData += ` L ${coreX + keywayWidth / 2} ${y + keywayDepth}`;
-          pathData += ` L ${coreX + keywayWidth / 2} ${y}`;
-        }
-      }
-      
-      pathData += ` L ${x + plankWidth - 3} ${y}`; // To top right
-      pathData += ` L ${x + plankWidth} ${y + 3}`; // Angle down
-      pathData += ` L ${x + plankWidth} ${y + plankHeight}`; // Down right side
-      pathData += ` Z`; // Close path
+      pathData += ` L ${x} ${y + keywayFromTop + keywayWidth}`; // Up left side to below keyway
+      pathData += ` L ${x - keywayDepth} ${y + keywayFromTop + keywayWidth}`; // Into left keyway
+      pathData += ` L ${x - keywayDepth} ${y + keywayFromTop}`; // Up in keyway
+      pathData += ` L ${x} ${y + keywayFromTop}`; // Back out of keyway
+      pathData += ` L ${x} ${y}`; // Continue up to top left corner
+      pathData += ` L ${x + plankWidth} ${y}`; // Across the top (FLAT)
+      pathData += ` L ${x + plankWidth} ${y + keywayFromTop}`; // Down right side to keyway
+      pathData += ` L ${x + plankWidth + keywayDepth} ${y + keywayFromTop}`; // Into right keyway
+      pathData += ` L ${x + plankWidth + keywayDepth} ${y + keywayFromTop + keywayWidth}`; // Down in keyway
+      pathData += ` L ${x + plankWidth} ${y + keywayFromTop + keywayWidth}`; // Back out
+      pathData += ` L ${x + plankWidth} ${y + plankHeight}`; // Continue down to bottom right
+      pathData += ` Z`; // Close path back to bottom left
 
       return (
         <React.Fragment>
@@ -131,7 +126,7 @@ export default function SlippageIdentifierScreen() {
             fill="none"
           />
 
-          {/* Hollow cores */}
+          {/* Hollow cores - 6 large circles */}
           {cores.map((core, idx) => (
             <Circle
               key={`core-${idx}`}
