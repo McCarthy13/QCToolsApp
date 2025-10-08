@@ -76,18 +76,27 @@ export default function SlippageIdentifierScreen() {
 
     // Helper function to draw a "head-shaped" core (wider at top, narrower at bottom)
     const drawHeadShapedCore = (cx: number, cy: number) => {
-      const topWidth = coreWidth / 2;
-      const bottomWidth = coreWidth / 3; // Narrower at bottom like a chin
+      const topRadius = coreWidth / 2; // Wider at top
+      const bottomRadius = coreWidth / 3.5; // Much narrower at bottom
       const halfHeight = coreHeight / 2;
       
-      // Create path for head-shaped core using bezier curves
-      let corePath = `M ${cx} ${cy - halfHeight}`; // Top center
-      // Right side curve (wider at top, narrower at bottom)
-      corePath += ` Q ${cx + topWidth} ${cy - halfHeight * 0.3} ${cx + bottomWidth} ${cy + halfHeight}`;
-      // Bottom curve
-      corePath += ` Q ${cx} ${cy + halfHeight + 2} ${cx - bottomWidth} ${cy + halfHeight}`;
-      // Left side curve
-      corePath += ` Q ${cx - topWidth} ${cy - halfHeight * 0.3} ${cx} ${cy - halfHeight}`;
+      // Start at top center, draw clockwise
+      let corePath = `M ${cx} ${cy - halfHeight}`; // Top point
+      
+      // Top right curve (rounded top like head)
+      corePath += ` C ${cx + topRadius} ${cy - halfHeight} ${cx + topRadius} ${cy - halfHeight * 0.5} ${cx + topRadius * 0.8} ${cy}`;
+      
+      // Right side tapering down to chin
+      corePath += ` C ${cx + topRadius * 0.6} ${cy + halfHeight * 0.5} ${cx + bottomRadius} ${cy + halfHeight * 0.8} ${cx} ${cy + halfHeight}`;
+      
+      // Bottom point (chin)
+      
+      // Left side tapering up from chin
+      corePath += ` C ${cx - bottomRadius} ${cy + halfHeight * 0.8} ${cx - topRadius * 0.6} ${cy + halfHeight * 0.5} ${cx - topRadius * 0.8} ${cy}`;
+      
+      // Top left curve (rounded top like head)
+      corePath += ` C ${cx - topRadius} ${cy - halfHeight * 0.5} ${cx - topRadius} ${cy - halfHeight} ${cx} ${cy - halfHeight}`;
+      
       corePath += ` Z`;
       
       return corePath;
