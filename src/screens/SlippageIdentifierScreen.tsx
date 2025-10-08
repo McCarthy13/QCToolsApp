@@ -9,7 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Rect, Circle, Line } from "react-native-svg";
+import Svg, { Rect, Circle, Line, Path } from "react-native-svg";
 
 interface StrandSlippage {
   strandId: string;
@@ -50,115 +50,85 @@ export default function SlippageIdentifierScreen() {
 
     // Isometric projection parameters
     const depth = 180; // Length of plank
-    const plankWidth = 120; // Width of 8048 (4'-0" scaled)
-    const plankHeight = 48; // Height of 8048 (8" scaled to 48px)
+    const plankWidth = 150; // Width scaled
+    const plankHeight = 40; // Height scaled
     
     // Starting position for near face
-    const startX = 60;
+    const startX = 40;
     const startY = 140;
 
     // Isometric angle offsets
     const depthX = depth * 0.866; // cos(30°)
     const depthY = depth * 0.5; // sin(30°)
 
-    // 8048 Cross-section: 6 hollow cores with keyways on top
-    // Core positions (6 cores evenly spaced)
-    const coreSpacing = plankWidth / 7; // Space between cores
-    const coreRadius = 7; // Radius of hollow cores
-    const coreY = plankHeight / 2; // Centered vertically
+    // 8048 Cross-section based on provided image
+    // 6 hollow cores with keyways on top
+    const coreSpacing = plankWidth / 7;
+    const coreRadius = 9;
+    const coreY = plankHeight * 0.55; // Slightly above center
     
     const cores = Array.from({ length: 6 }, (_, i) => ({
       cx: coreSpacing * (i + 1),
       cy: coreY,
     }));
 
-    // Keyway positions on top (between cores)
-    const keywayWidth = 6;
-    const keywayDepth = 4;
-    
-    // Define strands at bottom of each core
-    const strandPositions = cores.map((core, idx) => ({
-      id: String(idx + 1),
-      x: core.cx,
-      y: plankHeight - 8, // Near bottom
-    }));
+    // Strand positions (dots in the image - 13 total: 6 below cores + 7 between)
+    const strandPositions = [];
+    // Strands below each core
+    for (let i = 0; i < 6; i++) {
+      strandPositions.push({
+        id: String(i + 1),
+        x: coreSpacing * (i + 1),
+        y: plankHeight - 6,
+      });
+    }
+    // Strands between cores (in the webs)
+    for (let i = 0; i < 7; i++) {
+      strandPositions.push({
+        id: String(i + 7),
+        x: coreSpacing * (i + 0.5),
+        y: plankHeight - 6,
+      });
+    }
 
-    // Helper to draw the 8048 cross-section shape
+    // Helper to draw the 8048 cross-section shape using SVG Path
     const drawCrossSection = (offsetX: number, offsetY: number) => {
       const x = startX + offsetX;
       const y = startY + offsetY;
+      
+      // Keyway dimensions
+      const keywayWidth = 5;
+      const keywayDepth = 3;
+
+      // Build the outline path tracing the provided cross-section
+      let pathData = `M ${x} ${y + plankHeight}`; // Start at bottom left
+      pathData += ` L ${x} ${y + 3}`; // Up left side to near top
+      pathData += ` L ${x + 3} ${y}`; // Angle to top left corner
+      
+      // Draw top surface with keyways between cores
+      for (let i = 0; i <= 6; i++) {
+        const coreX = x + coreSpacing * (i + 0.5);
+        if (i < 6) {
+          pathData += ` L ${coreX - keywayWidth / 2} ${y}`;
+          pathData += ` L ${coreX - keywayWidth / 2} ${y + keywayDepth}`;
+          pathData += ` L ${coreX + keywayWidth / 2} ${y + keywayDepth}`;
+          pathData += ` L ${coreX + keywayWidth / 2} ${y}`;
+        }
+      }
+      
+      pathData += ` L ${x + plankWidth - 3} ${y}`; // To top right
+      pathData += ` L ${x + plankWidth} ${y + 3}`; // Angle down
+      pathData += ` L ${x + plankWidth} ${y + plankHeight}`; // Down right side
+      pathData += ` Z`; // Close path
 
       return (
         <React.Fragment>
-          {/* Top surface with keyways */}
-          {/* Left edge to first keyway */}
-          <Line
-            x1={x}
-            y1={y}
-            x2={x + coreSpacing - keywayWidth / 2}
-            y2={y}
+          {/* Outline */}
+          <Path
+            d={pathData}
             stroke="#2563EB"
             strokeWidth={2}
-          />
-          
-          {/* Draw keyways between cores */}
-          {cores.slice(0, -1).map((_, i) => {
-            const keyX1 = x + coreSpacing * (i + 1) - keywayWidth / 2;
-            const keyX2 = keyX1 + keywayWidth;
-            const keyX3 = x + coreSpacing * (i + 2) - keywayWidth / 2;
-            
-            return (
-              <React.Fragment key={`keyway-${i}`}>
-                {/* Drop down */}
-                <Line x1={keyX1} y1={y} x2={keyX1} y2={y + keywayDepth} stroke="#2563EB" strokeWidth={2} />
-                {/* Across bottom */}
-                <Line x1={keyX1} y1={y + keywayDepth} x2={keyX2} y2={y + keywayDepth} stroke="#2563EB" strokeWidth={2} />
-                {/* Back up */}
-                <Line x1={keyX2} y1={y + keywayDepth} x2={keyX2} y2={y} stroke="#2563EB" strokeWidth={2} />
-                {/* To next keyway */}
-                <Line x1={keyX2} y1={y} x2={keyX3} y2={y} stroke="#2563EB" strokeWidth={2} />
-              </React.Fragment>
-            );
-          })}
-          
-          {/* Last segment to right edge */}
-          <Line
-            x1={x + plankWidth - coreSpacing + keywayWidth / 2}
-            y1={y}
-            x2={x + plankWidth}
-            y2={y}
-            stroke="#2563EB"
-            strokeWidth={2}
-          />
-
-          {/* Right edge */}
-          <Line
-            x1={x + plankWidth}
-            y1={y}
-            x2={x + plankWidth}
-            y2={y + plankHeight}
-            stroke="#2563EB"
-            strokeWidth={2}
-          />
-
-          {/* Bottom edge */}
-          <Line
-            x1={x + plankWidth}
-            y1={y + plankHeight}
-            x2={x}
-            y2={y + plankHeight}
-            stroke="#2563EB"
-            strokeWidth={2}
-          />
-
-          {/* Left edge */}
-          <Line
-            x1={x}
-            y1={y + plankHeight}
-            x2={x}
-            y2={y}
-            stroke="#2563EB"
-            strokeWidth={2}
+            fill="none"
           />
 
           {/* Hollow cores */}
