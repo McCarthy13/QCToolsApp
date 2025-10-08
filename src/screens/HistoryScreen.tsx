@@ -59,6 +59,7 @@ export default function HistoryScreen() {
   };
 
   const handleOpenFilter = () => {
+    console.log('Filter button pressed - opening modal');
     setTempFilters(filters);
     setShowFilterModal(true);
   };
@@ -410,7 +411,7 @@ export default function HistoryScreen() {
       >
         <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <Pressable onPress={() => setShowFilterModal(false)} className="flex-1" />
-          <View className="bg-white rounded-t-3xl" style={{ maxHeight: '85%' }}>
+          <View className="bg-white rounded-t-3xl overflow-hidden" style={{ height: '85%', flexDirection: 'column' }}>
             <View className="p-5 border-b border-gray-200">
               <View className="flex-row items-center justify-between">
                 <Text className="text-xl font-bold text-gray-900">
@@ -422,7 +423,7 @@ export default function HistoryScreen() {
               </View>
             </View>
             
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
               {/* Project Name */}
               <View className="mb-4">
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
