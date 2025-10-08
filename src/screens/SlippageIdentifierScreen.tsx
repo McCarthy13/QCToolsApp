@@ -101,45 +101,45 @@ export default function SlippageIdentifierScreen() {
       const keywayDepth = 2;
       const keywayFromTop = 8;
       
-      // Draft angle - sides slope outward going up
-      const bottomInset = 3; // How much narrower at bottom
-      const cornerRadius = 2; // Rounded bottom corners
+      // Draft angle - WIDER at bottom, NARROWER at top (taper inward going up)
+      const topInset = 5; // How much narrower at top
+      const lipRadius = 3; // Pronounced rounded lips at bottom corners
 
-      // Build the outline path with draft angle and rounded corners
-      let pathData = `M ${x + bottomInset + cornerRadius} ${y + plankHeight}`; // Start at bottom left after corner
+      // Build the outline path with correct draft angle and bottom lips
+      let pathData = `M ${x + lipRadius} ${y + plankHeight}`; // Start at bottom left after lip
       
-      // Bottom left corner (rounded)
-      pathData += ` Q ${x + bottomInset} ${y + plankHeight} ${x + bottomInset} ${y + plankHeight - cornerRadius}`;
+      // Bottom left corner lip (pronounced curve)
+      pathData += ` Q ${x} ${y + plankHeight} ${x} ${y + plankHeight - lipRadius}`;
       
-      // Up left side with draft angle to below keyway
-      pathData += ` L ${x} ${y + keywayFromTop + keywayWidth}`;
+      // Up left side with draft angle (tapering IN toward top) to below keyway
+      pathData += ` L ${x + topInset} ${y + keywayFromTop + keywayWidth}`;
       
       // Left keyway (indent IN)
-      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop}`;
-      pathData += ` L ${x} ${y + keywayFromTop}`;
+      pathData += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      pathData += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop}`;
+      pathData += ` L ${x + topInset} ${y + keywayFromTop}`;
       
       // Continue up to top left corner
-      pathData += ` L ${x} ${y}`;
+      pathData += ` L ${x + topInset} ${y}`;
       
-      // Across the top (FLAT)
-      pathData += ` L ${x + plankWidth} ${y}`;
+      // Across the top (FLAT - narrower than bottom)
+      pathData += ` L ${x + plankWidth - topInset} ${y}`;
       
       // Down right side to keyway
-      pathData += ` L ${x + plankWidth} ${y + keywayFromTop}`;
+      pathData += ` L ${x + plankWidth - topInset} ${y + keywayFromTop}`;
       
       // Right keyway (indent IN)
-      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop}`;
-      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      pathData += ` L ${x + plankWidth} ${y + keywayFromTop + keywayWidth}`;
+      pathData += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop}`;
+      pathData += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      pathData += ` L ${x + plankWidth - topInset} ${y + keywayFromTop + keywayWidth}`;
       
-      // Down right side with draft angle
-      pathData += ` L ${x + plankWidth - bottomInset} ${y + plankHeight - cornerRadius}`;
+      // Down right side with draft angle (tapering OUT toward bottom)
+      pathData += ` L ${x + plankWidth} ${y + plankHeight - lipRadius}`;
       
-      // Bottom right corner (rounded)
-      pathData += ` Q ${x + plankWidth - bottomInset} ${y + plankHeight} ${x + plankWidth - bottomInset - cornerRadius} ${y + plankHeight}`;
+      // Bottom right corner lip (pronounced curve)
+      pathData += ` Q ${x + plankWidth} ${y + plankHeight} ${x + plankWidth - lipRadius} ${y + plankHeight}`;
       
-      // Bottom edge
+      // Bottom edge (wider)
       pathData += ` Z`; // Close path
 
       return (
