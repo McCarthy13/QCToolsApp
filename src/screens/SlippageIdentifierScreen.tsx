@@ -48,83 +48,70 @@ export default function SlippageIdentifierScreen() {
     const svgWidth = 380;
     const svgHeight = 320;
 
-    // Isometric projection parameters
-    const depth = 180; // Length of plank
-    const plankWidth = 150; // Width scaled
-    const plankHeight = 40; // Height scaled
+    // EXACT DIMENSIONS from specifications
+    // Real: 8" tall x 48" wide
+    // Scale factor for display
+    const scale = 3; // 3 pixels per inch
+    const plankWidth = 48 * scale; // 144px
+    const plankHeight = 8 * scale; // 24px
     
     // Starting position for near face
     const startX = 40;
     const startY = 140;
 
     // Isometric angle offsets
-    const depthX = depth * 0.866; // cos(30°)
-    const depthY = depth * 0.5; // sin(30°)
+    const depth = 180;
+    const depthX = depth * 0.866;
+    const depthY = depth * 0.5;
 
-    // 8048 Cross-section based on provided image
-    // 6 hollow cores with keyways on sides
-    const coreSpacing = plankWidth / 7;
-    // Cores are head-shaped: wider at top, narrower at bottom, taller than wide
-    const coreWidth = 12; // Width at widest point (top)
-    const coreHeight = 30; // Height (taller than wide)
-    const coreY = plankHeight * 0.5; // Centered vertically
+    // EXACT CORE DIMENSIONS
+    const coreWidth = 5.5 * scale; // 16.5px
+    const coreHeight = 5.625 * scale; // 16.875px
+    const coreBottomFromPlankBottom = 1.1875 * scale; // 3.5625px
+    const edgeToCoreEdge = 2.625 * scale; // 7.875px
+    const spacingBetweenCores = 1.9375 * scale; // 5.8125px
     
+    // Calculate core center positions
+    const coreBottomY = plankHeight - coreBottomFromPlankBottom;
+    const coreCenterY = coreBottomY - (coreHeight / 2);
+    
+    // First core center X position
+    const firstCoreCenterX = edgeToCoreEdge + (coreWidth / 2);
+    
+    // Build array of 6 cores with exact spacing
     const cores = Array.from({ length: 6 }, (_, i) => ({
-      cx: coreSpacing * (i + 1),
-      cy: coreY,
+      cx: firstCoreCenterX + i * (coreWidth + spacingBetweenCores),
+      cy: coreCenterY,
     }));
 
     // Helper function to draw a core shape: rounded top, straight sides, flat bottom
-    const drawHeadShapedCore = (cx: number, cy: number) => {
-      const width = coreWidth / 2; // Half width for left/right
+    const drawCore = (cx: number, cy: number) => {
+      const halfWidth = coreWidth / 2;
       const halfHeight = coreHeight / 2;
-      const topRadius = width; // Radius for the rounded top
-      const bottomCornerRadius = 1; // Small radius for bottom corners
+      const topRadius = halfWidth; // Top is semicircular
       
-      // Start at bottom left corner
-      let corePath = `M ${cx - width + bottomCornerRadius} ${cy + halfHeight}`;
+      // Start at bottom left
+      let corePath = `M ${cx - halfWidth} ${cy + halfHeight}`;
       
-      // Bottom left corner (small radius)
-      corePath += ` Q ${cx - width} ${cy + halfHeight} ${cx - width} ${cy + halfHeight - bottomCornerRadius}`;
+      // Straight up left side to where the arc starts
+      corePath += ` L ${cx - halfWidth} ${cy - halfHeight + topRadius}`;
       
-      // Straight up left side
-      corePath += ` L ${cx - width} ${cy - halfHeight + topRadius}`;
-      
-      // Rounded top (arc from left to right)
-      corePath += ` A ${topRadius} ${topRadius} 0 0 1 ${cx + width} ${cy - halfHeight + topRadius}`;
+      // Rounded top (semicircular arc)
+      corePath += ` A ${topRadius} ${topRadius} 0 0 1 ${cx + halfWidth} ${cy - halfHeight + topRadius}`;
       
       // Straight down right side
-      corePath += ` L ${cx + width} ${cy + halfHeight - bottomCornerRadius}`;
+      corePath += ` L ${cx + halfWidth} ${cy + halfHeight}`;
       
-      // Bottom right corner (small radius)
-      corePath += ` Q ${cx + width} ${cy + halfHeight} ${cx + width - bottomCornerRadius} ${cy + halfHeight}`;
-      
-      // Bottom edge (flat)
-      corePath += ` L ${cx - width + bottomCornerRadius} ${cy + halfHeight}`;
+      // Flat bottom
+      corePath += ` L ${cx - halfWidth} ${cy + halfHeight}`;
       
       corePath += ` Z`;
       
       return corePath;
     };
 
-    // Strand positions (dots in the image - 13 total: 6 below cores + 7 between)
-    const strandPositions = [];
-    // Strands below each core
-    for (let i = 0; i < 6; i++) {
-      strandPositions.push({
-        id: String(i + 1),
-        x: coreSpacing * (i + 1),
-        y: plankHeight - 6,
-      });
-    }
-    // Strands between cores (in the webs)
-    for (let i = 0; i < 7; i++) {
-      strandPositions.push({
-        id: String(i + 7),
-        x: coreSpacing * (i + 0.5),
-        y: plankHeight - 6,
-      });
-    }
+    // Strand positions (will add back later)
+    const strandPositions: any[] = [];
 
     // Helper to draw the 8048 cross-section shape - EXACT trace of provided image
     const drawCrossSection = (offsetX: number, offsetY: number) => {
@@ -187,11 +174,11 @@ export default function SlippageIdentifierScreen() {
             fill="none"
           />
 
-          {/* Hollow cores - 6 head-shaped cores (wider at top, narrower at bottom) */}
+          {/* Hollow cores - 6 cores with rounded tops */}
           {cores.map((core, idx) => (
             <Path
               key={`core-${idx}`}
-              d={drawHeadShapedCore(x + core.cx, y + core.cy)}
+              d={drawCore(x + core.cx, y + core.cy)}
               stroke="#2563EB"
               strokeWidth={1.5}
               fill="none"
