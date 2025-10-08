@@ -4,4 +4,5 @@ export type RootStackParamList = {
   Results: { calculation: any };
   History: undefined;
   StrandPatterns: undefined;
+  SlippageIdentifier: undefined;
 };
