@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Convert decimal inches to nearest 1/16" fraction with automatic reduction
+ * Convert decimal inches to nearest 1/16" fraction (always displayed in 16ths)
  * @param decimal - decimal inch value (e.g., 0.684)
- * @returns formatted string like "11/16" or "3/8" (reduced)
+ * @returns formatted string like "11/16" (always in 16ths, not reduced)
  */
 export function decimalToFraction(decimal: number): string {
   const absDecimal = Math.abs(decimal);
@@ -27,21 +27,13 @@ export function decimalToFraction(decimal: number): string {
     return `${wholePart + 1}"`;
   }
   
-  // Find GCD to reduce fraction
-  const gcd = (a: number, b: number): number => {
-    return b === 0 ? a : gcd(b, a % b);
-  };
-  
-  const divisor = gcd(sixteenths, 16);
-  const numerator = sixteenths / divisor;
-  const denominator = 16 / divisor;
-  
+  // Always display in 16ths (no reduction)
   // Format the result
   if (wholePart > 0) {
-    return `${wholePart} ${numerator}/${denominator}"`;
+    return `${wholePart} ${sixteenths}/16"`;
   }
   
-  return `${numerator}/${denominator}"`;
+  return `${sixteenths}/16"`;
 }
 
 /**
