@@ -45,31 +45,31 @@ export default function SlippageIdentifierScreen() {
 
   // 3D Isometric view of hollow-core plank with strands
   const GenericCrossSection = () => {
-    const svgWidth = 350;
-    const svgHeight = 280;
+    const svgWidth = 380;
+    const svgHeight = 300;
 
-    // Isometric projection parameters
-    const depth = 220; // Length of plank
-    const width = 120; // Width of cross-section
-    const height = 80; // Height of cross-section
+    // Isometric projection parameters (scaled down to fit)
+    const depth = 180; // Length of plank (reduced)
+    const width = 100; // Width of cross-section (reduced)
+    const height = 60; // Height of cross-section (reduced)
     
-    // Starting position for near face
-    const startX = 50;
-    const startY = 60;
+    // Starting position for near face (adjusted to center)
+    const startX = 60;
+    const startY = 120;
 
     // Isometric angle offsets
     const depthX = depth * 0.866; // cos(30°) ≈ 0.866
     const depthY = depth * 0.5; // sin(30°) ≈ 0.5
 
-    // Define 5 hollow cores (circles) in cross-section
+    // Define 5 hollow cores (circles) in cross-section - positioned to fit within the rectangle
     const cores = [
-      { cx: 20, cy: 65 },
-      { cx: 40, cy: 65 },
-      { cx: 60, cy: 65 },
-      { cx: 80, cy: 65 },
-      { cx: 100, cy: 65 },
+      { cx: 15, cy: 30 },
+      { cx: 32, cy: 30 },
+      { cx: 50, cy: 30 },
+      { cx: 68, cy: 30 },
+      { cx: 85, cy: 30 },
     ];
-    const coreRadius = 8;
+    const coreRadius = 6;
 
     // Define 5 strands matching the cores
     const strandPositions = cores.map((core, idx) => ({
@@ -84,7 +84,7 @@ export default function SlippageIdentifierScreen() {
           3D VIEW - Generic Hollow Core Plank
         </Text>
         <Svg width={svgWidth} height={svgHeight}>
-          {/* NEAR FACE (front cross-section) */}
+          {/* NEAR FACE (front cross-section) - labeled END 1 */}
           {/* Outer rectangle */}
           <Line
             x1={startX}
@@ -132,7 +132,7 @@ export default function SlippageIdentifierScreen() {
             />
           ))}
 
-          {/* FAR FACE (back cross-section) - offset by isometric depth */}
+          {/* FAR FACE (back cross-section) - labeled END 2 */}
           {/* Outer rectangle */}
           <Line
             x1={startX + depthX}
@@ -180,17 +180,7 @@ export default function SlippageIdentifierScreen() {
             />
           ))}
 
-          {/* CONNECTING EDGES (to show 3D depth) */}
-          {/* Top left corner */}
-          <Line
-            x1={startX}
-            y1={startY}
-            x2={startX + depthX}
-            y2={startY - depthY}
-            stroke="#2563EB"
-            strokeWidth={2}
-            strokeDasharray="4,4"
-          />
+          {/* CONNECTING EDGES (to show 3D depth) - only draw bottom and right edges */}
           {/* Top right corner */}
           <Line
             x1={startX + width}
@@ -255,6 +245,12 @@ export default function SlippageIdentifierScreen() {
             </React.Fragment>
           ))}
         </Svg>
+        
+        {/* Labels for ends */}
+        <View className="flex-row justify-between w-full px-12 mt-2">
+          <Text className="text-blue-600 text-xs font-bold">END 1</Text>
+          <Text className="text-blue-600 text-xs font-bold">END 2</Text>
+        </View>
       </View>
     );
   };
@@ -306,10 +302,10 @@ export default function SlippageIdentifierScreen() {
               </View>
 
               <View className="flex-row gap-3">
-                {/* Left end */}
+                {/* End 1 */}
                 <View className="flex-1">
                   <Text className="text-xs font-semibold text-gray-600 mb-2">
-                    LEFT END
+                    END 1
                   </Text>
                   <TextInput
                     className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900"
@@ -323,10 +319,10 @@ export default function SlippageIdentifierScreen() {
                   />
                 </View>
 
-                {/* Right end */}
+                {/* End 2 */}
                 <View className="flex-1">
                   <Text className="text-xs font-semibold text-gray-600 mb-2">
-                    RIGHT END
+                    END 2
                   </Text>
                   <TextInput
                     className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900"
