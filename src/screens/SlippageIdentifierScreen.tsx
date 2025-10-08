@@ -244,39 +244,6 @@ export default function SlippageIdentifierScreen() {
             strokeWidth={1.5}
             strokeDasharray="3,3"
           />
-
-          {/* STRANDS running through the plank */}
-          {strandPositions.map((strand) => (
-            <React.Fragment key={`strand-${strand.id}`}>
-              <Line
-                x1={startX + strand.x}
-                y1={startY + strand.y}
-                x2={startX + strand.x + depthX}
-                y2={startY + strand.y - depthY}
-                stroke="#EF4444"
-                strokeWidth={2.5}
-                strokeDasharray="6,4"
-              />
-              
-              {/* Circles at strand ends */}
-              <Circle
-                cx={startX + strand.x}
-                cy={startY + strand.y}
-                r={5}
-                fill="#EF4444"
-                stroke="#991B1B"
-                strokeWidth={2}
-              />
-              <Circle
-                cx={startX + strand.x + depthX}
-                cy={startY + strand.y - depthY}
-                r={5}
-                fill="#EF4444"
-                stroke="#991B1B"
-                strokeWidth={2}
-              />
-            </React.Fragment>
-          ))}
         </Svg>
         
         {/* Labels for ends */}
