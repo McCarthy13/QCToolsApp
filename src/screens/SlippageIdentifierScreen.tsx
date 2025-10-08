@@ -96,23 +96,23 @@ export default function SlippageIdentifierScreen() {
       const x = startX + offsetX;
       const y = startY + offsetY;
       
-      // Keyway dimensions (on the SIDES, not top)
+      // Keyway dimensions (on the SIDES, indenting IN)
       const keywayWidth = 4;
       const keywayDepth = 2;
       const keywayFromTop = 8;
 
-      // Build the outline path - simple rectangle with side keyways
+      // Build the outline path - simple rectangle with side keyways INDENTING IN
       let pathData = `M ${x} ${y + plankHeight}`; // Start at bottom left
       pathData += ` L ${x} ${y + keywayFromTop + keywayWidth}`; // Up left side to below keyway
-      pathData += ` L ${x - keywayDepth} ${y + keywayFromTop + keywayWidth}`; // Into left keyway
-      pathData += ` L ${x - keywayDepth} ${y + keywayFromTop}`; // Up in keyway
-      pathData += ` L ${x} ${y + keywayFromTop}`; // Back out of keyway
+      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop + keywayWidth}`; // INTO left keyway (moving RIGHT)
+      pathData += ` L ${x + keywayDepth} ${y + keywayFromTop}`; // Up in keyway
+      pathData += ` L ${x} ${y + keywayFromTop}`; // Back out of keyway (moving LEFT)
       pathData += ` L ${x} ${y}`; // Continue up to top left corner
       pathData += ` L ${x + plankWidth} ${y}`; // Across the top (FLAT)
       pathData += ` L ${x + plankWidth} ${y + keywayFromTop}`; // Down right side to keyway
-      pathData += ` L ${x + plankWidth + keywayDepth} ${y + keywayFromTop}`; // Into right keyway
-      pathData += ` L ${x + plankWidth + keywayDepth} ${y + keywayFromTop + keywayWidth}`; // Down in keyway
-      pathData += ` L ${x + plankWidth} ${y + keywayFromTop + keywayWidth}`; // Back out
+      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop}`; // INTO right keyway (moving LEFT)
+      pathData += ` L ${x + plankWidth - keywayDepth} ${y + keywayFromTop + keywayWidth}`; // Down in keyway
+      pathData += ` L ${x + plankWidth} ${y + keywayFromTop + keywayWidth}`; // Back out (moving RIGHT)
       pathData += ` L ${x + plankWidth} ${y + plankHeight}`; // Continue down to bottom right
       pathData += ` Z`; // Close path back to bottom left
 
