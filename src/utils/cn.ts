@@ -53,3 +53,45 @@ export function formatInchesWithFraction(decimal: number): string {
   const fractionStr = decimalToFraction(decimal);
   return `${decimal.toFixed(3)} (≈${fractionStr})`;
 }
+
+/**
+ * Parse user input (decimal or fractional) to decimal inches
+ * Supports formats:
+ * - Decimal: "1.375", "0.75", ".5"
+ * - Fraction: "5/16", "3/8", "11/16"
+ * - Mixed: "1 5/16", "2 3/8"
+ * @param input - user input string
+ * @returns decimal value or null if invalid
+ */
+export function parseMeasurementInput(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // Try decimal first
+  const decimalMatch = trimmed.match(/^(\d*\.?\d+)$/);
+  if (decimalMatch) {
+    const value = parseFloat(decimalMatch[1]);
+    return isNaN(value) ? null : value;
+  }
+
+  // Try mixed number: "1 5/16"
+  const mixedMatch = trimmed.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixedMatch) {
+    const whole = parseInt(mixedMatch[1]);
+    const numerator = parseInt(mixedMatch[2]);
+    const denominator = parseInt(mixedMatch[3]);
+    if (denominator === 0) return null;
+    return whole + (numerator / denominator);
+  }
+
+  // Try simple fraction: "5/16"
+  const fractionMatch = trimmed.match(/^(\d+)\/(\d+)$/);
+  if (fractionMatch) {
+    const numerator = parseInt(fractionMatch[1]);
+    const denominator = parseInt(fractionMatch[2]);
+    if (denominator === 0) return null;
+    return numerator / denominator;
+  }
+
+  return null;
+}
