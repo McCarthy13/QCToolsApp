@@ -5,11 +5,14 @@ import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "./src/navigation/types";
 import CalculatorScreen from "./src/screens/CalculatorScreen";
 import ResultsScreen from "./src/screens/ResultsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
 import StrandPatternsScreen from "./src/screens/StrandPatternsScreen";
+import LoginScreen from "./src/screens/LoginScreen";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -34,8 +37,56 @@ const openai_api_key = Constants.expoConfig.extra.apikey;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const AUTH_STORAGE_KEY = '@camber_calculator_auth';
+
 // App version: force reload
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const authStatus = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+      setIsAuthenticated(authStatus === 'true');
+    } catch (error) {
+      console.error('Auth check error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      await AsyncStorage.setItem(AUTH_STORAGE_KEY, 'true');
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
+
+  // Show nothing while checking auth
+  if (isLoading) {
+    return null;
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <GestureHandlerRootView className="flex-1">
+        <SafeAreaProvider>
+          <LoginScreen onLogin={handleLogin} />
+          <StatusBar style="light" />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // Show main app if authenticated
   return (
     <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
