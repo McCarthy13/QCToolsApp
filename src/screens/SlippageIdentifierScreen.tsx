@@ -64,13 +64,34 @@ export default function SlippageIdentifierScreen() {
     // 8048 Cross-section based on provided image
     // 6 hollow cores with keyways on sides
     const coreSpacing = plankWidth / 7;
-    const coreRadius = 14; // MUCH larger - cores take up most of the height
+    // Cores are head-shaped: wider at top, narrower at bottom, taller than wide
+    const coreWidth = 12; // Width at widest point (top)
+    const coreHeight = 30; // Height (taller than wide)
     const coreY = plankHeight * 0.5; // Centered vertically
     
     const cores = Array.from({ length: 6 }, (_, i) => ({
       cx: coreSpacing * (i + 1),
       cy: coreY,
     }));
+
+    // Helper function to draw a "head-shaped" core (wider at top, narrower at bottom)
+    const drawHeadShapedCore = (cx: number, cy: number) => {
+      const topWidth = coreWidth / 2;
+      const bottomWidth = coreWidth / 3; // Narrower at bottom like a chin
+      const halfHeight = coreHeight / 2;
+      
+      // Create path for head-shaped core using bezier curves
+      let corePath = `M ${cx} ${cy - halfHeight}`; // Top center
+      // Right side curve (wider at top, narrower at bottom)
+      corePath += ` Q ${cx + topWidth} ${cy - halfHeight * 0.3} ${cx + bottomWidth} ${cy + halfHeight}`;
+      // Bottom curve
+      corePath += ` Q ${cx} ${cy + halfHeight + 2} ${cx - bottomWidth} ${cy + halfHeight}`;
+      // Left side curve
+      corePath += ` Q ${cx - topWidth} ${cy - halfHeight * 0.3} ${cx} ${cy - halfHeight}`;
+      corePath += ` Z`;
+      
+      return corePath;
+    };
 
     // Strand positions (dots in the image - 13 total: 6 below cores + 7 between)
     const strandPositions = [];
@@ -152,13 +173,11 @@ export default function SlippageIdentifierScreen() {
             fill="none"
           />
 
-          {/* Hollow cores - 6 large circles */}
+          {/* Hollow cores - 6 head-shaped cores (wider at top, narrower at bottom) */}
           {cores.map((core, idx) => (
-            <Circle
+            <Path
               key={`core-${idx}`}
-              cx={x + core.cx}
-              cy={y + core.cy}
-              r={coreRadius}
+              d={drawHeadShapedCore(x + core.cx, y + core.cy)}
               stroke="#2563EB"
               strokeWidth={1.5}
               fill="none"
