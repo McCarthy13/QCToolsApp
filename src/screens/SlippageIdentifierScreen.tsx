@@ -131,7 +131,7 @@ export default function SlippageIdentifierScreen() {
     const strandPositions: any[] = [];
 
     // Helper to draw the 8048 cross-section shape
-    const drawCrossSection = (offsetX: number, offsetY: number, isHidden: boolean, solidTop: boolean = false) => {
+    const drawCrossSection = (offsetX: number, offsetY: number, isHidden: boolean, solidTop: boolean = false, solidRight: boolean = false) => {
       const x = startX + offsetX;
       const y = startY + offsetY;
       
@@ -145,22 +145,22 @@ export default function SlippageIdentifierScreen() {
       const lipRadius = 4; // More pronounced rounded lips at bottom corners
 
       // Build separate paths for different stroke styles
-      // Path 1: Everything except the top edge
-      let bodyPath = `M ${x + lipRadius} ${y + plankHeight}`; // Start at bottom left after lip
+      // Path 1: Left side and bottom
+      let leftPath = `M ${x + lipRadius} ${y + plankHeight}`; // Start at bottom left after lip
       
       // Bottom left corner lip (pronounced curve)
-      bodyPath += ` Q ${x} ${y + plankHeight} ${x} ${y + plankHeight - lipRadius}`;
+      leftPath += ` Q ${x} ${y + plankHeight} ${x} ${y + plankHeight - lipRadius}`;
       
       // Up left side with draft angle (tapering IN toward top) to below keyway
-      bodyPath += ` L ${x + topInset} ${y + keywayFromTop + keywayWidth}`;
+      leftPath += ` L ${x + topInset} ${y + keywayFromTop + keywayWidth}`;
       
       // Left keyway (indent IN)
-      bodyPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      bodyPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop}`;
-      bodyPath += ` L ${x + topInset} ${y + keywayFromTop}`;
+      leftPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      leftPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop}`;
+      leftPath += ` L ${x + topInset} ${y + keywayFromTop}`;
       
       // Continue up to top left corner
-      bodyPath += ` L ${x + topInset} ${y}`;
+      leftPath += ` L ${x + topInset} ${y}`;
       
       // Path 2: Just the top edge (may have different stroke style)
       const topPath = `M ${x + topInset} ${y} L ${x + plankWidth - topInset} ${y}`;
@@ -185,17 +185,18 @@ export default function SlippageIdentifierScreen() {
       // Bottom edge back to start
       rightPath += ` L ${x + lipRadius} ${y + plankHeight}`;
 
-      const bodyStrokeDash = isHidden ? "3,3" : undefined;
+      const leftStrokeDash = isHidden ? "3,3" : undefined;
       const topStrokeDash = solidTop ? undefined : (isHidden ? "3,3" : undefined);
+      const rightStrokeDash = solidRight ? undefined : (isHidden ? "3,3" : undefined);
 
       return (
         <React.Fragment>
-          {/* Left side and body outline */}
+          {/* Left side and bottom outline */}
           <Path
-            d={bodyPath}
+            d={leftPath}
             stroke="#2563EB"
             strokeWidth={2}
-            strokeDasharray={bodyStrokeDash}
+            strokeDasharray={leftStrokeDash}
             fill="none"
           />
           
@@ -208,12 +209,12 @@ export default function SlippageIdentifierScreen() {
             fill="none"
           />
           
-          {/* Right side outline */}
+          {/* Right side outline - can be solid even when rest is hidden */}
           <Path
             d={rightPath}
             stroke="#2563EB"
             strokeWidth={2}
-            strokeDasharray={bodyStrokeDash}
+            strokeDasharray={rightStrokeDash}
             fill="none"
           />
 
@@ -224,7 +225,7 @@ export default function SlippageIdentifierScreen() {
               d={drawCore(x + core.cx, y + core.cy)}
               stroke="#2563EB"
               strokeWidth={1.5}
-              strokeDasharray={bodyStrokeDash}
+              strokeDasharray={leftStrokeDash}
               fill="none"
             />
           ))}
@@ -239,10 +240,10 @@ export default function SlippageIdentifierScreen() {
         </Text>
         <Svg width={svgWidth} height={svgHeight}>
           {/* NEAR FACE (END 1) - SOLID (visible) */}
-          {drawCrossSection(0, 0, false, false)}
+          {drawCrossSection(0, 0, false, false, false)}
 
-          {/* FAR FACE (END 2) - DOTTED (hidden) BUT with SOLID top */}
-          {drawCrossSection(depthX, -depthY, true, true)}
+          {/* FAR FACE (END 2) - DOTTED (hidden) BUT with SOLID top and SOLID right */}
+          {drawCrossSection(depthX, -depthY, true, true, true)}
 
           {/* CONNECTING EDGES for 3D effect */}
           {/* Top left - SOLID (visible from this perspective) */}
