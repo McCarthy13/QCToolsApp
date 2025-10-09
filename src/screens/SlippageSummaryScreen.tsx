@@ -94,6 +94,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     if (config.span) productDetails += `• Span: ${config.span}"\n`;
     productDetails += `• Product Type: ${config.productType}\n`;
     
+    // Add product width for cut-width products
+    if (config.productWidth && selectedPattern?.strandCoordinates) {
+      const totalStrands = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
+      productDetails += `• Product Width (Cut): ${config.productWidth}"\n`;
+      productDetails += `• Active Strands: ${slippages.length} of ${totalStrands}\n`;
+    }
+    
     // Add strand pattern info
     if (selectedPattern) {
       const totalStrands = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
@@ -413,6 +420,28 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             Analysis of strand slippage values
           </Text>
         </View>
+
+        {/* Cut-width info banner */}
+        {config.productWidth && selectedPattern?.strandCoordinates && (
+          <View className="px-6 mt-4">
+            <View className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <View className="flex-row items-start">
+                <Ionicons name="information-circle" size={20} color="#F59E0B" />
+                <View className="flex-1 ml-3">
+                  <Text className="text-amber-900 font-semibold text-sm mb-1">
+                    Cut-Width Product
+                  </Text>
+                  <Text className="text-amber-800 text-sm">
+                    Product width: {config.productWidth}" • {' '}
+                    Active strands: {slippages.length} of {selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6}
+                    {'\n'}
+                    Results shown only for strands within the cut width.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* 3D Model */}
         <PlankModel />
