@@ -1,12 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable, Linking, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import Svg, { Line, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import * as MailComposer from "expo-mail-composer";
 import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
@@ -78,26 +77,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     setTimeout(() => setPublishSuccess(false), 3000);
   };
 
-  const handleGenerateEmailReport = async () => {
+  const handleGenerateEmailReport = () => {
     // Get user's email
     const userEmail = currentUser?.email || 'unknown@example.com';
     const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
     
-    // Check if MailComposer is available
-    const isAvailable = await MailComposer.isAvailableAsync();
-    if (!isAvailable) {
-      Alert.alert(
-        "Email Not Available",
-        "No email app is configured on this device.",
-        [{ text: "OK" }]
-      );
-      return;
-    }
-
-    await generateAndOpenEmail(userEmail, userName);
-  };
-
-  const generateAndOpenEmail = async (userEmail: string, userName: string) => {
     // Build email subject
     const subject = `Slippage Report - ${config.projectName || 'Unnamed Project'}`;
     
@@ -154,39 +138,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     // Combine sections
     const body = productDetails + slippageSummary;
     
-    // Try to use MailComposer with the user's email
-    try {
-      const result = await MailComposer.composeAsync({
-        subject: subject,
-        body: body,
-        isHtml: false,
-      });
-      
-      // Result will be 'sent', 'saved', or 'cancelled'
-      // We don't need to show an alert for these statuses
-    } catch (error) {
-      // Fallback to mailto if MailComposer fails
-      const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      
-      try {
-        const canOpen = await Linking.canOpenURL(mailto);
-        if (canOpen) {
-          await Linking.openURL(mailto);
-        } else {
-          Alert.alert(
-            "Unable to Open Email",
-            "Please make sure you have an email app installed on your device.",
-            [{ text: "OK" }]
-          );
-        }
-      } catch (linkError) {
-        Alert.alert(
-          "Error",
-          "Failed to open email client. Please try again.",
-          [{ text: "OK" }]
-        );
-      }
-    }
+    // Navigate to email composer screen
+    navigation.navigate("EmailComposer", {
+      subject,
+      body,
+    });
   };
 
   // Calculate all slippage statistics

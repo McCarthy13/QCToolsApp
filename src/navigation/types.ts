@@ -37,4 +37,8 @@ export type RootStackParamList = {
     };
   };
   SlippageHistory: undefined;
+  EmailComposer: {
+    subject: string;
+    body: string;
+  };
 };

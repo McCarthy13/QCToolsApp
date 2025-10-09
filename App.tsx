@@ -16,6 +16,7 @@ import ProductDetailsScreen from "./src/screens/ProductDetailsScreen";
 import SlippageIdentifierScreen from "./src/screens/SlippageIdentifierScreen";
 import SlippageSummaryScreen from "./src/screens/SlippageSummaryScreen";
 import SlippageHistoryScreen from "./src/screens/SlippageHistoryScreen";
+import EmailComposerScreen from "./src/screens/EmailComposerScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -265,6 +266,14 @@ export default function App() {
               component={SlippageHistoryScreen}
               options={{
                 title: "Slippage History",
+              }}
+            />
+            <Stack.Screen
+              name="EmailComposer"
+              component={EmailComposerScreen}
+              options={{
+                title: "Send Email Report",
+                presentation: "modal",
               }}
             />
           </Stack.Navigator>
