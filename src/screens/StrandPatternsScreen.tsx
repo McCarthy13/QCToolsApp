@@ -14,7 +14,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { useStrandPatternStore, CustomStrandPattern } from '../state/strandPatternStore';
+import { useStrandPatternStore, CustomStrandPattern, StrandCoordinate } from '../state/strandPatternStore';
 import ConfirmModal from '../components/ConfirmModal';
 
 export default function StrandPatternsScreen() {
@@ -363,6 +363,14 @@ export default function StrandPatternsScreen() {
                           • {pattern.strand_0_6}× 0.6" strands
                         </Text>
                       )}
+                      {pattern.strandCoordinates && pattern.strandCoordinates.length > 0 && (
+                        <View className="flex-row items-center mt-1">
+                          <Ionicons name="location" size={14} color="#10B981" />
+                          <Text className="text-sm text-green-600 font-semibold ml-1">
+                            Has coordinates for cut-width calculation
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     <View className="flex-row flex-wrap gap-3 mt-2">
@@ -468,6 +476,9 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [strand_1_2, setStrand_1_2] = useState(pattern?.strand_1_2.toString() || '0');
   const [strand_0_6, setStrand_0_6] = useState(pattern?.strand_0_6.toString() || '0');
   const [strandSizes, setStrandSizes] = useState<Array<'3/8' | '1/2' | '0.6'>>(pattern?.strandSizes || []);
+  const [strandCoordinates, setStrandCoordinates] = useState<Array<{x: string; y: string}>>(
+    pattern?.strandCoordinates?.map(coord => ({ x: coord.x.toString(), y: coord.y.toString() })) || []
+  );
   const [centroid, setCentroid] = useState('');
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
@@ -621,6 +632,34 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       );
     }
 
+    // Validate strand coordinates if provided
+    let parsedCoordinates: StrandCoordinate[] | undefined;
+    if (strandCoordinates.length > 0) {
+      const totalCount = getTotalStrandCount();
+      
+      // Check if all coordinates are filled
+      const allFilled = strandCoordinates.every(coord => coord.x.trim() !== '' && coord.y.trim() !== '');
+      
+      if (!allFilled) {
+        validationErrors.push('All strand coordinates must be filled or remove coordinates entirely');
+      } else {
+        // Parse and validate coordinates
+        parsedCoordinates = [];
+        for (let i = 0; i < strandCoordinates.length; i++) {
+          const xValue = parseFractionOrDecimal(strandCoordinates[i].x);
+          const yValue = parseFractionOrDecimal(strandCoordinates[i].y);
+          
+          if (isNaN(xValue) || isNaN(yValue)) {
+            validationErrors.push(`Invalid coordinate for strand ${i + 1}: x="${strandCoordinates[i].x}", y="${strandCoordinates[i].y}"`);
+          } else if (xValue < 0 || yValue < 0) {
+            validationErrors.push(`Coordinates for strand ${i + 1} must be non-negative`);
+          } else {
+            parsedCoordinates.push({ x: xValue, y: yValue });
+          }
+        }
+      }
+    }
+
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
@@ -636,6 +675,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       strand_1_2: count_1_2,
       strand_0_6: count_0_6,
       strandSizes: strandSizes.length > 0 ? strandSizes : undefined,
+      strandCoordinates: parsedCoordinates,
       eValue: e,
       pullingForce: force,
       totalArea: calculateTotalArea(),
@@ -890,6 +930,94 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                     )}
                   </View>
                 </View>
+              </View>
+            )}
+
+            {/* Strand Coordinates (Optional) */}
+            {getTotalStrandCount() > 0 && (
+              <View className="mb-4">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-sm font-semibold text-gray-700">
+                    Strand Coordinates (Optional)
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      const totalCount = getTotalStrandCount();
+                      if (strandCoordinates.length === 0) {
+                        // Initialize coordinates
+                        const newCoords = Array(totalCount).fill(null).map(() => ({ x: '', y: '' }));
+                        setStrandCoordinates(newCoords);
+                      } else {
+                        // Clear coordinates
+                        setStrandCoordinates([]);
+                      }
+                    }}
+                    className="bg-blue-500 rounded-lg px-3 py-1"
+                  >
+                    <Text className="text-xs font-semibold text-white">
+                      {strandCoordinates.length > 0 ? 'Remove' : 'Add Coordinates'}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <View className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                  <View className="flex-row items-start">
+                    <Ionicons name="information-circle" size={16} color="#F59E0B" />
+                    <Text className="flex-1 text-xs text-amber-800 ml-2">
+                      For cut-width products: Enter (x,y) position of each strand from bottom-left corner. x=0 is left edge, y=0 is bottom. Use decimals or fractions (e.g., 2.5 or 2 1/2). App will auto-calculate which strands are active based on product width.
+                    </Text>
+                  </View>
+                </View>
+
+                {strandCoordinates.length > 0 && (
+                  <View className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                    <ScrollView style={{ maxHeight: 300 }}>
+                      <View className="space-y-3">
+                        {strandCoordinates.map((coord, index) => (
+                          <View key={index}>
+                            <Text className="text-xs font-semibold text-gray-700 mb-2">
+                              Strand {index + 1} ({strandSizes[index]}")
+                            </Text>
+                            <View className="flex-row gap-2">
+                              <View className="flex-1">
+                                <Text className="text-xs text-gray-600 mb-1">
+                                  x (horizontal, in)
+                                </Text>
+                                <TextInput
+                                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                                  placeholder="e.g., 2.5 or 2 1/2"
+                                  placeholderTextColor="#9CA3AF"
+                                  value={coord.x}
+                                  onChangeText={(text) => {
+                                    const newCoords = [...strandCoordinates];
+                                    newCoords[index] = { ...newCoords[index], x: text };
+                                    setStrandCoordinates(newCoords);
+                                  }}
+                                />
+                              </View>
+                              <View className="flex-1">
+                                <Text className="text-xs text-gray-600 mb-1">
+                                  y (vertical, in)
+                                </Text>
+                                <TextInput
+                                  className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
+                                  placeholder="e.g., 3 or 2 7/8"
+                                  placeholderTextColor="#9CA3AF"
+                                  value={coord.y}
+                                  onChangeText={(text) => {
+                                    const newCoords = [...strandCoordinates];
+                                    newCoords[index] = { ...newCoords[index], y: text };
+                                    setStrandCoordinates(newCoords);
+                                  }}
+                                />
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                )}
               </View>
             )}
 

@@ -58,6 +58,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
 
   // Optional field
   const [topStrandPattern, setTopStrandPattern] = useState("");
+  const [productWidth, setProductWidth] = useState("");
 
   // Modals
   const [showProductModal, setShowProductModal] = useState(false);
@@ -129,6 +130,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
         productType: productType,
         strandPattern: strandPattern,
         topStrandPattern: topStrandPattern || undefined,
+        productWidth: productWidth ? parseFloat(productWidth) : undefined,
       },
     });
   };
@@ -369,6 +371,31 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </Pressable>
             </View>
+
+            {/* Product Width - Only show if selected pattern has coordinates */}
+            {selectedStrandPattern?.strandCoordinates && selectedStrandPattern.strandCoordinates.length > 0 && (
+              <View className="mb-4">
+                <View className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
+                  <View className="flex-row items-start">
+                    <Ionicons name="information-circle" size={16} color="#F59E0B" />
+                    <Text className="flex-1 text-xs text-amber-800 ml-2">
+                      This pattern supports cut-width products. Enter the actual width to calculate which strands are active.
+                    </Text>
+                  </View>
+                </View>
+                <Text className="text-gray-700 text-sm font-medium mb-2">
+                  Product Width (inches) - Optional for Cut Products
+                </Text>
+                <TextInput
+                  className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                  placeholder="Enter width in inches (e.g., 28)"
+                  placeholderTextColor="#9CA3AF"
+                  value={productWidth}
+                  onChangeText={setProductWidth}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            )}
           </View>
 
           {/* Continue Button */}

@@ -15,6 +15,7 @@ export type RootStackParamList = {
       productType: string;
       strandPattern: string;
       topStrandPattern?: string;
+      productWidth?: number;
     }
   };
   SlippageSummary: { 
@@ -34,6 +35,7 @@ export type RootStackParamList = {
       productType: string;
       strandPattern: string;
       topStrandPattern?: string;
+      productWidth?: number;
     };
   };
   SlippageHistory: undefined;

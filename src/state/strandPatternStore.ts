@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface StrandCoordinate {
+  x: number; // Horizontal distance from left edge (inches)
+  y: number; // Vertical distance from bottom (inches)
+}
+
 export interface CustomStrandPattern {
   id: string;
   patternId: string; // Format: "101-75" (pattern number - pulling force %)
@@ -11,6 +16,7 @@ export interface CustomStrandPattern {
   strand_1_2: number; // Count of 1/2" strands
   strand_0_6: number; // Count of 0.6" strands
   strandSizes?: Array<'3/8' | '1/2' | '0.6'>; // Size of each strand by position (left to right)
+  strandCoordinates?: StrandCoordinate[]; // (x,y) position of each strand from bottom-left corner
   eValue: number; // Distance from bottom to center of strand (inches)
   pullingForce: number; // Percentage of break strength (1-99%)
   totalArea: number; // Total strand area in in²

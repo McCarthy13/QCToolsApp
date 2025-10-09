@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Line, Path } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
@@ -46,6 +47,27 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   // Get the selected strand pattern
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
 
+  // Calculate active strands based on product width (if coordinates exist)
+  const activeStrandIndices = useMemo(() => {
+    if (!selectedPattern || !selectedPattern.strandCoordinates || !config.productWidth) {
+      // No coordinates or width provided, all strands are active
+      return null;
+    }
+
+    const { strandCoordinates } = selectedPattern;
+    const { productWidth } = config;
+
+    // Filter strands where x coordinate <= product width
+    const activeIndices: number[] = [];
+    strandCoordinates.forEach((coord, index) => {
+      if (coord.x <= productWidth) {
+        activeIndices.push(index);
+      }
+    });
+
+    return activeIndices;
+  }, [selectedPattern, config.productWidth]);
+
   // Calculate total strand count and initialize fields
   const initialSlippages = useMemo(() => {
     if (!selectedPattern) return [];
@@ -56,17 +78,22 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     const strands: StrandSlippage[] = [];
     for (let i = 1; i <= totalCount; i++) {
       const strandSize = selectedPattern.strandSizes?.[i - 1];
-      strands.push({
-        strandId: i.toString(),
-        leftSlippage: "0",
-        rightSlippage: "0",
-        leftExceedsOne: false,
-        rightExceedsOne: false,
-        size: strandSize,
-      });
+      const isActive = activeStrandIndices === null || activeStrandIndices.includes(i - 1);
+      
+      // Only include active strands
+      if (isActive) {
+        strands.push({
+          strandId: i.toString(),
+          leftSlippage: "0",
+          rightSlippage: "0",
+          leftExceedsOne: false,
+          rightExceedsOne: false,
+          size: strandSize,
+        });
+      }
     }
     return strands;
-  }, [selectedPattern]);
+  }, [selectedPattern, activeStrandIndices]);
 
   const [slippages, setSlippages] = useState<StrandSlippage[]>(initialSlippages);
 
@@ -420,11 +447,38 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
         {/* Cross-section diagram */}
         <GenericCrossSection />
 
+        {/* Cut-width info banner */}
+        {activeStrandIndices !== null && selectedPattern && (
+          <View className="px-6 mt-4">
+            <View className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <View className="flex-row items-start">
+                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                <View className="flex-1 ml-3">
+                  <Text className="text-green-900 font-semibold text-sm mb-1">
+                    Cut-Width Product Detected
+                  </Text>
+                  <Text className="text-green-800 text-sm">
+                    Product width: {config.productWidth}" • {' '}
+                    Active strands: {slippages.length} of {selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6}
+                    {'\n'}
+                    Only showing strands within the cut width.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Slippage inputs for each strand */}
-        <View className="px-6">
+        <View className="px-6">{activeStrandIndices === null ? (
           <Text className="text-gray-900 text-lg font-semibold mb-4">
             Slippage Values
           </Text>
+        ) : (
+          <Text className="text-gray-900 text-lg font-semibold mb-4 mt-4">
+            Slippage Values (Active Strands Only)
+          </Text>
+        )}
 
           {slippages.map((strand, index) => (
             <View
