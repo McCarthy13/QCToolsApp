@@ -467,6 +467,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [strand_3_8, setStrand_3_8] = useState(pattern?.strand_3_8.toString() || '0');
   const [strand_1_2, setStrand_1_2] = useState(pattern?.strand_1_2.toString() || '0');
   const [strand_0_6, setStrand_0_6] = useState(pattern?.strand_0_6.toString() || '0');
+  const [strandSizes, setStrandSizes] = useState<Array<'3/8' | '1/2' | '0.6'>>(pattern?.strandSizes || []);
   const [centroid, setCentroid] = useState('');
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
@@ -525,6 +526,46 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
     );
   };
 
+  // Get total strand count
+  const getTotalStrandCount = () => {
+    return (parseInt(strand_3_8) || 0) + (parseInt(strand_1_2) || 0) + (parseInt(strand_0_6) || 0);
+  };
+
+  // Update strand sizes array when counts change
+  React.useEffect(() => {
+    const totalCount = getTotalStrandCount();
+    if (totalCount > 0 && strandSizes.length !== totalCount) {
+      // Initialize or resize array
+      const newSizes: Array<'3/8' | '1/2' | '0.6'> = [];
+      for (let i = 0; i < totalCount; i++) {
+        newSizes.push(strandSizes[i] || '1/2'); // Default to 1/2"
+      }
+      setStrandSizes(newSizes);
+    } else if (totalCount === 0) {
+      setStrandSizes([]);
+    }
+  }, [strand_3_8, strand_1_2, strand_0_6]);
+
+  // Update a specific strand position's size
+  const updateStrandSize = (index: number, size: '3/8' | '1/2' | '0.6') => {
+    const newSizes = [...strandSizes];
+    newSizes[index] = size;
+    setStrandSizes(newSizes);
+  };
+
+  // Validate strand size designations match counts
+  const validateStrandDesignations = (): boolean => {
+    const count_3_8 = parseInt(strand_3_8) || 0;
+    const count_1_2 = parseInt(strand_1_2) || 0;
+    const count_0_6 = parseInt(strand_0_6) || 0;
+    
+    const designated_3_8 = strandSizes.filter(s => s === '3/8').length;
+    const designated_1_2 = strandSizes.filter(s => s === '1/2').length;
+    const designated_0_6 = strandSizes.filter(s => s === '0.6').length;
+
+    return designated_3_8 === count_3_8 && designated_1_2 === count_1_2 && designated_0_6 === count_0_6;
+  };
+
   const handleSave = () => {
     const validationErrors: string[] = [];
 
@@ -570,6 +611,16 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       validationErrors.push('Dead load must be greater than 0');
     }
 
+    // Validate strand size designations if strands exist
+    if (count_3_8 + count_1_2 + count_0_6 > 0 && !validateStrandDesignations()) {
+      const designated_3_8 = strandSizes.filter(s => s === '3/8').length;
+      const designated_1_2 = strandSizes.filter(s => s === '1/2').length;
+      const designated_0_6 = strandSizes.filter(s => s === '0.6').length;
+      validationErrors.push(
+        `Strand designations must match counts: Need ${count_3_8} × 3/8", ${count_1_2} × 1/2", ${count_0_6} × 0.6" but have ${designated_3_8}, ${designated_1_2}, ${designated_0_6}`
+      );
+    }
+
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
@@ -584,6 +635,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       strand_3_8: count_3_8,
       strand_1_2: count_1_2,
       strand_0_6: count_0_6,
+      strandSizes: strandSizes.length > 0 ? strandSizes : undefined,
       eValue: e,
       pullingForce: force,
       totalArea: calculateTotalArea(),
@@ -764,6 +816,82 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 </View>
               </View>
             </View>
+
+            {/* Strand Size Designations */}
+            {getTotalStrandCount() > 0 && (
+              <View className="mb-4">
+                <Text className="text-sm font-semibold text-gray-700 mb-2">
+                  Designate Strand Sizes (Position 1-{getTotalStrandCount()}, Left to Right)
+                </Text>
+                <Text className="text-xs text-gray-500 mb-3">
+                  Total: {parseInt(strand_3_8) || 0} × 3/8", {parseInt(strand_1_2) || 0} × 1/2", {parseInt(strand_0_6) || 0} × 0.6"
+                </Text>
+                
+                <View className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                  <View className="flex-row flex-wrap gap-2">
+                    {strandSizes.map((size, index) => (
+                      <View key={index} className="items-center">
+                        <Text className="text-xs text-gray-600 mb-1">
+                          Pos {index + 1}
+                        </Text>
+                        <View className="flex-row border border-gray-300 rounded-lg overflow-hidden">
+                          <Pressable
+                            onPress={() => updateStrandSize(index, '3/8')}
+                            className={`px-2 py-1 ${
+                              size === '3/8' ? 'bg-blue-500' : 'bg-white'
+                            }`}
+                          >
+                            <Text className={`text-xs font-semibold ${
+                              size === '3/8' ? 'text-white' : 'text-gray-700'
+                            }`}>
+                              3/8
+                            </Text>
+                          </Pressable>
+                          <View className="w-px bg-gray-300" />
+                          <Pressable
+                            onPress={() => updateStrandSize(index, '1/2')}
+                            className={`px-2 py-1 ${
+                              size === '1/2' ? 'bg-green-500' : 'bg-white'
+                            }`}
+                          >
+                            <Text className={`text-xs font-semibold ${
+                              size === '1/2' ? 'text-white' : 'text-gray-700'
+                            }`}>
+                              1/2
+                            </Text>
+                          </Pressable>
+                          <View className="w-px bg-gray-300" />
+                          <Pressable
+                            onPress={() => updateStrandSize(index, '0.6')}
+                            className={`px-2 py-1 ${
+                              size === '0.6' ? 'bg-purple-500' : 'bg-white'
+                            }`}
+                          >
+                            <Text className={`text-xs font-semibold ${
+                              size === '0.6' ? 'text-white' : 'text-gray-700'
+                            }`}>
+                              0.6
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                  
+                  {/* Count verification */}
+                  <View className="mt-3 pt-3 border-t border-gray-300">
+                    <Text className="text-xs text-gray-600">
+                      Designated: {strandSizes.filter(s => s === '3/8').length} × 3/8", {strandSizes.filter(s => s === '1/2').length} × 1/2", {strandSizes.filter(s => s === '0.6').length} × 0.6"
+                    </Text>
+                    {!validateStrandDesignations() && (
+                      <Text className="text-xs text-orange-600 font-semibold mt-1">
+                        ⚠ Designations must match strand counts above
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Centroid */}
             <View className="mb-4">
