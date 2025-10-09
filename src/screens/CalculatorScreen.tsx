@@ -23,6 +23,7 @@ import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { parseMeasurementInput } from '../utils/cn';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Calculator'>;
 
@@ -49,6 +50,7 @@ export default function CalculatorScreen() {
   const [spanFeet, setSpanFeet] = useState('');
   const [spanInches, setSpanInches] = useState('');
   const [spanFraction, setSpanFraction] = useState('0');
+  const [productWidth, setProductWidth] = useState('');
   const [memberType, setMemberType] = useState(currentInputs.memberType || 'hollow-core');
   const [releaseStrength, setReleaseStrength] = useState('3500');
   const [concreteStrength, setConcreteStrength] = useState(
@@ -89,6 +91,9 @@ export default function CalculatorScreen() {
     // Get selected custom pattern
     const selectedPattern = customPatterns.find(p => p.id === strandPattern);
     
+    // Parse product width if provided
+    const parsedWidth = productWidth.trim() ? parseMeasurementInput(productWidth) : null;
+    
     const inputs: Partial<CamberInputs> = {
       span: spanInFeet,
       memberType: memberType as CamberInputs['memberType'],
@@ -100,6 +105,7 @@ export default function CalculatorScreen() {
       strandPattern: strandPattern || undefined,
       strandEValue: selectedPattern?.eValue,
       topStrandPattern: topStrandPattern || undefined,
+      productWidth: parsedWidth !== null ? parsedWidth : undefined,
       projectNumber: projectNumber || undefined,
       markNumber: markNumber || undefined,
       idNumber: idNumber || undefined,
@@ -391,6 +397,24 @@ export default function CalculatorScreen() {
                   Total: {getSpanInFeet().toFixed(3)} feet
                 </Text>
               )}
+            </View>
+
+            {/* Product Width Input */}
+            <View className="mb-5">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Product Width (Optional)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                For cut-width products, enter actual width in inches (decimal or fraction)
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                placeholder="e.g., 28 or 28 1/2 or 28.5"
+                placeholderTextColor="#9CA3AF"
+                value={productWidth}
+                onChangeText={setProductWidth}
+                keyboardType="default"
+              />
             </View>
 
             {/* Strand Pattern (Required) */}

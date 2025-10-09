@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { Ionicons } from "@expo/vector-icons";
+import { parseMeasurementInput } from "../utils/cn";
 
 type ProductDetailsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -119,6 +120,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
       return;
     }
 
+    // Parse product width if provided
+    const parsedWidth = productWidth.trim() ? parseMeasurementInput(productWidth) : null;
+
     // Navigate to slippage identifier with configuration
     navigation.navigate("SlippageIdentifier", {
       config: {
@@ -130,7 +134,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
         productType: productType,
         strandPattern: strandPattern,
         topStrandPattern: topStrandPattern || undefined,
-        productWidth: productWidth ? parseFloat(productWidth) : undefined,
+        productWidth: parsedWidth !== null ? parsedWidth : undefined,
       },
     });
   };
@@ -274,6 +278,24 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             </View>
+
+            {/* Product Width Entry */}
+            <View className="mb-6">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Product Width (Optional)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                For cut-width products, enter actual width in inches (decimal or fraction)
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                placeholder="e.g., 28 or 28 1/2 or 28.5"
+                placeholderTextColor="#9CA3AF"
+                value={productWidth}
+                onChangeText={setProductWidth}
+                keyboardType="default"
+              />
+            </View>
           </View>
 
           {/* Required Configuration */}
@@ -372,30 +394,6 @@ export default function ProductDetailsScreen({ navigation }: Props) {
               </Pressable>
             </View>
 
-            {/* Product Width - Only show if selected pattern has coordinates */}
-            {selectedStrandPattern?.strandCoordinates && selectedStrandPattern.strandCoordinates.length > 0 && (
-              <View className="mb-4">
-                <View className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
-                  <View className="flex-row items-start">
-                    <Ionicons name="information-circle" size={16} color="#F59E0B" />
-                    <Text className="flex-1 text-xs text-amber-800 ml-2">
-                      This pattern supports cut-width products. Enter the actual width to calculate which strands are active.
-                    </Text>
-                  </View>
-                </View>
-                <Text className="text-gray-700 text-sm font-medium mb-2">
-                  Product Width (inches) - Optional for Cut Products
-                </Text>
-                <TextInput
-                  className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-                  placeholder="Enter width in inches (e.g., 28)"
-                  placeholderTextColor="#9CA3AF"
-                  value={productWidth}
-                  onChangeText={setProductWidth}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-            )}
           </View>
 
           {/* Continue Button */}
