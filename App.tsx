@@ -15,6 +15,7 @@ import StrandPatternsScreen from "./src/screens/StrandPatternsScreen";
 import ProductDetailsScreen from "./src/screens/ProductDetailsScreen";
 import SlippageIdentifierScreen from "./src/screens/SlippageIdentifierScreen";
 import SlippageSummaryScreen from "./src/screens/SlippageSummaryScreen";
+import SlippageHistoryScreen from "./src/screens/SlippageHistoryScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -223,22 +224,45 @@ export default function App() {
             <Stack.Screen
               name="ProductDetails"
               component={ProductDetailsScreen}
-              options={{
+              options={({ navigation }) => ({
                 title: "Product Details",
-              }}
+                headerRight: () => (
+                  <Pressable
+                    onPress={() => navigation.navigate("SlippageHistory")}
+                    className="mr-1"
+                  >
+                    <Ionicons name="time-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
             />
             <Stack.Screen
               name="SlippageIdentifier"
               component={SlippageIdentifierScreen}
-              options={{
+              options={({ navigation }) => ({
                 title: "Slippage Identifier",
-              }}
+                headerRight: () => (
+                  <Pressable
+                    onPress={() => navigation.navigate("SlippageHistory")}
+                    className="mr-1"
+                  >
+                    <Ionicons name="time-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
             />
             <Stack.Screen
               name="SlippageSummary"
               component={SlippageSummaryScreen}
               options={{
                 title: "Slippage Summary",
+              }}
+            />
+            <Stack.Screen
+              name="SlippageHistory"
+              component={SlippageHistoryScreen}
+              options={{
+                title: "Slippage History",
               }}
             />
           </Stack.Navigator>

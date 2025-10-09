@@ -36,4 +36,5 @@ export type RootStackParamList = {
       topStrandPattern?: string;
     };
   };
+  SlippageHistory: undefined;
 };

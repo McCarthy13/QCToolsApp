@@ -1,12 +1,16 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import Svg, { Line, Path } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
+import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
+import { useAuthStore } from "../state/authStore";
+import ConfirmModal from "../components/ConfirmModal";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -26,6 +30,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { slippages, config } = route.params;
   const { customPatterns } = useStrandPatternStore();
+  const { addUserRecord, publishRecord } = useSlippageHistoryStore();
+  const currentUser = useAuthStore((state) => state.currentUser);
+  
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
 
   // Get the selected strand pattern
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
@@ -35,6 +46,35 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const index = parseInt(strandId) - 1;
     const size = selectedPattern?.strandSizes?.[index];
     return size ? `${size}"` : '';
+  };
+
+  // Save and publish handlers
+  const handleSave = () => {
+    const record: SlippageRecord = {
+      id: `slippage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      slippages,
+      config,
+      createdBy: currentUser?.email || 'Unknown',
+    };
+    addUserRecord(record);
+    setSaveSuccess(true);
+    setShowSaveModal(false);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handlePublish = () => {
+    const record: SlippageRecord = {
+      id: `slippage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      slippages,
+      config,
+      createdBy: currentUser?.email || 'Unknown',
+    };
+    publishRecord(record, currentUser?.email || 'Unknown');
+    setPublishSuccess(true);
+    setShowPublishModal(false);
+    setTimeout(() => setPublishSuccess(false), 3000);
   };
 
   // Calculate all slippage statistics
@@ -523,17 +563,86 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             })}
           </View>
 
-          {/* Back Button */}
+          {/* Success Messages */}
+          {saveSuccess && (
+            <View className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 flex-row items-center">
+              <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+              <Text className="text-green-700 font-semibold ml-3">
+                Record saved successfully!
+              </Text>
+            </View>
+          )}
+          
+          {publishSuccess && (
+            <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex-row items-center">
+              <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+              <Text className="text-blue-700 font-semibold ml-3">
+                Record published successfully!
+              </Text>
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View className="flex-row gap-3 mb-3">
+            <Pressable
+              className="flex-1 bg-green-500 rounded-xl py-4 items-center active:bg-green-600"
+              onPress={() => setShowSaveModal(true)}
+            >
+              <View className="flex-row items-center">
+                <Ionicons name="save-outline" size={20} color="white" />
+                <Text className="text-white text-base font-semibold ml-2">
+                  Save
+                </Text>
+              </View>
+            </Pressable>
+            
+            <Pressable
+              className="flex-1 bg-purple-500 rounded-xl py-4 items-center active:bg-purple-600"
+              onPress={() => setShowPublishModal(true)}
+            >
+              <View className="flex-row items-center">
+                <Ionicons name="cloud-upload-outline" size={20} color="white" />
+                <Text className="text-white text-base font-semibold ml-2">
+                  Publish
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+
           <Pressable
-            className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mb-4"
+            className="bg-gray-100 rounded-xl py-4 items-center active:bg-gray-200 mb-4"
             onPress={() => navigation.goBack()}
           >
-            <Text className="text-white text-base font-semibold">
+            <Text className="text-gray-700 text-base font-semibold">
               Back to Input
             </Text>
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Save Confirmation Modal */}
+      <ConfirmModal
+        visible={showSaveModal}
+        title="Save Record"
+        message="Save this slippage record to your personal records?"
+        confirmText="Save"
+        cancelText="Cancel"
+        confirmStyle="default"
+        onConfirm={handleSave}
+        onCancel={() => setShowSaveModal(false)}
+      />
+
+      {/* Publish Confirmation Modal */}
+      <ConfirmModal
+        visible={showPublishModal}
+        title="Publish Record"
+        message="Publish this slippage record to the official records visible to all users?"
+        confirmText="Publish"
+        cancelText="Cancel"
+        confirmStyle="default"
+        onConfirm={handlePublish}
+        onCancel={() => setShowPublishModal(false)}
+      />
     </View>
   );
 }
