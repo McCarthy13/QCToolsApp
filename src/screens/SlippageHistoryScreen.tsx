@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -78,60 +78,46 @@ export default function SlippageHistoryScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={styles.container}>
       <ScrollView
-        className="flex-1"
+        style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-        <View className="p-5">
+        <View style={styles.content}>
           {/* Header */}
-          <View className="flex-row items-center justify-between mb-6">
-            <View className="flex-1">
-              <Text className="text-3xl font-bold text-gray-900 mb-1">
-                Slippage History
-              </Text>
-              <Text className="text-sm text-gray-600">
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.title}>Slippage History</Text>
+              <Text style={styles.subtitle}>
                 {currentRecords.length} {currentRecords.length === 1 ? "record" : "records"}
               </Text>
             </View>
             {currentRecords.length > 0 && canDelete && (
               <Pressable
                 onPress={() => setShowClearAllModal(true)}
-                className="bg-red-50 px-3 py-2 rounded-lg"
+                style={styles.clearButton}
               >
-                <Text className="text-red-600 text-sm font-medium">Clear All</Text>
+                <Text style={styles.clearButtonText}>Clear All</Text>
               </Pressable>
             )}
           </View>
 
           {/* Tabs */}
-          <View className="flex-row mb-6 bg-gray-200 rounded-xl p-1">
+          <View style={styles.tabContainer}>
             <Pressable
               onPress={() => setActiveTab("my-records")}
-              className={`flex-1 py-3 rounded-lg ${
-                activeTab === "my-records" ? "bg-white shadow-sm" : "bg-transparent"
-              }`}
+              style={[styles.tab, activeTab === "my-records" && styles.activeTab]}
             >
-              <Text
-                className={`text-center font-semibold ${
-                  activeTab === "my-records" ? "text-gray-900" : "text-gray-500"
-                }`}
-              >
+              <Text style={[styles.tabText, activeTab === "my-records" && styles.activeTabText]}>
                 My Records
               </Text>
             </Pressable>
             
             <Pressable
               onPress={() => setActiveTab("published")}
-              className={`flex-1 py-3 rounded-lg ${
-                activeTab === "published" ? "bg-white shadow-sm" : "bg-transparent"
-              }`}
+              style={[styles.tab, activeTab === "published" && styles.activeTab]}
             >
-              <Text
-                className={`text-center font-semibold ${
-                  activeTab === "published" ? "text-gray-900" : "text-gray-500"
-                }`}
-              >
+              <Text style={[styles.tabText, activeTab === "published" && styles.activeTabText]}>
                 Published Records
               </Text>
             </Pressable>
@@ -139,33 +125,31 @@ export default function SlippageHistoryScreen() {
 
           {/* Records List */}
           {currentRecords.length === 0 ? (
-            <View className="items-center justify-center py-20">
-              <View className="bg-gray-100 rounded-full p-6 mb-4">
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
                 <Ionicons
                   name={activeTab === "my-records" ? "folder-outline" : "cloud-outline"}
                   size={48}
                   color="#9CA3AF"
                 />
               </View>
-              <Text className="text-lg font-semibold text-gray-900 mb-2">
+              <Text style={styles.emptyTitle}>
                 {activeTab === "my-records" ? "No Records Yet" : "No Published Records"}
               </Text>
-              <Text className="text-sm text-gray-600 text-center mb-6 px-8">
+              <Text style={styles.emptyMessage}>
                 {activeTab === "my-records"
                   ? "Your saved slippage records will appear here"
                   : "Published slippage records from all users will appear here"}
               </Text>
               <Pressable
                 onPress={() => navigation.navigate("ProductDetails")}
-                className="bg-blue-500 px-6 py-3 rounded-xl"
+                style={styles.createButton}
               >
-                <Text className="text-white font-semibold">
-                  Create New Record
-                </Text>
+                <Text style={styles.createButtonText}>Create New Record</Text>
               </Pressable>
             </View>
           ) : (
-            <View className="space-y-3">
+            <View style={styles.recordsList}>
               {currentRecords.map((record) => {
                 const { total, hasExceeds } = calculateTotalSlippage(record);
                 const pattern = customPatterns.find((p) => p.id === record.config.strandPattern);
@@ -175,42 +159,40 @@ export default function SlippageHistoryScreen() {
                   <Pressable
                     key={record.id}
                     onPress={() => handleRecordPress(record)}
-                    className="bg-white rounded-xl p-4 shadow-sm active:bg-gray-50"
+                    style={styles.recordCard}
                   >
-                    <View className="flex-row items-start justify-between mb-3">
-                      <View className="flex-1">
-                        <View className="flex-row items-center mb-1">
-                          <Text className="text-base font-semibold text-gray-900">
+                    <View style={styles.recordHeader}>
+                      <View style={styles.recordHeaderLeft}>
+                        <View style={styles.recordTitleRow}>
+                          <Text style={styles.recordTitle}>
                             {record.config.projectName || "Unnamed Project"}
                           </Text>
                           {isPublished && (
-                            <View className="bg-purple-100 px-2 py-0.5 rounded ml-2">
-                              <Text className="text-xs font-bold text-purple-700">
-                                PUBLISHED
-                              </Text>
+                            <View style={styles.publishedBadge}>
+                              <Text style={styles.publishedBadgeText}>PUBLISHED</Text>
                             </View>
                           )}
                         </View>
                         
                         {(record.config.projectNumber || record.config.markNumber || record.config.idNumber) && (
-                          <View className="flex-row flex-wrap gap-2 mb-1">
+                          <View style={styles.recordMetaRow}>
                             {record.config.projectNumber && (
-                              <View className="bg-gray-100 px-2 py-0.5 rounded">
-                                <Text className="text-xs text-gray-700">
+                              <View style={styles.metaBadge}>
+                                <Text style={styles.metaBadgeText}>
                                   Proj: {record.config.projectNumber}
                                 </Text>
                               </View>
                             )}
                             {record.config.markNumber && (
-                              <View className="bg-gray-100 px-2 py-0.5 rounded">
-                                <Text className="text-xs text-gray-700">
+                              <View style={styles.metaBadge}>
+                                <Text style={styles.metaBadgeText}>
                                   Mark: {record.config.markNumber}
                                 </Text>
                               </View>
                             )}
                             {record.config.idNumber && (
-                              <View className="bg-gray-100 px-2 py-0.5 rounded">
-                                <Text className="text-xs text-gray-700">
+                              <View style={styles.metaBadge}>
+                                <Text style={styles.metaBadgeText}>
                                   ID: {record.config.idNumber}
                                 </Text>
                               </View>
@@ -218,14 +200,12 @@ export default function SlippageHistoryScreen() {
                           </View>
                         )}
                         
-                        <Text className="text-xs text-gray-500">
+                        <Text style={styles.recordDate}>
                           {format(new Date(record.timestamp), "MMM dd, yyyy • h:mm a")}
                         </Text>
-                        <Text className="text-xs text-gray-500">
-                          By: {record.createdBy}
-                        </Text>
+                        <Text style={styles.recordCreator}>By: {record.createdBy}</Text>
                         {isPublished && (
-                          <Text className="text-xs text-purple-600">
+                          <Text style={styles.recordPublished}>
                             Published: {format(new Date((record as PublishedSlippageRecord).publishedAt), "MMM dd, yyyy")}
                           </Text>
                         )}
@@ -234,57 +214,57 @@ export default function SlippageHistoryScreen() {
                       {canDelete && (
                         <Pressable
                           onPress={() => setDeleteItemId(record.id)}
-                          className="bg-red-50 rounded-full p-2 ml-2"
+                          style={styles.deleteButton}
                         >
                           <Ionicons name="trash-outline" size={16} color="#EF4444" />
                         </Pressable>
                       )}
                     </View>
 
-                    <View className="border-t border-gray-100 pt-3">
-                      <View className="flex-row items-center justify-between mb-2">
-                        <View className="flex-row items-center">
+                    <View style={styles.recordDivider} />
+
+                    <View style={styles.recordDetails}>
+                      <View style={styles.recordDetailRow}>
+                        <View style={styles.recordDetailLeft}>
                           <Ionicons name="cube-outline" size={16} color="#6B7280" />
-                          <Text className="text-sm text-gray-600 ml-1">
+                          <Text style={styles.recordDetailText}>
                             {record.config.productType}
                           </Text>
                         </View>
                         {record.config.span && (
-                          <Text className="text-sm text-gray-600">
+                          <Text style={styles.recordDetailText}>
                             {record.config.span}" span
                           </Text>
                         )}
                       </View>
 
                       {pattern && (
-                        <View className="flex-row items-center mb-2">
+                        <View style={styles.recordDetailLeft}>
                           <Ionicons name="albums-outline" size={16} color="#6B7280" />
-                          <Text className="text-sm text-gray-600 ml-1">
+                          <Text style={styles.recordDetailText}>
                             Pattern: {pattern.name}
                           </Text>
                         </View>
                       )}
 
-                      <View className="bg-blue-50 rounded-lg px-3 py-2 mt-2">
-                        <View className="flex-row items-center justify-between">
-                          <Text className="text-xs text-blue-700 font-medium">
-                            Total Slippage
-                          </Text>
-                          <Text className="text-base font-bold text-blue-700">
+                      <View style={styles.totalSlippageCard}>
+                        <View style={styles.totalSlippageRow}>
+                          <Text style={styles.totalSlippageLabel}>Total Slippage</Text>
+                          <Text style={styles.totalSlippageValue}>
                             {hasExceeds && ">"}
                             {total.toFixed(3)}" (≈{hasExceeds && ">"}
                             {decimalToFraction(total)})
                           </Text>
                         </View>
                         {hasExceeds && (
-                          <Text className="text-orange-600 text-xs mt-1 font-semibold">
+                          <Text style={styles.warningText}>
                             ⚠ Contains values exceeding 1"
                           </Text>
                         )}
                       </View>
                     </View>
 
-                    <View className="flex-row items-center justify-end mt-3">
+                    <View style={styles.recordFooter}>
                       <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
                     </View>
                   </Pressable>
@@ -322,3 +302,243 @@ export default function SlippageHistoryScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  clearButton: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  clearButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 24,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  activeTab: {
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    textAlign: 'center',
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  activeTabText: {
+    color: '#111827',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 9999,
+    padding: 24,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  emptyMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 32,
+  },
+  createButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  createButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  recordsList: {
+    gap: 12,
+  },
+  recordCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  recordHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  recordHeaderLeft: {
+    flex: 1,
+  },
+  recordTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  recordTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  publishedBadge: {
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  publishedBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#7C3AED',
+  },
+  recordMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  metaBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  metaBadgeText: {
+    fontSize: 12,
+    color: '#374151',
+  },
+  recordDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  recordCreator: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  recordPublished: {
+    fontSize: 12,
+    color: '#7C3AED',
+  },
+  deleteButton: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 9999,
+    padding: 8,
+    marginLeft: 8,
+  },
+  recordDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 12,
+  },
+  recordDetails: {
+    gap: 8,
+  },
+  recordDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recordDetailLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  recordDetailText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  totalSlippageCard: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+  totalSlippageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  totalSlippageLabel: {
+    fontSize: 12,
+    color: '#1D4ED8',
+    fontWeight: '500',
+  },
+  totalSlippageValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1D4ED8',
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#EA580C',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  recordFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+  },
+});
