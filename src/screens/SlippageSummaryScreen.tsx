@@ -138,10 +138,19 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     // Combine sections
     const body = productDetails + slippageSummary;
     
-    // Create mailto link with user's email as the "from" hint
-    // Note: Most email clients will use their default "from" address for security,
-    // but we include it here and in the body for reference
-    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // Create mailto link with user's registered email
+    // Using both standard "from" parameter and Outlook-specific "account" parameter
+    // This helps multi-account email apps (like Outlook) select the correct sending account
+    const mailtoParams = new URLSearchParams({
+      subject: subject,
+      body: body,
+    });
+    
+    // Add the user's email to help the email client select the correct account
+    // Different email clients support different parameters:
+    // - "from" is semi-standard but often ignored for security
+    // - Some clients look at the parameters to match against configured accounts
+    const mailto = `mailto:${encodeURIComponent(userEmail)}?${mailtoParams.toString()}`;
     
     try {
       const canOpen = await Linking.canOpenURL(mailto);
