@@ -50,14 +50,14 @@ export default function SlippageIdentifierScreen() {
 
     // EXACT DIMENSIONS from specifications
     // Real: 8" tall x 48" wide
-    // Scale factor for display - INCREASED for larger model
-    const scale = 5; // 5 pixels per inch (increased from 3)
-    const plankWidth = 48 * scale; // 240px
-    const plankHeight = 8 * scale; // 40px
+    // Scale factor for display - adjusted to fit screen
+    const scale = 4; // 4 pixels per inch
+    const plankWidth = 48 * scale; // 192px
+    const plankHeight = 8 * scale; // 32px
     
-    // Starting position for near face - adjusted for larger size
-    const startX = 20;
-    const startY = 130;
+    // Starting position for near face
+    const startX = 30;
+    const startY = 135;
 
     // Isometric angle offsets
     const depth = 180;
@@ -65,11 +65,11 @@ export default function SlippageIdentifierScreen() {
     const depthY = depth * 0.5;
 
     // EXACT CORE DIMENSIONS
-    const coreWidth = 5.5 * scale; // 27.5px
-    const coreHeight = 5.625 * scale; // 28.125px
-    const coreBottomFromPlankBottom = 1.1875 * scale; // 5.9375px
-    const edgeToCoreEdge = 2.625 * scale; // 13.125px
-    const spacingBetweenCores = 1.9375 * scale; // 9.6875px
+    const coreWidth = 5.5 * scale; // 22px
+    const coreHeight = 5.625 * scale; // 22.5px
+    const coreBottomFromPlankBottom = 1.1875 * scale; // 4.75px
+    const edgeToCoreEdge = 2.625 * scale; // 10.5px
+    const spacingBetweenCores = 1.9375 * scale; // 7.75px
     
     // Calculate core center positions
     const coreBottomY = plankHeight - coreBottomFromPlankBottom;
@@ -84,33 +84,33 @@ export default function SlippageIdentifierScreen() {
       cy: coreCenterY,
     }));
 
-    // Helper function to draw a capsule/pill shaped core: rounded top AND bottom
+    // Helper function to draw octagon-like core: rounded top, angled sides, flat bottom
     const drawCore = (cx: number, cy: number) => {
       const halfWidth = coreWidth / 2;
       const halfHeight = coreHeight / 2;
-      const radius = halfWidth; // Same radius for both top and bottom
+      const topRadius = halfWidth * 0.9; // Large rounded top
+      const chamferSize = halfWidth * 0.3; // Size of the angled corners
       
-      // The straight section height (total height minus the two semicircles)
-      const straightHeight = coreHeight - coreWidth;
-      const straightHalfHeight = straightHeight / 2;
+      // Start at bottom left corner
+      let corePath = `M ${cx - halfWidth + chamferSize} ${cy + halfHeight}`;
       
-      // Start at bottom center, going clockwise
-      let corePath = `M ${cx} ${cy + halfHeight}`;
+      // Flat bottom (with chamfered corners)
+      corePath += ` L ${cx + halfWidth - chamferSize} ${cy + halfHeight}`;
       
-      // Bottom semicircle (right to left)
-      corePath += ` A ${radius} ${radius} 0 0 0 ${cx - halfWidth} ${cy + straightHalfHeight}`;
+      // Bottom right chamfer (angled)
+      corePath += ` L ${cx + halfWidth} ${cy + halfHeight - chamferSize}`;
       
-      // Straight up left side
-      corePath += ` L ${cx - halfWidth} ${cy - straightHalfHeight}`;
+      // Straight up right side
+      corePath += ` L ${cx + halfWidth} ${cy - halfHeight + topRadius}`;
       
-      // Top semicircle (left to right)
-      corePath += ` A ${radius} ${radius} 0 0 1 ${cx + halfWidth} ${cy - straightHalfHeight}`;
+      // Rounded top (large arc from right to left)
+      corePath += ` A ${topRadius} ${topRadius} 0 0 0 ${cx - halfWidth} ${cy - halfHeight + topRadius}`;
       
-      // Straight down right side
-      corePath += ` L ${cx + halfWidth} ${cy + straightHalfHeight}`;
+      // Straight down left side
+      corePath += ` L ${cx - halfWidth} ${cy + halfHeight - chamferSize}`;
       
-      // Back to start (completes bottom semicircle)
-      corePath += ` A ${radius} ${radius} 0 0 0 ${cx} ${cy + halfHeight}`;
+      // Bottom left chamfer (angled)
+      corePath += ` L ${cx - halfWidth + chamferSize} ${cy + halfHeight}`;
       
       corePath += ` Z`;
       
