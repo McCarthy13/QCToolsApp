@@ -130,10 +130,11 @@ export default function SlippageIdentifierScreen() {
     // Strand positions (will add back later)
     const strandPositions: any[] = [];
 
-    // Helper to draw the 8048 cross-section shape - EXACT trace of provided image
-    const drawCrossSection = (offsetX: number, offsetY: number) => {
+    // Helper to draw the 8048 cross-section shape
+    const drawCrossSection = (offsetX: number, offsetY: number, isHidden: boolean) => {
       const x = startX + offsetX;
       const y = startY + offsetY;
+      const strokeDash = isHidden ? "3,3" : undefined;
       
       // Keyway dimensions (on the SIDES, indenting IN) - larger and more rectangular
       const keywayWidth = 8; // Taller
@@ -188,16 +189,18 @@ export default function SlippageIdentifierScreen() {
             d={pathData}
             stroke="#2563EB"
             strokeWidth={2}
+            strokeDasharray={strokeDash}
             fill="none"
           />
 
-          {/* Hollow cores - 6 cores with rounded tops */}
+          {/* Hollow cores */}
           {cores.map((core, idx) => (
             <Path
               key={`core-${idx}`}
               d={drawCore(x + core.cx, y + core.cy)}
               stroke="#2563EB"
               strokeWidth={1.5}
+              strokeDasharray={strokeDash}
               fill="none"
             />
           ))}
@@ -211,14 +214,24 @@ export default function SlippageIdentifierScreen() {
           3D VIEW - 8048 Hollow Core Plank
         </Text>
         <Svg width={svgWidth} height={svgHeight}>
-          {/* NEAR FACE (END 1) */}
-          {drawCrossSection(0, 0)}
+          {/* NEAR FACE (END 1) - SOLID (visible) */}
+          {drawCrossSection(0, 0, false)}
 
-          {/* FAR FACE (END 2) */}
-          {drawCrossSection(depthX, -depthY)}
+          {/* FAR FACE (END 2) - DOTTED (hidden) */}
+          {drawCrossSection(depthX, -depthY, true)}
 
           {/* CONNECTING EDGES for 3D effect */}
-          {/* Top right */}
+          {/* Top left - DOTTED (hidden - goes behind) */}
+          <Line
+            x1={startX}
+            y1={startY}
+            x2={startX + depthX}
+            y2={startY - depthY}
+            stroke="#2563EB"
+            strokeWidth={1.5}
+            strokeDasharray="3,3"
+          />
+          {/* Top right - SOLID (visible) */}
           <Line
             x1={startX + plankWidth}
             y1={startY}
@@ -226,9 +239,8 @@ export default function SlippageIdentifierScreen() {
             y2={startY - depthY}
             stroke="#2563EB"
             strokeWidth={1.5}
-            strokeDasharray="3,3"
           />
-          {/* Bottom right */}
+          {/* Bottom right - SOLID (visible) */}
           <Line
             x1={startX + plankWidth}
             y1={startY + plankHeight}
@@ -236,9 +248,8 @@ export default function SlippageIdentifierScreen() {
             y2={startY + plankHeight - depthY}
             stroke="#2563EB"
             strokeWidth={1.5}
-            strokeDasharray="3,3"
           />
-          {/* Bottom left */}
+          {/* Bottom left - SOLID (visible) */}
           <Line
             x1={startX}
             y1={startY + plankHeight}
@@ -246,7 +257,6 @@ export default function SlippageIdentifierScreen() {
             y2={startY + plankHeight - depthY}
             stroke="#2563EB"
             strokeWidth={1.5}
-            strokeDasharray="3,3"
           />
         </Svg>
         
