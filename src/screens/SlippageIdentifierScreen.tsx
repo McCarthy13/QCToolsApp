@@ -50,14 +50,14 @@ export default function SlippageIdentifierScreen() {
 
     // EXACT DIMENSIONS from specifications
     // Real: 8" tall x 48" wide
-    // Scale factor for display
-    const scale = 3; // 3 pixels per inch
-    const plankWidth = 48 * scale; // 144px
-    const plankHeight = 8 * scale; // 24px
+    // Scale factor for display - INCREASED for larger model
+    const scale = 5; // 5 pixels per inch (increased from 3)
+    const plankWidth = 48 * scale; // 240px
+    const plankHeight = 8 * scale; // 40px
     
-    // Starting position for near face
-    const startX = 40;
-    const startY = 140;
+    // Starting position for near face - adjusted for larger size
+    const startX = 20;
+    const startY = 130;
 
     // Isometric angle offsets
     const depth = 180;
@@ -65,11 +65,11 @@ export default function SlippageIdentifierScreen() {
     const depthY = depth * 0.5;
 
     // EXACT CORE DIMENSIONS
-    const coreWidth = 5.5 * scale; // 16.5px
-    const coreHeight = 5.625 * scale; // 16.875px
-    const coreBottomFromPlankBottom = 1.1875 * scale; // 3.5625px
-    const edgeToCoreEdge = 2.625 * scale; // 7.875px
-    const spacingBetweenCores = 1.9375 * scale; // 5.8125px
+    const coreWidth = 5.5 * scale; // 27.5px
+    const coreHeight = 5.625 * scale; // 28.125px
+    const coreBottomFromPlankBottom = 1.1875 * scale; // 5.9375px
+    const edgeToCoreEdge = 2.625 * scale; // 13.125px
+    const spacingBetweenCores = 1.9375 * scale; // 9.6875px
     
     // Calculate core center positions
     const coreBottomY = plankHeight - coreBottomFromPlankBottom;
@@ -84,26 +84,33 @@ export default function SlippageIdentifierScreen() {
       cy: coreCenterY,
     }));
 
-    // Helper function to draw a core shape: rounded top, straight sides, flat bottom
+    // Helper function to draw a capsule/pill shaped core: rounded top AND bottom
     const drawCore = (cx: number, cy: number) => {
       const halfWidth = coreWidth / 2;
       const halfHeight = coreHeight / 2;
-      const topRadius = halfWidth; // Top is semicircular
+      const radius = halfWidth; // Same radius for both top and bottom
       
-      // Start at bottom left
-      let corePath = `M ${cx - halfWidth} ${cy + halfHeight}`;
+      // The straight section height (total height minus the two semicircles)
+      const straightHeight = coreHeight - coreWidth;
+      const straightHalfHeight = straightHeight / 2;
       
-      // Straight up left side to where the arc starts
-      corePath += ` L ${cx - halfWidth} ${cy - halfHeight + topRadius}`;
+      // Start at bottom center, going clockwise
+      let corePath = `M ${cx} ${cy + halfHeight}`;
       
-      // Rounded top (semicircular arc)
-      corePath += ` A ${topRadius} ${topRadius} 0 0 1 ${cx + halfWidth} ${cy - halfHeight + topRadius}`;
+      // Bottom semicircle (right to left)
+      corePath += ` A ${radius} ${radius} 0 0 0 ${cx - halfWidth} ${cy + straightHalfHeight}`;
+      
+      // Straight up left side
+      corePath += ` L ${cx - halfWidth} ${cy - straightHalfHeight}`;
+      
+      // Top semicircle (left to right)
+      corePath += ` A ${radius} ${radius} 0 0 1 ${cx + halfWidth} ${cy - straightHalfHeight}`;
       
       // Straight down right side
-      corePath += ` L ${cx + halfWidth} ${cy + halfHeight}`;
+      corePath += ` L ${cx + halfWidth} ${cy + straightHalfHeight}`;
       
-      // Flat bottom
-      corePath += ` L ${cx - halfWidth} ${cy + halfHeight}`;
+      // Back to start (completes bottom semicircle)
+      corePath += ` A ${radius} ${radius} 0 0 0 ${cx} ${cy + halfHeight}`;
       
       corePath += ` Z`;
       
