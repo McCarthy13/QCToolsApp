@@ -227,12 +227,13 @@ export default function App() {
               options={({ navigation }) => ({
                 title: "Product Details",
                 headerRight: () => (
-                  <Pressable
-                    onPress={() => navigation.navigate("SlippageHistory")}
-                    className="mr-1"
-                  >
-                    <Ionicons name="time-outline" size={24} color="#111827" />
-                  </Pressable>
+                  <View style={{ marginRight: 4 }}>
+                    <Pressable
+                      onPress={() => navigation.navigate("SlippageHistory")}
+                    >
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
                 ),
               })}
             />
@@ -242,12 +243,13 @@ export default function App() {
               options={({ navigation }) => ({
                 title: "Slippage Identifier",
                 headerRight: () => (
-                  <Pressable
-                    onPress={() => navigation.navigate("SlippageHistory")}
-                    className="mr-1"
-                  >
-                    <Ionicons name="time-outline" size={24} color="#111827" />
-                  </Pressable>
+                  <View style={{ marginRight: 4 }}>
+                    <Pressable
+                      onPress={() => navigation.navigate("SlippageHistory")}
+                    >
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
                 ),
               })}
             />
