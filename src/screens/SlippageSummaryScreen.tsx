@@ -6,6 +6,7 @@ import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import Svg, { Line, Path } from "react-native-svg";
 import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
+import { useStrandPatternStore } from "../state/strandPatternStore";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -23,7 +24,18 @@ interface Props {
 
 export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { slippages } = route.params;
+  const { slippages, config } = route.params;
+  const { customPatterns } = useStrandPatternStore();
+
+  // Get the selected strand pattern
+  const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
+
+  // Helper to get strand size by position
+  const getStrandSize = (strandId: string): string => {
+    const index = parseInt(strandId) - 1;
+    const size = selectedPattern?.strandSizes?.[index];
+    return size ? `${size}"` : '';
+  };
 
   // Calculate all slippage statistics
   const slippageStats = useMemo(() => {
@@ -413,6 +425,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     </View>
                     <Text className="text-gray-900 text-sm font-semibold">
                       Strand {strand.strandId}
+                      {getStrandSize(strand.strandId) && (
+                        <Text className="text-gray-600 font-normal text-xs">
+                          {' '}({getStrandSize(strand.strandId)})
+                        </Text>
+                      )}
                     </Text>
                   </View>
                   
@@ -500,6 +517,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   </View>
                   <Text className="text-gray-600 text-sm">
                     Strand {strand.strandId}
+                    {getStrandSize(strand.strandId) && (
+                      <Text className="text-gray-500 text-xs">
+                        {' '}({getStrandSize(strand.strandId)})
+                      </Text>
+                    )}
                   </Text>
                 </View>
                 <View className="items-end">
