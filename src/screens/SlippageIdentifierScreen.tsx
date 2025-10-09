@@ -131,10 +131,9 @@ export default function SlippageIdentifierScreen() {
     const strandPositions: any[] = [];
 
     // Helper to draw the 8048 cross-section shape
-    const drawCrossSection = (offsetX: number, offsetY: number, isHidden: boolean) => {
+    const drawCrossSection = (offsetX: number, offsetY: number, isHidden: boolean, solidTop: boolean = false) => {
       const x = startX + offsetX;
       const y = startY + offsetY;
-      const strokeDash = isHidden ? "3,3" : undefined;
       
       // Keyway dimensions (on the SIDES, indenting IN) - larger and more rectangular
       const keywayWidth = 8; // Taller
@@ -145,51 +144,76 @@ export default function SlippageIdentifierScreen() {
       const topInset = 2; // Reduced for more subtle draft angle
       const lipRadius = 4; // More pronounced rounded lips at bottom corners
 
-      // Build the outline path with correct draft angle and bottom lips
-      let pathData = `M ${x + lipRadius} ${y + plankHeight}`; // Start at bottom left after lip
+      // Build separate paths for different stroke styles
+      // Path 1: Everything except the top edge
+      let bodyPath = `M ${x + lipRadius} ${y + plankHeight}`; // Start at bottom left after lip
       
       // Bottom left corner lip (pronounced curve)
-      pathData += ` Q ${x} ${y + plankHeight} ${x} ${y + plankHeight - lipRadius}`;
+      bodyPath += ` Q ${x} ${y + plankHeight} ${x} ${y + plankHeight - lipRadius}`;
       
       // Up left side with draft angle (tapering IN toward top) to below keyway
-      pathData += ` L ${x + topInset} ${y + keywayFromTop + keywayWidth}`;
+      bodyPath += ` L ${x + topInset} ${y + keywayFromTop + keywayWidth}`;
       
       // Left keyway (indent IN)
-      pathData += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      pathData += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop}`;
-      pathData += ` L ${x + topInset} ${y + keywayFromTop}`;
+      bodyPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      bodyPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop}`;
+      bodyPath += ` L ${x + topInset} ${y + keywayFromTop}`;
       
       // Continue up to top left corner
-      pathData += ` L ${x + topInset} ${y}`;
+      bodyPath += ` L ${x + topInset} ${y}`;
       
-      // Across the top (FLAT - narrower than bottom)
-      pathData += ` L ${x + plankWidth - topInset} ${y}`;
+      // Path 2: Just the top edge (may have different stroke style)
+      const topPath = `M ${x + topInset} ${y} L ${x + plankWidth - topInset} ${y}`;
+      
+      // Path 3: Right side continuation
+      let rightPath = `M ${x + plankWidth - topInset} ${y}`;
       
       // Down right side to keyway
-      pathData += ` L ${x + plankWidth - topInset} ${y + keywayFromTop}`;
+      rightPath += ` L ${x + plankWidth - topInset} ${y + keywayFromTop}`;
       
       // Right keyway (indent IN)
-      pathData += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop}`;
-      pathData += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      pathData += ` L ${x + plankWidth - topInset} ${y + keywayFromTop + keywayWidth}`;
+      rightPath += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop}`;
+      rightPath += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop + keywayWidth}`;
+      rightPath += ` L ${x + plankWidth - topInset} ${y + keywayFromTop + keywayWidth}`;
       
       // Down right side with draft angle (tapering OUT toward bottom)
-      pathData += ` L ${x + plankWidth} ${y + plankHeight - lipRadius}`;
+      rightPath += ` L ${x + plankWidth} ${y + plankHeight - lipRadius}`;
       
       // Bottom right corner lip (pronounced curve)
-      pathData += ` Q ${x + plankWidth} ${y + plankHeight} ${x + plankWidth - lipRadius} ${y + plankHeight}`;
+      rightPath += ` Q ${x + plankWidth} ${y + plankHeight} ${x + plankWidth - lipRadius} ${y + plankHeight}`;
       
-      // Bottom edge (wider)
-      pathData += ` Z`; // Close path
+      // Bottom edge back to start
+      rightPath += ` L ${x + lipRadius} ${y + plankHeight}`;
+
+      const bodyStrokeDash = isHidden ? "3,3" : undefined;
+      const topStrokeDash = solidTop ? undefined : (isHidden ? "3,3" : undefined);
 
       return (
         <React.Fragment>
-          {/* Outline */}
+          {/* Left side and body outline */}
           <Path
-            d={pathData}
+            d={bodyPath}
             stroke="#2563EB"
             strokeWidth={2}
-            strokeDasharray={strokeDash}
+            strokeDasharray={bodyStrokeDash}
+            fill="none"
+          />
+          
+          {/* Top edge - can be solid even when rest is hidden */}
+          <Path
+            d={topPath}
+            stroke="#2563EB"
+            strokeWidth={2}
+            strokeDasharray={topStrokeDash}
+            fill="none"
+          />
+          
+          {/* Right side outline */}
+          <Path
+            d={rightPath}
+            stroke="#2563EB"
+            strokeWidth={2}
+            strokeDasharray={bodyStrokeDash}
             fill="none"
           />
 
@@ -200,7 +224,7 @@ export default function SlippageIdentifierScreen() {
               d={drawCore(x + core.cx, y + core.cy)}
               stroke="#2563EB"
               strokeWidth={1.5}
-              strokeDasharray={strokeDash}
+              strokeDasharray={bodyStrokeDash}
               fill="none"
             />
           ))}
@@ -215,13 +239,13 @@ export default function SlippageIdentifierScreen() {
         </Text>
         <Svg width={svgWidth} height={svgHeight}>
           {/* NEAR FACE (END 1) - SOLID (visible) */}
-          {drawCrossSection(0, 0, false)}
+          {drawCrossSection(0, 0, false, false)}
 
-          {/* FAR FACE (END 2) - DOTTED (hidden) */}
-          {drawCrossSection(depthX, -depthY, true)}
+          {/* FAR FACE (END 2) - DOTTED (hidden) BUT with SOLID top */}
+          {drawCrossSection(depthX, -depthY, true, true)}
 
           {/* CONNECTING EDGES for 3D effect */}
-          {/* Top left - DOTTED (hidden - goes behind) */}
+          {/* Top left - SOLID (visible from this perspective) */}
           <Line
             x1={startX}
             y1={startY}
@@ -229,7 +253,6 @@ export default function SlippageIdentifierScreen() {
             y2={startY - depthY}
             stroke="#2563EB"
             strokeWidth={1.5}
-            strokeDasharray="3,3"
           />
           {/* Top right - SOLID (visible) */}
           <Line
@@ -249,7 +272,7 @@ export default function SlippageIdentifierScreen() {
             stroke="#2563EB"
             strokeWidth={1.5}
           />
-          {/* Bottom left - SOLID (visible) */}
+          {/* Bottom left - DOTTED (cannot be seen from this perspective) */}
           <Line
             x1={startX}
             y1={startY + plankHeight}
@@ -257,6 +280,7 @@ export default function SlippageIdentifierScreen() {
             y2={startY + plankHeight - depthY}
             stroke="#2563EB"
             strokeWidth={1.5}
+            strokeDasharray="3,3"
           />
         </Svg>
         
