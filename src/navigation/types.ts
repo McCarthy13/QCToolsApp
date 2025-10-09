@@ -4,7 +4,19 @@ export type RootStackParamList = {
   Results: { calculation: any };
   History: undefined;
   StrandPatterns: undefined;
-  SlippageIdentifier: undefined;
+  SlippageConfig: undefined;
+  SlippageIdentifier: { 
+    config: {
+      projectName?: string;
+      projectNumber?: string;
+      markNumber?: string;
+      idNumber?: string;
+      span?: number;
+      productType: string;
+      strandPattern: string;
+      topStrandPattern?: string;
+    }
+  };
   SlippageSummary: { 
     slippages: Array<{ 
       strandId: string; 
@@ -12,6 +24,16 @@ export type RootStackParamList = {
       rightSlippage: string;
       leftExceedsOne: boolean;
       rightExceedsOne: boolean;
-    }> 
+    }>;
+    config: {
+      projectName?: string;
+      projectNumber?: string;
+      markNumber?: string;
+      idNumber?: string;
+      span?: number;
+      productType: string;
+      strandPattern: string;
+      topStrandPattern?: string;
+    };
   };
 };

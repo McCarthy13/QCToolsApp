@@ -11,15 +11,21 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Line, Path } from "react-native-svg";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 
 type SlippageIdentifierScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "SlippageIdentifier"
 >;
+type SlippageIdentifierScreenRouteProp = RouteProp<
+  RootStackParamList,
+  "SlippageIdentifier"
+>;
 
 interface Props {
   navigation: SlippageIdentifierScreenNavigationProp;
+  route: SlippageIdentifierScreenRouteProp;
 }
 
 interface StrandSlippage {
@@ -30,8 +36,9 @@ interface StrandSlippage {
   rightExceedsOne: boolean;
 }
 
-export default function SlippageIdentifierScreen({ navigation }: Props) {
+export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { config } = route.params;
   const [slippages, setSlippages] = useState<StrandSlippage[]>([
     { strandId: "1", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
     { strandId: "2", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
@@ -448,7 +455,7 @@ export default function SlippageIdentifierScreen({ navigation }: Props) {
           {/* Calculate button */}
           <Pressable
             className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mt-4"
-            onPress={() => navigation.navigate("SlippageSummary", { slippages })}
+            onPress={() => navigation.navigate("SlippageSummary", { slippages, config })}
           >
             <Text className="text-white text-base font-semibold">
               Calculate Results

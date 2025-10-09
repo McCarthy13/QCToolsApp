@@ -420,20 +420,27 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     {/* END 1 Value */}
                     <View className="flex-1 bg-white rounded-lg p-3 border border-green-200">
                       <Text className="text-gray-600 text-xs mb-1">END 1</Text>
-                      {end1Value !== null ? (
+                      {strand.leftExceedsOne ? (
                         <>
                           <Text className="text-green-600 text-base font-bold">
-                            {strand.leftExceedsOne && ">"}
+                            {'>'}
+                            {end1Value !== null ? end1Value.toFixed(3) : "1.000"}"
+                          </Text>
+                          <Text className="text-green-600 text-xs">
+                            {'>'}≈{end1Value !== null ? decimalToFraction(end1Value) : '1"'}
+                          </Text>
+                          <Text className="text-orange-600 text-xs font-semibold mt-1">
+                            {'>1"'}
+                          </Text>
+                        </>
+                      ) : end1Value !== null ? (
+                        <>
+                          <Text className="text-green-600 text-base font-bold">
                             {end1Value.toFixed(3)}"
                           </Text>
                           <Text className="text-green-600 text-xs">
-                            {strand.leftExceedsOne && ">"}≈{decimalToFraction(end1Value)}
+                            ≈{decimalToFraction(end1Value)}
                           </Text>
-                          {strand.leftExceedsOne && (
-                            <Text className="text-orange-600 text-xs font-semibold mt-1">
-                              {'>1"'}
-                            </Text>
-                          )}
                         </>
                       ) : (
                         <Text className="text-gray-400 text-sm italic">No value</Text>
@@ -443,20 +450,27 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     {/* END 2 Value */}
                     <View className="flex-1 bg-white rounded-lg p-3 border border-purple-200">
                       <Text className="text-gray-600 text-xs mb-1">END 2</Text>
-                      {end2Value !== null ? (
+                      {strand.rightExceedsOne ? (
                         <>
                           <Text className="text-purple-600 text-base font-bold">
-                            {strand.rightExceedsOne && ">"}
+                            {'>'}
+                            {end2Value !== null ? end2Value.toFixed(3) : "1.000"}"
+                          </Text>
+                          <Text className="text-purple-600 text-xs">
+                            {'>'}≈{end2Value !== null ? decimalToFraction(end2Value) : '1"'}
+                          </Text>
+                          <Text className="text-orange-600 text-xs font-semibold mt-1">
+                            {'>1"'}
+                          </Text>
+                        </>
+                      ) : end2Value !== null ? (
+                        <>
+                          <Text className="text-purple-600 text-base font-bold">
                             {end2Value.toFixed(3)}"
                           </Text>
                           <Text className="text-purple-600 text-xs">
-                            {strand.rightExceedsOne && ">"}≈{decimalToFraction(end2Value)}
+                            ≈{decimalToFraction(end2Value)}
                           </Text>
-                          {strand.rightExceedsOne && (
-                            <Text className="text-orange-600 text-xs font-semibold mt-1">
-                              {'>1"'}
-                            </Text>
-                          )}
                         </>
                       ) : (
                         <Text className="text-gray-400 text-sm italic">No value</Text>
