@@ -52,14 +52,14 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     
     const totalCount = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
     
-    // Create array of strands with their sizes
+    // Create array of strands with their sizes - default to "0"
     const strands: StrandSlippage[] = [];
     for (let i = 1; i <= totalCount; i++) {
       const strandSize = selectedPattern.strandSizes?.[i - 1];
       strands.push({
         strandId: i.toString(),
-        leftSlippage: "",
-        rightSlippage: "",
+        leftSlippage: "0",
+        rightSlippage: "0",
         leftExceedsOne: false,
         rightExceedsOne: false,
         size: strandSize,
@@ -84,6 +84,48 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
             }
           : s
       )
+    );
+  };
+
+  const handleFocus = (
+    strandId: string,
+    side: "left" | "right"
+  ) => {
+    // Clear "0" when user focuses on the field
+    setSlippages((prev) =>
+      prev.map((s) => {
+        if (s.strandId === strandId) {
+          const currentValue = side === "left" ? s.leftSlippage : s.rightSlippage;
+          if (currentValue === "0") {
+            return {
+              ...s,
+              [side === "left" ? "leftSlippage" : "rightSlippage"]: "",
+            };
+          }
+        }
+        return s;
+      })
+    );
+  };
+
+  const handleBlur = (
+    strandId: string,
+    side: "left" | "right"
+  ) => {
+    // Revert to "0" if empty when user leaves the field
+    setSlippages((prev) =>
+      prev.map((s) => {
+        if (s.strandId === strandId) {
+          const currentValue = side === "left" ? s.leftSlippage : s.rightSlippage;
+          if (currentValue.trim() === "") {
+            return {
+              ...s,
+              [side === "left" ? "leftSlippage" : "rightSlippage"]: "0",
+            };
+          }
+        }
+        return s;
+      })
     );
   };
 
@@ -412,13 +454,20 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                     END 1
                   </Text>
                   <TextInput
-                    className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900 mb-2"
+                    className={`bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base mb-2 ${
+                      strand.leftExceedsOne 
+                        ? "text-orange-600 font-bold" 
+                        : "text-gray-900"
+                    }`}
                     placeholder='0.5 or 5/16"'
                     placeholderTextColor="#9CA3AF"
-                    value={strand.leftSlippage}
+                    value={strand.leftExceedsOne ? ">1\"" : strand.leftSlippage}
                     onChangeText={(text) =>
                       updateSlippage(strand.strandId, "left", text)
                     }
+                    onFocus={() => handleFocus(strand.strandId, "left")}
+                    onBlur={() => handleBlur(strand.strandId, "left")}
+                    editable={!strand.leftExceedsOne}
                     keyboardType="default"
                   />
                   <Pressable
@@ -448,13 +497,20 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                     END 2
                   </Text>
                   <TextInput
-                    className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900 mb-2"
+                    className={`bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base mb-2 ${
+                      strand.rightExceedsOne 
+                        ? "text-orange-600 font-bold" 
+                        : "text-gray-900"
+                    }`}
                     placeholder='0.5 or 5/16"'
                     placeholderTextColor="#9CA3AF"
-                    value={strand.rightSlippage}
+                    value={strand.rightExceedsOne ? ">1\"" : strand.rightSlippage}
                     onChangeText={(text) =>
                       updateSlippage(strand.strandId, "right", text)
                     }
+                    onFocus={() => handleFocus(strand.strandId, "right")}
+                    onBlur={() => handleBlur(strand.strandId, "right")}
+                    editable={!strand.rightExceedsOne}
                     keyboardType="default"
                   />
                   <Pressable
