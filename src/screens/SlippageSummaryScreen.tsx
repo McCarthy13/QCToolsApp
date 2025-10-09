@@ -372,6 +372,68 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             </View>
           </View>
 
+          {/* Individual Strand Values */}
+          <View className="bg-gray-50 rounded-lg p-4 mb-3">
+            <Text className="text-gray-700 text-sm font-semibold mb-3">
+              Individual Slippage Values
+            </Text>
+            {slippages.map((strand) => {
+              const end1Value = parseMeasurementInput(strand.leftSlippage);
+              const end2Value = parseMeasurementInput(strand.rightSlippage);
+              
+              return (
+                <View key={strand.strandId} className="mb-3 pb-3 border-b border-gray-300">
+                  <View className="flex-row items-center mb-2">
+                    <View className="bg-red-500 rounded-full w-6 h-6 items-center justify-center mr-2">
+                      <Text className="text-white font-bold text-xs">
+                        {strand.strandId}
+                      </Text>
+                    </View>
+                    <Text className="text-gray-900 text-sm font-semibold">
+                      Strand {strand.strandId}
+                    </Text>
+                  </View>
+                  
+                  <View className="flex-row gap-3 ml-8">
+                    {/* END 1 Value */}
+                    <View className="flex-1 bg-white rounded-lg p-3 border border-green-200">
+                      <Text className="text-gray-600 text-xs mb-1">END 1</Text>
+                      {end1Value !== null ? (
+                        <>
+                          <Text className="text-green-600 text-base font-bold">
+                            {end1Value.toFixed(3)}"
+                          </Text>
+                          <Text className="text-green-600 text-xs">
+                            ≈{decimalToFraction(end1Value)}
+                          </Text>
+                        </>
+                      ) : (
+                        <Text className="text-gray-400 text-sm italic">No value</Text>
+                      )}
+                    </View>
+                    
+                    {/* END 2 Value */}
+                    <View className="flex-1 bg-white rounded-lg p-3 border border-purple-200">
+                      <Text className="text-gray-600 text-xs mb-1">END 2</Text>
+                      {end2Value !== null ? (
+                        <>
+                          <Text className="text-purple-600 text-base font-bold">
+                            {end2Value.toFixed(3)}"
+                          </Text>
+                          <Text className="text-purple-600 text-xs">
+                            ≈{decimalToFraction(end2Value)}
+                          </Text>
+                        </>
+                      ) : (
+                        <Text className="text-gray-400 text-sm italic">No value</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
           {/* Per-Strand Totals */}
           <View className="bg-gray-50 rounded-lg p-4 mb-4">
             <Text className="text-gray-700 text-sm font-semibold mb-3">
