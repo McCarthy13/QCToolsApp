@@ -944,8 +944,8 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                     onPress={() => {
                       const totalCount = getTotalStrandCount();
                       if (strandCoordinates.length === 0) {
-                        // Initialize coordinates
-                        const newCoords = Array(totalCount).fill(null).map(() => ({ x: '', y: '' }));
+                        // Initialize coordinates with default y = 2 1/8"
+                        const newCoords = Array(totalCount).fill(null).map(() => ({ x: '', y: '2 1/8' }));
                         setStrandCoordinates(newCoords);
                       } else {
                         // Clear coordinates
