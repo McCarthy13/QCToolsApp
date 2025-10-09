@@ -82,6 +82,26 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const userEmail = currentUser?.email || 'unknown@example.com';
     const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
     
+    // Show alert to remind user to check sender account
+    Alert.alert(
+      "Generate Email Report",
+      `Opening email composer...\n\n⚠️ Please make sure to send from:\n${userEmail}`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Continue",
+          onPress: async () => {
+            await generateAndOpenEmail(userEmail, userName);
+          }
+        }
+      ]
+    );
+  };
+
+  const generateAndOpenEmail = async (userEmail: string, userName: string) => {
     // Build email subject
     const subject = `Slippage Report - ${config.projectName || 'Unnamed Project'}`;
     
@@ -139,17 +159,12 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const body = productDetails + slippageSummary;
     
     // Create mailto link with user's registered email
-    // Using both standard "from" parameter and Outlook-specific "account" parameter
-    // This helps multi-account email apps (like Outlook) select the correct sending account
+    // Note: Include the user's email in the mailto to give email apps a hint
     const mailtoParams = new URLSearchParams({
       subject: subject,
       body: body,
     });
     
-    // Add the user's email to help the email client select the correct account
-    // Different email clients support different parameters:
-    // - "from" is semi-standard but often ignored for security
-    // - Some clients look at the parameters to match against configured accounts
     const mailto = `mailto:${encodeURIComponent(userEmail)}?${mailtoParams.toString()}`;
     
     try {
