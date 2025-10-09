@@ -10,6 +10,7 @@ export interface CustomStrandPattern {
   strand_3_8: number; // Count of 3/8" strands
   strand_1_2: number; // Count of 1/2" strands
   strand_0_6: number; // Count of 0.6" strands
+  strandSizes?: Array<'3/8' | '1/2' | '0.6'>; // Size of each strand by position (left to right)
   eValue: number; // Distance from bottom to center of strand (inches)
   pullingForce: number; // Percentage of break strength (1-99%)
   totalArea: number; // Total strand area in in²

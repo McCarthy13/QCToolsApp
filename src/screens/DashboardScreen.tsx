@@ -36,7 +36,7 @@ const tools: Tool[] = [
     icon: 'resize',
     color: '#10B981',
     bgColor: '#F0FDF4',
-    route: 'SlippageConfig',
+    route: 'ProductDetails',
   },
 ];
 

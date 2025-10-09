@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import Svg, { Line, Path } from "react-native-svg";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
+import { useStrandPatternStore } from "../state/strandPatternStore";
 
 type SlippageIdentifierScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -34,17 +35,40 @@ interface StrandSlippage {
   rightSlippage: string;
   leftExceedsOne: boolean;
   rightExceedsOne: boolean;
+  size?: '3/8' | '1/2' | '0.6'; // Strand size from pattern
 }
 
 export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { config } = route.params;
-  const [slippages, setSlippages] = useState<StrandSlippage[]>([
-    { strandId: "1", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
-    { strandId: "2", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
-    { strandId: "3", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
-    { strandId: "4", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
-  ]);
+  const { customPatterns } = useStrandPatternStore();
+
+  // Get the selected strand pattern
+  const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
+
+  // Calculate total strand count and initialize fields
+  const initialSlippages = useMemo(() => {
+    if (!selectedPattern) return [];
+    
+    const totalCount = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
+    
+    // Create array of strands with their sizes
+    const strands: StrandSlippage[] = [];
+    for (let i = 1; i <= totalCount; i++) {
+      const strandSize = selectedPattern.strandSizes?.[i - 1];
+      strands.push({
+        strandId: i.toString(),
+        leftSlippage: "",
+        rightSlippage: "",
+        leftExceedsOne: false,
+        rightExceedsOne: false,
+        size: strandSize,
+      });
+    }
+    return strands;
+  }, [selectedPattern]);
+
+  const [slippages, setSlippages] = useState<StrandSlippage[]>(initialSlippages);
 
   const updateSlippage = (
     strandId: string,
@@ -373,6 +397,11 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                 </View>
                 <Text className="text-gray-900 font-semibold text-base">
                   Strand {strand.strandId}
+                  {strand.size && (
+                    <Text className="text-gray-600 font-normal text-sm">
+                      {' '}({strand.size}")
+                    </Text>
+                  )}
                 </Text>
               </View>
 

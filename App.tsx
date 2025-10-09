@@ -12,7 +12,7 @@ import CalculatorScreen from "./src/screens/CalculatorScreen";
 import ResultsScreen from "./src/screens/ResultsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
 import StrandPatternsScreen from "./src/screens/StrandPatternsScreen";
-import SlippageConfigScreen from "./src/screens/SlippageConfigScreen";
+import ProductDetailsScreen from "./src/screens/ProductDetailsScreen";
 import SlippageIdentifierScreen from "./src/screens/SlippageIdentifierScreen";
 import SlippageSummaryScreen from "./src/screens/SlippageSummaryScreen";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -221,10 +221,10 @@ export default function App() {
               }}
             />
             <Stack.Screen
-              name="SlippageConfig"
-              component={SlippageConfigScreen}
+              name="ProductDetails"
+              component={ProductDetailsScreen}
               options={{
-                title: "Slippage Configuration",
+                title: "Product Details",
               }}
             />
             <Stack.Screen

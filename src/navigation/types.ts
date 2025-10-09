@@ -4,7 +4,7 @@ export type RootStackParamList = {
   Results: { calculation: any };
   History: undefined;
   StrandPatterns: undefined;
-  SlippageConfig: undefined;
+  ProductDetails: undefined;
   SlippageIdentifier: { 
     config: {
       projectName?: string;

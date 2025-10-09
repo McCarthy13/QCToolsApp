@@ -17,13 +17,13 @@ import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { Ionicons } from "@expo/vector-icons";
 
-type SlippageConfigScreenNavigationProp = NativeStackNavigationProp<
+type ProductDetailsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  "SlippageConfig"
+  "ProductDetails"
 >;
 
 interface Props {
-  navigation: SlippageConfigScreenNavigationProp;
+  navigation: ProductDetailsScreenNavigationProp;
 }
 
 // Product types/sizes for hollow-core planks
@@ -39,7 +39,7 @@ const PRODUCT_TYPES = [
   { id: "12048", label: '12" x 48"', height: 12, width: 48 },
 ];
 
-export default function SlippageConfigScreen({ navigation }: Props) {
+export default function ProductDetailsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { customPatterns } = useStrandPatternStore();
 
@@ -148,7 +148,7 @@ export default function SlippageConfigScreen({ navigation }: Props) {
           {/* Header */}
           <View className="px-6 py-4 border-b border-gray-200">
             <Text className="text-gray-900 text-2xl font-bold">
-              Slippage Configuration
+              Product Details
             </Text>
             <Text className="text-gray-600 text-sm mt-1">
               Configure project details and select strand pattern
