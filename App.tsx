@@ -13,6 +13,7 @@ import ResultsScreen from "./src/screens/ResultsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
 import StrandPatternsScreen from "./src/screens/StrandPatternsScreen";
 import SlippageIdentifierScreen from "./src/screens/SlippageIdentifierScreen";
+import SlippageSummaryScreen from "./src/screens/SlippageSummaryScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -223,6 +224,13 @@ export default function App() {
               component={SlippageIdentifierScreen}
               options={{
                 title: "Slippage Identifier",
+              }}
+            />
+            <Stack.Screen
+              name="SlippageSummary"
+              component={SlippageSummaryScreen}
+              options={{
+                title: "Slippage Summary",
               }}
             />
           </Stack.Navigator>

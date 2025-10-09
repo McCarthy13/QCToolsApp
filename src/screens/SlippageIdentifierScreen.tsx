@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,18 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Rect, Circle, Line, Path } from "react-native-svg";
-import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
+import Svg, { Line, Path } from "react-native-svg";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/types";
+
+type SlippageIdentifierScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "SlippageIdentifier"
+>;
+
+interface Props {
+  navigation: SlippageIdentifierScreenNavigationProp;
+}
 
 interface StrandSlippage {
   strandId: string;
@@ -18,7 +28,7 @@ interface StrandSlippage {
   rightSlippage: string;
 }
 
-export default function SlippageIdentifierScreen() {
+export default function SlippageIdentifierScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [slippages, setSlippages] = useState<StrandSlippage[]>([
     { strandId: "1", leftSlippage: "", rightSlippage: "" },
@@ -43,53 +53,6 @@ export default function SlippageIdentifierScreen() {
       )
     );
   };
-
-  // Calculate all slippage statistics
-  const slippageStats = useMemo(() => {
-    // Parse all values to decimals
-    const parsedValues = slippages.map((s) => ({
-      strandId: s.strandId,
-      end1: parseMeasurementInput(s.leftSlippage),
-      end2: parseMeasurementInput(s.rightSlippage),
-    }));
-
-    // Filter out invalid/empty values for calculations
-    const end1Values = parsedValues.map((v) => v.end1).filter((v): v is number => v !== null && !isNaN(v));
-    const end2Values = parsedValues.map((v) => v.end2).filter((v): v is number => v !== null && !isNaN(v));
-    const allValues = [...end1Values, ...end2Values];
-
-    // Total slippage (all values)
-    const totalSlippage = allValues.reduce((sum, val) => sum + val, 0);
-
-    // Total slippage per end
-    const totalSlippageEnd1 = end1Values.reduce((sum, val) => sum + val, 0);
-    const totalSlippageEnd2 = end2Values.reduce((sum, val) => sum + val, 0);
-
-    // Total slippage per strand
-    const strandTotals = parsedValues.map((v) => {
-      const e1 = v.end1 ?? 0;
-      const e2 = v.end2 ?? 0;
-      return {
-        strandId: v.strandId,
-        total: e1 + e2,
-      };
-    });
-
-    // Average calculations
-    const totalAvgSlippage = allValues.length > 0 ? totalSlippage / allValues.length : 0;
-    const totalAvgSlippageEnd1 = end1Values.length > 0 ? totalSlippageEnd1 / end1Values.length : 0;
-    const totalAvgSlippageEnd2 = end2Values.length > 0 ? totalSlippageEnd2 / end2Values.length : 0;
-
-    return {
-      totalSlippage,
-      totalSlippageEnd1,
-      totalSlippageEnd2,
-      strandTotals,
-      totalAvgSlippage,
-      totalAvgSlippageEnd1,
-      totalAvgSlippageEnd2,
-    };
-  }, [slippages]);
 
   // 3D Isometric view of 8048 hollow-core plank with strands
   const GenericCrossSection = () => {
@@ -338,104 +301,6 @@ export default function SlippageIdentifierScreen() {
           <Text className="text-blue-600 text-xs font-bold">END 1 (Near)</Text>
           <Text className="text-blue-600 text-xs font-bold">END 2 (Far)</Text>
         </View>
-
-        {/* Slippage Statistics */}
-        <View className="mt-6 px-6">
-          <Text className="text-gray-900 text-base font-semibold mb-3">
-            Slippage Statistics
-          </Text>
-
-          {/* Total Slippage */}
-          <View className="bg-blue-50 rounded-lg p-3 mb-2">
-            <Text className="text-gray-700 text-xs font-medium mb-1">
-              Total Slippage (All Values)
-            </Text>
-            <Text className="text-blue-600 text-lg font-bold">
-              {slippageStats.totalSlippage.toFixed(3)}" (≈{decimalToFraction(slippageStats.totalSlippage)})
-            </Text>
-          </View>
-
-          {/* End Totals - Side by side */}
-          <View className="flex-row gap-2 mb-2">
-            <View className="flex-1 bg-green-50 rounded-lg p-3">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Total Slippage END 1
-              </Text>
-              <Text className="text-green-600 text-base font-bold">
-                {slippageStats.totalSlippageEnd1.toFixed(3)}"
-              </Text>
-              <Text className="text-green-600 text-xs">
-                ≈{decimalToFraction(slippageStats.totalSlippageEnd1)}
-              </Text>
-            </View>
-
-            <View className="flex-1 bg-purple-50 rounded-lg p-3">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Total Slippage END 2
-              </Text>
-              <Text className="text-purple-600 text-base font-bold">
-                {slippageStats.totalSlippageEnd2.toFixed(3)}"
-              </Text>
-              <Text className="text-purple-600 text-xs">
-                ≈{decimalToFraction(slippageStats.totalSlippageEnd2)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Average Slippage */}
-          <View className="bg-orange-50 rounded-lg p-3 mb-2">
-            <Text className="text-gray-700 text-xs font-medium mb-1">
-              Total Average Slippage
-            </Text>
-            <Text className="text-orange-600 text-lg font-bold">
-              {slippageStats.totalAvgSlippage.toFixed(3)}" (≈{decimalToFraction(slippageStats.totalAvgSlippage)})
-            </Text>
-          </View>
-
-          {/* Average by End - Side by side */}
-          <View className="flex-row gap-2 mb-2">
-            <View className="flex-1 bg-green-50 rounded-lg p-3">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Avg Slippage END 1
-              </Text>
-              <Text className="text-green-600 text-base font-bold">
-                {slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
-              </Text>
-              <Text className="text-green-600 text-xs">
-                ≈{decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
-              </Text>
-            </View>
-
-            <View className="flex-1 bg-purple-50 rounded-lg p-3">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Avg Slippage END 2
-              </Text>
-              <Text className="text-purple-600 text-base font-bold">
-                {slippageStats.totalAvgSlippageEnd2.toFixed(3)}"
-              </Text>
-              <Text className="text-purple-600 text-xs">
-                ≈{decimalToFraction(slippageStats.totalAvgSlippageEnd2)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Per-Strand Totals */}
-          <View className="bg-gray-50 rounded-lg p-3 mb-4">
-            <Text className="text-gray-700 text-xs font-medium mb-2">
-              Total Slippage Per Strand
-            </Text>
-            {slippageStats.strandTotals.map((strand) => (
-              <View key={strand.strandId} className="flex-row justify-between py-1">
-                <Text className="text-gray-600 text-sm">
-                  Strand {strand.strandId}:
-                </Text>
-                <Text className="text-gray-900 text-sm font-semibold">
-                  {strand.total.toFixed(3)}" (≈{decimalToFraction(strand.total)})
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
       </View>
     );
   };
@@ -525,7 +390,10 @@ export default function SlippageIdentifierScreen() {
           ))}
 
           {/* Calculate button */}
-          <Pressable className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mt-4">
+          <Pressable
+            className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mt-4"
+            onPress={() => navigation.navigate("SlippageSummary", { slippages })}
+          >
             <Text className="text-white text-base font-semibold">
               Calculate Results
             </Text>
