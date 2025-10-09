@@ -6,9 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Convert decimal inches to nearest 1/16" fraction (always displayed in 16ths)
- * @param decimal - decimal inch value (e.g., 0.684)
- * @returns formatted string like "11/16" (always in 16ths, not reduced)
+ * Calculate Greatest Common Divisor using Euclidean algorithm
+ */
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+/**
+ * Convert decimal inches to nearest 1/16" fraction, reduced to lowest terms
+ * @param decimal - decimal inch value (e.g., 0.5 -> 1/2", 0.375 -> 3/8")
+ * @returns formatted string like "1/2"" or "3/8"" (calculated as 16ths, displayed reduced)
  */
 export function decimalToFraction(decimal: number): string {
   const absDecimal = Math.abs(decimal);
@@ -27,13 +34,17 @@ export function decimalToFraction(decimal: number): string {
     return `${wholePart + 1}"`;
   }
   
-  // Always display in 16ths (no reduction)
+  // Reduce fraction to lowest terms
+  const divisor = gcd(sixteenths, 16);
+  const reducedNumerator = sixteenths / divisor;
+  const reducedDenominator = 16 / divisor;
+  
   // Format the result
   if (wholePart > 0) {
-    return `${wholePart} ${sixteenths}/16"`;
+    return `${wholePart} ${reducedNumerator}/${reducedDenominator}"`;
   }
   
-  return `${sixteenths}/16"`;
+  return `${reducedNumerator}/${reducedDenominator}"`;
 }
 
 /**
