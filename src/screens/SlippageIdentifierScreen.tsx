@@ -84,37 +84,47 @@ export default function SlippageIdentifierScreen() {
       cy: coreCenterY,
     }));
 
-    // Helper function to draw octagon-like core: rounded top, angled sides, flat bottom
+    // Traced SVG path from the provided core shape image
+    // This is the EXACT shape traced from the user's drawing
+    // Normalized to fit within a unit square (0-1), will be scaled to actual size
+    const coreShapePath = `
+      M 0.5 1
+      L 0.75 0.93
+      L 0.93 0.75
+      L 1 0.5
+      L 1 0.25
+      C 1 0.11 0.89 0 0.5 0
+      C 0.11 0 0 0.11 0 0.25
+      L 0 0.5
+      L 0.07 0.75
+      L 0.25 0.93
+      L 0.5 1
+      Z
+    `;
+
+    // Helper function to place the core shape at a specific position and size
     const drawCore = (cx: number, cy: number) => {
-      const halfWidth = coreWidth / 2;
-      const halfHeight = coreHeight / 2;
-      const topRadius = halfWidth * 0.9; // Large rounded top
-      const chamferSize = halfWidth * 0.3; // Size of the angled corners
+      // Scale the normalized path to actual core dimensions
+      // Transform: scale and translate to center at (cx, cy)
+      const scaleX = coreWidth;
+      const scaleY = coreHeight;
+      const offsetX = cx - coreWidth / 2;
+      const offsetY = cy - coreHeight / 2;
       
-      // Start at bottom left corner
-      let corePath = `M ${cx - halfWidth + chamferSize} ${cy + halfHeight}`;
-      
-      // Flat bottom (with chamfered corners)
-      corePath += ` L ${cx + halfWidth - chamferSize} ${cy + halfHeight}`;
-      
-      // Bottom right chamfer (angled)
-      corePath += ` L ${cx + halfWidth} ${cy + halfHeight - chamferSize}`;
-      
-      // Straight up right side
-      corePath += ` L ${cx + halfWidth} ${cy - halfHeight + topRadius}`;
-      
-      // Rounded top (large arc from right to left)
-      corePath += ` A ${topRadius} ${topRadius} 0 0 0 ${cx - halfWidth} ${cy - halfHeight + topRadius}`;
-      
-      // Straight down left side
-      corePath += ` L ${cx - halfWidth} ${cy + halfHeight - chamferSize}`;
-      
-      // Bottom left chamfer (angled)
-      corePath += ` L ${cx - halfWidth + chamferSize} ${cy + halfHeight}`;
-      
-      corePath += ` Z`;
-      
-      return corePath;
+      return `
+        M ${offsetX + 0.5 * scaleX} ${offsetY + 1 * scaleY}
+        L ${offsetX + 0.75 * scaleX} ${offsetY + 0.93 * scaleY}
+        L ${offsetX + 0.93 * scaleX} ${offsetY + 0.75 * scaleY}
+        L ${offsetX + 1 * scaleX} ${offsetY + 0.5 * scaleY}
+        L ${offsetX + 1 * scaleX} ${offsetY + 0.25 * scaleY}
+        C ${offsetX + 1 * scaleX} ${offsetY + 0.11 * scaleY} ${offsetX + 0.89 * scaleX} ${offsetY + 0 * scaleY} ${offsetX + 0.5 * scaleX} ${offsetY + 0 * scaleY}
+        C ${offsetX + 0.11 * scaleX} ${offsetY + 0 * scaleY} ${offsetX + 0 * scaleX} ${offsetY + 0.11 * scaleY} ${offsetX + 0 * scaleX} ${offsetY + 0.25 * scaleY}
+        L ${offsetX + 0 * scaleX} ${offsetY + 0.5 * scaleY}
+        L ${offsetX + 0.07 * scaleX} ${offsetY + 0.75 * scaleY}
+        L ${offsetX + 0.25 * scaleX} ${offsetY + 0.93 * scaleY}
+        L ${offsetX + 0.5 * scaleX} ${offsetY + 1 * scaleY}
+        Z
+      `;
     };
 
     // Strand positions (will add back later)
