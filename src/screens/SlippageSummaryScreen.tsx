@@ -6,6 +6,7 @@ import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import Svg, { Line, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
+import * as MailComposer from "expo-mail-composer";
 import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
@@ -82,23 +83,18 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const userEmail = currentUser?.email || 'unknown@example.com';
     const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
     
-    // Show alert to remind user to check sender account
-    Alert.alert(
-      "Generate Email Report",
-      `Opening email composer...\n\n⚠️ Please make sure to send from:\n${userEmail}`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Continue",
-          onPress: async () => {
-            await generateAndOpenEmail(userEmail, userName);
-          }
-        }
-      ]
-    );
+    // Check if MailComposer is available
+    const isAvailable = await MailComposer.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert(
+        "Email Not Available",
+        "No email app is configured on this device.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    await generateAndOpenEmail(userEmail, userName);
   };
 
   const generateAndOpenEmail = async (userEmail: string, userName: string) => {
@@ -158,32 +154,38 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     // Combine sections
     const body = productDetails + slippageSummary;
     
-    // Create mailto link with user's registered email
-    // Note: Include the user's email in the mailto to give email apps a hint
-    const mailtoParams = new URLSearchParams({
-      subject: subject,
-      body: body,
-    });
-    
-    const mailto = `mailto:${encodeURIComponent(userEmail)}?${mailtoParams.toString()}`;
-    
+    // Try to use MailComposer with the user's email
     try {
-      const canOpen = await Linking.canOpenURL(mailto);
-      if (canOpen) {
-        await Linking.openURL(mailto);
-      } else {
+      const result = await MailComposer.composeAsync({
+        subject: subject,
+        body: body,
+        isHtml: false,
+      });
+      
+      // Result will be 'sent', 'saved', or 'cancelled'
+      // We don't need to show an alert for these statuses
+    } catch (error) {
+      // Fallback to mailto if MailComposer fails
+      const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      try {
+        const canOpen = await Linking.canOpenURL(mailto);
+        if (canOpen) {
+          await Linking.openURL(mailto);
+        } else {
+          Alert.alert(
+            "Unable to Open Email",
+            "Please make sure you have an email app installed on your device.",
+            [{ text: "OK" }]
+          );
+        }
+      } catch (linkError) {
         Alert.alert(
-          "Unable to Open Email",
-          "Please make sure you have an email app installed on your device.",
+          "Error",
+          "Failed to open email client. Please try again.",
           [{ text: "OK" }]
         );
       }
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to open email client. Please try again.",
-        [{ text: "OK" }]
-      );
     }
   };
 
