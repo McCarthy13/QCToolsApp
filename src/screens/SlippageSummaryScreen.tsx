@@ -27,12 +27,19 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
   // Calculate all slippage statistics
   const slippageStats = useMemo(() => {
-    // Parse all values to decimals
+    // Parse all values to decimals and track exceeds flags
     const parsedValues = slippages.map((s) => ({
       strandId: s.strandId,
       end1: parseMeasurementInput(s.leftSlippage),
       end2: parseMeasurementInput(s.rightSlippage),
+      end1Exceeds: s.leftExceedsOne,
+      end2Exceeds: s.rightExceedsOne,
     }));
+
+    // Check if any value exceeds 1"
+    const anyEnd1Exceeds = parsedValues.some((v) => v.end1Exceeds);
+    const anyEnd2Exceeds = parsedValues.some((v) => v.end2Exceeds);
+    const anyValueExceeds = anyEnd1Exceeds || anyEnd2Exceeds;
 
     // Filter out invalid/empty values for calculations
     const end1Values = parsedValues
@@ -50,13 +57,14 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const totalSlippageEnd1 = end1Values.reduce((sum, val) => sum + val, 0);
     const totalSlippageEnd2 = end2Values.reduce((sum, val) => sum + val, 0);
 
-    // Total slippage per strand
+    // Total slippage per strand with exceeds tracking
     const strandTotals = parsedValues.map((v) => {
       const e1 = v.end1 ?? 0;
       const e2 = v.end2 ?? 0;
       return {
         strandId: v.strandId,
         total: e1 + e2,
+        exceeds: v.end1Exceeds || v.end2Exceeds,
       };
     });
 
@@ -76,6 +84,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       totalAvgSlippage,
       totalAvgSlippageEnd1,
       totalAvgSlippageEnd2,
+      anyValueExceeds,
+      anyEnd1Exceeds,
+      anyEnd2Exceeds,
     };
   }, [slippages]);
 
@@ -298,11 +309,17 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               Total Slippage (All Values)
             </Text>
             <Text className="text-blue-600 text-2xl font-bold">
+              {slippageStats.anyValueExceeds && ">"}
               {slippageStats.totalSlippage.toFixed(3)}"
             </Text>
             <Text className="text-blue-600 text-base">
-              ≈{decimalToFraction(slippageStats.totalSlippage)}
+              {slippageStats.anyValueExceeds && ">"}≈{decimalToFraction(slippageStats.totalSlippage)}
             </Text>
+            {slippageStats.anyValueExceeds && (
+              <Text className="text-orange-600 text-xs mt-1 font-semibold">
+                ⚠ Contains values exceeding 1"
+              </Text>
+            )}
           </View>
 
           {/* End Totals - Side by side */}
@@ -312,10 +329,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 Total Slippage END 1
               </Text>
               <Text className="text-green-600 text-xl font-bold">
+                {slippageStats.anyEnd1Exceeds && ">"}
                 {slippageStats.totalSlippageEnd1.toFixed(3)}"
               </Text>
               <Text className="text-green-600 text-sm">
-                ≈{decimalToFraction(slippageStats.totalSlippageEnd1)}
+                {slippageStats.anyEnd1Exceeds && ">"}≈{decimalToFraction(slippageStats.totalSlippageEnd1)}
               </Text>
             </View>
 
@@ -324,10 +342,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 Total Slippage END 2
               </Text>
               <Text className="text-purple-600 text-xl font-bold">
+                {slippageStats.anyEnd2Exceeds && ">"}
                 {slippageStats.totalSlippageEnd2.toFixed(3)}"
               </Text>
               <Text className="text-purple-600 text-sm">
-                ≈{decimalToFraction(slippageStats.totalSlippageEnd2)}
+                {slippageStats.anyEnd2Exceeds && ">"}≈{decimalToFraction(slippageStats.totalSlippageEnd2)}
               </Text>
             </View>
           </View>
@@ -338,10 +357,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               Total Average Slippage
             </Text>
             <Text className="text-orange-600 text-2xl font-bold">
+              {slippageStats.anyValueExceeds && ">"}
               {slippageStats.totalAvgSlippage.toFixed(3)}"
             </Text>
             <Text className="text-orange-600 text-base">
-              ≈{decimalToFraction(slippageStats.totalAvgSlippage)}
+              {slippageStats.anyValueExceeds && ">"}≈{decimalToFraction(slippageStats.totalAvgSlippage)}
             </Text>
           </View>
 
@@ -352,10 +372,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 Avg Slippage END 1
               </Text>
               <Text className="text-green-600 text-xl font-bold">
+                {slippageStats.anyEnd1Exceeds && ">"}
                 {slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
               </Text>
               <Text className="text-green-600 text-sm">
-                ≈{decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
+                {slippageStats.anyEnd1Exceeds && ">"}≈{decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
               </Text>
             </View>
 
@@ -364,10 +385,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 Avg Slippage END 2
               </Text>
               <Text className="text-purple-600 text-xl font-bold">
+                {slippageStats.anyEnd2Exceeds && ">"}
                 {slippageStats.totalAvgSlippageEnd2.toFixed(3)}"
               </Text>
               <Text className="text-purple-600 text-sm">
-                ≈{decimalToFraction(slippageStats.totalAvgSlippageEnd2)}
+                {slippageStats.anyEnd2Exceeds && ">"}≈{decimalToFraction(slippageStats.totalAvgSlippageEnd2)}
               </Text>
             </View>
           </View>
@@ -401,11 +423,17 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                       {end1Value !== null ? (
                         <>
                           <Text className="text-green-600 text-base font-bold">
+                            {strand.leftExceedsOne && ">"}
                             {end1Value.toFixed(3)}"
                           </Text>
                           <Text className="text-green-600 text-xs">
-                            ≈{decimalToFraction(end1Value)}
+                            {strand.leftExceedsOne && ">"}≈{decimalToFraction(end1Value)}
                           </Text>
+                          {strand.leftExceedsOne && (
+                            <Text className="text-orange-600 text-xs font-semibold mt-1">
+                              {'>1"'}
+                            </Text>
+                          )}
                         </>
                       ) : (
                         <Text className="text-gray-400 text-sm italic">No value</Text>
@@ -418,11 +446,17 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                       {end2Value !== null ? (
                         <>
                           <Text className="text-purple-600 text-base font-bold">
+                            {strand.rightExceedsOne && ">"}
                             {end2Value.toFixed(3)}"
                           </Text>
                           <Text className="text-purple-600 text-xs">
-                            ≈{decimalToFraction(end2Value)}
+                            {strand.rightExceedsOne && ">"}≈{decimalToFraction(end2Value)}
                           </Text>
+                          {strand.rightExceedsOne && (
+                            <Text className="text-orange-600 text-xs font-semibold mt-1">
+                              {'>1"'}
+                            </Text>
+                          )}
                         </>
                       ) : (
                         <Text className="text-gray-400 text-sm italic">No value</Text>
@@ -456,10 +490,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 </View>
                 <View className="items-end">
                   <Text className="text-gray-900 text-base font-bold">
+                    {strand.exceeds && ">"}
                     {strand.total.toFixed(3)}"
                   </Text>
                   <Text className="text-gray-600 text-xs">
-                    ≈{decimalToFraction(strand.total)}
+                    {strand.exceeds && ">"}≈{decimalToFraction(strand.total)}
                   </Text>
                 </View>
               </View>

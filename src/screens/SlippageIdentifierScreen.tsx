@@ -26,15 +26,17 @@ interface StrandSlippage {
   strandId: string;
   leftSlippage: string;
   rightSlippage: string;
+  leftExceedsOne: boolean;
+  rightExceedsOne: boolean;
 }
 
 export default function SlippageIdentifierScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [slippages, setSlippages] = useState<StrandSlippage[]>([
-    { strandId: "1", leftSlippage: "", rightSlippage: "" },
-    { strandId: "2", leftSlippage: "", rightSlippage: "" },
-    { strandId: "3", leftSlippage: "", rightSlippage: "" },
-    { strandId: "4", leftSlippage: "", rightSlippage: "" },
+    { strandId: "1", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
+    { strandId: "2", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
+    { strandId: "3", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
+    { strandId: "4", leftSlippage: "", rightSlippage: "", leftExceedsOne: false, rightExceedsOne: false },
   ]);
 
   const updateSlippage = (
@@ -48,6 +50,22 @@ export default function SlippageIdentifierScreen({ navigation }: Props) {
           ? {
               ...s,
               [side === "left" ? "leftSlippage" : "rightSlippage"]: value,
+            }
+          : s
+      )
+    );
+  };
+
+  const toggleExceedsOne = (
+    strandId: string,
+    side: "left" | "right"
+  ) => {
+    setSlippages((prev) =>
+      prev.map((s) =>
+        s.strandId === strandId
+          ? {
+              ...s,
+              [side === "left" ? "leftExceedsOne" : "rightExceedsOne"]: !s[side === "left" ? "leftExceedsOne" : "rightExceedsOne"],
             }
           : s
       )
@@ -358,7 +376,7 @@ export default function SlippageIdentifierScreen({ navigation }: Props) {
                     END 1
                   </Text>
                   <TextInput
-                    className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900"
+                    className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900 mb-2"
                     placeholder='0.5 or 5/16"'
                     placeholderTextColor="#9CA3AF"
                     value={strand.leftSlippage}
@@ -367,6 +385,25 @@ export default function SlippageIdentifierScreen({ navigation }: Props) {
                     }
                     keyboardType="default"
                   />
+                  <Pressable
+                    className="flex-row items-center"
+                    onPress={() => toggleExceedsOne(strand.strandId, "left")}
+                  >
+                    <View
+                      className={`w-5 h-5 rounded border-2 mr-2 items-center justify-center ${
+                        strand.leftExceedsOne
+                          ? "bg-orange-500 border-orange-500"
+                          : "bg-white border-gray-300"
+                      }`}
+                    >
+                      {strand.leftExceedsOne && (
+                        <Text className="text-white text-xs font-bold">✓</Text>
+                      )}
+                    </View>
+                    <Text className="text-gray-700 text-xs">
+                      {'>1"'}
+                    </Text>
+                  </Pressable>
                 </View>
 
                 {/* End 2 */}
@@ -375,7 +412,7 @@ export default function SlippageIdentifierScreen({ navigation }: Props) {
                     END 2
                   </Text>
                   <TextInput
-                    className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900"
+                    className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base text-gray-900 mb-2"
                     placeholder='0.5 or 5/16"'
                     placeholderTextColor="#9CA3AF"
                     value={strand.rightSlippage}
@@ -384,6 +421,25 @@ export default function SlippageIdentifierScreen({ navigation }: Props) {
                     }
                     keyboardType="default"
                   />
+                  <Pressable
+                    className="flex-row items-center"
+                    onPress={() => toggleExceedsOne(strand.strandId, "right")}
+                  >
+                    <View
+                      className={`w-5 h-5 rounded border-2 mr-2 items-center justify-center ${
+                        strand.rightExceedsOne
+                          ? "bg-orange-500 border-orange-500"
+                          : "bg-white border-gray-300"
+                      }`}
+                    >
+                      {strand.rightExceedsOne && (
+                        <Text className="text-white text-xs font-bold">✓</Text>
+                      )}
+                    </View>
+                    <Text className="text-gray-700 text-xs">
+                      {'>1"'}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
             </View>
