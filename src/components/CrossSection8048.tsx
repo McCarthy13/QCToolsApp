@@ -92,11 +92,10 @@ export default function CrossSection8048({
   const padding = 20;
   
   // Keyway dimensions (from the image provided - scaled)
-  // The keyway has 3 notches with specific depths
-  const keywayNotchDepth1 = 0.125 * scale; // First notch (smallest)
-  const keywayNotchDepth2 = 0.25 * scale; // Second notch (medium)
-  const keywayNotchDepth3 = 0.375 * scale; // Third notch (deepest)
-  const keywayNotchHeight = 0.5 * scale; // Height of each notch step
+  // The keyway creates a stepped tongue-and-groove profile
+  const keywayNotchDepth = 0.25 * scale; // Depth of each notch indent
+  const keywayNotchHeight = 0.75 * scale; // Height of each step
+  const numKeywayNotches = 5; // Number of notches along the height
   
   // Build path for plank with keyway on keeper edge
   const buildPlankPath = () => {
@@ -111,7 +110,7 @@ export default function CrossSection8048({
     const rightHasKeyway = offcutSide === 'L1'; // L1 cut = right is keeper
     
     if (!hasKeyway) {
-      // Full width product - add keyways to both sides
+      // Full width product - simple rectangle for now
       return `
         M ${x} ${y}
         L ${x + w} ${y}
@@ -126,50 +125,64 @@ export default function CrossSection8048({
     
     if (leftHasKeyway) {
       // Left edge has keyway, right edge is cut (straight)
-      path = `
-        M ${x} ${y}
-        L ${x + w} ${y}
-        L ${x + w} ${y + h}
-        L ${x} ${y + h}
-        L ${x} ${y + h - keywayNotchHeight}
-        L ${x + keywayNotchDepth1} ${y + h - keywayNotchHeight}
-        L ${x + keywayNotchDepth1} ${y + h - keywayNotchHeight * 2}
-        L ${x + keywayNotchDepth2} ${y + h - keywayNotchHeight * 2}
-        L ${x + keywayNotchDepth2} ${y + h - keywayNotchHeight * 3}
-        L ${x + keywayNotchDepth3} ${y + h - keywayNotchHeight * 3}
-        L ${x + keywayNotchDepth3} ${y + h / 2}
-        L ${x + keywayNotchDepth2} ${y + h / 2}
-        L ${x + keywayNotchDepth2} ${y + keywayNotchHeight * 3}
-        L ${x + keywayNotchDepth1} ${y + keywayNotchHeight * 3}
-        L ${x + keywayNotchDepth1} ${y + keywayNotchHeight * 2}
-        L ${x} ${y + keywayNotchHeight * 2}
-        L ${x} ${y + keywayNotchHeight}
-        L ${x} ${y}
-        Z
-      `;
+      // Start at top-left, go clockwise
+      path = `M ${x} ${y}`;
+      
+      // Top edge
+      path += ` L ${x + w} ${y}`;
+      
+      // Right edge (straight cut)
+      path += ` L ${x + w} ${y + h}`;
+      
+      // Bottom edge
+      path += ` L ${x} ${y + h}`;
+      
+      // Left edge with keyway notches - going up
+      // Calculate starting position and spacing
+      const startYPos = y + h - keywayNotchHeight;
+      for (let i = 0; i < numKeywayNotches; i++) {
+        const notchY = startYPos - (i * keywayNotchHeight * 2);
+        
+        // Step in
+        path += ` L ${x} ${notchY + keywayNotchHeight}`;
+        path += ` L ${x + keywayNotchDepth} ${notchY + keywayNotchHeight}`;
+        path += ` L ${x + keywayNotchDepth} ${notchY}`;
+        path += ` L ${x} ${notchY}`;
+      }
+      
+      // Close path back to start
+      path += ` L ${x} ${y} Z`;
     } else {
       // Right edge has keyway, left edge is cut (straight)
-      path = `
-        M ${x} ${y}
-        L ${x + w} ${y}
-        L ${x + w} ${y + keywayNotchHeight}
-        L ${x + w - keywayNotchDepth1} ${y + keywayNotchHeight}
-        L ${x + w - keywayNotchDepth1} ${y + keywayNotchHeight * 2}
-        L ${x + w - keywayNotchDepth2} ${y + keywayNotchHeight * 2}
-        L ${x + w - keywayNotchDepth2} ${y + keywayNotchHeight * 3}
-        L ${x + w - keywayNotchDepth3} ${y + keywayNotchHeight * 3}
-        L ${x + w - keywayNotchDepth3} ${y + h / 2}
-        L ${x + w - keywayNotchDepth2} ${y + h / 2}
-        L ${x + w - keywayNotchDepth2} ${y + h - keywayNotchHeight * 3}
-        L ${x + w - keywayNotchDepth1} ${y + h - keywayNotchHeight * 3}
-        L ${x + w - keywayNotchDepth1} ${y + h - keywayNotchHeight * 2}
-        L ${x + w} ${y + h - keywayNotchHeight * 2}
-        L ${x + w} ${y + h - keywayNotchHeight}
-        L ${x + w} ${y + h}
-        L ${x} ${y + h}
-        L ${x} ${y}
-        Z
-      `;
+      // Start at top-left, go clockwise
+      path = `M ${x} ${y}`;
+      
+      // Top edge
+      path += ` L ${x + w} ${y}`;
+      
+      // Right edge with keyway notches - going down
+      const startYPos = y + keywayNotchHeight;
+      for (let i = 0; i < numKeywayNotches; i++) {
+        const notchY = startYPos + (i * keywayNotchHeight * 2);
+        
+        // Step in
+        path += ` L ${x + w} ${notchY}`;
+        path += ` L ${x + w - keywayNotchDepth} ${notchY}`;
+        path += ` L ${x + w - keywayNotchDepth} ${notchY + keywayNotchHeight}`;
+        path += ` L ${x + w} ${notchY + keywayNotchHeight}`;
+      }
+      
+      // Continue to bottom-right
+      path += ` L ${x + w} ${y + h}`;
+      
+      // Bottom edge
+      path += ` L ${x} ${y + h}`;
+      
+      // Left edge (straight cut)
+      path += ` L ${x} ${y}`;
+      
+      // Close path
+      path += ` Z`;
     }
     
     return path;
