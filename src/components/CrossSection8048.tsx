@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line } from 'react-native-svg';
+import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path } from 'react-native-svg';
 
 interface CrossSection8048Props {
   scale?: number; // Pixels per inch
@@ -91,21 +91,102 @@ export default function CrossSection8048({
   const svgHeight = displayHeight + 40; // Add padding
   const padding = 20;
   
+  // Keyway dimensions (from the image provided - scaled)
+  // The keyway has 3 notches with specific depths
+  const keywayNotchDepth1 = 0.125 * scale; // First notch (smallest)
+  const keywayNotchDepth2 = 0.25 * scale; // Second notch (medium)
+  const keywayNotchDepth3 = 0.375 * scale; // Third notch (deepest)
+  const keywayNotchHeight = 0.5 * scale; // Height of each notch step
+  
+  // Build path for plank with keyway on keeper edge
+  const buildPlankPath = () => {
+    const x = padding;
+    const y = padding;
+    const w = displayWidth;
+    const h = displayHeight;
+    
+    // Determine which edge gets the keyway (keeper edge) and which is straight (cut edge)
+    const hasKeyway = offcutSide !== null;
+    const leftHasKeyway = offcutSide === 'L2'; // L2 cut = left is keeper
+    const rightHasKeyway = offcutSide === 'L1'; // L1 cut = right is keeper
+    
+    if (!hasKeyway) {
+      // Full width product - add keyways to both sides
+      return `
+        M ${x} ${y}
+        L ${x + w} ${y}
+        L ${x + w} ${y + h}
+        L ${x} ${y + h}
+        Z
+      `;
+    }
+    
+    // Build path with keyway on keeper edge
+    let path = '';
+    
+    if (leftHasKeyway) {
+      // Left edge has keyway, right edge is cut (straight)
+      path = `
+        M ${x} ${y}
+        L ${x + w} ${y}
+        L ${x + w} ${y + h}
+        L ${x} ${y + h}
+        L ${x} ${y + h - keywayNotchHeight}
+        L ${x + keywayNotchDepth1} ${y + h - keywayNotchHeight}
+        L ${x + keywayNotchDepth1} ${y + h - keywayNotchHeight * 2}
+        L ${x + keywayNotchDepth2} ${y + h - keywayNotchHeight * 2}
+        L ${x + keywayNotchDepth2} ${y + h - keywayNotchHeight * 3}
+        L ${x + keywayNotchDepth3} ${y + h - keywayNotchHeight * 3}
+        L ${x + keywayNotchDepth3} ${y + h / 2}
+        L ${x + keywayNotchDepth2} ${y + h / 2}
+        L ${x + keywayNotchDepth2} ${y + keywayNotchHeight * 3}
+        L ${x + keywayNotchDepth1} ${y + keywayNotchHeight * 3}
+        L ${x + keywayNotchDepth1} ${y + keywayNotchHeight * 2}
+        L ${x} ${y + keywayNotchHeight * 2}
+        L ${x} ${y + keywayNotchHeight}
+        L ${x} ${y}
+        Z
+      `;
+    } else {
+      // Right edge has keyway, left edge is cut (straight)
+      path = `
+        M ${x} ${y}
+        L ${x + w} ${y}
+        L ${x + w} ${y + keywayNotchHeight}
+        L ${x + w - keywayNotchDepth1} ${y + keywayNotchHeight}
+        L ${x + w - keywayNotchDepth1} ${y + keywayNotchHeight * 2}
+        L ${x + w - keywayNotchDepth2} ${y + keywayNotchHeight * 2}
+        L ${x + w - keywayNotchDepth2} ${y + keywayNotchHeight * 3}
+        L ${x + w - keywayNotchDepth3} ${y + keywayNotchHeight * 3}
+        L ${x + w - keywayNotchDepth3} ${y + h / 2}
+        L ${x + w - keywayNotchDepth2} ${y + h / 2}
+        L ${x + w - keywayNotchDepth2} ${y + h - keywayNotchHeight * 3}
+        L ${x + w - keywayNotchDepth1} ${y + h - keywayNotchHeight * 3}
+        L ${x + w - keywayNotchDepth1} ${y + h - keywayNotchHeight * 2}
+        L ${x + w} ${y + h - keywayNotchHeight * 2}
+        L ${x + w} ${y + h - keywayNotchHeight}
+        L ${x + w} ${y + h}
+        L ${x} ${y + h}
+        L ${x} ${y}
+        Z
+      `;
+    }
+    
+    return path;
+  };
+  
   return (
     <View style={{ width: svgWidth, height: svgHeight, alignSelf: 'center' }}>
       <Svg width={svgWidth} height={svgHeight}>
-        {/* Plank outline */}
-        <Rect
-          x={padding}
-          y={padding}
-          width={displayWidth}
-          height={displayHeight}
+        {/* Plank outline with keyway on keeper edge */}
+        <Path
+          d={buildPlankPath()}
           fill="#E5E7EB"
           stroke="#374151"
           strokeWidth={2}
         />
         
-        {/* Show cut edge if applicable */}
+        {/* Highlight cut edge with red line */}
         {offcutSide === 'L1' && (
           <Line
             x1={padding}
@@ -114,6 +195,7 @@ export default function CrossSection8048({
             y2={padding + displayHeight}
             stroke="#EF4444"
             strokeWidth={4}
+            strokeLinecap="round"
           />
         )}
         {offcutSide === 'L2' && (
@@ -124,6 +206,7 @@ export default function CrossSection8048({
             y2={padding + displayHeight}
             stroke="#EF4444"
             strokeWidth={4}
+            strokeLinecap="round"
           />
         )}
         
