@@ -18,6 +18,7 @@ export interface CamberInputs {
   strandEValue?: number; // Distance from bottom to center of strand (optional)
   topStrandPattern?: string; // Top strand pattern ID (optional)
   productWidth?: number; // Product width in inches (optional, for cut-width products)
+  offcutSide?: 'L1' | 'L2'; // Which side was cut off (optional, for cut-width products)
   projectNumber?: string; // Project # (optional)
   markNumber?: string; // Mark # (optional)
   idNumber?: string; // ID # (optional)

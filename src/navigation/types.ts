@@ -16,6 +16,7 @@ export type RootStackParamList = {
       strandPattern: string;
       topStrandPattern?: string;
       productWidth?: number;
+      offcutSide?: 'L1' | 'L2';
     }
   };
   SlippageSummary: { 
@@ -36,6 +37,7 @@ export type RootStackParamList = {
       strandPattern: string;
       topStrandPattern?: string;
       productWidth?: number;
+      offcutSide?: 'L1' | 'L2';
     };
   };
   SlippageHistory: undefined;
