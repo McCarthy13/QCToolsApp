@@ -47,26 +47,41 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   // Get the selected strand pattern
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
 
-  // Calculate active strands based on product width (if coordinates exist)
+  // Calculate active strands based on product width and offcut side
   const activeStrandIndices = useMemo(() => {
-    if (!selectedPattern || !selectedPattern.strandCoordinates || !config.productWidth) {
-      // No coordinates or width provided, all strands are active
+    if (!selectedPattern || !selectedPattern.strandCoordinates || !config.productWidth || !config.offcutSide) {
+      // No coordinates, width, or offcut side provided - all strands are active
       return null;
     }
 
     const { strandCoordinates } = selectedPattern;
-    const { productWidth } = config;
+    const { productWidth, offcutSide } = config;
 
-    // Filter strands where x coordinate <= product width
+    // Calculate full width from max x coordinate
+    const fullWidth = Math.max(...strandCoordinates.map(c => c.x));
+
+    // Filter strands based on which side was cut off
     const activeIndices: number[] = [];
     strandCoordinates.forEach((coord, index) => {
-      if (coord.x <= productWidth) {
+      let isActive = false;
+
+      if (offcutSide === 'L1') {
+        // L1 (Left) was cut off - keep right side (strands near L2)
+        // Keep strands where x >= (fullWidth - productWidth)
+        isActive = coord.x >= (fullWidth - productWidth);
+      } else if (offcutSide === 'L2') {
+        // L2 (Right) was cut off - keep left side (strands near L1)
+        // Keep strands where x <= productWidth
+        isActive = coord.x <= productWidth;
+      }
+
+      if (isActive) {
         activeIndices.push(index);
       }
     });
 
     return activeIndices;
-  }, [selectedPattern, config.productWidth]);
+  }, [selectedPattern, config.productWidth, config.offcutSide]);
 
   // Calculate total strand count and initialize fields
   const initialSlippages = useMemo(() => {
@@ -448,20 +463,20 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
         <GenericCrossSection />
 
         {/* Cut-width info banner */}
-        {activeStrandIndices !== null && selectedPattern && (
+        {activeStrandIndices !== null && selectedPattern && config.offcutSide && (
           <View className="px-6 mt-4">
             <View className="bg-green-50 border border-green-200 rounded-lg p-4">
               <View className="flex-row items-start">
-                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                <Ionicons name="cut" size={20} color="#10B981" />
                 <View className="flex-1 ml-3">
                   <Text className="text-green-900 font-semibold text-sm mb-1">
-                    Cut-Width Product Detected
+                    Cut-Width Product
                   </Text>
                   <Text className="text-green-800 text-sm">
-                    Product width: {config.productWidth}" • {' '}
-                    Active strands: {slippages.length} of {selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6}
+                    Width: {config.productWidth}" • {' '}
+                    Offcut Side: {config.offcutSide} ({config.offcutSide === 'L1' ? 'Left removed, keeping right' : 'Right removed, keeping left'})
                     {'\n'}
-                    Only showing strands within the cut width.
+                    Active strands: {slippages.length} of {selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6}
                   </Text>
                 </View>
               </View>
