@@ -57,10 +57,6 @@ export interface ElongationResults {
   totalElongation: number; // inches
   forcePerStrand: number; // kips
   stressPerStrand: number; // ksi
-  percentOfBreaking: number; // %
-  percentOfYield: number; // %
-  withinLimits: boolean; // true if within acceptable range
-  warnings: string[];
 }
 
 /**
@@ -87,7 +83,6 @@ export function calculateTheoreticalElongation(
  */
 export function calculateElongation(inputs: ElongationInputs): ElongationResults {
   const strandProps = STRAND_PROPERTIES[inputs.strandSize];
-  const warnings: string[] = [];
 
   // Convert bed length from feet to inches
   const bedLengthInches = inputs.bedLength * 12;
@@ -97,21 +92,6 @@ export function calculateElongation(inputs: ElongationInputs): ElongationResults
 
   // Calculate stress per strand
   const stressPerStrand = forcePerStrand / strandProps.area;
-
-  // Calculate percentage of breaking and yield strength
-  const percentOfBreaking = (forcePerStrand / strandProps.breakingStrength) * 100;
-  const percentOfYield = (forcePerStrand / strandProps.yieldStrength) * 100;
-
-  // Check for warnings
-  if (percentOfBreaking > 80) {
-    warnings.push("WARNING: Jacking force exceeds 80% of breaking strength!");
-  }
-  if (percentOfBreaking > 70 && percentOfBreaking <= 80) {
-    warnings.push("CAUTION: Jacking force is between 70-80% of breaking strength");
-  }
-  if (percentOfYield > 90) {
-    warnings.push("WARNING: Stress exceeds 90% of yield strength!");
-  }
 
   // Calculate theoretical elongation for one strand
   // Elongation = (Force × Length) / (Area × Elastic Modulus)
@@ -136,16 +116,6 @@ export function calculateElongation(inputs: ElongationInputs): ElongationResults
   const totalElongation =
     theoreticalElongation + bedShortening - frictionLoss - anchorSetLoss;
 
-  // Check if within acceptable limits (typically 65-75% of breaking strength)
-  const withinLimits = percentOfBreaking >= 60 && percentOfBreaking <= 75;
-
-  if (!withinLimits && percentOfBreaking < 60) {
-    warnings.push("INFO: Jacking force is below typical range (60-75% of breaking strength)");
-  }
-  if (!withinLimits && percentOfBreaking > 75) {
-    warnings.push("WARNING: Jacking force exceeds typical range (60-75% of breaking strength)");
-  }
-
   return {
     theoreticalElongation,
     bedShortening,
@@ -154,10 +124,6 @@ export function calculateElongation(inputs: ElongationInputs): ElongationResults
     totalElongation,
     forcePerStrand,
     stressPerStrand,
-    percentOfBreaking,
-    percentOfYield,
-    withinLimits,
-    warnings,
   };
 }
 

@@ -48,55 +48,6 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
           </Text>
         </View>
 
-        {/* Warnings */}
-        {results.warnings.length > 0 && (
-          <View className="px-6 mt-4">
-            {results.warnings.map((warning, index) => {
-              const isWarning = warning.startsWith("WARNING");
-              const isCaution = warning.startsWith("CAUTION");
-              return (
-                <View
-                  key={index}
-                  className={`rounded-lg p-3 mb-2 ${
-                    isWarning
-                      ? "bg-red-50 border border-red-200"
-                      : isCaution
-                      ? "bg-orange-50 border border-orange-200"
-                      : "bg-blue-50 border border-blue-200"
-                  }`}
-                >
-                  <View className="flex-row items-start">
-                    <Ionicons
-                      name={
-                        isWarning
-                          ? "warning"
-                          : isCaution
-                          ? "alert-circle"
-                          : "information-circle"
-                      }
-                      size={18}
-                      color={
-                        isWarning ? "#EF4444" : isCaution ? "#F59E0B" : "#3B82F6"
-                      }
-                    />
-                    <Text
-                      className={`flex-1 ml-2 text-xs font-medium ${
-                        isWarning
-                          ? "text-red-900"
-                          : isCaution
-                          ? "text-orange-900"
-                          : "text-blue-900"
-                      }`}
-                    >
-                      {warning}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
         {/* Main Result - Total Elongation */}
         <View className="px-6 mt-4">
           <View className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-500">
@@ -198,6 +149,9 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
               <Text className="text-gray-900 text-base font-bold">
                 {formatValue(results.forcePerStrand, 2, " kips")}
               </Text>
+              <Text className="text-gray-500 text-xs mt-0.5">
+                {formatValue(results.forcePerStrand * 1000, 0, " lbs")}
+              </Text>
             </View>
 
             {/* Stress Per Strand */}
@@ -206,45 +160,8 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
               <Text className="text-gray-900 text-base font-bold">
                 {formatValue(results.stressPerStrand, 1, " ksi")}
               </Text>
-            </View>
-          </View>
-
-          <View className="flex-row gap-2 mb-2">
-            {/* % of Breaking */}
-            <View className="flex-1 bg-gray-50 rounded-lg p-3">
-              <Text className="text-gray-600 text-xs mb-1">% Breaking</Text>
-              <Text
-                className={`text-base font-bold ${
-                  results.percentOfBreaking > 80
-                    ? "text-red-600"
-                    : results.percentOfBreaking > 70
-                    ? "text-orange-600"
-                    : "text-green-600"
-                }`}
-              >
-                {formatValue(results.percentOfBreaking, 1, "%")}
-              </Text>
               <Text className="text-gray-500 text-xs mt-0.5">
-                of {formatValue(strandProps.breakingStrength, 1, " kips")}
-              </Text>
-            </View>
-
-            {/* % of Yield */}
-            <View className="flex-1 bg-gray-50 rounded-lg p-3">
-              <Text className="text-gray-600 text-xs mb-1">% Yield</Text>
-              <Text
-                className={`text-base font-bold ${
-                  results.percentOfYield > 90
-                    ? "text-red-600"
-                    : results.percentOfYield > 80
-                    ? "text-orange-600"
-                    : "text-green-600"
-                }`}
-              >
-                {formatValue(results.percentOfYield, 1, "%")}
-              </Text>
-              <Text className="text-gray-500 text-xs mt-0.5">
-                of {formatValue(strandProps.yieldStrength, 1, " kips")}
+                {formatValue(results.stressPerStrand * 1000, 0, " psi")}
               </Text>
             </View>
           </View>
@@ -269,16 +186,10 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
                 {formatValue(strandProps.elasticModulus, 0, " ksi")}
               </Text>
             </View>
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-gray-600 text-sm">Breaking Strength</Text>
-              <Text className="text-gray-900 text-sm font-semibold">
-                {formatValue(strandProps.breakingStrength, 1, " kips")}
-              </Text>
-            </View>
             <View className="flex-row justify-between">
-              <Text className="text-gray-600 text-sm">Yield Strength (90%)</Text>
+              <Text className="text-gray-600 text-sm">Minimum Breaking Strength</Text>
               <Text className="text-gray-900 text-sm font-semibold">
-                {formatValue(strandProps.yieldStrength, 1, " kips")}
+                {formatValue(strandProps.breakingStrength, 1, " kips")} ({formatValue(strandProps.breakingStrength * 1000, 0, " lbs")})
               </Text>
             </View>
             <Text className="text-gray-500 text-xs mt-3">
