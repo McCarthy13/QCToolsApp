@@ -91,11 +91,20 @@ export default function CrossSection8048({
   const svgHeight = displayHeight + 40; // Add padding
   const padding = 20;
   
-  // Keyway dimensions (from the image provided - scaled)
-  // The keyway creates a stepped tongue-and-groove profile
-  const keywayNotchDepth = 0.25 * scale; // Depth of each notch indent
-  const keywayNotchHeight = 0.75 * scale; // Height of each step
-  const numKeywayNotches = 5; // Number of notches along the height
+  // Keyway dimensions (exact coordinates from user specification)
+  // Bottom corner has 1/2" radius
+  // Profile coordinates (x, y) where x is depth from edge, y is height from bottom
+  const keywayRadius = 0.5 * scale; // 1/2" radius at bottom corner
+  const keywayPoints = [
+    { x: 0, y: 0.5 },      // After radius
+    { x: 0.25, y: 0.625 }, // 1/4", 5/8"
+    { x: 0.5625, y: 5 },   // 9/16", 5"
+    { x: 0.75, y: 5.125 }, // 3/4", 5 1/8"
+    { x: 0.8125, y: 6.875 }, // 13/16", 6 7/8"
+    { x: 0.625, y: 7 },    // 5/8", 7"
+    { x: 0.75, y: 7.5 },   // 3/4", 7 1/2"
+    { x: 1.25, y: 8 },     // 1 1/4", 8" (top)
+  ].map(p => ({ x: p.x * scale, y: p.y * scale })); // Scale to pixels
   
   // Build path for plank with keyway on keeper edge
   const buildPlankPath = () => {
@@ -120,60 +129,52 @@ export default function CrossSection8048({
       `;
     }
     
-    // Build path with keyway on keeper edge
+    // Build path with keyway on keeper edge using exact coordinates
     let path = '';
     
     if (leftHasKeyway) {
       // Left edge has keyway, right edge is cut (straight)
-      // Start at top-left, go clockwise
-      path = `M ${x} ${y}`;
+      // Start at bottom-left with radius
+      path = `M ${x + keywayRadius} ${y + h}`;
       
-      // Top edge
+      // Radius curve at bottom-left corner (going up and left)
+      path += ` Q ${x} ${y + h} ${x} ${y + h - keywayRadius}`;
+      
+      // Follow keyway profile points going up the left edge
+      // Points are measured from bottom, so convert: (x_depth, y_height) to SVG coords
+      for (let i = 0; i < keywayPoints.length; i++) {
+        const point = keywayPoints[i];
+        path += ` L ${x + point.x} ${y + h - point.y}`;
+      }
+      
+      // Top edge to top-right
       path += ` L ${x + w} ${y}`;
       
       // Right edge (straight cut)
       path += ` L ${x + w} ${y + h}`;
       
-      // Bottom edge
-      path += ` L ${x} ${y + h}`;
+      // Bottom edge back to start
+      path += ` L ${x + keywayRadius} ${y + h}`;
       
-      // Left edge with keyway notches - going up
-      // Calculate starting position and spacing
-      const startYPos = y + h - keywayNotchHeight;
-      for (let i = 0; i < numKeywayNotches; i++) {
-        const notchY = startYPos - (i * keywayNotchHeight * 2);
-        
-        // Step in
-        path += ` L ${x} ${notchY + keywayNotchHeight}`;
-        path += ` L ${x + keywayNotchDepth} ${notchY + keywayNotchHeight}`;
-        path += ` L ${x + keywayNotchDepth} ${notchY}`;
-        path += ` L ${x} ${notchY}`;
-      }
-      
-      // Close path back to start
-      path += ` L ${x} ${y} Z`;
+      path += ` Z`;
     } else {
       // Right edge has keyway, left edge is cut (straight)
-      // Start at top-left, go clockwise
+      // Mirror the keyway profile for the right edge
+      // Start at top-left
       path = `M ${x} ${y}`;
       
-      // Top edge
-      path += ` L ${x + w} ${y}`;
+      // Top edge, ending before the keyway starts
+      const topKeywayPoint = keywayPoints[keywayPoints.length - 1];
+      path += ` L ${x + w - topKeywayPoint.x} ${y}`;
       
-      // Right edge with keyway notches - going down
-      const startYPos = y + keywayNotchHeight;
-      for (let i = 0; i < numKeywayNotches; i++) {
-        const notchY = startYPos + (i * keywayNotchHeight * 2);
-        
-        // Step in
-        path += ` L ${x + w} ${notchY}`;
-        path += ` L ${x + w - keywayNotchDepth} ${notchY}`;
-        path += ` L ${x + w - keywayNotchDepth} ${notchY + keywayNotchHeight}`;
-        path += ` L ${x + w} ${notchY + keywayNotchHeight}`;
+      // Follow keyway profile points going down the right edge (reversed and mirrored)
+      for (let i = keywayPoints.length - 1; i >= 0; i--) {
+        const point = keywayPoints[i];
+        path += ` L ${x + w - point.x} ${y + h - point.y}`;
       }
       
-      // Continue to bottom-right
-      path += ` L ${x + w} ${y + h}`;
+      // Radius curve at bottom-right corner (going left and down)
+      path += ` Q ${x + w} ${y + h} ${x + w - keywayRadius} ${y + h}`;
       
       // Bottom edge
       path += ` L ${x} ${y + h}`;
@@ -181,7 +182,6 @@ export default function CrossSection8048({
       // Left edge (straight cut)
       path += ` L ${x} ${y}`;
       
-      // Close path
       path += ` Z`;
     }
     
