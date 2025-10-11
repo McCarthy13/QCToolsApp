@@ -24,8 +24,46 @@ interface StrandLibraryState {
   seedDefaultStrands: () => void;
 }
 
-// Default strand definitions based on ASTM A416 Grade 270
+// Default strand definitions based on ASTM A416
 const DEFAULT_STRANDS: Omit<StrandDefinition, 'id' | 'createdAt'>[] = [
+  // Grade 250 strands
+  {
+    name: "3/8\" Grade 250",
+    diameter: 0.375,
+    area: 0.080,
+    elasticModulus: 28500,
+    breakingStrength: 20.0,
+    grade: "250",
+    isDefault: true,
+  },
+  {
+    name: "7/16\" Grade 250",
+    diameter: 0.4375,
+    area: 0.115,
+    elasticModulus: 28500,
+    breakingStrength: 29.0,
+    grade: "250",
+    isDefault: true,
+  },
+  {
+    name: "1/2\" Grade 250",
+    diameter: 0.500,
+    area: 0.153,
+    elasticModulus: 28500,
+    breakingStrength: 38.3,
+    grade: "250",
+    isDefault: true,
+  },
+  {
+    name: "0.6\" Grade 250",
+    diameter: 0.600,
+    area: 0.217,
+    elasticModulus: 28500,
+    breakingStrength: 54.0,
+    grade: "250",
+    isDefault: true,
+  },
+  // Grade 270 strands
   {
     name: "3/8\" Grade 270",
     diameter: 0.375,
