@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path } from 'react-native-svg';
+import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path, Defs, ClipPath } from 'react-native-svg';
 
 interface StrandSlippage {
   strandId: string;
@@ -207,16 +207,16 @@ export default function CrossSection8048({
     <View style={{ width: svgWidth, height: svgHeight, alignSelf: 'center' }}>
       <Svg width={svgWidth} height={svgHeight}>
         {/* Define clip path for clean core cutting */}
-        <defs>
-          <clipPath id={clipPathId}>
-            <rect 
+        <Defs>
+          <ClipPath id={clipPathId}>
+            <Rect 
               x={padding} 
               y={padding} 
               width={displayWidth} 
               height={displayHeight} 
             />
-          </clipPath>
-        </defs>
+          </ClipPath>
+        </Defs>
         
         {/* Plank outline with keyway on keeper edge */}
         <Path
