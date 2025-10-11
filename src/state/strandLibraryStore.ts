@@ -141,9 +141,19 @@ export const useStrandLibraryStore = create<StrandLibraryState>()(
 
       seedDefaultStrands: () => {
         const state = get();
-        // Only seed if no strands exist
+        
+        // Check if we need to add Grade 250 strands (migration)
+        const hasGrade250 = state.strands.some(s => s.grade === "250");
+        
         if (state.strands.length === 0) {
+          // Fresh install - add all default strands
           DEFAULT_STRANDS.forEach((strand) => {
+            state.addStrand(strand);
+          });
+        } else if (!hasGrade250) {
+          // Existing installation without Grade 250 - add only Grade 250 strands
+          const grade250Strands = DEFAULT_STRANDS.filter(s => s.grade === "250");
+          grade250Strands.forEach((strand) => {
             state.addStrand(strand);
           });
         }
@@ -153,8 +163,8 @@ export const useStrandLibraryStore = create<StrandLibraryState>()(
       name: 'strand-library-storage',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
-        // Seed default strands if the library is empty
-        if (state && state.strands.length === 0) {
+        // Always check and seed/migrate strands
+        if (state) {
           state.seedDefaultStrands();
         }
       },

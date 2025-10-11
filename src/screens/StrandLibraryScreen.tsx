@@ -15,7 +15,7 @@ import ConfirmModal from "../components/ConfirmModal";
 
 export default function StrandLibraryScreen() {
   const insets = useSafeAreaInsets();
-  const { strands, addStrand, updateStrand, removeStrand } = useStrandLibraryStore();
+  const { strands, addStrand, updateStrand, removeStrand, seedDefaultStrands } = useStrandLibraryStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStrand, setEditingStrand] = useState<StrandDefinition | null>(null);
