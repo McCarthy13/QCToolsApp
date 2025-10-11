@@ -321,26 +321,62 @@ export default function CrossSection8048({
           const e1Display = slippageData.leftExceedsOne ? '>1"' : slippageData.leftSlippage;
           const e2Display = slippageData.rightExceedsOne ? '>1"' : slippageData.rightSlippage;
           
+          // Calculate text dimensions for background boxes
+          const fontSize = 11;
+          const e1Text = `E1: ${e1Display}`;
+          const e2Text = `E2: ${e2Display}`;
+          // Approximate text width (rough estimation)
+          const e1Width = e1Text.length * fontSize * 0.6;
+          const e2Width = e2Text.length * fontSize * 0.6;
+          const boxHeight = fontSize + 4;
+          const boxPadding = 3;
+          
+          // Position above and below strand, avoiding overlap
+          const e1Y = padding + strand.displayY - 30;
+          const e2Y = padding + strand.displayY + 22;
+          
           return (
             <React.Fragment key={`slippage-${strand.id}`}>
+              {/* E1 background box */}
+              <Rect
+                x={padding + strand.displayX - e1Width / 2 - boxPadding}
+                y={e1Y - fontSize + 2}
+                width={e1Width + boxPadding * 2}
+                height={boxHeight}
+                fill="white"
+                opacity={0.9}
+                rx={3}
+              />
+              
               {/* E1 value above strand */}
               <SvgText
                 x={padding + strand.displayX}
-                y={padding + strand.displayY - 25}
-                fontSize={8}
-                fill="#10B981"
+                y={e1Y}
+                fontSize={fontSize}
+                fill="#059669"
                 fontWeight="bold"
                 textAnchor="middle"
               >
                 E1: {e1Display}
               </SvgText>
               
+              {/* E2 background box */}
+              <Rect
+                x={padding + strand.displayX - e2Width / 2 - boxPadding}
+                y={e2Y - fontSize + 2}
+                width={e2Width + boxPadding * 2}
+                height={boxHeight}
+                fill="white"
+                opacity={0.9}
+                rx={3}
+              />
+              
               {/* E2 value below strand */}
               <SvgText
                 x={padding + strand.displayX}
-                y={padding + strand.displayY + 20}
-                fontSize={8}
-                fill="#9333EA"
+                y={e2Y}
+                fontSize={fontSize}
+                fill="#7C3AED"
                 fontWeight="bold"
                 textAnchor="middle"
               >
