@@ -45,4 +45,14 @@ export type RootStackParamList = {
     subject: string;
     body: string;
   };
+  StressingCalculator: undefined;
+  StressingResults: {
+    jackingForce: number;
+    bedLength: number;
+    strandSize: "3/8" | "1/2" | "0.6";
+    numberOfStrands: number;
+    bedShortening?: number;
+    frictionLoss?: number;
+    anchorSetLoss?: number;
+  };
 };

@@ -17,6 +17,8 @@ import SlippageIdentifierScreen from "./src/screens/SlippageIdentifierScreen";
 import SlippageSummaryScreen from "./src/screens/SlippageSummaryScreen";
 import SlippageHistoryScreen from "./src/screens/SlippageHistoryScreen";
 import EmailComposerScreen from "./src/screens/EmailComposerScreen";
+import StressingCalculatorScreen from "./src/screens/StressingCalculatorScreen";
+import StressingResultsScreen from "./src/screens/StressingResultsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -274,6 +276,20 @@ export default function App() {
               options={{
                 title: "Send Email Report",
                 presentation: "modal",
+              }}
+            />
+            <Stack.Screen
+              name="StressingCalculator"
+              component={StressingCalculatorScreen}
+              options={{
+                title: "Stressing Calculator",
+              }}
+            />
+            <Stack.Screen
+              name="StressingResults"
+              component={StressingResultsScreen}
+              options={{
+                title: "Elongation Results",
               }}
             />
           </Stack.Navigator>

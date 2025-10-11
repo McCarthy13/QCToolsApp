@@ -38,6 +38,15 @@ const tools: Tool[] = [
     bgColor: '#F0FDF4',
     route: 'ProductDetails',
   },
+  {
+    id: 'stressing-calculator',
+    name: 'Stressing Force & Elongation',
+    description: 'Calculate expected strand elongation during prestressing',
+    icon: 'git-pull-request',
+    color: '#8B5CF6',
+    bgColor: '#F5F3FF',
+    route: 'StressingCalculator',
+  },
 ];
 
 export default function DashboardScreen() {
