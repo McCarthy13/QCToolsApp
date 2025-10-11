@@ -2,6 +2,14 @@ import React from 'react';
 import { View } from 'react-native';
 import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path } from 'react-native-svg';
 
+interface StrandSlippage {
+  strandId: string;
+  leftSlippage: string;
+  rightSlippage: string;
+  leftExceedsOne: boolean;
+  rightExceedsOne: boolean;
+}
+
 interface CrossSection8048Props {
   scale?: number; // Pixels per inch
   showDimensions?: boolean;
@@ -9,6 +17,8 @@ interface CrossSection8048Props {
   activeStrands?: number[];
   offcutSide?: 'L1' | 'L2' | null;
   productWidth?: number;
+  slippages?: StrandSlippage[]; // Optional slippage data to display
+  showSlippageValues?: boolean; // Whether to show E1/E2 labels
 }
 
 export default function CrossSection8048({
@@ -18,6 +28,8 @@ export default function CrossSection8048({
   activeStrands = [1, 2, 3, 4, 5, 6, 7],
   offcutSide = null,
   productWidth,
+  slippages = [],
+  showSlippageValues = false,
 }: CrossSection8048Props) {
   // Dimensions in inches
   const FULL_WIDTH = 48;
@@ -277,6 +289,43 @@ export default function CrossSection8048({
             {strand.id}
           </SvgText>
         ))}
+        
+        {/* Slippage values (E1/E2) if provided */}
+        {showSlippageValues && slippages.length > 0 && visibleStrands.map((strand) => {
+          const slippageData = slippages.find(s => parseInt(s.strandId) === strand.id);
+          if (!slippageData) return null;
+          
+          const e1Display = slippageData.leftExceedsOne ? '>1"' : slippageData.leftSlippage;
+          const e2Display = slippageData.rightExceedsOne ? '>1"' : slippageData.rightSlippage;
+          
+          return (
+            <React.Fragment key={`slippage-${strand.id}`}>
+              {/* E1 value above strand */}
+              <SvgText
+                x={padding + strand.displayX}
+                y={padding + strand.displayY - 25}
+                fontSize={8}
+                fill="#10B981"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                E1: {e1Display}
+              </SvgText>
+              
+              {/* E2 value below strand */}
+              <SvgText
+                x={padding + strand.displayX}
+                y={padding + strand.displayY + 20}
+                fontSize={8}
+                fill="#9333EA"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                E2: {e2Display}
+              </SvgText>
+            </React.Fragment>
+          );
+        })}
       </Svg>
     </View>
   );

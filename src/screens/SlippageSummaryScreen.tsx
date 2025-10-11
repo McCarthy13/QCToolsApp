@@ -4,13 +4,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
-import Svg, { Line, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
 import { useAuthStore } from "../state/authStore";
 import ConfirmModal from "../components/ConfirmModal";
+import CrossSection8048 from "../components/CrossSection8048";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -218,193 +218,31 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     };
   }, [slippages]);
 
-  // 3D Isometric view of 8048 hollow-core plank
-  const PlankModel = () => {
-    const svgWidth = 380;
-    const svgHeight = 320;
+  // Calculate active strand indices for the cross-section
+  const activeStrandIndices = useMemo(() => {
+    if (!selectedPattern || !selectedPattern.strandCoordinates || !config.productWidth || !config.offcutSide) {
+      return null;
+    }
 
-    const scale = 4;
-    const plankWidth = 48 * scale;
-    const plankHeight = 8 * scale;
+    const { strandCoordinates } = selectedPattern;
+    const { productWidth, offcutSide } = config;
+    const fullWidth = Math.max(...strandCoordinates.map(c => c.x));
 
-    const startX = 30;
-    const startY = 135;
+    const activeIndices: number[] = [];
+    strandCoordinates.forEach((coord, index) => {
+      let isActive = false;
+      if (offcutSide === 'L1') {
+        isActive = coord.x >= (fullWidth - productWidth);
+      } else if (offcutSide === 'L2') {
+        isActive = coord.x <= productWidth;
+      }
+      if (isActive) {
+        activeIndices.push(index + 1); // Convert to 1-based
+      }
+    });
 
-    const depth = 180;
-    const depthX = depth * 0.866;
-    const depthY = depth * 0.5;
-
-    const coreWidth = 5.5 * scale;
-    const coreHeight = 5.625 * scale;
-    const coreBottomFromPlankBottom = 1.1875 * scale;
-    const edgeToCoreEdge = 2.625 * scale;
-    const spacingBetweenCores = 1.9375 * scale;
-
-    const coreBottomY = plankHeight - coreBottomFromPlankBottom;
-    const coreCenterY = coreBottomY - coreHeight / 2;
-    const firstCoreCenterX = edgeToCoreEdge + coreWidth / 2;
-
-    const cores = Array.from({ length: 6 }, (_, i) => ({
-      cx: firstCoreCenterX + i * (coreWidth + spacingBetweenCores),
-      cy: coreCenterY,
-    }));
-
-    const drawCore = (cx: number, cy: number) => {
-      const scaleX = coreWidth;
-      const scaleY = coreHeight;
-      const offsetX = cx - coreWidth / 2;
-      const offsetY = cy - coreHeight / 2;
-
-      return `
-        M ${offsetX + 0.5 * scaleX} ${offsetY + 1 * scaleY}
-        L ${offsetX + 0.75 * scaleX} ${offsetY + 0.93 * scaleY}
-        L ${offsetX + 0.93 * scaleX} ${offsetY + 0.75 * scaleY}
-        L ${offsetX + 1 * scaleX} ${offsetY + 0.5 * scaleY}
-        L ${offsetX + 1 * scaleX} ${offsetY + 0.25 * scaleY}
-        C ${offsetX + 1 * scaleX} ${offsetY + 0.11 * scaleY} ${offsetX + 0.89 * scaleX} ${offsetY + 0 * scaleY} ${offsetX + 0.5 * scaleX} ${offsetY + 0 * scaleY}
-        C ${offsetX + 0.11 * scaleX} ${offsetY + 0 * scaleY} ${offsetX + 0 * scaleX} ${offsetY + 0.11 * scaleY} ${offsetX + 0 * scaleX} ${offsetY + 0.25 * scaleY}
-        L ${offsetX + 0 * scaleX} ${offsetY + 0.5 * scaleY}
-        L ${offsetX + 0.07 * scaleX} ${offsetY + 0.75 * scaleY}
-        L ${offsetX + 0.25 * scaleX} ${offsetY + 0.93 * scaleY}
-        L ${offsetX + 0.5 * scaleX} ${offsetY + 1 * scaleY}
-        Z
-      `;
-    };
-
-    const drawCrossSection = (
-      offsetX: number,
-      offsetY: number,
-      isHidden: boolean,
-      solidTop: boolean = false,
-      solidRight: boolean = false
-    ) => {
-      const x = startX + offsetX;
-      const y = startY + offsetY;
-
-      const keywayWidth = 8;
-      const keywayDepth = 3;
-      const keywayFromTop = 6;
-      const topInset = 2;
-      const lipRadius = 4;
-
-      let leftPath = `M ${x + lipRadius} ${y + plankHeight}`;
-      leftPath += ` Q ${x} ${y + plankHeight} ${x} ${y + plankHeight - lipRadius}`;
-      leftPath += ` L ${x + topInset} ${y + keywayFromTop + keywayWidth}`;
-      leftPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      leftPath += ` L ${x + topInset + keywayDepth} ${y + keywayFromTop}`;
-      leftPath += ` L ${x + topInset} ${y + keywayFromTop}`;
-      leftPath += ` L ${x + topInset} ${y}`;
-
-      const topPath = `M ${x + topInset} ${y} L ${x + plankWidth - topInset} ${y}`;
-
-      let rightPath = `M ${x + plankWidth - topInset} ${y}`;
-      rightPath += ` L ${x + plankWidth - topInset} ${y + keywayFromTop}`;
-      rightPath += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop}`;
-      rightPath += ` L ${x + plankWidth - topInset - keywayDepth} ${y + keywayFromTop + keywayWidth}`;
-      rightPath += ` L ${x + plankWidth - topInset} ${y + keywayFromTop + keywayWidth}`;
-      rightPath += ` L ${x + plankWidth} ${y + plankHeight - lipRadius}`;
-      rightPath += ` Q ${x + plankWidth} ${y + plankHeight} ${x + plankWidth - lipRadius} ${y + plankHeight}`;
-      rightPath += ` L ${x + lipRadius} ${y + plankHeight}`;
-
-      const leftStrokeDash = isHidden ? "3,3" : undefined;
-      const topStrokeDash = solidTop
-        ? undefined
-        : isHidden
-        ? "3,3"
-        : undefined;
-      const rightStrokeDash = solidRight
-        ? undefined
-        : isHidden
-        ? "3,3"
-        : undefined;
-
-      return (
-        <React.Fragment>
-          <Path
-            d={leftPath}
-            stroke="#2563EB"
-            strokeWidth={2}
-            strokeDasharray={leftStrokeDash}
-            fill="none"
-          />
-          <Path
-            d={topPath}
-            stroke="#2563EB"
-            strokeWidth={2}
-            strokeDasharray={topStrokeDash}
-            fill="none"
-          />
-          <Path
-            d={rightPath}
-            stroke="#2563EB"
-            strokeWidth={2}
-            strokeDasharray={rightStrokeDash}
-            fill="none"
-          />
-          {cores.map((core, idx) => (
-            <Path
-              key={`core-${idx}`}
-              d={drawCore(x + core.cx, y + core.cy)}
-              stroke="#2563EB"
-              strokeWidth={1.5}
-              strokeDasharray={leftStrokeDash}
-              fill="none"
-            />
-          ))}
-        </React.Fragment>
-      );
-    };
-
-    return (
-      <View className="items-center my-6">
-        <Text className="text-gray-700 text-sm font-semibold mb-4">
-          3D VIEW - 8048 Hollow Core Plank
-        </Text>
-        <Svg width={svgWidth} height={svgHeight}>
-          {drawCrossSection(0, 0, false, false, false)}
-          {drawCrossSection(depthX, -depthY, true, true, true)}
-          <Line
-            x1={startX}
-            y1={startY}
-            x2={startX + depthX}
-            y2={startY - depthY}
-            stroke="#2563EB"
-            strokeWidth={1.5}
-          />
-          <Line
-            x1={startX + plankWidth}
-            y1={startY}
-            x2={startX + plankWidth + depthX}
-            y2={startY - depthY}
-            stroke="#2563EB"
-            strokeWidth={1.5}
-          />
-          <Line
-            x1={startX + plankWidth}
-            y1={startY + plankHeight}
-            x2={startX + plankWidth + depthX}
-            y2={startY + plankHeight - depthY}
-            stroke="#2563EB"
-            strokeWidth={1.5}
-          />
-          <Line
-            x1={startX}
-            y1={startY + plankHeight}
-            x2={startX + depthX}
-            y2={startY + plankHeight - depthY}
-            stroke="#2563EB"
-            strokeWidth={1.5}
-            strokeDasharray="3,3"
-          />
-        </Svg>
-
-        <View className="flex-row justify-between w-full px-12 mt-2">
-          <Text className="text-blue-600 text-xs font-bold">END 1 (Near)</Text>
-          <Text className="text-blue-600 text-xs font-bold">END 2 (Far)</Text>
-        </View>
-      </View>
-    );
-  };
+    return activeIndices;
+  }, [selectedPattern, config.productWidth, config.offcutSide]);
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -444,8 +282,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* 3D Model */}
-        <PlankModel />
+        {/* Cross-section diagram */}
+        <View className="items-center my-6">
+          <Text className="text-gray-700 text-sm font-semibold mb-4">
+            Cross Section - 8048 Hollow Core Plank with Slippage Values
+          </Text>
+          <CrossSection8048
+            scale={8}
+            activeStrands={activeStrandIndices || [1, 2, 3, 4, 5, 6, 7]}
+            offcutSide={config.offcutSide || null}
+            productWidth={config.productWidth}
+            slippages={slippages}
+            showSlippageValues={true}
+          />
+        </View>
 
         {/* Slippage Statistics */}
         <View className="px-6">
