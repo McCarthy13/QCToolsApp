@@ -237,30 +237,77 @@ export default function CrossSection8048({
         
         {/* Cores (voids) */}
         {visibleCores.map((core, index) => {
-          // Clip cores at edges if partially visible
-          const clippedX = Math.max(0, core.x);
-          const clippedWidth = Math.min(core.width, displayWidth - clippedX);
+          // Check if core is fully or partially visible
+          const isFullyVisible = core.x >= 0 && (core.x + core.width) <= displayWidth;
+          const isPartiallyVisible = !isFullyVisible && 
+            ((core.x < displayWidth && core.x + core.width > 0));
           
-          if (clippedWidth <= 0) return null;
+          if (!isFullyVisible && !isPartiallyVisible) return null;
           
-          return (
-            <Ellipse
-              key={`core-${index}`}
-              cx={padding + clippedX + clippedWidth / 2}
-              cy={padding + core.y + core.height / 2}
-              rx={clippedWidth / 2}
-              ry={core.height / 2}
-              fill="white"
-              stroke="#9CA3AF"
-              strokeWidth={1.5}
-            />
-          );
+          // For fully visible cores, render normally
+          if (isFullyVisible) {
+            return (
+              <Ellipse
+                key={`core-${index}`}
+                cx={padding + core.x + core.width / 2}
+                cy={padding + core.y + core.height / 2}
+                rx={core.width / 2}
+                ry={core.height / 2}
+                fill="white"
+                stroke="#9CA3AF"
+                strokeWidth={1.5}
+              />
+            );
+          }
+          
+          // For partially visible cores, clip them
+          const clipLeft = core.x < 0;
+          const clipRight = (core.x + core.width) > displayWidth;
+          
+          if (clipLeft) {
+            // Core extends past left edge
+            const visibleWidth = core.x + core.width;
+            const centerOffset = (core.width / 2) - (core.width - visibleWidth) / 2;
+            return (
+              <Ellipse
+                key={`core-${index}`}
+                cx={padding + visibleWidth / 2}
+                cy={padding + core.y + core.height / 2}
+                rx={visibleWidth / 2}
+                ry={core.height / 2}
+                fill="white"
+                stroke="#9CA3AF"
+                strokeWidth={1.5}
+              />
+            );
+          }
+          
+          if (clipRight) {
+            // Core extends past right edge
+            const visibleWidth = displayWidth - core.x;
+            return (
+              <Ellipse
+                key={`core-${index}`}
+                cx={padding + core.x + visibleWidth / 2}
+                cy={padding + core.y + core.height / 2}
+                rx={visibleWidth / 2}
+                ry={core.height / 2}
+                fill="white"
+                stroke="#9CA3AF"
+                strokeWidth={1.5}
+              />
+            );
+          }
+          
+          return null;
         })}
         
         {/* Strands */}
         {visibleStrands.map((strand) => {
-          const strandRadius = strand.isHighlighted ? 5 : 3.5;
-          const strokeWidth = strand.isHighlighted ? 2.5 : 1.5;
+          const strandRadius = strand.isActive ? 5 : 3.5;
+          const strokeWidth = strand.isActive ? 2.5 : 1.5;
+          const fillColor = strand.isActive ? '#EF4444' : '#D1D5DB';
+          const strokeColor = strand.isHighlighted ? '#3B82F6' : (strand.isActive ? '#991B1B' : '#9CA3AF');
           
           return (
             <Circle
@@ -268,27 +315,33 @@ export default function CrossSection8048({
               cx={padding + strand.displayX}
               cy={padding + strand.displayY}
               r={strandRadius}
-              fill={strand.isActive ? '#EF4444' : '#D1D5DB'}
-              stroke={strand.isHighlighted ? '#3B82F6' : '#991B1B'}
+              fill={fillColor}
+              stroke={strokeColor}
               strokeWidth={strokeWidth}
             />
           );
         })}
         
         {/* Strand labels */}
-        {visibleStrands.map((strand) => (
-          <SvgText
-            key={`label-${strand.id}`}
-            x={padding + strand.displayX}
-            y={padding + strand.displayY - 10}
-            fontSize={10}
-            fill="#374151"
-            fontWeight="bold"
-            textAnchor="middle"
-          >
-            {strand.id}
-          </SvgText>
-        ))}
+        {visibleStrands.map((strand) => {
+          const fontSize = strand.isActive ? 12 : 10;
+          const fontWeight = strand.isActive ? "bold" : "normal";
+          const fillColor = strand.isActive ? "#1F2937" : "#9CA3AF";
+          
+          return (
+            <SvgText
+              key={`label-${strand.id}`}
+              x={padding + strand.displayX}
+              y={padding + strand.displayY - (strand.isActive ? 12 : 10)}
+              fontSize={fontSize}
+              fill={fillColor}
+              fontWeight={fontWeight}
+              textAnchor="middle"
+            >
+              {strand.id}
+            </SvgText>
+          );
+        })}
         
         {/* Slippage values (E1/E2) if provided */}
         {showSlippageValues && slippages.length > 0 && visibleStrands.map((strand) => {
