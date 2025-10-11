@@ -47,6 +47,15 @@ const tools: Tool[] = [
     bgColor: '#F5F3FF',
     route: 'StressingCalculator',
   },
+  {
+    id: 'strand-library',
+    name: 'Strand Library',
+    description: 'Manage strand definitions and material properties',
+    icon: 'library',
+    color: '#F59E0B',
+    bgColor: '#FEF3C7',
+    route: 'StrandLibrary',
+  },
 ];
 
 export default function DashboardScreen() {

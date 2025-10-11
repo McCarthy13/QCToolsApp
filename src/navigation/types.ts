@@ -55,4 +55,5 @@ export type RootStackParamList = {
     frictionLoss?: number;
     anchorSetLoss?: number;
   };
+  StrandLibrary: undefined;
 };

@@ -19,6 +19,7 @@ import SlippageHistoryScreen from "./src/screens/SlippageHistoryScreen";
 import EmailComposerScreen from "./src/screens/EmailComposerScreen";
 import StressingCalculatorScreen from "./src/screens/StressingCalculatorScreen";
 import StressingResultsScreen from "./src/screens/StressingResultsScreen";
+import StrandLibraryScreen from "./src/screens/StrandLibraryScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -290,6 +291,13 @@ export default function App() {
               component={StressingResultsScreen}
               options={{
                 title: "Elongation Results",
+              }}
+            />
+            <Stack.Screen
+              name="StrandLibrary"
+              component={StrandLibraryScreen}
+              options={{
+                title: "Strand Library",
               }}
             />
           </Stack.Navigator>
