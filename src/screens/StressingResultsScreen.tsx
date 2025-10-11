@@ -101,13 +101,13 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
         <View className="px-6 mt-4">
           <View className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-500">
             <Text className="text-gray-700 text-sm font-medium mb-2">
-              Expected Total Elongation
+              Expected Elongation (Per Strand)
             </Text>
             <Text className="text-blue-600 text-4xl font-bold">
               {formatValue(results.totalElongation, 3, '"')}
             </Text>
             <Text className="text-gray-600 text-xs mt-2">
-              Per strand: {formatValue(results.totalElongation, 3, '"')}
+              Measurement reading on gauge/dial
             </Text>
           </View>
         </View>

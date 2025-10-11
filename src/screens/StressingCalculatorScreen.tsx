@@ -70,7 +70,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
             Stressing Force & Elongation
           </Text>
           <Text className="text-gray-600 text-sm mt-1">
-            Calculate expected strand elongation
+            Calculate expected strand elongation measurement
           </Text>
         </View>
 
@@ -80,7 +80,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
             <View className="flex-row items-start">
               <Ionicons name="information-circle" size={20} color="#3B82F6" />
               <Text className="text-blue-900 text-xs ml-2 flex-1">
-                Enter jacking force, bed dimensions, and strand details to calculate the expected elongation during prestressing operations.
+                Enter the total jacking force, bed dimensions, and strand details to calculate what the elongation gauge should read for a single strand during prestressing.
               </Text>
             </View>
           </View>
