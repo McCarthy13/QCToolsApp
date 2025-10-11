@@ -115,9 +115,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     // Overall statistics
     slippageSummary += "Overall Statistics:\n";
     slippageSummary += `• Total Slippage (All Values): ${slippageStats.anyValueExceeds ? ">" : ""}${slippageStats.totalSlippage.toFixed(3)}" (≈${slippageStats.anyValueExceeds ? ">" : ""}${decimalToFraction(slippageStats.totalSlippage)})\n`;
+    slippageSummary += `• Average Slippage (All Values): ${slippageStats.anyValueExceeds ? ">" : ""}${slippageStats.totalAvgSlippage.toFixed(3)}" (≈${slippageStats.anyValueExceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippage)})\n`;
     slippageSummary += `• Total Slippage END 1: ${slippageStats.anyEnd1Exceeds ? ">" : ""}${slippageStats.totalSlippageEnd1.toFixed(3)}" (≈${slippageStats.anyEnd1Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalSlippageEnd1)})\n`;
+    slippageSummary += `• Average Slippage END 1: ${slippageStats.anyEnd1Exceeds ? ">" : ""}${slippageStats.totalAvgSlippageEnd1.toFixed(3)}" (≈${slippageStats.anyEnd1Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippageEnd1)})\n`;
     slippageSummary += `• Total Slippage END 2: ${slippageStats.anyEnd2Exceeds ? ">" : ""}${slippageStats.totalSlippageEnd2.toFixed(3)}" (≈${slippageStats.anyEnd2Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalSlippageEnd2)})\n`;
-    slippageSummary += `• Average Slippage: ${slippageStats.anyValueExceeds ? ">" : ""}${slippageStats.totalAvgSlippage.toFixed(3)}" (≈${slippageStats.anyValueExceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippage)})\n`;
+    slippageSummary += `• Average Slippage END 2: ${slippageStats.anyEnd2Exceeds ? ">" : ""}${slippageStats.totalAvgSlippageEnd2.toFixed(3)}" (≈${slippageStats.anyEnd2Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippageEnd2)})\n`;
     
     if (slippageStats.anyValueExceeds) {
       slippageSummary += "\n⚠ WARNING: Contains values exceeding 1\"\n";
@@ -263,7 +265,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             Cross Section with Slippage Values
           </Text>
           <CrossSection8048
-            scale={6}
+            scale={9}
             activeStrands={activeStrandIndices || [1, 2, 3, 4, 5, 6, 7]}
             offcutSide={config.offcutSide || null}
             productWidth={config.productWidth}
@@ -336,6 +338,25 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               <Text className="text-purple-600 text-base font-bold">
                 {slippageStats.anyEnd2Exceeds && ">"}
                 {slippageStats.totalSlippageEnd2.toFixed(3)}"
+              </Text>
+            </View>
+          </View>
+
+          {/* End Averages - compact */}
+          <View className="flex-row gap-2 mb-2">
+            <View className="flex-1 bg-green-50 rounded-lg p-2.5">
+              <Text className="text-gray-700 text-xs font-medium">END 1 Avg</Text>
+              <Text className="text-green-600 text-base font-bold">
+                {slippageStats.anyEnd1Exceeds && ">"}
+                {slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
+              </Text>
+            </View>
+
+            <View className="flex-1 bg-purple-50 rounded-lg p-2.5">
+              <Text className="text-gray-700 text-xs font-medium">END 2 Avg</Text>
+              <Text className="text-purple-600 text-base font-bold">
+                {slippageStats.anyEnd2Exceeds && ">"}
+                {slippageStats.totalAvgSlippageEnd2.toFixed(3)}"
               </Text>
             </View>
           </View>
