@@ -200,9 +200,24 @@ export default function CrossSection8048({
     return path;
   };
   
+  // Generate a stable clip path ID
+  const clipPathId = React.useMemo(() => `plank-clip-${Math.random().toString(36).substr(2, 9)}`, []);
+  
   return (
     <View style={{ width: svgWidth, height: svgHeight, alignSelf: 'center' }}>
       <Svg width={svgWidth} height={svgHeight}>
+        {/* Define clip path for clean core cutting */}
+        <defs>
+          <clipPath id={clipPathId}>
+            <rect 
+              x={padding} 
+              y={padding} 
+              width={displayWidth} 
+              height={displayHeight} 
+            />
+          </clipPath>
+        </defs>
+        
         {/* Plank outline with keyway on keeper edge */}
         <Path
           d={buildPlankPath()}
@@ -235,71 +250,26 @@ export default function CrossSection8048({
           />
         )}
         
-        {/* Cores (voids) */}
+        {/* Cores (voids) - rendered at full size, clipped by plank boundary */}
         {visibleCores.map((core, index) => {
-          // Check if core is fully or partially visible
-          const isFullyVisible = core.x >= 0 && (core.x + core.width) <= displayWidth;
-          const isPartiallyVisible = !isFullyVisible && 
-            ((core.x < displayWidth && core.x + core.width > 0));
+          // Only render cores that have any part visible
+          const coreRight = core.x + core.width;
+          if (coreRight <= 0 || core.x >= displayWidth) return null;
           
-          if (!isFullyVisible && !isPartiallyVisible) return null;
-          
-          // For fully visible cores, render normally
-          if (isFullyVisible) {
-            return (
-              <Ellipse
-                key={`core-${index}`}
-                cx={padding + core.x + core.width / 2}
-                cy={padding + core.y + core.height / 2}
-                rx={core.width / 2}
-                ry={core.height / 2}
-                fill="white"
-                stroke="#9CA3AF"
-                strokeWidth={1.5}
-              />
-            );
-          }
-          
-          // For partially visible cores, clip them
-          const clipLeft = core.x < 0;
-          const clipRight = (core.x + core.width) > displayWidth;
-          
-          if (clipLeft) {
-            // Core extends past left edge
-            const visibleWidth = core.x + core.width;
-            const centerOffset = (core.width / 2) - (core.width - visibleWidth) / 2;
-            return (
-              <Ellipse
-                key={`core-${index}`}
-                cx={padding + visibleWidth / 2}
-                cy={padding + core.y + core.height / 2}
-                rx={visibleWidth / 2}
-                ry={core.height / 2}
-                fill="white"
-                stroke="#9CA3AF"
-                strokeWidth={1.5}
-              />
-            );
-          }
-          
-          if (clipRight) {
-            // Core extends past right edge
-            const visibleWidth = displayWidth - core.x;
-            return (
-              <Ellipse
-                key={`core-${index}`}
-                cx={padding + core.x + visibleWidth / 2}
-                cy={padding + core.y + core.height / 2}
-                rx={visibleWidth / 2}
-                ry={core.height / 2}
-                fill="white"
-                stroke="#9CA3AF"
-                strokeWidth={1.5}
-              />
-            );
-          }
-          
-          return null;
+          // Render the full ellipse at its true position, clip path handles cutting
+          return (
+            <Ellipse
+              key={`core-${index}`}
+              cx={padding + core.x + core.width / 2}
+              cy={padding + core.y + core.height / 2}
+              rx={core.width / 2}
+              ry={core.height / 2}
+              fill="white"
+              stroke="#9CA3AF"
+              strokeWidth={1.5}
+              clipPath={`url(#${clipPathId})`}
+            />
+          );
         })}
         
         {/* Strands */}

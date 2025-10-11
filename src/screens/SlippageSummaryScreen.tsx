@@ -248,47 +248,22 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
-        {/* Header */}
-        <View className="px-6 py-4 border-b border-gray-200">
-          <Text className="text-gray-900 text-2xl font-bold">
+        {/* Header - More compact */}
+        <View className="px-6 py-3 border-b border-gray-200">
+          <Text className="text-gray-900 text-xl font-bold">
             Slippage Summary
-          </Text>
-          <Text className="text-gray-600 text-sm mt-1">
-            Analysis of strand slippage values
           </Text>
         </View>
 
-        {/* Cut-width info banner */}
-        {config.productWidth && config.offcutSide && selectedPattern?.strandCoordinates && (
-          <View className="px-6 mt-4">
-            <View className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <View className="flex-row items-start">
-                <Ionicons name="cut" size={20} color="#F59E0B" />
-                <View className="flex-1 ml-3">
-                  <Text className="text-amber-900 font-semibold text-sm mb-1">
-                    Cut-Width Product
-                  </Text>
-                  <Text className="text-amber-800 text-sm">
-                    Width: {config.productWidth}" • {' '}
-                    Offcut Side: {config.offcutSide} ({config.offcutSide === 'L1' ? 'Left removed' : 'Right removed'})
-                    {'\n'}
-                    Active strands: {slippages.length} of {selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Cross-section diagram */}
-        <View className="items-center my-6">
-          <Text className="text-gray-700 text-sm font-semibold mb-4">
-            Cross Section - 8048 Hollow Core Plank with Slippage Values
+        {/* Cross-section diagram - smaller */}
+        <View className="items-center my-3">
+          <Text className="text-gray-700 text-xs font-semibold mb-2">
+            Cross Section with Slippage Values
           </Text>
           <CrossSection8048
-            scale={8}
+            scale={6}
             activeStrands={activeStrandIndices || [1, 2, 3, 4, 5, 6, 7]}
             offcutSide={config.offcutSide || null}
             productWidth={config.productWidth}
@@ -297,213 +272,127 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           />
         </View>
 
-        {/* Slippage Statistics */}
+        {/* Cut-width info banner - more compact */}
+        {config.productWidth && config.offcutSide && selectedPattern?.strandCoordinates && (
+          <View className="px-6 mb-2">
+            <View className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+              <View className="flex-row items-center">
+                <Ionicons name="cut" size={16} color="#F59E0B" />
+                <Text className="text-amber-900 text-xs ml-2">
+                  Cut: {config.productWidth}" • {config.offcutSide} • {slippages.length}/{selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6} strands
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Slippage Statistics - more compact */}
         <View className="px-6">
-          <Text className="text-gray-900 text-lg font-semibold mb-3">
-            Slippage Statistics
+          <Text className="text-gray-900 text-base font-semibold mb-2">
+            Statistics
           </Text>
 
-          {/* Total Slippage */}
-          <View className="bg-blue-50 rounded-lg p-4 mb-3">
-            <Text className="text-gray-700 text-xs font-medium mb-1">
-              Total Slippage (All Values)
-            </Text>
-            <Text className="text-blue-600 text-2xl font-bold">
-              {slippageStats.anyValueExceeds && ">"}
-              {slippageStats.totalSlippage.toFixed(3)}"
-            </Text>
-            <Text className="text-blue-600 text-base">
-              {slippageStats.anyValueExceeds && ">"}≈{decimalToFraction(slippageStats.totalSlippage)}
-            </Text>
-            {slippageStats.anyValueExceeds && (
-              <Text className="text-orange-600 text-xs mt-1 font-semibold">
-                ⚠ Contains values exceeding 1"
+          {/* Total & Average side by side */}
+          <View className="flex-row gap-2 mb-2">
+            <View className="flex-1 bg-blue-50 rounded-lg p-2.5">
+              <Text className="text-gray-700 text-xs font-medium mb-0.5">
+                Total Slippage
               </Text>
-            )}
+              <Text className="text-blue-600 text-lg font-bold">
+                {slippageStats.anyValueExceeds && ">"}
+                {slippageStats.totalSlippage.toFixed(3)}"
+              </Text>
+              <Text className="text-blue-600 text-xs">
+                ≈{decimalToFraction(slippageStats.totalSlippage)}
+              </Text>
+            </View>
+
+            <View className="flex-1 bg-orange-50 rounded-lg p-2.5">
+              <Text className="text-gray-700 text-xs font-medium mb-0.5">
+                Avg Slippage
+              </Text>
+              <Text className="text-orange-600 text-lg font-bold">
+                {slippageStats.anyValueExceeds && ">"}
+                {slippageStats.totalAvgSlippage.toFixed(3)}"
+              </Text>
+              <Text className="text-orange-600 text-xs">
+                ≈{decimalToFraction(slippageStats.totalAvgSlippage)}
+              </Text>
+            </View>
           </View>
 
-          {/* End Totals - Side by side */}
-          <View className="flex-row gap-3 mb-3">
-            <View className="flex-1 bg-green-50 rounded-lg p-4">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Total Slippage END 1
-              </Text>
-              <Text className="text-green-600 text-xl font-bold">
+          {/* End Totals - compact */}
+          <View className="flex-row gap-2 mb-2">
+            <View className="flex-1 bg-green-50 rounded-lg p-2.5">
+              <Text className="text-gray-700 text-xs font-medium">END 1 Total</Text>
+              <Text className="text-green-600 text-base font-bold">
                 {slippageStats.anyEnd1Exceeds && ">"}
                 {slippageStats.totalSlippageEnd1.toFixed(3)}"
               </Text>
-              <Text className="text-green-600 text-sm">
-                {slippageStats.anyEnd1Exceeds && ">"}≈{decimalToFraction(slippageStats.totalSlippageEnd1)}
-              </Text>
             </View>
 
-            <View className="flex-1 bg-purple-50 rounded-lg p-4">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Total Slippage END 2
-              </Text>
-              <Text className="text-purple-600 text-xl font-bold">
+            <View className="flex-1 bg-purple-50 rounded-lg p-2.5">
+              <Text className="text-gray-700 text-xs font-medium">END 2 Total</Text>
+              <Text className="text-purple-600 text-base font-bold">
                 {slippageStats.anyEnd2Exceeds && ">"}
                 {slippageStats.totalSlippageEnd2.toFixed(3)}"
               </Text>
-              <Text className="text-purple-600 text-sm">
-                {slippageStats.anyEnd2Exceeds && ">"}≈{decimalToFraction(slippageStats.totalSlippageEnd2)}
-              </Text>
             </View>
           </View>
 
-          {/* Average Slippage */}
-          <View className="bg-orange-50 rounded-lg p-4 mb-3">
-            <Text className="text-gray-700 text-xs font-medium mb-1">
-              Total Average Slippage
-            </Text>
-            <Text className="text-orange-600 text-2xl font-bold">
-              {slippageStats.anyValueExceeds && ">"}
-              {slippageStats.totalAvgSlippage.toFixed(3)}"
-            </Text>
-            <Text className="text-orange-600 text-base">
-              {slippageStats.anyValueExceeds && ">"}≈{decimalToFraction(slippageStats.totalAvgSlippage)}
-            </Text>
-          </View>
-
-          {/* Average by End - Side by side */}
-          <View className="flex-row gap-3 mb-3">
-            <View className="flex-1 bg-green-50 rounded-lg p-4">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Avg Slippage END 1
-              </Text>
-              <Text className="text-green-600 text-xl font-bold">
-                {slippageStats.anyEnd1Exceeds && ">"}
-                {slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
-              </Text>
-              <Text className="text-green-600 text-sm">
-                {slippageStats.anyEnd1Exceeds && ">"}≈{decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
-              </Text>
-            </View>
-
-            <View className="flex-1 bg-purple-50 rounded-lg p-4">
-              <Text className="text-gray-700 text-xs font-medium mb-1">
-                Avg Slippage END 2
-              </Text>
-              <Text className="text-purple-600 text-xl font-bold">
-                {slippageStats.anyEnd2Exceeds && ">"}
-                {slippageStats.totalAvgSlippageEnd2.toFixed(3)}"
-              </Text>
-              <Text className="text-purple-600 text-sm">
-                {slippageStats.anyEnd2Exceeds && ">"}≈{decimalToFraction(slippageStats.totalAvgSlippageEnd2)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Per-Strand Slippage Details */}
-          <View className="bg-gray-50 rounded-lg p-4 mb-4">
-            <Text className="text-gray-700 text-sm font-semibold mb-3">
-              Slippage by Strand
+          {/* Per-Strand Details - more compact */}
+          <View className="bg-gray-50 rounded-lg p-2.5 mb-3">
+            <Text className="text-gray-700 text-xs font-semibold mb-2">
+              By Strand
             </Text>
             {slippages.map((strand) => {
               const end1Value = parseMeasurementInput(strand.leftSlippage);
               const end2Value = parseMeasurementInput(strand.rightSlippage);
-              
-              // Calculate total for this strand
               const e1 = end1Value ?? 0;
               const e2 = end2Value ?? 0;
               const strandTotal = e1 + e2;
               const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
               
               return (
-                <View key={strand.strandId} className="mb-4 pb-4 border-b border-gray-300 last:border-b-0">
-                  {/* Strand Header */}
-                  <View className="flex-row items-center mb-3">
-                    <View className="bg-red-500 rounded-full w-7 h-7 items-center justify-center mr-2">
-                      <Text className="text-white font-bold text-xs">
-                        {strand.strandId}
-                      </Text>
-                    </View>
-                    <Text className="text-gray-900 text-base font-semibold">
-                      Strand {strand.strandId}
-                      {getStrandSize(strand.strandId) && (
-                        <Text className="text-gray-600 font-normal text-sm">
-                          {' '}({getStrandSize(strand.strandId)})
-                        </Text>
-                      )}
-                    </Text>
-                  </View>
-                  
-                  {/* END 1 & END 2 Values */}
-                  <View className="flex-row gap-2 mb-3 ml-9">
-                    {/* END 1 */}
-                    <View className="flex-1 bg-white rounded-lg p-2.5 border border-green-200">
-                      <Text className="text-gray-600 text-xs mb-1">END 1</Text>
-                      {strand.leftExceedsOne ? (
-                        <>
-                          <Text className="text-green-600 text-sm font-bold">
-                            {'>'}{end1Value !== null ? end1Value.toFixed(3) : "1.000"}"
-                          </Text>
-                          <Text className="text-green-600 text-xs">
-                            {'>'}≈{end1Value !== null ? decimalToFraction(end1Value) : '1"'}
-                          </Text>
-                          <Text className="text-orange-600 text-xs font-semibold mt-0.5">
-                            {'>1"'}
-                          </Text>
-                        </>
-                      ) : end1Value !== null && end1Value !== 0 ? (
-                        <>
-                          <Text className="text-green-600 text-sm font-bold">
-                            {end1Value.toFixed(3)}"
-                          </Text>
-                          <Text className="text-green-600 text-xs">
-                            ≈{decimalToFraction(end1Value)}
-                          </Text>
-                        </>
-                      ) : (
-                        <Text className="text-gray-400 text-xs italic">0"</Text>
-                      )}
-                    </View>
-                    
-                    {/* END 2 */}
-                    <View className="flex-1 bg-white rounded-lg p-2.5 border border-purple-200">
-                      <Text className="text-gray-600 text-xs mb-1">END 2</Text>
-                      {strand.rightExceedsOne ? (
-                        <>
-                          <Text className="text-purple-600 text-sm font-bold">
-                            {'>'}{end2Value !== null ? end2Value.toFixed(3) : "1.000"}"
-                          </Text>
-                          <Text className="text-purple-600 text-xs">
-                            {'>'}≈{end2Value !== null ? decimalToFraction(end2Value) : '1"'}
-                          </Text>
-                          <Text className="text-orange-600 text-xs font-semibold mt-0.5">
-                            {'>1"'}
-                          </Text>
-                        </>
-                      ) : end2Value !== null && end2Value !== 0 ? (
-                        <>
-                          <Text className="text-purple-600 text-sm font-bold">
-                            {end2Value.toFixed(3)}"
-                          </Text>
-                          <Text className="text-purple-600 text-xs">
-                            ≈{decimalToFraction(end2Value)}
-                          </Text>
-                        </>
-                      ) : (
-                        <Text className="text-gray-400 text-xs italic">0"</Text>
-                      )}
-                    </View>
-                  </View>
-                  
-                  {/* Strand Total */}
-                  <View className="bg-blue-50 rounded-lg p-2.5 ml-9 border border-blue-200">
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-gray-700 text-xs font-semibold">
-                        Strand Total:
-                      </Text>
-                      <View className="items-end">
-                        <Text className="text-blue-600 text-base font-bold">
-                          {hasExceeds && ">"}
-                          {strandTotal.toFixed(3)}"
-                        </Text>
-                        <Text className="text-blue-600 text-xs">
-                          {hasExceeds && ">"}≈{decimalToFraction(strandTotal)}
+                <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
+                  {/* Strand Header - inline */}
+                  <View className="flex-row items-center justify-between mb-1.5">
+                    <View className="flex-row items-center">
+                      <View className="bg-red-500 rounded-full w-5 h-5 items-center justify-center mr-1.5">
+                        <Text className="text-white font-bold text-xs">
+                          {strand.strandId}
                         </Text>
                       </View>
+                      <Text className="text-gray-900 text-xs font-semibold">
+                        Strand {strand.strandId}
+                        {getStrandSize(strand.strandId) && (
+                          <Text className="text-gray-600 font-normal">
+                            {' '}({getStrandSize(strand.strandId)})
+                          </Text>
+                        )}
+                      </Text>
+                    </View>
+                    <View className="bg-blue-100 px-2 py-0.5 rounded">
+                      <Text className="text-blue-700 text-xs font-bold">
+                        {hasExceeds && ">"}Total: {strandTotal.toFixed(2)}"
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  {/* END 1 & END 2 - inline */}
+                  <View className="flex-row gap-2 ml-6">
+                    <View className="flex-1 bg-white rounded p-1.5 border border-green-200">
+                      <Text className="text-gray-600 text-xs mb-0.5">E1</Text>
+                      <Text className="text-green-600 text-xs font-bold">
+                        {strand.leftExceedsOne ? '>1"' : (end1Value !== null && end1Value !== 0 ? `${end1Value.toFixed(3)}"` : '0"')}
+                      </Text>
+                    </View>
+                    
+                    <View className="flex-1 bg-white rounded p-1.5 border border-purple-200">
+                      <Text className="text-gray-600 text-xs mb-0.5">E2</Text>
+                      <Text className="text-purple-600 text-xs font-bold">
+                        {strand.rightExceedsOne ? '>1"' : (end2Value !== null && end2Value !== 0 ? `${end2Value.toFixed(3)}"` : '0"')}
+                      </Text>
                     </View>
                   </View>
                 </View>

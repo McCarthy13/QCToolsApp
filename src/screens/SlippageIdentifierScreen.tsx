@@ -211,12 +211,12 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
         </View>
 
         {/* Cross-section diagram */}
-        <View className="items-center my-6">
-          <Text className="text-gray-700 text-sm font-semibold mb-4">
+        <View className="items-center my-4">
+          <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section - 8048 Hollow Core Plank
           </Text>
           <CrossSection8048
-            scale={8}
+            scale={6}
             activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : [1, 2, 3, 4, 5, 6, 7]}
             offcutSide={config.offcutSide || null}
             productWidth={config.productWidth}
@@ -225,19 +225,16 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
 
         {/* Cut-width info banner */}
         {activeStrandIndices !== null && selectedPattern && config.offcutSide && (
-          <View className="px-6 mt-4">
-            <View className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <View className="px-6 mb-3">
+            <View className="bg-green-50 border border-green-200 rounded-lg p-3">
               <View className="flex-row items-start">
-                <Ionicons name="cut" size={20} color="#10B981" />
-                <View className="flex-1 ml-3">
-                  <Text className="text-green-900 font-semibold text-sm mb-1">
+                <Ionicons name="cut" size={18} color="#10B981" />
+                <View className="flex-1 ml-2">
+                  <Text className="text-green-900 font-semibold text-xs mb-0.5">
                     Cut-Width Product
                   </Text>
-                  <Text className="text-green-800 text-sm">
-                    Width: {config.productWidth}" • {' '}
-                    Offcut Side: {config.offcutSide} ({config.offcutSide === 'L1' ? 'Left removed, keeping right' : 'Right removed, keeping left'})
-                    {'\n'}
-                    Active strands: {slippages.length} of {selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6}
+                  <Text className="text-green-800 text-xs">
+                    {config.productWidth}" • {config.offcutSide} ({config.offcutSide === 'L1' ? 'Left removed' : 'Right removed'}) • {slippages.length}/{selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6} strands
                   </Text>
                 </View>
               </View>
@@ -246,50 +243,48 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
         )}
 
         {/* Slippage inputs for each strand */}
-        <View className="px-6">{activeStrandIndices === null ? (
-          <Text className="text-gray-900 text-lg font-semibold mb-4">
-            Slippage Values
+        <View className="px-6">
+          <Text className="text-gray-900 text-base font-semibold mb-2">
+            {activeStrandIndices === null ? 'Slippage Values' : 'Slippage Values (Active Strands)'}
           </Text>
-        ) : (
-          <Text className="text-gray-900 text-lg font-semibold mb-4 mt-4">
-            Slippage Values (Active Strands Only)
-          </Text>
-        )}
 
           {slippages.map((strand, index) => (
             <View
               key={strand.strandId}
-              className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200"
+              className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-200"
             >
-              <View className="flex-row items-center mb-3">
-                <View className="bg-red-500 rounded-full w-8 h-8 items-center justify-center mr-3">
-                  <Text className="text-white font-bold text-sm">
-                    {strand.strandId}
+              {/* Strand header - more compact */}
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center">
+                  <View className="bg-red-500 rounded-full w-6 h-6 items-center justify-center mr-2">
+                    <Text className="text-white font-bold text-xs">
+                      {strand.strandId}
+                    </Text>
+                  </View>
+                  <Text className="text-gray-900 font-semibold text-sm">
+                    Strand {strand.strandId}
+                    {strand.size && (
+                      <Text className="text-gray-600 font-normal text-xs">
+                        {' '}({strand.size}")
+                      </Text>
+                    )}
                   </Text>
                 </View>
-                <Text className="text-gray-900 font-semibold text-base">
-                  Strand {strand.strandId}
-                  {strand.size && (
-                    <Text className="text-gray-600 font-normal text-sm">
-                      {' '}({strand.size}")
-                    </Text>
-                  )}
-                </Text>
               </View>
 
-              <View className="flex-row gap-3">
+              <View className="flex-row gap-2">
                 {/* End 1 */}
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-gray-600 mb-2">
+                  <Text className="text-xs font-medium text-gray-600 mb-1">
                     END 1
                   </Text>
                   <TextInput
-                    className={`bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base mb-2 ${
+                    className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
                       strand.leftExceedsOne 
                         ? "text-orange-600 font-bold" 
                         : "text-gray-900"
                     }`}
-                    placeholder='0.5 or 5/16"'
+                    placeholder="0.5"
                     placeholderTextColor="#9CA3AF"
                     value={strand.leftExceedsOne ? ">1\"" : strand.leftSlippage}
                     onChangeText={(text) =>
@@ -305,7 +300,7 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                     onPress={() => toggleExceedsOne(strand.strandId, "left")}
                   >
                     <View
-                      className={`w-5 h-5 rounded border-2 mr-2 items-center justify-center ${
+                      className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
                         strand.leftExceedsOne
                           ? "bg-orange-500 border-orange-500"
                           : "bg-white border-gray-300"
@@ -323,16 +318,16 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
 
                 {/* End 2 */}
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-gray-600 mb-2">
+                  <Text className="text-xs font-medium text-gray-600 mb-1">
                     END 2
                   </Text>
                   <TextInput
-                    className={`bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base mb-2 ${
+                    className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
                       strand.rightExceedsOne 
                         ? "text-orange-600 font-bold" 
                         : "text-gray-900"
                     }`}
-                    placeholder='0.5 or 5/16"'
+                    placeholder="0.5"
                     placeholderTextColor="#9CA3AF"
                     value={strand.rightExceedsOne ? ">1\"" : strand.rightSlippage}
                     onChangeText={(text) =>
@@ -348,7 +343,7 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                     onPress={() => toggleExceedsOne(strand.strandId, "right")}
                   >
                     <View
-                      className={`w-5 h-5 rounded border-2 mr-2 items-center justify-center ${
+                      className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
                         strand.rightExceedsOne
                           ? "bg-orange-500 border-orange-500"
                           : "bg-white border-gray-300"
@@ -369,10 +364,10 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
 
           {/* Calculate button */}
           <Pressable
-            className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mt-4"
+            className="bg-blue-500 rounded-xl py-3 items-center active:bg-blue-600 mt-2"
             onPress={() => navigation.navigate("SlippageSummary", { slippages, config })}
           >
-            <Text className="text-white text-base font-semibold">
+            <Text className="text-white text-sm font-semibold">
               Calculate Results
             </Text>
           </Pressable>
