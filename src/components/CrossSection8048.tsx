@@ -100,7 +100,7 @@ export default function CrossSection8048({
   });
   
   const svgWidth = displayWidth + 40; // Add padding
-  const svgHeight = displayHeight + 40; // Add padding
+  const svgHeight = displayHeight + 40 + (showSlippageValues ? 45 : 0); // Add extra space for E1/E2 values below
   const padding = 20;
   
   // Keyway dimensions (exact coordinates from user specification)
@@ -313,7 +313,7 @@ export default function CrossSection8048({
           );
         })}
         
-        {/* Slippage values (E1/E2) if provided */}
+        {/* Slippage values (E1/E2) below cross-section */}
         {showSlippageValues && slippages.length > 0 && visibleStrands.map((strand) => {
           const slippageData = slippages.find(s => parseInt(s.strandId) === strand.id);
           if (!slippageData) return null;
@@ -321,34 +321,18 @@ export default function CrossSection8048({
           const e1Display = slippageData.leftExceedsOne ? '>1"' : slippageData.leftSlippage;
           const e2Display = slippageData.rightExceedsOne ? '>1"' : slippageData.rightSlippage;
           
-          // Calculate text dimensions for background boxes
           const fontSize = 11;
-          const e1Text = `E1: ${e1Display}`;
-          const e2Text = `E2: ${e2Display}`;
-          // Approximate text width (rough estimation)
-          const e1Width = e1Text.length * fontSize * 0.6;
-          const e2Width = e2Text.length * fontSize * 0.6;
-          const boxHeight = fontSize + 4;
-          const boxPadding = 3;
+          const lineHeight = 16;
           
-          // Position above and below strand, avoiding overlap
-          const e1Y = padding + strand.displayY - 30;
-          const e2Y = padding + strand.displayY + 22;
+          // Position below the cross-section
+          // E1 on first line, E2 on second line, both centered under the strand
+          const belowCrossSectionY = padding + displayHeight + 15;
+          const e1Y = belowCrossSectionY;
+          const e2Y = belowCrossSectionY + lineHeight;
           
           return (
             <React.Fragment key={`slippage-${strand.id}`}>
-              {/* E1 background box */}
-              <Rect
-                x={padding + strand.displayX - e1Width / 2 - boxPadding}
-                y={e1Y - fontSize + 2}
-                width={e1Width + boxPadding * 2}
-                height={boxHeight}
-                fill="white"
-                opacity={0.9}
-                rx={3}
-              />
-              
-              {/* E1 value above strand */}
+              {/* E1 value (first line below cross-section) */}
               <SvgText
                 x={padding + strand.displayX}
                 y={e1Y}
@@ -360,18 +344,7 @@ export default function CrossSection8048({
                 E1: {e1Display}
               </SvgText>
               
-              {/* E2 background box */}
-              <Rect
-                x={padding + strand.displayX - e2Width / 2 - boxPadding}
-                y={e2Y - fontSize + 2}
-                width={e2Width + boxPadding * 2}
-                height={boxHeight}
-                fill="white"
-                opacity={0.9}
-                rx={3}
-              />
-              
-              {/* E2 value below strand */}
+              {/* E2 value (second line below cross-section) */}
               <SvgText
                 x={padding + strand.displayX}
                 y={e2Y}
