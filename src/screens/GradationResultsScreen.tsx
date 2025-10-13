@@ -7,7 +7,6 @@ import {
   Share,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,7 +22,6 @@ type Props = {
 };
 
 const GradationResultsScreen: React.FC<Props> = ({ navigation, route }) => {
-  const insets = useSafeAreaInsets();
   const { testId } = route.params;
   const { getTest, deleteTest, aggregates } = useAggregateGradationStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -91,30 +89,6 @@ ${test.sieveData.map(s => `${s.name}: ${s.weightRetained}g (${s.percentPassing}%
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView className="flex-1">
-        {/* Header */}
-        <View className="bg-orange-600 pb-8" style={{ paddingTop: insets.top + 24, paddingHorizontal: 24 }}>
-          <View className="flex-row items-center justify-between mb-2">
-            <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </Pressable>
-            <View className="flex-1 items-center">
-              <Text className="text-2xl font-bold text-white">{test.aggregateName}</Text>
-              <Text className="text-orange-100 text-sm mt-1">{test.date}</Text>
-            </View>
-            <View className="flex-row gap-3">
-              <Pressable onPress={() => navigation.navigate('GradationAdmin')} className="p-2">
-                <Ionicons name="settings-outline" size={24} color="white" />
-              </Pressable>
-              <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
-                <Ionicons name="time-outline" size={24} color="white" />
-              </Pressable>
-              <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
-                <Ionicons name="home-outline" size={24} color="white" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
         {/* Pass/Fail Banner */}
         <View className={`p-4 ${test.passC33 ? 'bg-green-100' : 'bg-red-100'}`}>
           <View className="flex-row items-center justify-center gap-2">

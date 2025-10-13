@@ -383,8 +383,8 @@ export default function App() {
             <Stack.Screen
               name="GradationTest"
               component={GradationTestScreen}
-              options={({ navigation }) => ({
-                title: "Gradation Test",
+              options={({ navigation, route }) => ({
+                title: `Test: ${route.params?.aggregateName || 'Gradation'}`,
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("GradationAdmin")}>

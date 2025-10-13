@@ -7,7 +7,6 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,7 +18,6 @@ type Props = {
 };
 
 const GradationHistoryScreen: React.FC<Props> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const { testHistory, aggregates, clearAllTests } = useAggregateGradationStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAggregate, setFilterAggregate] = useState<string>('all');
@@ -87,25 +85,9 @@ const GradationHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-orange-600 pb-6" style={{ paddingTop: insets.top + 16, paddingHorizontal: 16 }}>
-        <View className="flex-row items-center mb-4">
-          <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </Pressable>
-          <Text className="text-2xl font-bold text-white ml-2 flex-1">Test Repository</Text>
-          <View className="flex-row gap-3">
-            <Pressable onPress={() => navigation.navigate('GradationAdmin')} className="p-2">
-              <Ionicons name="settings-outline" size={24} color="white" />
-            </Pressable>
-            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
-              <Ionicons name="home-outline" size={24} color="white" />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View className="bg-white rounded-lg flex-row items-center px-3">
+      {/* Search Bar */}
+      <View className="bg-white p-4 border-b border-gray-200">
+        <View className="bg-gray-100 rounded-lg flex-row items-center px-3">
           <Ionicons name="search" size={20} color="#9ca3af" />
           <TextInput
             value={searchQuery}

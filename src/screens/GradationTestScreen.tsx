@@ -11,7 +11,6 @@ import {
   TouchableWithoutFeedback,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,7 +31,6 @@ type Props = {
 };
 
 const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
-  const insets = useSafeAreaInsets();
   const { aggregateName } = route.params;
   const { aggregates, addTest } = useAggregateGradationStore();
   
@@ -132,32 +130,6 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View className="flex-1">
-          {/* Header */}
-          <View className="bg-orange-600" style={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16 }}>
-            <View className="flex-row items-center justify-between mb-2">
-              <Pressable onPress={handleCancel} className="p-2 -ml-2">
-                <Ionicons name="arrow-back" size={24} color="white" />
-              </Pressable>
-              <Text className="text-lg font-semibold text-white flex-1 text-center">
-                {aggregateName}
-              </Text>
-              <View className="flex-row gap-3">
-                <Pressable onPress={() => navigation.navigate('GradationAdmin')} className="p-2">
-                  <Ionicons name="settings-outline" size={20} color="white" />
-                </Pressable>
-                <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
-                  <Ionicons name="time-outline" size={20} color="white" />
-                </Pressable>
-                <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
-                  <Ionicons name="home-outline" size={20} color="white" />
-                </Pressable>
-              </View>
-            </View>
-            <Text className="text-orange-100 text-center text-sm">
-              {aggregate.type} Aggregate
-            </Text>
-          </View>
-
           <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
             {/* Date and Production Status */}
             <View className="bg-white p-4 border-b border-gray-200">
