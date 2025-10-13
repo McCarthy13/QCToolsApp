@@ -5,6 +5,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,6 +16,7 @@ type Props = {
 };
 
 const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { aggregates } = useAggregateGradationStore();
   const aggregateList = Object.entries(aggregates);
 
@@ -34,7 +36,7 @@ const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
     <View className="flex-1 bg-gray-50">
       <ScrollView className="flex-1">
         {/* Header */}
-        <View className="bg-orange-600 p-6 pb-8">
+        <View className="bg-orange-600 pb-8" style={{ paddingTop: insets.top + 24, paddingHorizontal: 24 }}>
           <Text className="text-2xl font-bold text-white mb-2">
             Aggregate Gradation Analysis
           </Text>

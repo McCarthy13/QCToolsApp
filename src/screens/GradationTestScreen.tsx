@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -31,6 +32,7 @@ type Props = {
 };
 
 const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { aggregateName } = route.params;
   const { aggregates, addTest } = useAggregateGradationStore();
   
@@ -131,7 +133,7 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View className="flex-1">
           {/* Header */}
-          <View className="bg-orange-600 p-4">
+          <View className="bg-orange-600" style={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16 }}>
             <View className="flex-row items-center justify-between mb-2">
               <Pressable onPress={handleCancel} className="p-2 -ml-2">
                 <Ionicons name="close" size={24} color="white" />

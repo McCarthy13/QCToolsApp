@@ -6,6 +6,7 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +19,7 @@ type Props = {
 };
 
 const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const { aggregates, deleteAggregate, addAggregate } = useAggregateGradationStore();
   const [expandedAggregate, setExpandedAggregate] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -66,7 +68,7 @@ const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-orange-600 p-4">
+      <View className="bg-orange-600" style={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16 }}>
         <View className="flex-row items-center mb-2">
           <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
             <Ionicons name="arrow-back" size={24} color="white" />

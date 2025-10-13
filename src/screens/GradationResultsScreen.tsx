@@ -7,6 +7,7 @@ import {
   Share,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,6 +23,7 @@ type Props = {
 };
 
 const GradationResultsScreen: React.FC<Props> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { testId } = route.params;
   const { getTest, deleteTest, aggregates } = useAggregateGradationStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -90,7 +92,7 @@ ${test.sieveData.map(s => `${s.name}: ${s.weightRetained}g (${s.percentPassing}%
     <View className="flex-1 bg-gray-50">
       <ScrollView className="flex-1">
         {/* Header */}
-        <View className="bg-orange-600 p-6 pb-8">
+        <View className="bg-orange-600 pb-8" style={{ paddingTop: insets.top + 24, paddingHorizontal: 24 }}>
           <View className="flex-row items-center justify-between mb-2">
             <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
               <Ionicons name="arrow-back" size={24} color="white" />
