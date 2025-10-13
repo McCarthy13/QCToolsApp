@@ -48,6 +48,15 @@ const tools: Tool[] = [
     route: 'StressingCalculator',
   },
   {
+    id: 'aggregate-gradation',
+    name: 'Aggregate Gradation Analysis',
+    description: 'Perform sieve analysis and verify ASTM C33 compliance',
+    icon: 'analytics',
+    color: '#EA580C',
+    bgColor: '#FFF7ED',
+    route: 'AggregateGradation',
+  },
+  {
     id: 'strand-library',
     name: 'Strand Library',
     description: 'Manage strand definitions and material properties',

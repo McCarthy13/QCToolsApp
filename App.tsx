@@ -20,6 +20,11 @@ import EmailComposerScreen from "./src/screens/EmailComposerScreen";
 import StressingCalculatorScreen from "./src/screens/StressingCalculatorScreen";
 import StressingResultsScreen from "./src/screens/StressingResultsScreen";
 import StrandLibraryScreen from "./src/screens/StrandLibraryScreen";
+import AggregateGradationScreen from "./src/screens/AggregateGradationScreen";
+import GradationTestScreen from "./src/screens/GradationTestScreen";
+import GradationResultsScreen from "./src/screens/GradationResultsScreen";
+import GradationHistoryScreen from "./src/screens/GradationHistoryScreen";
+import GradationAdminScreen from "./src/screens/GradationAdminScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -298,6 +303,46 @@ export default function App() {
               component={StrandLibraryScreen}
               options={{
                 title: "Strand Library",
+              }}
+            />
+            <Stack.Screen
+              name="AggregateGradation"
+              component={AggregateGradationScreen}
+              options={{
+                title: "Aggregate Gradation",
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="GradationTest"
+              component={GradationTestScreen}
+              options={{
+                title: "Gradation Test",
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="GradationResults"
+              component={GradationResultsScreen}
+              options={{
+                title: "Test Results",
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="GradationHistory"
+              component={GradationHistoryScreen}
+              options={{
+                title: "Test Repository",
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="GradationAdmin"
+              component={GradationAdminScreen}
+              options={{
+                title: "Admin Panel",
+                headerShown: false,
               }}
             />
           </Stack.Navigator>

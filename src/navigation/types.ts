@@ -56,4 +56,9 @@ export type RootStackParamList = {
     anchorSetLoss?: number;
   };
   StrandLibrary: undefined;
+  AggregateGradation: undefined;
+  GradationTest: { aggregateName: string };
+  GradationResults: { testId: string };
+  GradationHistory: undefined;
+  GradationAdmin: undefined;
 };
