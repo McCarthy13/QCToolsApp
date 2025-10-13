@@ -5,11 +5,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  calculateElongation,
-  STRAND_PROPERTIES,
-  formatValue,
-} from "../utils/stressing-calculations";
+import { useStrandLibraryStore } from "../state/strandLibraryStore";
+import { calculateTheoreticalElongation, formatValue } from "../utils/stressing-calculations";
 
 type StressingResultsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -28,12 +25,80 @@ interface Props {
 export default function StressingResultsScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const inputs = route.params;
+  
+  // Get strand from library
+  const getStrandById = useStrandLibraryStore((state) => state.getStrandById);
+  const strand = getStrandById(inputs.strandId);
 
   // Calculate elongation
-  const results = useMemo(() => calculateElongation(inputs), [inputs]);
+  const results = useMemo(() => {
+    if (!strand) {
+      return null;
+    }
 
-  // Get strand properties
-  const strandProps = STRAND_PROPERTIES[inputs.strandSize];
+    // Convert bed length from feet to inches
+    const bedLengthInches = inputs.bedLength * 12;
+
+    // Calculate force per strand
+    const forcePerStrand = inputs.jackingForce / inputs.numberOfStrands;
+
+    // Calculate stress per strand
+    const stressPerStrand = forcePerStrand / strand.area;
+
+    // Calculate theoretical elongation for one strand
+    const theoreticalElongation = calculateTheoreticalElongation(
+      forcePerStrand,
+      bedLengthInches,
+      strand.area,
+      strand.elasticModulus
+    );
+
+    // Bed shortening (elastic compression of the bed during stressing)
+    const bedShortening = inputs.bedShortening || 0;
+
+    // Friction loss (typically 0.5-2% of length for long beds)
+    const frictionLossPercent = inputs.frictionLoss || 0;
+    const frictionLoss = (frictionLossPercent / 100) * theoreticalElongation;
+
+    // Anchor set loss (slip at anchorage during lock-off)
+    const anchorSetLoss = inputs.anchorSetLoss || 0;
+
+    // Total elongation = theoretical + bed shortening - friction - anchor set
+    const totalElongation =
+      theoreticalElongation + bedShortening - frictionLoss - anchorSetLoss;
+
+    return {
+      theoreticalElongation,
+      bedShortening,
+      frictionLoss,
+      anchorSetLoss,
+      totalElongation,
+      forcePerStrand,
+      stressPerStrand,
+    };
+  }, [inputs, strand]);
+
+  if (!strand || !results) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center" style={{ paddingTop: insets.top }}>
+        <Ionicons name="alert-circle" size={48} color="#EF4444" />
+        <Text className="text-gray-900 text-lg font-bold mt-4">
+          Strand Not Found
+        </Text>
+        <Text className="text-gray-600 text-sm mt-2 px-6 text-center">
+          The selected strand is no longer available in the library.
+        </Text>
+        <Pressable
+          className="bg-blue-500 rounded-xl py-3 px-6 mt-6"
+          onPress={() => navigation.goBack()}
+        >
+          <Text className="text-white text-base font-semibold">
+            Go Back
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -44,7 +109,7 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
             Elongation Results
           </Text>
           <Text className="text-gray-600 text-sm mt-1">
-            {inputs.strandSize}" strand • {inputs.numberOfStrands} strands • {inputs.bedLength}" bed
+            {strand.name} • {inputs.numberOfStrands} strands • {inputs.bedLength}" bed
           </Text>
         </View>
 
@@ -170,31 +235,53 @@ export default function StressingResultsScreen({ navigation, route }: Props) {
         {/* Strand Properties Reference */}
         <View className="px-6 mt-4">
           <Text className="text-gray-900 text-lg font-semibold mb-3">
-            Strand Properties ({inputs.strandSize}" Diameter)
+            Strand Properties
           </Text>
 
           <View className="bg-gray-50 rounded-lg p-4">
             <View className="flex-row justify-between mb-2">
+              <Text className="text-gray-600 text-sm">Name</Text>
+              <Text className="text-gray-900 text-sm font-semibold">
+                {strand.name}
+              </Text>
+            </View>
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-gray-600 text-sm">Diameter</Text>
+              <Text className="text-gray-900 text-sm font-semibold">
+                {formatValue(strand.diameter, 3, '"')}
+              </Text>
+            </View>
+            <View className="flex-row justify-between mb-2">
               <Text className="text-gray-600 text-sm">Cross-Sectional Area</Text>
               <Text className="text-gray-900 text-sm font-semibold">
-                {formatValue(strandProps.area, 3, " in²")}
+                {formatValue(strand.area, 3, " in²")}
               </Text>
             </View>
             <View className="flex-row justify-between mb-2">
               <Text className="text-gray-600 text-sm">Elastic Modulus</Text>
               <Text className="text-gray-900 text-sm font-semibold">
-                {formatValue(strandProps.elasticModulus, 0, " ksi")}
+                {formatValue(strand.elasticModulus, 0, " ksi")}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-gray-600 text-sm">Minimum Breaking Strength</Text>
               <Text className="text-gray-900 text-sm font-semibold">
-                {formatValue(strandProps.breakingStrength, 1, " kips")} ({formatValue(strandProps.breakingStrength * 1000, 0, " lbs")})
+                {formatValue(strand.breakingStrength, 1, " kips")} ({formatValue(strand.breakingStrength * 1000, 0, " lbs")})
               </Text>
             </View>
-            <Text className="text-gray-500 text-xs mt-3">
-              Based on ASTM A416 Grade 270 standards
-            </Text>
+            {strand.grade && (
+              <View className="flex-row justify-between mt-2">
+                <Text className="text-gray-600 text-sm">Grade</Text>
+                <Text className="text-gray-900 text-sm font-semibold">
+                  {strand.grade} ksi
+                </Text>
+              </View>
+            )}
+            {strand.isDefault && (
+              <Text className="text-gray-500 text-xs mt-3">
+                Based on ASTM A416 Grade {strand.grade} standards
+              </Text>
+            )}
           </View>
         </View>
 

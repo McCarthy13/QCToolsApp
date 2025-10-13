@@ -49,7 +49,7 @@ export type RootStackParamList = {
   StressingResults: {
     jackingForce: number;
     bedLength: number;
-    strandSize: "3/8" | "1/2" | "0.6";
+    strandId: string; // ID from Strand Library
     numberOfStrands: number;
     bedShortening?: number;
     frictionLoss?: number;

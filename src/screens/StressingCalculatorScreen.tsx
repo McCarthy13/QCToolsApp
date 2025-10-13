@@ -7,11 +7,14 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
+import { useStrandLibraryStore } from "../state/strandLibraryStore";
 
 type StressingCalculatorScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -24,20 +27,27 @@ interface Props {
 
 export default function StressingCalculatorScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  
+  // Get strands from library
+  const strands = useStrandLibraryStore((state) => state.strands);
+  const getStrandById = useStrandLibraryStore((state) => state.getStrandById);
 
   // Input states
   const [jackingForce, setJackingForce] = useState("");
   const [bedLength, setBedLength] = useState("");
-  const [strandSize, setStrandSize] = useState<"3/8" | "1/2" | "0.6">("1/2");
+  const [selectedStrandId, setSelectedStrandId] = useState<string>(
+    strands.length > 0 ? strands[0].id : ""
+  );
   const [numberOfStrands, setNumberOfStrands] = useState("");
   const [bedShortening, setBedShortening] = useState("");
   const [frictionLoss, setFrictionLoss] = useState("");
   const [anchorSetLoss, setAnchorSetLoss] = useState("");
+  const [showStrandPicker, setShowStrandPicker] = useState(false);
 
   const handleCalculate = () => {
     // Validate inputs
-    if (!jackingForce || !bedLength || !numberOfStrands) {
-      alert("Please fill in all required fields");
+    if (!jackingForce || !bedLength || !numberOfStrands || !selectedStrandId) {
+      // Validation feedback already shown via UI
       return;
     }
 
@@ -45,13 +55,15 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
     navigation.navigate("StressingResults", {
       jackingForce: parseFloat(jackingForce),
       bedLength: parseFloat(bedLength),
-      strandSize,
+      strandId: selectedStrandId,
       numberOfStrands: parseInt(numberOfStrands),
       bedShortening: bedShortening ? parseFloat(bedShortening) : undefined,
       frictionLoss: frictionLoss ? parseFloat(frictionLoss) : undefined,
       anchorSetLoss: anchorSetLoss ? parseFloat(anchorSetLoss) : undefined,
     });
   };
+  
+  const selectedStrand = selectedStrandId ? getStrandById(selectedStrandId) : null;
 
   return (
     <KeyboardAvoidingView
@@ -128,61 +140,55 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
             </Text>
           </View>
 
-          {/* Strand Size */}
+          {/* Strand Selection */}
           <View className="mb-4">
-            <Text className="text-gray-700 text-sm font-medium mb-1.5">
-              Strand Size (diameter) *
-            </Text>
-            <View className="flex-row gap-2">
+            <View className="flex-row justify-between items-center mb-1.5">
+              <Text className="text-gray-700 text-sm font-medium">
+                Strand Type *
+              </Text>
               <Pressable
-                className={`flex-1 rounded-lg px-4 py-3 border-2 ${
-                  strandSize === "3/8"
-                    ? "bg-blue-50 border-blue-500"
-                    : "bg-white border-gray-300"
-                }`}
-                onPress={() => setStrandSize("3/8")}
+                onPress={() => navigation.navigate("StrandLibrary")}
+                className="flex-row items-center"
               >
-                <Text
-                  className={`text-center text-base font-semibold ${
-                    strandSize === "3/8" ? "text-blue-700" : "text-gray-700"
-                  }`}
-                >
-                  3/8"
-                </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 rounded-lg px-4 py-3 border-2 ${
-                  strandSize === "1/2"
-                    ? "bg-blue-50 border-blue-500"
-                    : "bg-white border-gray-300"
-                }`}
-                onPress={() => setStrandSize("1/2")}
-              >
-                <Text
-                  className={`text-center text-base font-semibold ${
-                    strandSize === "1/2" ? "text-blue-700" : "text-gray-700"
-                  }`}
-                >
-                  1/2"
-                </Text>
-              </Pressable>
-              <Pressable
-                className={`flex-1 rounded-lg px-4 py-3 border-2 ${
-                  strandSize === "0.6"
-                    ? "bg-blue-50 border-blue-500"
-                    : "bg-white border-gray-300"
-                }`}
-                onPress={() => setStrandSize("0.6")}
-              >
-                <Text
-                  className={`text-center text-base font-semibold ${
-                    strandSize === "0.6" ? "text-blue-700" : "text-gray-700"
-                  }`}
-                >
-                  0.6"
-                </Text>
+                <Ionicons name="library" size={14} color="#3B82F6" />
+                <Text className="text-blue-500 text-xs ml-1">Manage Library</Text>
               </Pressable>
             </View>
+            
+            {strands.length === 0 ? (
+              <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <Text className="text-yellow-900 text-sm mb-2">
+                  No strands available in library
+                </Text>
+                <Pressable
+                  onPress={() => navigation.navigate("StrandLibrary")}
+                  className="bg-yellow-500 rounded-lg py-2 px-4 items-center"
+                >
+                  <Text className="text-white text-sm font-medium">
+                    Add Strands to Library
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                className="bg-white border border-gray-300 rounded-lg px-4 py-3"
+                onPress={() => setShowStrandPicker(true)}
+              >
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-1">
+                    <Text className="text-gray-900 text-base font-medium">
+                      {selectedStrand?.name || "Select a strand"}
+                    </Text>
+                    {selectedStrand && (
+                      <Text className="text-gray-500 text-xs mt-1">
+                        {selectedStrand.diameter}" • {selectedStrand.area.toFixed(3)} in² • Grade {selectedStrand.grade}
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                </View>
+              </Pressable>
+            )}
           </View>
 
           {/* Number of Strands */}
@@ -280,6 +286,67 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Strand Picker Modal */}
+      <Modal
+        visible={showStrandPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStrandPicker(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowStrandPicker(false)}>
+          <View className="flex-1 bg-black/50 justify-end">
+            <TouchableWithoutFeedback>
+              <View className="bg-white rounded-t-3xl" style={{ paddingBottom: insets.bottom + 20 }}>
+                {/* Header */}
+                <View className="flex-row justify-between items-center px-6 py-4 border-b border-gray-200">
+                  <Text className="text-gray-900 text-lg font-bold">
+                    Select Strand
+                  </Text>
+                  <Pressable onPress={() => setShowStrandPicker(false)}>
+                    <Ionicons name="close" size={24} color="#6B7280" />
+                  </Pressable>
+                </View>
+
+                {/* Strand List */}
+                <ScrollView className="max-h-96">
+                  {strands.map((strand) => (
+                    <Pressable
+                      key={strand.id}
+                      className={`px-6 py-4 border-b border-gray-100 ${
+                        selectedStrandId === strand.id ? "bg-blue-50" : ""
+                      }`}
+                      onPress={() => {
+                        setSelectedStrandId(strand.id);
+                        setShowStrandPicker(false);
+                      }}
+                    >
+                      <View className="flex-row justify-between items-center">
+                        <View className="flex-1">
+                          <Text className="text-gray-900 text-base font-semibold">
+                            {strand.name}
+                          </Text>
+                          <Text className="text-gray-600 text-sm mt-1">
+                            {strand.diameter}" diameter • {strand.area.toFixed(3)} in² • {strand.breakingStrength.toFixed(1)} kips
+                          </Text>
+                          {strand.isDefault && (
+                            <Text className="text-gray-400 text-xs mt-0.5">
+                              Standard (ASTM A416)
+                            </Text>
+                          )}
+                        </View>
+                        {selectedStrandId === strand.id && (
+                          <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+                        )}
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
