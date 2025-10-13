@@ -73,11 +73,16 @@ const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
           <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
             <Ionicons name="arrow-back" size={24} color="white" />
           </Pressable>
-          <Text className="text-2xl font-bold text-white ml-2">Admin Panel</Text>
+          <View className="flex-1">
+            <Text className="text-2xl font-bold text-white ml-2">Admin Panel</Text>
+            <Text className="text-orange-100 text-sm ml-2">
+              Manage aggregate configurations
+            </Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
+            <Ionicons name="home" size={24} color="white" />
+          </Pressable>
         </View>
-        <Text className="text-orange-100 text-sm">
-          Manage aggregate configurations
-        </Text>
       </View>
 
       <ScrollView className="flex-1">

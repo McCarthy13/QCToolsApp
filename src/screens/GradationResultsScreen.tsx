@@ -101,7 +101,9 @@ ${test.sieveData.map(s => `${s.name}: ${s.weightRetained}g (${s.percentPassing}%
               <Text className="text-2xl font-bold text-white">{test.aggregateName}</Text>
               <Text className="text-orange-100 text-sm mt-1">{test.date}</Text>
             </View>
-            <View className="w-10" />
+            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
+              <Ionicons name="home" size={24} color="white" />
+            </Pressable>
           </View>
         </View>
 

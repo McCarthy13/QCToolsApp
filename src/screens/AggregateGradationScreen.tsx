@@ -37,12 +37,19 @@ const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView className="flex-1">
         {/* Header */}
         <View className="bg-orange-600 pb-8" style={{ paddingTop: insets.top + 24, paddingHorizontal: 24 }}>
-          <Text className="text-2xl font-bold text-white mb-2">
-            Aggregate Gradation Analysis
-          </Text>
-          <Text className="text-orange-100">
-            Select an aggregate to begin testing
-          </Text>
+          <View className="flex-row items-center justify-between mb-2">
+            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -ml-2">
+              <Ionicons name="home" size={24} color="white" />
+            </Pressable>
+            <View className="flex-1">
+              <Text className="text-2xl font-bold text-white mb-1">
+                Aggregate Gradation Analysis
+              </Text>
+              <Text className="text-orange-100">
+                Select an aggregate to begin testing
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Action Buttons */}

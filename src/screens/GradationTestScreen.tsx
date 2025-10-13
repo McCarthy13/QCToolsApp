@@ -141,7 +141,9 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text className="text-lg font-semibold text-white flex-1 text-center">
                 {aggregateName}
               </Text>
-              <View className="w-10" />
+              <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
+                <Ionicons name="home" size={20} color="white" />
+              </Pressable>
             </View>
             <Text className="text-orange-100 text-center text-sm">
               {aggregate.type} Aggregate

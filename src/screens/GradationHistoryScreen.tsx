@@ -93,7 +93,10 @@ const GradationHistoryScreen: React.FC<Props> = ({ navigation }) => {
           <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
             <Ionicons name="arrow-back" size={24} color="white" />
           </Pressable>
-          <Text className="text-2xl font-bold text-white ml-2">Test Repository</Text>
+          <Text className="text-2xl font-bold text-white ml-2 flex-1">Test Repository</Text>
+          <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
+            <Ionicons name="home" size={24} color="white" />
+          </Pressable>
         </View>
 
         {/* Search Bar */}
