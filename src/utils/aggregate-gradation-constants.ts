@@ -2,12 +2,10 @@ import { AggregateConfig } from '../types/aggregate-gradation';
 
 // Standard sieve sizes mapping name to size in mm
 export const STANDARD_SIEVES: Record<string, number> = {
-  '2"': 50.8,
-  '1 1/2"': 38.1,
-  '1"': 25.4,
-  '3/4"': 19.05,
-  '1/2"': 12.7,
-  '3/8"': 9.525,
+  '1"': 25,
+  '3/4"': 19,
+  '1/2"': 12.5,
+  '3/8"': 9.5,
   '#4': 4.75,
   '#8': 2.36,
   '#16': 1.18,
@@ -23,20 +21,20 @@ export const DEFAULT_AGGREGATES: Record<string, AggregateConfig> = {
   'Keystone #7': {
     type: 'Coarse',
     sieves: [
-      { name: '1"', size: 25.4, weightRetained: '', c33Lower: 100, c33Upper: 100 },
-      { name: '3/4"', size: 19.05, weightRetained: '', c33Lower: 90, c33Upper: 100 },
-      { name: '1/2"', size: 12.7, weightRetained: '', c33Lower: 20, c33Upper: 55 },
-      { name: '3/8"', size: 9.525, weightRetained: '', c33Lower: 0, c33Upper: 15 },
+      { name: '3/4"', size: 19, weightRetained: '', c33Lower: 90, c33Upper: 100 },
+      { name: '1/2"', size: 12.5, weightRetained: '', c33Lower: 20, c33Upper: 55 },
+      { name: '3/8"', size: 9.5, weightRetained: '', c33Lower: 0, c33Upper: 15 },
       { name: '#4', size: 4.75, weightRetained: '', c33Lower: 0, c33Upper: 5 },
+      { name: '#8', size: 2.36, weightRetained: '', c33Lower: '-', c33Upper: '-' },
       { name: 'Pan', size: 0, weightRetained: '', c33Lower: '-', c33Upper: '-' },
     ],
   },
   'Kraemer 9/16"': {
     type: 'Coarse',
     sieves: [
-      { name: '3/4"', size: 19.05, weightRetained: '', c33Lower: 100, c33Upper: 100 },
-      { name: '1/2"', size: 12.7, weightRetained: '', c33Lower: 90, c33Upper: 100 },
-      { name: '3/8"', size: 9.525, weightRetained: '', c33Lower: 40, c33Upper: 70 },
+      { name: '3/4"', size: 19, weightRetained: '', c33Lower: 100, c33Upper: 100 },
+      { name: '1/2"', size: 12.5, weightRetained: '', c33Lower: 90, c33Upper: 100 },
+      { name: '3/8"', size: 9.5, weightRetained: '', c33Lower: 40, c33Upper: 70 },
       { name: '#4', size: 4.75, weightRetained: '', c33Lower: 0, c33Upper: 15 },
       { name: '#8', size: 2.36, weightRetained: '', c33Lower: 0, c33Upper: 5 },
       { name: 'Pan', size: 0, weightRetained: '', c33Lower: '-', c33Upper: '-' },
@@ -45,8 +43,8 @@ export const DEFAULT_AGGREGATES: Record<string, AggregateConfig> = {
   '#9 Gravel (St. Croix)': {
     type: 'Coarse',
     sieves: [
-      { name: '1/2"', size: 12.7, weightRetained: '', c33Lower: 100, c33Upper: 100 },
-      { name: '3/8"', size: 9.525, weightRetained: '', c33Lower: 85, c33Upper: 100 },
+      { name: '1/2"', size: 12.5, weightRetained: '', c33Lower: 100, c33Upper: 100 },
+      { name: '3/8"', size: 9.5, weightRetained: '', c33Lower: 85, c33Upper: 100 },
       { name: '#4', size: 4.75, weightRetained: '', c33Lower: 10, c33Upper: 30 },
       { name: '#8', size: 2.36, weightRetained: '', c33Lower: 0, c33Upper: 10 },
       { name: '#16', size: 1.18, weightRetained: '', c33Lower: 0, c33Upper: 5 },
@@ -56,7 +54,7 @@ export const DEFAULT_AGGREGATES: Record<string, AggregateConfig> = {
   'Concrete Sand': {
     type: 'Fine',
     sieves: [
-      { name: '3/8"', size: 9.525, weightRetained: '', c33Lower: 100, c33Upper: 100 },
+      { name: '3/8"', size: 9.5, weightRetained: '', c33Lower: 100, c33Upper: 100 },
       { name: '#4', size: 4.75, weightRetained: '', c33Lower: 95, c33Upper: 100 },
       { name: '#8', size: 2.36, weightRetained: '', c33Lower: 80, c33Upper: 100 },
       { name: '#16', size: 1.18, weightRetained: '', c33Lower: 50, c33Upper: 85 },

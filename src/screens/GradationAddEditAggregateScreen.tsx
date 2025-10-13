@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
@@ -15,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { AggregateConfig, SieveData } from '../types/aggregate-gradation';
-import { STANDARD_SIEVES, getSieveList } from '../utils/aggregate-gradation-constants';
+import { STANDARD_SIEVES } from '../utils/aggregate-gradation-constants';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'GradationAddEditAggregate'>;
@@ -33,41 +34,88 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
   const [type, setType] = useState<'Fine' | 'Coarse'>(existingAggregate?.type || 'Fine');
   const [maxDecant, setMaxDecant] = useState(existingAggregate?.maxDecant?.toString() || '');
   const [maxFM, setMaxFM] = useState(existingAggregate?.maxFinenessModulus?.toString() || '');
+  const [showAddSieveModal, setShowAddSieveModal] = useState(false);
   
-  // Initialize sieves based on type
-  const initializeSieves = (aggType: 'Fine' | 'Coarse'): SieveData[] => {
+  // Initialize sieves based on existing or empty
+  const initializeSieves = (): SieveData[] => {
     if (isEdit && existingAggregate) {
       return existingAggregate.sieves;
     }
-    const sieveNames = getSieveList(aggType);
-    return sieveNames.map(sieveName => ({
+    // Start with Pan only for new aggregates
+    return [{
+      name: 'Pan',
+      size: 0,
+      weightRetained: '',
+      c33Lower: '-',
+      c33Upper: '-',
+    }];
+  };
+
+  const [sieves, setSieves] = useState<SieveData[]>(initializeSieves());
+
+  const handleTypeChange = (newType: 'Fine' | 'Coarse') => {
+    setType(newType);
+  };
+
+  const getAvailableSieves = (): string[] => {
+    const usedSieveNames = sieves.map(s => s.name);
+    return Object.keys(STANDARD_SIEVES).filter(
+      sieveName => sieveName !== 'Pan' && !usedSieveNames.includes(sieveName)
+    );
+  };
+
+  const handleAddSieve = (sieveName: string) => {
+    const newSieve: SieveData = {
       name: sieveName,
       size: STANDARD_SIEVES[sieveName],
       weightRetained: '',
       c33Lower: '-',
       c33Upper: '-',
-    }));
+    };
+    
+    // Insert in order by size (largest to smallest), before Pan
+    const newSieves = [...sieves];
+    const panIndex = newSieves.findIndex(s => s.name === 'Pan');
+    
+    if (panIndex !== -1) {
+      // Find correct position before Pan
+      let insertIndex = 0;
+      for (let i = 0; i < panIndex; i++) {
+        if (newSieves[i].size > newSieve.size) {
+          insertIndex = i + 1;
+        }
+      }
+      newSieves.splice(insertIndex, 0, newSieve);
+    } else {
+      newSieves.push(newSieve);
+    }
+    
+    setSieves(newSieves);
+    setShowAddSieveModal(false);
   };
 
-  const [sieves, setSieves] = useState<SieveData[]>(initializeSieves(type));
-
-  const handleTypeChange = (newType: 'Fine' | 'Coarse') => {
-    if (newType !== type) {
-      Alert.alert(
-        'Change Aggregate Type',
-        'Changing the type will reset the sieve configuration. Continue?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Continue',
-            onPress: () => {
-              setType(newType);
-              setSieves(initializeSieves(newType));
-            },
-          },
-        ]
-      );
+  const handleRemoveSieve = (index: number) => {
+    const sieve = sieves[index];
+    if (sieve.name === 'Pan') {
+      Alert.alert('Cannot Remove', 'Pan sieve is required and cannot be removed');
+      return;
     }
+    
+    Alert.alert(
+      'Remove Sieve',
+      `Remove ${sieve.name} sieve from this aggregate?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            const newSieves = sieves.filter((_, i) => i !== index);
+            setSieves(newSieves);
+          },
+        },
+      ]
+    );
   };
 
   const handleSieveChange = (index: number, field: 'c33Lower' | 'c33Upper', value: string) => {
@@ -229,15 +277,25 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
 
         {/* Sieve Configuration */}
         <View className="bg-white p-4 mb-4">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Sieve Configuration & C33 Limits
-          </Text>
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-lg font-semibold text-gray-800">
+              Sieve Configuration & C33 Limits
+            </Text>
+            <Pressable
+              onPress={() => setShowAddSieveModal(true)}
+              className="bg-blue-600 rounded-lg px-3 py-2 flex-row items-center gap-1 active:bg-blue-700"
+            >
+              <Ionicons name="add-circle" size={16} color="white" />
+              <Text className="text-white text-xs font-semibold">Add Sieve</Text>
+            </Pressable>
+          </View>
           <Text className="text-sm text-gray-600 mb-4">
             Configure ASTM C33 cumulative passing percentage limits for each sieve. Use "-" for no limit.
           </Text>
 
           {/* Table Header */}
           <View className="flex-row bg-gray-100 p-2 rounded-t-lg">
+            <Text className="w-8 text-xs font-semibold text-gray-700"></Text>
             <Text className="flex-1 text-xs font-semibold text-gray-700">Sieve</Text>
             <Text className="w-24 text-xs font-semibold text-gray-700 text-center">
               Lower %
@@ -253,6 +311,15 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
               key={index}
               className="flex-row items-center p-2 border-b border-gray-200"
             >
+              {/* Remove Button */}
+              <View className="w-8">
+                {sieve.name !== 'Pan' && (
+                  <Pressable onPress={() => handleRemoveSieve(index)} className="p-1">
+                    <Ionicons name="close-circle" size={20} color="#ef4444" />
+                  </Pressable>
+                )}
+              </View>
+
               <View className="flex-1">
                 <Text className="text-sm font-medium text-gray-800">{sieve.name}</Text>
                 <Text className="text-xs text-gray-500">
@@ -319,6 +386,74 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
           <Text className="text-gray-700 font-medium text-base">Cancel</Text>
         </Pressable>
       </View>
+
+      {/* Add Sieve Modal */}
+      <Modal
+        visible={showAddSieveModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAddSieveModal(false)}
+      >
+        <Pressable
+          className="flex-1 items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+          onPress={() => setShowAddSieveModal(false)}
+        >
+          <Pressable
+            className="bg-white rounded-2xl mx-5 w-80 max-h-96"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View className="p-5 border-b border-gray-200">
+              <Text className="text-xl font-bold text-gray-900">Add Sieve</Text>
+              <Text className="text-sm text-gray-600 mt-1">
+                Select a sieve to add to this aggregate
+              </Text>
+            </View>
+
+            <ScrollView className="max-h-80">
+              {getAvailableSieves().length === 0 ? (
+                <View className="p-8 items-center">
+                  <Ionicons name="checkmark-circle" size={48} color="#10b981" />
+                  <Text className="text-gray-600 mt-3 text-center">
+                    All available sieves have been added
+                  </Text>
+                </View>
+              ) : (
+                <View className="p-2">
+                  {getAvailableSieves().map(sieveName => (
+                    <Pressable
+                      key={sieveName}
+                      onPress={() => handleAddSieve(sieveName)}
+                      className="p-4 border-b border-gray-200 active:bg-gray-50"
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <View>
+                          <Text className="text-base font-semibold text-gray-800">
+                            {sieveName}
+                          </Text>
+                          <Text className="text-sm text-gray-500">
+                            {STANDARD_SIEVES[sieveName]}mm
+                          </Text>
+                        </View>
+                        <Ionicons name="add-circle-outline" size={24} color="#2563eb" />
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+
+            <View className="p-4 border-t border-gray-200">
+              <Pressable
+                onPress={() => setShowAddSieveModal(false)}
+                className="bg-gray-200 rounded-lg py-3 items-center active:bg-gray-300"
+              >
+                <Text className="text-gray-700 font-semibold">Close</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
