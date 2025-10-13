@@ -25,6 +25,7 @@ import GradationTestScreen from "./src/screens/GradationTestScreen";
 import GradationResultsScreen from "./src/screens/GradationResultsScreen";
 import GradationHistoryScreen from "./src/screens/GradationHistoryScreen";
 import GradationAdminScreen from "./src/screens/GradationAdminScreen";
+import GradationAddEditAggregateScreen from "./src/screens/GradationAddEditAggregateScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -362,41 +363,102 @@ export default function App() {
             <Stack.Screen
               name="AggregateGradation"
               component={AggregateGradationScreen}
-              options={{
+              options={({ navigation }) => ({
                 title: "Aggregate Gradation",
-                headerShown: false,
-              }}
+                headerRight: () => (
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
+                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("GradationHistory")}>
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
+                      <Ionicons name="home-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
+                ),
+              })}
             />
             <Stack.Screen
               name="GradationTest"
               component={GradationTestScreen}
-              options={{
+              options={({ navigation }) => ({
                 title: "Gradation Test",
-                headerShown: false,
-              }}
+                headerRight: () => (
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
+                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("GradationHistory")}>
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
+                      <Ionicons name="home-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
+                ),
+              })}
             />
             <Stack.Screen
               name="GradationResults"
               component={GradationResultsScreen}
-              options={{
+              options={({ navigation }) => ({
                 title: "Test Results",
-                headerShown: false,
-              }}
+                headerRight: () => (
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
+                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("GradationHistory")}>
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
+                      <Ionicons name="home-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
+                ),
+              })}
             />
             <Stack.Screen
               name="GradationHistory"
               component={GradationHistoryScreen}
-              options={{
+              options={({ navigation }) => ({
                 title: "Test Repository",
-                headerShown: false,
-              }}
+                headerRight: () => (
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
+                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
+                      <Ionicons name="home-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
+                ),
+              })}
             />
             <Stack.Screen
               name="GradationAdmin"
               component={GradationAdminScreen}
+              options={({ navigation }) => ({
+                title: "Aggregate Configuration",
+                headerRight: () => (
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable onPress={() => navigation.navigate("GradationHistory")}>
+                      <Ionicons name="time-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
+                      <Ionicons name="home-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="GradationAddEditAggregate"
+              component={GradationAddEditAggregateScreen}
               options={{
-                title: "Admin Panel",
-                headerShown: false,
+                title: "Configure Aggregate",
               }}
             />
           </Stack.Navigator>

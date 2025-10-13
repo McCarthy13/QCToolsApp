@@ -6,7 +6,6 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,7 +18,6 @@ type Props = {
 };
 
 const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const { aggregates, deleteAggregate, addAggregate } = useAggregateGradationStore();
   const [expandedAggregate, setExpandedAggregate] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -67,32 +65,17 @@ const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-orange-600" style={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16 }}>
-        <View className="flex-row items-center mb-2">
-          <Pressable onPress={() => navigation.goBack()} className="p-2 -ml-2">
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-2xl font-bold text-white ml-2">Admin Panel</Text>
-            <Text className="text-orange-100 text-sm ml-2">
-              Manage aggregate configurations
-            </Text>
-          </View>
-          <View className="flex-row gap-3">
-            <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
-              <Ionicons name="time-outline" size={24} color="white" />
-            </Pressable>
-            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
-              <Ionicons name="home-outline" size={24} color="white" />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
       <ScrollView className="flex-1">
         {/* Action Buttons */}
         <View className="p-4 gap-3">
+          <Pressable
+            onPress={() => navigation.navigate('GradationAddEditAggregate', {})}
+            className="bg-orange-600 rounded-lg p-4 flex-row items-center justify-center gap-2 active:bg-orange-700"
+          >
+            <Ionicons name="add-circle" size={20} color="white" />
+            <Text className="text-white font-semibold">Add New Aggregate</Text>
+          </Pressable>
+
           <Pressable
             onPress={handleRestoreDefaults}
             className="bg-blue-600 rounded-lg p-4 flex-row items-center justify-center gap-2 active:bg-blue-700"
@@ -227,13 +210,21 @@ const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
                         </View>
 
                         {/* Actions */}
-                        <View className="p-4 border-t border-gray-200 bg-gray-50">
+                        <View className="p-4 border-t border-gray-200 bg-gray-50 flex-row gap-3">
+                          <Pressable
+                            onPress={() => navigation.navigate('GradationAddEditAggregate', { aggregateName: name })}
+                            className="flex-1 bg-blue-600 rounded-lg py-2 px-4 flex-row items-center justify-center gap-2 active:bg-blue-700"
+                          >
+                            <Ionicons name="create-outline" size={18} color="white" />
+                            <Text className="text-white font-semibold">Edit</Text>
+                          </Pressable>
+
                           <Pressable
                             onPress={() => handleDeleteAggregate(name)}
-                            className="bg-red-600 rounded-lg py-2 px-4 flex-row items-center justify-center gap-2 active:bg-red-700"
+                            className="flex-1 bg-red-600 rounded-lg py-2 px-4 flex-row items-center justify-center gap-2 active:bg-red-700"
                           >
                             <Ionicons name="trash-outline" size={18} color="white" />
-                            <Text className="text-white font-semibold">Delete Aggregate</Text>
+                            <Text className="text-white font-semibold">Delete</Text>
                           </Pressable>
                         </View>
                       </View>

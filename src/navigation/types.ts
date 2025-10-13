@@ -61,4 +61,5 @@ export type RootStackParamList = {
   GradationResults: { testId: string };
   GradationHistory: undefined;
   GradationAdmin: undefined;
+  GradationAddEditAggregate: { aggregateName?: string };
 };

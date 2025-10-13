@@ -5,7 +5,6 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateGradationStore } from '../state/aggregateGradationStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +15,6 @@ type Props = {
 };
 
 const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const { aggregates } = useAggregateGradationStore();
   const aggregateList = Object.entries(aggregates);
 
@@ -27,31 +25,6 @@ const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView className="flex-1">
-        {/* Header */}
-        <View className="bg-orange-600 pb-8" style={{ paddingTop: insets.top + 24, paddingHorizontal: 24 }}>
-          <View className="flex-row items-center justify-between mb-2">
-            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -ml-2">
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </Pressable>
-            <View className="flex-1 ml-2">
-              <Text className="text-2xl font-bold text-white mb-1">
-                Aggregate Gradation Analysis
-              </Text>
-              <Text className="text-orange-100">
-                Select an aggregate to begin testing
-              </Text>
-            </View>
-            <View className="flex-row gap-3">
-              <Pressable onPress={() => navigation.navigate('GradationAdmin')} className="p-2">
-                <Ionicons name="settings-outline" size={24} color="white" />
-              </Pressable>
-              <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
-                <Ionicons name="time-outline" size={24} color="white" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
         {/* Aggregate List */}
         <View className="px-4 py-6">
           <Text className="text-lg font-semibold text-gray-800 mb-3">

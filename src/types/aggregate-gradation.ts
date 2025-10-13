@@ -13,6 +13,7 @@ export interface AggregateConfig {
   type: 'Fine' | 'Coarse';
   sieves: SieveData[];
   maxDecant?: number | null;
+  maxFinenessModulus?: number | null;
 }
 
 export interface TestRecord {
