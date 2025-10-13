@@ -79,9 +79,14 @@ const GradationAdminScreen: React.FC<Props> = ({ navigation }) => {
               Manage aggregate configurations
             </Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
-            <Ionicons name="home" size={24} color="white" />
-          </Pressable>
+          <View className="flex-row gap-3">
+            <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
+              <Ionicons name="time-outline" size={24} color="white" />
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
+              <Ionicons name="home-outline" size={24} color="white" />
+            </Pressable>
+          </View>
         </View>
       </View>
 

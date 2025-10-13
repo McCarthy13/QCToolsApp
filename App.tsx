@@ -324,9 +324,14 @@ export default function App() {
               options={({ navigation }) => ({
                 title: "Stressing Calculator",
                 headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
+                  <View className="flex-row gap-3 mr-1">
+                    <Pressable onPress={() => navigation.navigate("StrandLibrary")}>
+                      <Ionicons name="library-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
+                      <Ionicons name="home-outline" size={24} color="#111827" />
+                    </Pressable>
+                  </View>
                 ),
               })}
             />

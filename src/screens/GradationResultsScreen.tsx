@@ -101,9 +101,17 @@ ${test.sieveData.map(s => `${s.name}: ${s.weightRetained}g (${s.percentPassing}%
               <Text className="text-2xl font-bold text-white">{test.aggregateName}</Text>
               <Text className="text-orange-100 text-sm mt-1">{test.date}</Text>
             </View>
-            <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
-              <Ionicons name="home" size={24} color="white" />
-            </Pressable>
+            <View className="flex-row gap-3">
+              <Pressable onPress={() => navigation.navigate('GradationAdmin')} className="p-2">
+                <Ionicons name="settings-outline" size={24} color="white" />
+              </Pressable>
+              <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
+                <Ionicons name="time-outline" size={24} color="white" />
+              </Pressable>
+              <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -mr-2">
+                <Ionicons name="home-outline" size={24} color="white" />
+              </Pressable>
+            </View>
           </View>
         </View>
 

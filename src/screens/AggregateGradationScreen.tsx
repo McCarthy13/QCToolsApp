@@ -24,14 +24,6 @@ const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('GradationTest', { aggregateName: name });
   };
 
-  const handleViewHistory = () => {
-    navigation.navigate('GradationHistory');
-  };
-
-  const handleAdminPanel = () => {
-    navigation.navigate('GradationAdmin');
-  };
-
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView className="flex-1">
@@ -39,9 +31,9 @@ const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
         <View className="bg-orange-600 pb-8" style={{ paddingTop: insets.top + 24, paddingHorizontal: 24 }}>
           <View className="flex-row items-center justify-between mb-2">
             <Pressable onPress={() => navigation.navigate('Dashboard')} className="p-2 -ml-2">
-              <Ionicons name="home" size={24} color="white" />
+              <Ionicons name="arrow-back" size={24} color="white" />
             </Pressable>
-            <View className="flex-1">
+            <View className="flex-1 ml-2">
               <Text className="text-2xl font-bold text-white mb-1">
                 Aggregate Gradation Analysis
               </Text>
@@ -49,54 +41,19 @@ const AggregateGradationScreen: React.FC<Props> = ({ navigation }) => {
                 Select an aggregate to begin testing
               </Text>
             </View>
+            <View className="flex-row gap-3">
+              <Pressable onPress={() => navigation.navigate('GradationAdmin')} className="p-2">
+                <Ionicons name="settings-outline" size={24} color="white" />
+              </Pressable>
+              <Pressable onPress={() => navigation.navigate('GradationHistory')} className="p-2">
+                <Ionicons name="time-outline" size={24} color="white" />
+              </Pressable>
+            </View>
           </View>
         </View>
 
-        {/* Action Buttons */}
-        <View className="px-4 py-4 gap-3">
-          <Pressable
-            onPress={handleViewHistory}
-            className="bg-white rounded-lg p-4 flex-row items-center justify-between shadow-sm active:bg-gray-50"
-          >
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
-                <Ionicons name="list" size={20} color="#2563eb" />
-              </View>
-              <View>
-                <Text className="text-base font-semibold text-gray-800">
-                  Test Repository
-                </Text>
-                <Text className="text-sm text-gray-500">
-                  View saved test records
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-          </Pressable>
-
-          <Pressable
-            onPress={handleAdminPanel}
-            className="bg-white rounded-lg p-4 flex-row items-center justify-between shadow-sm active:bg-gray-50"
-          >
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
-                <Ionicons name="settings" size={20} color="#9333ea" />
-              </View>
-              <View>
-                <Text className="text-base font-semibold text-gray-800">
-                  Admin Panel
-                </Text>
-                <Text className="text-sm text-gray-500">
-                  Manage aggregate configurations
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-          </Pressable>
-        </View>
-
         {/* Aggregate List */}
-        <View className="px-4 pb-6">
+        <View className="px-4 py-6">
           <Text className="text-lg font-semibold text-gray-800 mb-3">
             Available Aggregates
           </Text>
