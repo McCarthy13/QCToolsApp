@@ -32,6 +32,9 @@ import AggregateLibraryAddEditScreen from "./src/screens/AggregateLibraryAddEdit
 import AdmixLibraryScreen from "./src/screens/AdmixLibraryScreen";
 import AdmixLibraryDetailScreen from "./src/screens/AdmixLibraryDetailScreen";
 import AdmixLibraryAddEditScreen from "./src/screens/AdmixLibraryAddEditScreen";
+import ContactsScreen from "./src/screens/ContactsScreen";
+import ContactDetailScreen from "./src/screens/ContactDetailScreen";
+import ContactAddEditScreen from "./src/screens/ContactAddEditScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -527,6 +530,37 @@ export default function App() {
               component={AdmixLibraryAddEditScreen}
               options={({ route }) => ({
                 title: route.params?.admixId ? "Edit Admixture" : "Add Admixture",
+              })}
+            />
+            <Stack.Screen
+              name="Contacts"
+              component={ContactsScreen}
+              options={({ navigation }) => ({
+                title: "Contacts",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="ContactDetail"
+              component={ContactDetailScreen}
+              options={({ navigation }) => ({
+                title: "Contact Details",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="ContactAddEdit"
+              component={ContactAddEditScreen}
+              options={({ route }) => ({
+                title: route.params?.contactId ? "Edit Contact" : "Add Contact",
               })}
             />
           </Stack.Navigator>

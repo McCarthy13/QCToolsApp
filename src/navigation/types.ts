@@ -68,4 +68,7 @@ export type RootStackParamList = {
   AdmixLibrary: undefined;
   AdmixLibraryDetail: { admixId: string };
   AdmixLibraryAddEdit: { admixId?: string };
+  Contacts: undefined;
+  ContactDetail: { contactId: string };
+  ContactAddEdit: { contactId?: string };
 };

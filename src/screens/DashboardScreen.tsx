@@ -75,6 +75,15 @@ const tools: Tool[] = [
     route: 'AdmixLibrary',
   },
   {
+    id: 'contacts',
+    name: 'Contacts',
+    description: 'Manage vendors, suppliers, and sales representatives',
+    icon: 'people',
+    color: '#7C3AED',
+    bgColor: '#F5F3FF',
+    route: 'Contacts',
+  },
+  {
     id: 'strand-library',
     name: 'Strand Library',
     description: 'Manage strand definitions and material properties',
