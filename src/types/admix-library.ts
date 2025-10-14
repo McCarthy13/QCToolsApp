@@ -14,7 +14,7 @@ export interface AdmixLibraryItem {
   name: string;
   manufacturer: string;
   class: AdmixClass;
-  specificGravity: number;
+  specificGravity?: number;
   
   // Optional Properties
   dosageRateRecommendations?: string; // Long text from data sheets

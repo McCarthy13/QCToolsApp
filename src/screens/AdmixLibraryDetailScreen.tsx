@@ -139,11 +139,13 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
             </View>
 
-            <View className="px-3 py-1.5 rounded-full bg-gray-100">
-              <Text className="text-sm font-semibold text-gray-700">
-                SG: {admix.specificGravity}
-              </Text>
-            </View>
+            {admix.specificGravity !== undefined && (
+              <View className="px-3 py-1.5 rounded-full bg-gray-100">
+                <Text className="text-sm font-semibold text-gray-700">
+                  SG: {admix.specificGravity}
+                </Text>
+              </View>
+            )}
           </View>
 
           {!isComplete && (

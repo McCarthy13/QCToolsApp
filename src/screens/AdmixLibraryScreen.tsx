@@ -240,11 +240,13 @@ const AdmixLibraryScreen: React.FC<Props> = ({ navigation }) => {
                       </Text>
                     </View>
 
-                    <View className="px-2 py-1 rounded bg-gray-100">
-                      <Text className="text-xs font-medium text-gray-700">
-                        SG: {admix.specificGravity}
-                      </Text>
-                    </View>
+                    {admix.specificGravity !== undefined && (
+                      <View className="px-2 py-1 rounded bg-gray-100">
+                        <Text className="text-xs font-medium text-gray-700">
+                          SG: {admix.specificGravity}
+                        </Text>
+                      </View>
+                    )}
 
                     {admix.costPerGallon !== undefined && (
                       <View className="px-2 py-1 rounded bg-green-100">

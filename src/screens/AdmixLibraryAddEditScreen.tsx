@@ -37,22 +37,6 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [notes, setNotes] = useState(existingAdmix?.notes || '');
 
   const handleSave = () => {
-    if (!name.trim()) {
-      Alert.alert('Required Field', 'Please enter an admixture name');
-      return;
-    }
-
-    if (!manufacturer.trim()) {
-      Alert.alert('Required Field', 'Please enter a manufacturer');
-      return;
-    }
-
-    const parsedSG = parseFloat(specificGravity);
-    if (isNaN(parsedSG)) {
-      Alert.alert('Required Field', 'Please enter a valid specific gravity');
-      return;
-    }
-
     const parseNumber = (value: string) => {
       const parsed = parseFloat(value);
       return isNaN(parsed) ? undefined : parsed;
@@ -62,7 +46,7 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
       name: name.trim(),
       manufacturer: manufacturer.trim(),
       class: admixClass,
-      specificGravity: parsedSG,
+      specificGravity: parseNumber(specificGravity),
       dosageRateRecommendations: dosageRateRecommendations.trim() || undefined,
       costPerGallon: parseNumber(costPerGallon),
       percentWater: parseNumber(percentWater),
@@ -335,7 +319,7 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
             <View className="flex-row items-start">
               <Ionicons name="information-circle" size={20} color="#3b82f6" />
               <Text className="flex-1 text-xs text-blue-700 ml-2">
-                Required fields: Name, Manufacturer, Class, and Specific Gravity. All other fields are optional and can be added later.
+                Incomplete admixtures can be saved and updated later. Required fields: Name, Manufacturer, Class, and Specific Gravity. All other fields are optional.
               </Text>
             </View>
           </View>
