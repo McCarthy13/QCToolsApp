@@ -57,6 +57,15 @@ const tools: Tool[] = [
     route: 'AggregateGradation',
   },
   {
+    id: 'aggregate-library',
+    name: 'Aggregate Library',
+    description: 'Comprehensive database of aggregate characteristics',
+    icon: 'flask',
+    color: '#DC2626',
+    bgColor: '#FEF2F2',
+    route: 'AggregateLibrary',
+  },
+  {
     id: 'strand-library',
     name: 'Strand Library',
     description: 'Manage strand definitions and material properties',

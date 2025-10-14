@@ -62,4 +62,7 @@ export type RootStackParamList = {
   GradationHistory: undefined;
   GradationAdmin: undefined;
   GradationAddEditAggregate: { aggregateName?: string };
+  AggregateLibrary: undefined;
+  AggregateLibraryDetail: { aggregateId: string };
+  AggregateLibraryAddEdit: { aggregateId?: string };
 };

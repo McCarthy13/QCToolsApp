@@ -26,6 +26,9 @@ import GradationResultsScreen from "./src/screens/GradationResultsScreen";
 import GradationHistoryScreen from "./src/screens/GradationHistoryScreen";
 import GradationAdminScreen from "./src/screens/GradationAdminScreen";
 import GradationAddEditAggregateScreen from "./src/screens/GradationAddEditAggregateScreen";
+import AggregateLibraryScreen from "./src/screens/AggregateLibraryScreen";
+import AggregateLibraryDetailScreen from "./src/screens/AggregateLibraryDetailScreen";
+import AggregateLibraryAddEditScreen from "./src/screens/AggregateLibraryAddEditScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -460,6 +463,37 @@ export default function App() {
               options={{
                 title: "Configure Aggregate",
               }}
+            />
+            <Stack.Screen
+              name="AggregateLibrary"
+              component={AggregateLibraryScreen}
+              options={({ navigation }) => ({
+                title: "Aggregate Library",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="AggregateLibraryDetail"
+              component={AggregateLibraryDetailScreen}
+              options={({ navigation }) => ({
+                title: "Aggregate Details",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="AggregateLibraryAddEdit"
+              component={AggregateLibraryAddEditScreen}
+              options={({ route }) => ({
+                title: route.params?.aggregateId ? "Edit Aggregate" : "Add Aggregate",
+              })}
             />
           </Stack.Navigator>
           <StatusBar style="auto" />
