@@ -7,6 +7,11 @@ export interface ContactItem {
   email?: string;
   notes?: string;
   
+  // User Preferences
+  isFavorite?: boolean;
+  lastAccessedAt?: number;
+  photoUris?: string[]; // Array of photo URIs (e.g., business card)
+  
   // Metadata
   createdAt: number;
   updatedAt: number;

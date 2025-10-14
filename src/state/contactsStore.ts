@@ -16,6 +16,15 @@ interface ContactsState {
   getAllContacts: () => ContactItem[];
   searchContacts: (query: string) => ContactItem[];
   isContactComplete: (id: string) => boolean;
+  
+  // Favorites & Recently Used
+  toggleFavorite: (id: string) => void;
+  getFavorites: () => ContactItem[];
+  trackAccess: (id: string) => void;
+  getRecentlyUsed: (limit?: number) => ContactItem[];
+  
+  // Duplicate
+  duplicateContact: (id: string) => ContactItem | undefined;
 }
 
 // Helper function to check if contact has all required fields
@@ -92,6 +101,70 @@ export const useContactsStore = create<ContactsState>()(
         const contact = get().contacts[id];
         if (!contact) return false;
         return checkContactComplete(contact);
+      },
+      
+      toggleFavorite: (id) =>
+        set((state) => {
+          const existing = state.contacts[id];
+          if (!existing) return state;
+          
+          return {
+            contacts: {
+              ...state.contacts,
+              [id]: {
+                ...existing,
+                isFavorite: !existing.isFavorite,
+                updatedAt: Date.now(),
+              },
+            },
+          };
+        }),
+      
+      getFavorites: () => {
+        const allContacts = get().getAllContacts();
+        return allContacts.filter(contact => contact.isFavorite);
+      },
+      
+      trackAccess: (id) =>
+        set((state) => {
+          const existing = state.contacts[id];
+          if (!existing) return state;
+          
+          return {
+            contacts: {
+              ...state.contacts,
+              [id]: {
+                ...existing,
+                lastAccessedAt: Date.now(),
+              },
+            },
+          };
+        }),
+      
+      getRecentlyUsed: (limit = 5) => {
+        const allContacts = get().getAllContacts();
+        return allContacts
+          .filter(contact => contact.lastAccessedAt)
+          .sort((a, b) => (b.lastAccessedAt || 0) - (a.lastAccessedAt || 0))
+          .slice(0, limit);
+      },
+      
+      duplicateContact: (id) => {
+        const existing = get().contacts[id];
+        if (!existing) return undefined;
+        
+        const newContact: ContactItem = {
+          ...existing,
+          id: Date.now().toString(),
+          name: `${existing.name} (Copy)`,
+          isFavorite: false,
+          lastAccessedAt: undefined,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        
+        get().addContact(newContact);
+        return newContact;
       },
     }),
     {

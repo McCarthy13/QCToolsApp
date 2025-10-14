@@ -16,6 +16,15 @@ interface AggregateLibraryState {
   getAllAggregates: () => AggregateLibraryItem[];
   searchAggregates: (query: string) => AggregateLibraryItem[];
   isAggregateComplete: (id: string) => boolean;
+  
+  // Favorites & Recently Used
+  toggleFavorite: (id: string) => void;
+  getFavorites: () => AggregateLibraryItem[];
+  trackAccess: (id: string) => void;
+  getRecentlyUsed: (limit?: number) => AggregateLibraryItem[];
+  
+  // Duplicate
+  duplicateAggregate: (id: string) => AggregateLibraryItem | undefined;
 }
 
 // Helper function to check if aggregate has all required fields
@@ -105,6 +114,70 @@ export const useAggregateLibraryStore = create<AggregateLibraryState>()(
         const aggregate = get().aggregates[id];
         if (!aggregate) return false;
         return checkAggregateComplete(aggregate);
+      },
+      
+      toggleFavorite: (id) =>
+        set((state) => {
+          const existing = state.aggregates[id];
+          if (!existing) return state;
+          
+          return {
+            aggregates: {
+              ...state.aggregates,
+              [id]: {
+                ...existing,
+                isFavorite: !existing.isFavorite,
+                updatedAt: Date.now(),
+              },
+            },
+          };
+        }),
+      
+      getFavorites: () => {
+        const allAggregates = get().getAllAggregates();
+        return allAggregates.filter(agg => agg.isFavorite);
+      },
+      
+      trackAccess: (id) =>
+        set((state) => {
+          const existing = state.aggregates[id];
+          if (!existing) return state;
+          
+          return {
+            aggregates: {
+              ...state.aggregates,
+              [id]: {
+                ...existing,
+                lastAccessedAt: Date.now(),
+              },
+            },
+          };
+        }),
+      
+      getRecentlyUsed: (limit = 5) => {
+        const allAggregates = get().getAllAggregates();
+        return allAggregates
+          .filter(agg => agg.lastAccessedAt)
+          .sort((a, b) => (b.lastAccessedAt || 0) - (a.lastAccessedAt || 0))
+          .slice(0, limit);
+      },
+      
+      duplicateAggregate: (id) => {
+        const existing = get().aggregates[id];
+        if (!existing) return undefined;
+        
+        const newAggregate: AggregateLibraryItem = {
+          ...existing,
+          id: Date.now().toString(),
+          name: `${existing.name} (Copy)`,
+          isFavorite: false,
+          lastAccessedAt: undefined,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        
+        get().addAggregate(newAggregate);
+        return newAggregate;
       },
     }),
     {

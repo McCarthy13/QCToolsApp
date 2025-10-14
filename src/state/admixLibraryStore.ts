@@ -16,6 +16,15 @@ interface AdmixLibraryState {
   getAllAdmixes: () => AdmixLibraryItem[];
   searchAdmixes: (query: string) => AdmixLibraryItem[];
   isAdmixComplete: (id: string) => boolean;
+  
+  // Favorites & Recently Used
+  toggleFavorite: (id: string) => void;
+  getFavorites: () => AdmixLibraryItem[];
+  trackAccess: (id: string) => void;
+  getRecentlyUsed: (limit?: number) => AdmixLibraryItem[];
+  
+  // Duplicate
+  duplicateAdmix: (id: string) => AdmixLibraryItem | undefined;
 }
 
 // Helper function to check if admix has all required fields
@@ -93,6 +102,70 @@ export const useAdmixLibraryStore = create<AdmixLibraryState>()(
         const admix = get().admixes[id];
         if (!admix) return false;
         return checkAdmixComplete(admix);
+      },
+      
+      toggleFavorite: (id) =>
+        set((state) => {
+          const existing = state.admixes[id];
+          if (!existing) return state;
+          
+          return {
+            admixes: {
+              ...state.admixes,
+              [id]: {
+                ...existing,
+                isFavorite: !existing.isFavorite,
+                updatedAt: Date.now(),
+              },
+            },
+          };
+        }),
+      
+      getFavorites: () => {
+        const allAdmixes = get().getAllAdmixes();
+        return allAdmixes.filter(admix => admix.isFavorite);
+      },
+      
+      trackAccess: (id) =>
+        set((state) => {
+          const existing = state.admixes[id];
+          if (!existing) return state;
+          
+          return {
+            admixes: {
+              ...state.admixes,
+              [id]: {
+                ...existing,
+                lastAccessedAt: Date.now(),
+              },
+            },
+          };
+        }),
+      
+      getRecentlyUsed: (limit = 5) => {
+        const allAdmixes = get().getAllAdmixes();
+        return allAdmixes
+          .filter(admix => admix.lastAccessedAt)
+          .sort((a, b) => (b.lastAccessedAt || 0) - (a.lastAccessedAt || 0))
+          .slice(0, limit);
+      },
+      
+      duplicateAdmix: (id) => {
+        const existing = get().admixes[id];
+        if (!existing) return undefined;
+        
+        const newAdmix: AdmixLibraryItem = {
+          ...existing,
+          id: Date.now().toString(),
+          name: `${existing.name} (Copy)`,
+          isFavorite: false,
+          lastAccessedAt: undefined,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        
+        get().addAdmix(newAdmix);
+        return newAdmix;
       },
     }),
     {

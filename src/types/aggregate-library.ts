@@ -40,6 +40,11 @@ export interface AggregateLibraryItem {
   certifications?: string; // e.g., "ASTM C33, AASHTO M6"
   notes?: string;
   
+  // User Preferences
+  isFavorite?: boolean;
+  lastAccessedAt?: number;
+  photoUris?: string[]; // Array of photo URIs
+  
   // Metadata
   createdAt: number;
   updatedAt: number;
