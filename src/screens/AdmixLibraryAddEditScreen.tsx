@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdmixLibraryStore } from '../state/admixLibraryStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { RouteProp } from '@react-navigation/native';
 import { AdmixLibraryItem, AdmixClass } from '../types/admix-library';
+import { formatPhoneNumber } from '../utils/phoneFormatter';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'AdmixLibraryAddEdit'>;
@@ -35,6 +36,10 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [salesRepPhone, setSalesRepPhone] = useState(existingAdmix?.salesRepPhone || '');
   const [salesRepEmail, setSalesRepEmail] = useState(existingAdmix?.salesRepEmail || '');
   const [notes, setNotes] = useState(existingAdmix?.notes || '');
+
+  const handlePhoneChange = (value: string) => {
+    setSalesRepPhone(formatPhoneNumber(value));
+  };
 
   const handleSave = () => {
     const parseNumber = (value: string) => {
@@ -270,8 +275,8 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
               {renderTextInput(
                 'Phone',
                 salesRepPhone,
-                setSalesRepPhone,
-                { keyboardType: 'phone-pad', placeholder: 'e.g., (555) 123-4567' }
+                handlePhoneChange,
+                { keyboardType: 'phone-pad', placeholder: '(555) 123-4567' }
               )}
 
               {renderTextInput(
