@@ -35,6 +35,8 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
   const [maxDecant, setMaxDecant] = useState(existingAggregate?.maxDecant?.toString() || '');
   const [maxFM, setMaxFM] = useState(existingAggregate?.maxFinenessModulus?.toString() || '');
   const [showAddSieveModal, setShowAddSieveModal] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [tempValues, setTempValues] = useState<{ [key: string]: string }>({});
   
   // Initialize sieves based on existing or empty
   const initializeSieves = (): SieveData[] => {
@@ -119,8 +121,18 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
   };
 
   const handleSieveChange = (index: number, field: 'c33Lower' | 'c33Upper', value: string) => {
+    const fieldKey = `${index}-${field}`;
+    
+    // Store temporary value while editing
+    setTempValues(prev => ({ ...prev, [fieldKey]: value }));
+    
+    if (value === '') {
+      // Keep empty while typing
+      return;
+    }
+    
     const newSieves = [...sieves];
-    if (value === '' || value === '-') {
+    if (value === '-') {
       newSieves[index][field] = '-';
     } else {
       const numValue = parseFloat(value);
@@ -129,6 +141,70 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
       }
     }
     setSieves(newSieves);
+  };
+
+  const handleSieveFocus = (index: number, field: 'c33Lower' | 'c33Upper') => {
+    const fieldKey = `${index}-${field}`;
+    const currentValue = sieves[index][field];
+    const displayValue = currentValue === '-' ? '-' : currentValue?.toString() || '';
+    
+    setFocusedField(fieldKey);
+    setTempValues(prev => ({ ...prev, [fieldKey]: displayValue }));
+  };
+
+  const handleSieveBlur = (index: number, field: 'c33Lower' | 'c33Upper') => {
+    const fieldKey = `${index}-${field}`;
+    const tempValue = tempValues[fieldKey];
+    
+    setFocusedField(null);
+    
+    // If empty or just whitespace, revert to previous value or '-'
+    if (!tempValue || tempValue.trim() === '') {
+      const newSieves = [...sieves];
+      // Keep the original value
+      setSieves(newSieves);
+      setTempValues(prev => {
+        const newTemp = { ...prev };
+        delete newTemp[fieldKey];
+        return newTemp;
+      });
+      return;
+    }
+    
+    // Otherwise, apply the value
+    const newSieves = [...sieves];
+    if (tempValue === '-') {
+      newSieves[index][field] = '-';
+    } else {
+      const numValue = parseFloat(tempValue);
+      if (!isNaN(numValue)) {
+        newSieves[index][field] = numValue;
+      } else {
+        // Invalid number, revert
+        newSieves[index][field] = sieves[index][field];
+      }
+    }
+    setSieves(newSieves);
+    
+    // Clear temp value
+    setTempValues(prev => {
+      const newTemp = { ...prev };
+      delete newTemp[fieldKey];
+      return newTemp;
+    });
+  };
+
+  const getSieveDisplayValue = (index: number, field: 'c33Lower' | 'c33Upper'): string => {
+    const fieldKey = `${index}-${field}`;
+    
+    // If this field is focused, show temp value
+    if (focusedField === fieldKey) {
+      return tempValues[fieldKey] || '';
+    }
+    
+    // Otherwise show the actual value
+    const value = sieves[index][field];
+    return value === '-' ? '-' : value?.toString() || '';
   };
 
   const handleSave = () => {
@@ -329,24 +405,26 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
 
               <View className="w-24 px-1">
                 <TextInput
-                  value={
-                    sieve.c33Lower === '-' ? '-' : sieve.c33Lower?.toString() || ''
-                  }
+                  value={getSieveDisplayValue(index, 'c33Lower')}
                   onChangeText={value => handleSieveChange(index, 'c33Lower', value)}
+                  onFocus={() => handleSieveFocus(index, 'c33Lower')}
+                  onBlur={() => handleSieveBlur(index, 'c33Lower')}
                   placeholder="-"
                   keyboardType="decimal-pad"
+                  selectTextOnFocus
                   className="bg-gray-50 border border-gray-300 rounded px-2 py-1 text-sm text-center"
                 />
               </View>
 
               <View className="w-24 px-1">
                 <TextInput
-                  value={
-                    sieve.c33Upper === '-' ? '-' : sieve.c33Upper?.toString() || ''
-                  }
+                  value={getSieveDisplayValue(index, 'c33Upper')}
                   onChangeText={value => handleSieveChange(index, 'c33Upper', value)}
+                  onFocus={() => handleSieveFocus(index, 'c33Upper')}
+                  onBlur={() => handleSieveBlur(index, 'c33Upper')}
                   placeholder="-"
                   keyboardType="decimal-pad"
+                  selectTextOnFocus
                   className="bg-gray-50 border border-gray-300 rounded px-2 py-1 text-sm text-center"
                 />
               </View>
