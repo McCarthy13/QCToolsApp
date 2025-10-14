@@ -42,6 +42,12 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
     setSalesRepPhone(formatPhoneNumber(value));
   };
 
+  const handleSpecificGravityChange = (value: string) => {
+    // Only allow numbers, decimal point, and dash
+    const filtered = value.replace(/[^0-9.\-]/g, '');
+    setSpecificGravityInput(filtered);
+  };
+
   const handleSave = () => {
     const parseNumber = (value: string) => {
       const parsed = parseFloat(value);
@@ -199,8 +205,8 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
               {renderTextInput(
                 'Specific Gravity',
                 specificGravityInput,
-                setSpecificGravityInput,
-                { keyboardType: 'decimal-pad', placeholder: 'e.g., 1.05 or 1.05-1.08' }
+                handleSpecificGravityChange,
+                { keyboardType: 'default', placeholder: 'e.g., 1.05 or 1.05-1.08' }
               )}
             </>,
             'Required fields marked with *'
