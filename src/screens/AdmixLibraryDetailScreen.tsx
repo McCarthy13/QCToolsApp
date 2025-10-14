@@ -139,10 +139,13 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
             </View>
 
-            {admix.specificGravity !== undefined && (
+            {admix.specificGravityDisplay && (
               <View className="px-3 py-1.5 rounded-full bg-gray-100">
                 <Text className="text-sm font-semibold text-gray-700">
-                  SG: {admix.specificGravity}
+                  SG: {admix.specificGravityDisplay}
+                  {admix.specificGravityDisplay.includes('-') && admix.specificGravity && (
+                    <Text className="text-xs text-gray-600"> (avg: {admix.specificGravity.toFixed(3)})</Text>
+                  )}
                 </Text>
               </View>
             )}

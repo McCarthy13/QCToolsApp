@@ -7,6 +7,7 @@ import { RootStackParamList } from '../navigation/types';
 import { RouteProp } from '@react-navigation/native';
 import { AdmixLibraryItem, AdmixClass } from '../types/admix-library';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
+import { parseSpecificGravity } from '../utils/specificGravityParser';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'AdmixLibraryAddEdit'>;
@@ -24,7 +25,7 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [name, setName] = useState(existingAdmix?.name || '');
   const [manufacturer, setManufacturer] = useState(existingAdmix?.manufacturer || '');
   const [admixClass, setAdmixClass] = useState<AdmixClass>(existingAdmix?.class || 'Water Reducer');
-  const [specificGravity, setSpecificGravity] = useState(existingAdmix?.specificGravity?.toString() || '');
+  const [specificGravityInput, setSpecificGravityInput] = useState(existingAdmix?.specificGravityDisplay || '');
   
   // Optional fields
   const [dosageRateRecommendations, setDosageRateRecommendations] = useState(existingAdmix?.dosageRateRecommendations || '');
@@ -47,11 +48,15 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
       return isNaN(parsed) ? undefined : parsed;
     };
 
+    // Parse specific gravity range/value
+    const sgParsed = parseSpecificGravity(specificGravityInput);
+
     const admixData: Omit<AdmixLibraryItem, 'id' | 'createdAt' | 'updatedAt'> = {
       name: name.trim(),
       manufacturer: manufacturer.trim(),
       class: admixClass,
-      specificGravity: parseNumber(specificGravity),
+      specificGravityDisplay: sgParsed.display || undefined,
+      specificGravity: sgParsed.calculated,
       dosageRateRecommendations: dosageRateRecommendations.trim() || undefined,
       costPerGallon: parseNumber(costPerGallon),
       percentWater: parseNumber(percentWater),
@@ -193,9 +198,9 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
               {renderTextInput(
                 'Specific Gravity',
-                specificGravity,
-                setSpecificGravity,
-                { required: true, keyboardType: 'decimal-pad', placeholder: 'e.g., 1.05' }
+                specificGravityInput,
+                setSpecificGravityInput,
+                { keyboardType: 'decimal-pad', placeholder: 'e.g., 1.05 or 1.05-1.08' }
               )}
             </>,
             'Required fields marked with *'

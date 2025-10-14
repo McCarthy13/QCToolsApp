@@ -240,10 +240,10 @@ const AdmixLibraryScreen: React.FC<Props> = ({ navigation }) => {
                       </Text>
                     </View>
 
-                    {admix.specificGravity !== undefined && (
+                    {admix.specificGravityDisplay && (
                       <View className="px-2 py-1 rounded bg-gray-100">
                         <Text className="text-xs font-medium text-gray-700">
-                          SG: {admix.specificGravity}
+                          SG: {admix.specificGravityDisplay}
                         </Text>
                       </View>
                     )}

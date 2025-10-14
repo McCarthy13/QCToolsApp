@@ -14,7 +14,8 @@ export interface AdmixLibraryItem {
   name: string;
   manufacturer: string;
   class: AdmixClass;
-  specificGravity?: number;
+  specificGravityDisplay?: string; // User input: "1.05" or "1.05-1.08"
+  specificGravity?: number; // Calculated value for use in calculations (midpoint if range)
   
   // Optional Properties
   dosageRateRecommendations?: string; // Long text from data sheets
