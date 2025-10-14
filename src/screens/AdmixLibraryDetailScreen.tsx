@@ -13,9 +13,16 @@ type Props = {
 
 const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { admixId } = route.params;
-  const { getAdmix, deleteAdmix, isAdmixComplete } = useAdmixLibraryStore();
+  const { getAdmix, deleteAdmix, isAdmixComplete, toggleFavorite, duplicateAdmix, trackAccess } = useAdmixLibraryStore();
   
   const admix = getAdmix(admixId);
+
+  // Track access when viewing
+  React.useEffect(() => {
+    if (admixId) {
+      trackAccess(admixId);
+    }
+  }, [admixId, trackAccess]);
 
   if (!admix) {
     return (
@@ -73,6 +80,27 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleEmailSalesRep = (email: string) => {
     Linking.openURL(`mailto:${email}`);
+  };
+
+  const handleDuplicate = () => {
+    const duplicated = duplicateAdmix(admixId);
+    if (duplicated) {
+      Alert.alert(
+        'Duplicate Created',
+        `"${duplicated.name}" has been created. Would you like to edit it now?`,
+        [
+          { text: 'Not Now', style: 'cancel' },
+          {
+            text: 'Edit',
+            onPress: () => navigation.replace('AdmixLibraryAddEdit', { admixId: duplicated.id }),
+          },
+        ]
+      );
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    toggleFavorite(admixId);
   };
 
   const renderField = (label: string, value: string | number | null | undefined, unit?: string) => {
@@ -265,21 +293,42 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
 
           {/* Action Buttons */}
-          <View className="flex-row gap-3 mt-6 mb-8">
-            <Pressable
-              onPress={handleEdit}
-              className="flex-1 bg-blue-600 rounded-lg py-4 items-center active:bg-blue-700 flex-row justify-center"
-            >
-              <Ionicons name="pencil" size={20} color="white" />
-              <Text className="text-white text-base font-semibold ml-2">Edit</Text>
-            </Pressable>
+          <View className="gap-3 mt-6 mb-8">
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={handleEdit}
+                className="flex-1 bg-blue-600 rounded-lg py-4 items-center active:bg-blue-700 flex-row justify-center"
+              >
+                <Ionicons name="pencil" size={20} color="white" />
+                <Text className="text-white text-base font-semibold ml-2">Edit</Text>
+              </Pressable>
 
-            <Pressable
-              onPress={handleDelete}
-              className="bg-red-600 rounded-lg px-6 py-4 items-center active:bg-red-700 flex-row"
-            >
-              <Ionicons name="trash" size={20} color="white" />
-            </Pressable>
+              <Pressable
+                onPress={handleToggleFavorite}
+                className={`rounded-lg px-6 py-4 items-center flex-row ${
+                  admix.isFavorite ? 'bg-yellow-500 active:bg-yellow-600' : 'bg-gray-400 active:bg-gray-500'
+                }`}
+              >
+                <Ionicons name={admix.isFavorite ? "star" : "star-outline"} size={20} color="white" />
+              </Pressable>
+            </View>
+
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={handleDuplicate}
+                className="flex-1 bg-green-600 rounded-lg py-4 items-center active:bg-green-700 flex-row justify-center"
+              >
+                <Ionicons name="copy" size={20} color="white" />
+                <Text className="text-white text-base font-semibold ml-2">Duplicate</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleDelete}
+                className="bg-red-600 rounded-lg px-6 py-4 items-center active:bg-red-700 flex-row"
+              >
+                <Ionicons name="trash" size={20} color="white" />
+              </Pressable>
+            </View>
           </View>
         </View>
       </ScrollView>
