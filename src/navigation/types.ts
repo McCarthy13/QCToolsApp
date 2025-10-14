@@ -65,4 +65,7 @@ export type RootStackParamList = {
   AggregateLibrary: undefined;
   AggregateLibraryDetail: { aggregateId: string };
   AggregateLibraryAddEdit: { aggregateId?: string };
+  AdmixLibrary: undefined;
+  AdmixLibraryDetail: { admixId: string };
+  AdmixLibraryAddEdit: { admixId?: string };
 };

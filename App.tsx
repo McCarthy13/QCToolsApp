@@ -29,6 +29,9 @@ import GradationAddEditAggregateScreen from "./src/screens/GradationAddEditAggre
 import AggregateLibraryScreen from "./src/screens/AggregateLibraryScreen";
 import AggregateLibraryDetailScreen from "./src/screens/AggregateLibraryDetailScreen";
 import AggregateLibraryAddEditScreen from "./src/screens/AggregateLibraryAddEditScreen";
+import AdmixLibraryScreen from "./src/screens/AdmixLibraryScreen";
+import AdmixLibraryDetailScreen from "./src/screens/AdmixLibraryDetailScreen";
+import AdmixLibraryAddEditScreen from "./src/screens/AdmixLibraryAddEditScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -493,6 +496,37 @@ export default function App() {
               component={AggregateLibraryAddEditScreen}
               options={({ route }) => ({
                 title: route.params?.aggregateId ? "Edit Aggregate" : "Add Aggregate",
+              })}
+            />
+            <Stack.Screen
+              name="AdmixLibrary"
+              component={AdmixLibraryScreen}
+              options={({ navigation }) => ({
+                title: "Admix Library",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="AdmixLibraryDetail"
+              component={AdmixLibraryDetailScreen}
+              options={({ navigation }) => ({
+                title: "Admixture Details",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="AdmixLibraryAddEdit"
+              component={AdmixLibraryAddEditScreen}
+              options={({ route }) => ({
+                title: route.params?.admixId ? "Edit Admixture" : "Add Admixture",
               })}
             />
           </Stack.Navigator>

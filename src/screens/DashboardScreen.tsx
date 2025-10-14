@@ -66,6 +66,15 @@ const tools: Tool[] = [
     route: 'AggregateLibrary',
   },
   {
+    id: 'admix-library',
+    name: 'Admix Library',
+    description: 'Manage admixture products and dosage information',
+    icon: 'water',
+    color: '#0891B2',
+    bgColor: '#ECFEFF',
+    route: 'AdmixLibrary',
+  },
+  {
     id: 'strand-library',
     name: 'Strand Library',
     description: 'Manage strand definitions and material properties',
