@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdmixLibraryStore } from '../state/admixLibraryStore';
+import { useContactsStore } from '../state/contactsStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { RouteProp } from '@react-navigation/native';
@@ -17,6 +18,7 @@ type Props = {
 const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const { admixId } = route.params;
   const { getAdmix, addAdmix, updateAdmix } = useAdmixLibraryStore();
+  const { getAllContacts } = useContactsStore();
   
   const isEditing = !!admixId;
   const existingAdmix = isEditing ? getAdmix(admixId) : undefined;
@@ -38,6 +40,18 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [salesRepEmail, setSalesRepEmail] = useState(existingAdmix?.salesRepEmail || '');
   const [notes, setNotes] = useState(existingAdmix?.notes || '');
 
+  // Contact picker modal
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  
+  // Quick-add contact modal
+  const [showQuickAddContact, setShowQuickAddContact] = useState(false);
+  const [quickContactName, setQuickContactName] = useState('');
+  const [quickContactCompany, setQuickContactCompany] = useState('');
+  const [quickContactRole, setQuickContactRole] = useState('');
+  const [quickContactPhone, setQuickContactPhone] = useState('');
+  const [quickContactEmail, setQuickContactEmail] = useState('');
+  const [quickContactNotes, setQuickContactNotes] = useState('');
+
   const handlePhoneChange = (value: string) => {
     setSalesRepPhone(formatPhoneNumber(value));
   };
@@ -46,6 +60,53 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
     // Only allow numbers, decimal point, and dash
     const filtered = value.replace(/[^0-9.\-]/g, '');
     setSpecificGravityInput(filtered);
+  };
+
+  const handleSelectContact = (contactId: string) => {
+    const { getContact } = useContactsStore.getState();
+    const contact = getContact(contactId);
+    if (contact) {
+      setSalesRepName(contact.name);
+      setSalesRepPhone(contact.phone || '');
+      setSalesRepEmail(contact.email || '');
+      setShowContactPicker(false);
+    }
+  };
+
+  const handleQuickAddContact = () => {
+    const { addContact } = useContactsStore.getState();
+    
+    if (!quickContactName.trim()) {
+      return; // Name is required
+    }
+
+    const newContact = {
+      id: Date.now().toString(),
+      name: quickContactName.trim(),
+      company: quickContactCompany.trim() || undefined,
+      role: quickContactRole.trim() || undefined,
+      phone: quickContactPhone.trim() || undefined,
+      email: quickContactEmail.trim() || undefined,
+      notes: quickContactNotes.trim() || undefined,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    addContact(newContact);
+
+    // Auto-fill the sales rep fields with the new contact
+    setSalesRepName(newContact.name);
+    setSalesRepPhone(newContact.phone || '');
+    setSalesRepEmail(newContact.email || '');
+
+    // Clear modal fields and close
+    setQuickContactName('');
+    setQuickContactCompany('');
+    setQuickContactRole('');
+    setQuickContactPhone('');
+    setQuickContactEmail('');
+    setQuickContactNotes('');
+    setShowQuickAddContact(false);
   };
 
   const handleSave = () => {
@@ -276,6 +337,24 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
           {renderSection(
             'Sales Representative',
             <>
+              <View className="flex-row gap-2 mb-4">
+                <Pressable
+                  onPress={() => setShowContactPicker(true)}
+                  className="flex-1 bg-blue-50 border-2 border-blue-600 rounded-lg py-3 px-4 flex-row items-center justify-center active:bg-blue-100"
+                >
+                  <Ionicons name="people" size={20} color="#2563eb" />
+                  <Text className="text-blue-700 font-semibold ml-2">Select Contact</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setShowQuickAddContact(true)}
+                  className="flex-1 bg-green-50 border-2 border-green-600 rounded-lg py-3 px-4 flex-row items-center justify-center active:bg-green-100"
+                >
+                  <Ionicons name="person-add" size={20} color="#16a34a" />
+                  <Text className="text-green-700 font-semibold ml-2">Quick Add</Text>
+                </Pressable>
+              </View>
+
               {renderTextInput(
                 'Name',
                 salesRepName,
@@ -341,6 +420,145 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Contact Picker Modal */}
+      <Modal
+        visible={showContactPicker}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowContactPicker(false)}
+      >
+        <View className="flex-1 bg-gray-50">
+          <View className="bg-white p-4 border-b border-gray-200 flex-row items-center justify-between">
+            <Text className="text-xl font-bold text-gray-900">Select Contact</Text>
+            <Pressable onPress={() => setShowContactPicker(false)}>
+              <Ionicons name="close" size={28} color="#111827" />
+            </Pressable>
+          </View>
+
+          <ScrollView className="flex-1">
+            {getAllContacts().length === 0 ? (
+              <View className="items-center justify-center p-8 mt-20">
+                <Ionicons name="people-outline" size={64} color="#9ca3af" />
+                <Text className="text-lg text-gray-600 mt-4 text-center">
+                  No contacts yet
+                </Text>
+                <Text className="text-sm text-gray-500 mt-2 text-center">
+                  Add contacts first to select them here
+                </Text>
+              </View>
+            ) : (
+              <View className="p-4 gap-3">
+                {getAllContacts().map(contact => (
+                  <Pressable
+                    key={contact.id}
+                    onPress={() => handleSelectContact(contact.id)}
+                    className="bg-white rounded-lg p-4 shadow-sm active:bg-gray-50"
+                  >
+                    <Text className="text-lg font-semibold text-gray-800">{contact.name}</Text>
+                    {contact.company && (
+                      <Text className="text-sm text-gray-500 mt-0.5">{contact.company}</Text>
+                    )}
+                    {contact.role && (
+                      <Text className="text-xs text-gray-500 mt-0.5">{contact.role}</Text>
+                    )}
+                    {(contact.phone || contact.email) && (
+                      <View className="flex-row flex-wrap gap-3 mt-2 pt-2 border-t border-gray-100">
+                        {contact.phone && (
+                          <Text className="text-xs text-gray-600">{contact.phone}</Text>
+                        )}
+                        {contact.email && (
+                          <Text className="text-xs text-gray-600">{contact.email}</Text>
+                        )}
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Quick Add Contact Modal */}
+      <Modal
+        visible={showQuickAddContact}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowQuickAddContact(false)}
+      >
+        <KeyboardAvoidingView 
+          className="flex-1 bg-gray-50"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View className="bg-white p-4 border-b border-gray-200 flex-row items-center justify-between">
+            <Text className="text-xl font-bold text-gray-900">Quick Add Contact</Text>
+            <Pressable onPress={() => setShowQuickAddContact(false)}>
+              <Ionicons name="close" size={28} color="#111827" />
+            </Pressable>
+          </View>
+
+          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+            <View className="p-4">
+              {renderTextInput('Name', quickContactName, setQuickContactName, {
+                required: true,
+                placeholder: 'e.g., John Smith'
+              })}
+
+              {renderTextInput('Company', quickContactCompany, setQuickContactCompany, {
+                placeholder: 'e.g., BASF Construction Chemicals'
+              })}
+
+              {renderTextInput('Role', quickContactRole, setQuickContactRole, {
+                placeholder: 'e.g., Sales Representative'
+              })}
+
+              {renderTextInput('Phone', quickContactPhone, (value) => {
+                setQuickContactPhone(formatPhoneNumber(value));
+              }, {
+                keyboardType: 'phone-pad',
+                placeholder: '(555) 123-4567'
+              })}
+
+              {renderTextInput('Email', quickContactEmail, setQuickContactEmail, {
+                keyboardType: 'email-address',
+                placeholder: 'e.g., john.smith@company.com',
+                autoCapitalize: 'none'
+              })}
+
+              {renderTextInput('Notes', quickContactNotes, setQuickContactNotes, {
+                multiline: true,
+                placeholder: 'Additional information...'
+              })}
+
+              <Pressable
+                onPress={handleQuickAddContact}
+                disabled={!quickContactName.trim()}
+                className={`rounded-lg py-4 items-center ${
+                  quickContactName.trim()
+                    ? 'bg-green-600 active:bg-green-700'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <Text className={`text-base font-semibold ${
+                  quickContactName.trim() ? 'text-white' : 'text-gray-500'
+                }`}>
+                  Add Contact & Use
+                </Text>
+              </Pressable>
+
+              <View className="bg-blue-50 rounded-lg p-4 border border-blue-200 mt-4">
+                <View className="flex-row items-start">
+                  <Ionicons name="information-circle" size={20} color="#3b82f6" />
+                  <Text className="flex-1 text-xs text-blue-700 ml-2">
+                    This will save the contact and automatically fill in the sales representative fields above.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
