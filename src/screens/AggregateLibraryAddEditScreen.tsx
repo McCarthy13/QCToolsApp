@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAggregateLibraryStore } from '../state/aggregateLibraryStore';
@@ -6,6 +6,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { RouteProp } from '@react-navigation/native';
 import { AggregateLibraryItem } from '../types/aggregate-library';
+import { VoiceTextInput } from '../components/VoiceTextInput';
+import { ValidationWarnings } from '../components/ValidationWarnings';
+import { validateAggregateData } from '../utils/dataValidation';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'AggregateLibraryAddEdit'>;
@@ -59,6 +62,24 @@ const AggregateLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) =
   const [lastTestDate, setLastTestDate] = useState(existingAggregate?.lastTestDate || '');
   const [certifications, setCertifications] = useState(existingAggregate?.certifications || '');
   const [notes, setNotes] = useState(existingAggregate?.notes || '');
+
+  // Real-time validation warnings
+  const validationWarnings = useMemo(() => {
+    const parseNumber = (value: string) => {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
+    return validateAggregateData({
+      dryRoddedUnitWeight: parseNumber(dryRoddedUnitWeight),
+      percentVoids: parseNumber(percentVoids),
+      absorption: parseNumber(absorption),
+      sgBulkSSD: parseNumber(sgBulkSSD),
+      sgBulkOvenDry: parseNumber(sgBulkDry),
+      sgApparent: parseNumber(sgApparent),
+      finenessModulus: parseNumber(finenessModulus),
+    });
+  }, [dryRoddedUnitWeight, percentVoids, absorption, sgBulkSSD, sgBulkDry, sgApparent, finenessModulus]);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -335,6 +356,13 @@ const AggregateLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) =
             </>
           )}
 
+          {/* Validation Warnings */}
+          {validationWarnings.length > 0 && (
+            <View className="mb-4">
+              <ValidationWarnings warnings={validationWarnings} />
+            </View>
+          )}
+
           {/* Performance Properties */}
           {renderSection(
             'Performance Properties',
@@ -459,12 +487,15 @@ const AggregateLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) =
                 { placeholder: 'e.g., ASTM C33, AASHTO M6' }
               )}
               
-              {renderTextInput(
-                'Notes',
-                notes,
-                setNotes,
-                { placeholder: 'Additional notes or comments', multiline: true }
-              )}
+              <VoiceTextInput
+                label="Notes"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                enableVoiceInput
+                placeholder="Additional notes or comments"
+                autoCapitalize="sentences"
+              />
             </>
           )}
 

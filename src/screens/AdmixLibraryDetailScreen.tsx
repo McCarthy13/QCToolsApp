@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, Alert, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Pressable, Alert, Linking, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdmixLibraryStore } from '../state/admixLibraryStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,6 +14,8 @@ type Props = {
 const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { admixId } = route.params;
   const { getAdmix, deleteAdmix, isAdmixComplete, toggleFavorite, duplicateAdmix, trackAccess } = useAdmixLibraryStore();
+  
+  const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
   
   const admix = getAdmix(admixId);
 
@@ -282,6 +284,33 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             !hasSalesRepInfo
           )}
 
+          {/* Photo Gallery */}
+          {admix.photoUris && admix.photoUris.length > 0 && (
+            <View className="mb-4">
+              <Text className="text-lg font-semibold text-gray-900 mb-3">Photos</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                className="flex-row"
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {admix.photoUris.map((uri, index) => (
+                  <Pressable
+                    key={index}
+                    onPress={() => setViewingPhotoIndex(index)}
+                    className="relative active:opacity-80"
+                  >
+                    <Image
+                      source={{ uri }}
+                      className="w-32 h-32 rounded-lg"
+                      resizeMode="cover"
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Metadata */}
           <View className="bg-gray-100 rounded-lg p-3 mt-2">
             <Text className="text-xs text-gray-600">
@@ -332,6 +361,37 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Photo Viewer Modal */}
+      {viewingPhotoIndex !== null && admix.photoUris && (
+        <Modal
+          visible={true}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setViewingPhotoIndex(null)}
+        >
+          <View className="flex-1 bg-black">
+            <Pressable
+              onPress={() => setViewingPhotoIndex(null)}
+              className="absolute top-12 right-4 z-10 bg-black/50 rounded-full p-2"
+            >
+              <Ionicons name="close" size={32} color="white" />
+            </Pressable>
+            
+            <Image
+              source={{ uri: admix.photoUris[viewingPhotoIndex] }}
+              className="flex-1"
+              resizeMode="contain"
+            />
+            
+            <View className="absolute bottom-8 left-0 right-0 items-center">
+              <Text className="text-white text-sm bg-black/50 px-4 py-2 rounded-full">
+                {viewingPhotoIndex + 1} / {admix.photoUris.length}
+              </Text>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };

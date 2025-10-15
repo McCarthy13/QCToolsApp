@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAdmixLibraryStore } from '../state/admixLibraryStore';
@@ -9,6 +9,10 @@ import { RouteProp } from '@react-navigation/native';
 import { AdmixLibraryItem, AdmixClass } from '../types/admix-library';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
 import { parseSpecificGravity } from '../utils/specificGravityParser';
+import { VoiceTextInput } from '../components/VoiceTextInput';
+import { PhotoAttachments } from '../components/PhotoAttachments';
+import { ValidationWarnings } from '../components/ValidationWarnings';
+import { validateAdmixData } from '../utils/dataValidation';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'AdmixLibraryAddEdit'>;
@@ -39,6 +43,7 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [salesRepPhone, setSalesRepPhone] = useState(existingAdmix?.salesRepPhone || '');
   const [salesRepEmail, setSalesRepEmail] = useState(existingAdmix?.salesRepEmail || '');
   const [notes, setNotes] = useState(existingAdmix?.notes || '');
+  const [photoUris, setPhotoUris] = useState<string[]>(existingAdmix?.photoUris || []);
 
   // Contact picker modal
   const [showContactPicker, setShowContactPicker] = useState(false);
@@ -109,6 +114,22 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
     setShowQuickAddContact(false);
   };
 
+  // Real-time validation warnings
+  const validationWarnings = useMemo(() => {
+    const parseNumber = (value: string) => {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
+    const sgParsed = parseSpecificGravity(specificGravityInput);
+
+    return validateAdmixData({
+      specificGravity: sgParsed.calculated,
+      costPerGallon: parseNumber(costPerGallon),
+      percentWater: parseNumber(percentWater),
+    });
+  }, [specificGravityInput, costPerGallon, percentWater]);
+
   const handleSave = () => {
     const parseNumber = (value: string) => {
       const parsed = parseFloat(value);
@@ -133,6 +154,7 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
       salesRepPhone: salesRepPhone.trim() || undefined,
       salesRepEmail: salesRepEmail.trim() || undefined,
       notes: notes.trim() || undefined,
+      photoUris: photoUris.length > 0 ? photoUris : undefined,
     };
 
     if (isEditing) {
@@ -277,15 +299,15 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
           {renderSection(
             'Product Information',
             <>
-              {renderTextInput(
-                'Dosage Rate Recommendations',
-                dosageRateRecommendations,
-                setDosageRateRecommendations,
-                { 
-                  multiline: true, 
-                  placeholder: 'Paste text from technical data sheet...\ne.g., "2-10 oz/cwt (130-650 mL/100 kg) of cementitious material"'
-                }
-              )}
+              <VoiceTextInput
+                label="Dosage Rate Recommendations"
+                value={dosageRateRecommendations}
+                onChangeText={setDosageRateRecommendations}
+                multiline
+                enableVoiceInput
+                placeholder="Paste text from technical data sheet...&#10;e.g., &quot;2-10 oz/cwt (130-650 mL/100 kg) of cementitious material&quot;"
+                autoCapitalize="sentences"
+              />
 
               {renderTextInput(
                 'Cost Per Gallon',
@@ -302,6 +324,13 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
               )}
             </>,
             'Optional product details'
+          )}
+
+          {/* Validation Warnings */}
+          {validationWarnings.length > 0 && (
+            <View className="mb-4">
+              <ValidationWarnings warnings={validationWarnings} />
+            </View>
           )}
 
           {/* Technical Documentation */}
@@ -387,16 +416,29 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
           {renderSection(
             'Additional Notes',
             <>
-              {renderTextInput(
-                'Notes',
-                notes,
-                setNotes,
-                { 
-                  multiline: true, 
-                  placeholder: 'Any additional information...'
-                }
-              )}
+              <VoiceTextInput
+                label="Notes"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                enableVoiceInput
+                placeholder="Any additional information..."
+                autoCapitalize="sentences"
+              />
             </>
+          )}
+
+          {/* Photo Attachments */}
+          {renderSection(
+            'Photo Attachments',
+            <>
+              <PhotoAttachments
+                photoUris={photoUris}
+                onPhotosChange={setPhotoUris}
+                maxPhotos={10}
+              />
+            </>,
+            'Attach product photos, labels, or documentation'
           )}
 
           {/* Save Button */}
@@ -526,10 +568,15 @@ const AdmixLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
                 autoCapitalize: 'none'
               })}
 
-              {renderTextInput('Notes', quickContactNotes, setQuickContactNotes, {
-                multiline: true,
-                placeholder: 'Additional information...'
-              })}
+              <VoiceTextInput
+                label="Notes"
+                value={quickContactNotes}
+                onChangeText={setQuickContactNotes}
+                multiline
+                enableVoiceInput
+                placeholder="Additional information..."
+                autoCapitalize="sentences"
+              />
 
               <Pressable
                 onPress={handleQuickAddContact}

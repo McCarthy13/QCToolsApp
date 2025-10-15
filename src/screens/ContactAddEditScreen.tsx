@@ -7,6 +7,7 @@ import { RootStackParamList } from '../navigation/types';
 import { RouteProp } from '@react-navigation/native';
 import { ContactItem } from '../types/contacts';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
+import { VoiceTextInput } from '../components/VoiceTextInput';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ContactAddEdit'>;
@@ -143,10 +144,15 @@ const ContactAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
           <View className="mb-6">
             <Text className="text-lg font-semibold text-gray-900 mb-3">Additional Notes</Text>
             
-            {renderTextInput('Notes', notes, setNotes, { 
-              multiline: true,
-              placeholder: 'Any additional information...'
-            })}
+            <VoiceTextInput
+              label="Notes"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              enableVoiceInput
+              placeholder="Any additional information..."
+              autoCapitalize="sentences"
+            />
           </View>
 
           {/* Save Button */}
