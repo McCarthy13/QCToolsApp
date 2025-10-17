@@ -266,7 +266,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           </Text>
           <CrossSection8048
             scale={9}
-            activeStrands={activeStrandIndices || [1, 2, 3, 4, 5, 6, 7]}
+            activeStrands={activeStrandIndices || undefined}
             offcutSide={config.offcutSide || null}
             productWidth={config.productWidth}
             slippages={slippages}

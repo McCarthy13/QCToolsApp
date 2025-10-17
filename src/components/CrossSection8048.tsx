@@ -26,7 +26,7 @@ export default function CrossSection8048({
   scale = 10, // Default: 10 pixels per inch
   showDimensions = false,
   highlightedStrand = null,
-  activeStrands = [1, 2, 3, 4, 5, 6, 7],
+  activeStrands, // No default - if undefined, all strands are active
   offcutSide = null,
   productWidth,
   slippages = [],
@@ -48,7 +48,7 @@ export default function CrossSection8048({
   const CORE_SPACING = 1.9375; // 1 15/16"
   
   // Strand positions (x from left edge, y from bottom)
-  // Use custom coordinates if provided, otherwise use defaults
+  // Use custom coordinates if provided, otherwise use defaults for 7-strand pattern
   const STRAND_POSITIONS = strandCoordinates ? 
     strandCoordinates.map((coord, index) => ({
       x: coord.x,
@@ -101,7 +101,8 @@ export default function CrossSection8048({
     ...strand,
     displayX: (strand.x * scale) - xOffset,
     displayY: displayHeight - (strand.y * scale), // Flip y for SVG coordinates
-    isActive: activeStrands.includes(strand.id),
+    // If activeStrands is undefined, all strands are active (full-width product)
+    isActive: activeStrands ? activeStrands.includes(strand.id) : true,
     isHighlighted: highlightedStrand === strand.id,
   })).filter(strand => {
     // Only show strands within the visible area
