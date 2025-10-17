@@ -89,24 +89,31 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     
     const totalCount = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
     
-    // Create array of strands with their sizes - default to "0"
-    const strands: StrandSlippage[] = [];
-    for (let i = 1; i <= totalCount; i++) {
-      const strandSize = selectedPattern.strandSizes?.[i - 1];
-      const isActive = activeStrandIndices === null || activeStrandIndices.includes(i - 1);
-      
-      // Only include active strands
-      if (isActive) {
-        strands.push({
-          strandId: i.toString(),
-          leftSlippage: "0",
-          rightSlippage: "0",
-          leftExceedsOne: false,
-          rightExceedsOne: false,
-          size: strandSize,
-        });
-      }
+    // Determine which strands are active based on activeStrandIndices
+    let activeStrands: number[];
+    
+    if (activeStrandIndices === null) {
+      // No filtering - all strands are active
+      activeStrands = Array.from({ length: totalCount }, (_, i) => i + 1);
+    } else {
+      // Convert 0-based indices to 1-based strand numbers
+      activeStrands = activeStrandIndices.map(idx => idx + 1);
     }
+    
+    // Create array of strands with their sizes - only for active strands
+    const strands: StrandSlippage[] = [];
+    for (const strandNum of activeStrands) {
+      const strandSize = selectedPattern.strandSizes?.[strandNum - 1];
+      strands.push({
+        strandId: strandNum.toString(),
+        leftSlippage: "0",
+        rightSlippage: "0",
+        leftExceedsOne: false,
+        rightExceedsOne: false,
+        size: strandSize,
+      });
+    }
+    
     return strands;
   }, [selectedPattern, activeStrandIndices]);
 
@@ -217,9 +224,10 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
           </Text>
           <CrossSection8048
             scale={6}
-            activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : [1, 2, 3, 4, 5, 6, 7]}
+            activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
             offcutSide={config.offcutSide || null}
             productWidth={config.productWidth}
+            strandCoordinates={selectedPattern?.strandCoordinates}
           />
         </View>
 

@@ -271,6 +271,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             productWidth={config.productWidth}
             slippages={slippages}
             showSlippageValues={true}
+            strandCoordinates={selectedPattern?.strandCoordinates}
           />
         </View>
 

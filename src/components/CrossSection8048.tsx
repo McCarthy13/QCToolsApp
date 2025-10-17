@@ -19,6 +19,7 @@ interface CrossSection8048Props {
   productWidth?: number;
   slippages?: StrandSlippage[]; // Optional slippage data to display
   showSlippageValues?: boolean; // Whether to show E1/E2 labels
+  strandCoordinates?: Array<{ x: number; y: number }>; // Optional custom strand positions
 }
 
 export default function CrossSection8048({
@@ -30,6 +31,7 @@ export default function CrossSection8048({
   productWidth,
   slippages = [],
   showSlippageValues = false,
+  strandCoordinates,
 }: CrossSection8048Props) {
   // Dimensions in inches
   const FULL_WIDTH = 48;
@@ -46,15 +48,22 @@ export default function CrossSection8048({
   const CORE_SPACING = 1.9375; // 1 15/16"
   
   // Strand positions (x from left edge, y from bottom)
-  const STRAND_POSITIONS = [
-    { x: 2, y: 2.125, id: 1 },
-    { x: 9.125, y: 2.125, id: 2 },
-    { x: 16.5625, y: 2.125, id: 3 },
-    { x: 24, y: 2.125, id: 4 },
-    { x: 31.4375, y: 2.125, id: 5 },
-    { x: 38.875, y: 2.125, id: 6 },
-    { x: 46, y: 2.125, id: 7 },
-  ];
+  // Use custom coordinates if provided, otherwise use defaults
+  const STRAND_POSITIONS = strandCoordinates ? 
+    strandCoordinates.map((coord, index) => ({
+      x: coord.x,
+      y: coord.y,
+      id: index + 1
+    })) : 
+    [
+      { x: 2, y: 2.125, id: 1 },
+      { x: 9.125, y: 2.125, id: 2 },
+      { x: 16.5625, y: 2.125, id: 3 },
+      { x: 24, y: 2.125, id: 4 },
+      { x: 31.4375, y: 2.125, id: 5 },
+      { x: 38.875, y: 2.125, id: 6 },
+      { x: 46, y: 2.125, id: 7 },
+    ];
   
   // Calculate display dimensions
   const displayWidth = productWidth ? productWidth * scale : FULL_WIDTH * scale;
