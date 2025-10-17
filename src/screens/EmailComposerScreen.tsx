@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { useAuthStore } from "../state/authStore";
-import { sendEmailViaGraphAPI } from "../api/microsoft-graph";
+import { 
+  sendEmailViaGraphAPI, 
+  authenticateWithMicrosoft, 
+  isAuthenticated 
+} from "../api/microsoft-graph";
 
 type EmailComposerScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -39,10 +43,63 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
   const [ccEmail, setCcEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isMicrosoftAuthenticated, setIsMicrosoftAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const fromEmail = currentUser?.email || "";
 
+  // Check Microsoft authentication status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    setIsCheckingAuth(true);
+    const authenticated = await isAuthenticated();
+    setIsMicrosoftAuthenticated(authenticated);
+    setIsCheckingAuth(false);
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    try {
+      setIsSending(true);
+      await authenticateWithMicrosoft();
+      setIsMicrosoftAuthenticated(true);
+      Alert.alert(
+        "Success",
+        "Successfully signed in with Microsoft. You can now send emails."
+      );
+    } catch (error: any) {
+      console.error("Microsoft sign-in error:", error);
+      Alert.alert(
+        "Sign In Failed",
+        error.message || "Unable to sign in with Microsoft. Please try again."
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleSend = async () => {
+    // Check if authenticated first
+    if (!isMicrosoftAuthenticated) {
+      Alert.alert(
+        "Authentication Required",
+        "Please sign in with your Microsoft account to send emails.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Sign In",
+            onPress: handleMicrosoftSignIn,
+          },
+        ]
+      );
+      return;
+    }
+
     // Validate recipient
     if (!toEmail.trim()) {
       Alert.alert("Missing Recipient", "Please enter a recipient email address.");
@@ -69,7 +126,7 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
 
       Alert.alert(
         "Email Sent Successfully",
-        "Your slippage report has been sent and will appear in your Outlook Sent folder.",
+        "Your report has been sent and will appear in your Outlook Sent folder.",
         [
           {
             text: "OK",
@@ -81,9 +138,10 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
       console.error("Email send error:", error);
       
       if (error.message?.includes("authentication") || error.message?.includes("token")) {
+        setIsMicrosoftAuthenticated(false);
         Alert.alert(
           "Authentication Required",
-          "Please sign in with your Microsoft account to send emails.",
+          "Your session has expired. Please sign in again.",
           [
             {
               text: "Cancel",
@@ -91,10 +149,7 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
             },
             {
               text: "Sign In",
-              onPress: () => {
-                // Navigate to Microsoft login - we'll implement this next
-                navigation.goBack();
-              },
+              onPress: handleMicrosoftSignIn,
             },
           ]
         );
@@ -121,17 +176,47 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          {/* From Field (Read-only) */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>From</Text>
-            <View style={styles.fromContainer}>
-              <Text style={styles.fromEmail}>{fromEmail}</Text>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                <Text style={styles.verifiedText}>Verified</Text>
-              </View>
+          {/* Microsoft Authentication Status */}
+          {isCheckingAuth ? (
+            <View style={styles.authCheckContainer}>
+              <ActivityIndicator color="#3B82F6" />
+              <Text style={styles.authCheckText}>Checking authentication...</Text>
             </View>
-          </View>
+          ) : !isMicrosoftAuthenticated ? (
+            <View style={styles.authRequiredContainer}>
+              <Ionicons name="alert-circle" size={48} color="#F59E0B" />
+              <Text style={styles.authRequiredTitle}>Microsoft Sign-In Required</Text>
+              <Text style={styles.authRequiredText}>
+                To send emails through your Outlook account, please sign in with Microsoft.
+              </Text>
+              <Pressable
+                style={styles.signInButton}
+                onPress={handleMicrosoftSignIn}
+                disabled={isSending}
+              >
+                {isSending ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-microsoft" size={20} color="white" />
+                    <Text style={styles.signInButtonText}>Sign in with Microsoft</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              {/* From Field (Read-only) */}
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>From</Text>
+                <View style={styles.fromContainer}>
+                  <Text style={styles.fromEmail}>{fromEmail}</Text>
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                    <Text style={styles.verifiedText}>Microsoft</Text>
+                  </View>
+                </View>
+              </View>
 
           {/* To Field */}
           <View style={styles.fieldContainer}>
@@ -231,6 +316,8 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </Pressable>
+            </>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -247,6 +334,55 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  authCheckContainer: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  authCheckText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  authRequiredContainer: {
+    padding: 32,
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#FED7AA",
+  },
+  authRequiredTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#92400E",
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  authRequiredText: {
+    fontSize: 14,
+    color: "#78350F",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  signInButton: {
+    backgroundColor: "#0078D4",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    minWidth: 200,
+  },
+  signInButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
   },
   fieldContainer: {
     marginBottom: 20,
