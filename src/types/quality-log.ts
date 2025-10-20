@@ -6,6 +6,8 @@ export type IssueStatus = 'Open' | 'In Progress' | 'Resolved' | 'Deferred' | 'Re
 
 export type IssueSeverity = 'Critical' | 'Major' | 'Minor' | 'Observation';
 
+export type AttachmentType = 'photo' | 'document' | 'slippage' | 'note';
+
 // Department Configuration (Admin-managed)
 export interface Department {
   id: string;
@@ -27,7 +29,61 @@ export interface IssueCode {
   updatedAt: number;
 }
 
-// Job/Piece being poured
+// Attachment for quality log entries
+export interface QualityLogAttachment {
+  id: string;
+  type: AttachmentType;
+  title?: string;
+  description?: string;
+  uri?: string; // For photos/documents
+  slippageData?: any; // Slippage identifier results
+  createdAt: number;
+}
+
+// Extruded Department Specific Entry
+export interface ExtrudedQualityEntry {
+  id: string;
+  jobNumber: string;
+  jobName?: string; // Auto-populated from job number
+  markNumber: string;
+  idNumber: string;
+  issueCodeId?: string;
+  issueCode?: number;
+  issueTitle?: string;
+  issueDescription: string;
+  attachments: QualityLogAttachment[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Quality Log Entry (Main record)
+export interface QualityLogEntry {
+  id: string;
+  department: DepartmentType;
+  date: number; // Date of the log entry
+  shift?: 'Day' | 'Night' | 'Weekend';
+  
+  // Department-specific entries
+  extrudedEntries?: ExtrudedQualityEntry[]; // For Extruded department
+  // We can add more department-specific arrays as needed:
+  // flexicoreEntries?: FlexicoreQualityEntry[];
+  // wallPanelEntries?: WallPanelQualityEntry[];
+  // precastEntries?: PrecastQualityEntry[];
+  
+  // Overall status/summary
+  overallStatus: 'Good' | 'Issues Found' | 'Critical Issues';
+  notes?: string;
+  
+  // Metadata
+  createdBy: string; // User email
+  createdAt: number;
+  updatedAt: number;
+  
+  // General attachments for the entire log
+  attachments?: QualityLogAttachment[];
+}
+
+// Legacy support - keep old interface for backward compatibility
 export interface ProductionItem {
   id: string;
   jobName: string;
@@ -40,33 +96,6 @@ export interface ProductionItem {
   department: DepartmentType;
 }
 
-// Quality Log Entry (Main record)
-export interface QualityLogEntry {
-  id: string;
-  department: DepartmentType;
-  date: number; // Date of the log entry
-  shift?: 'Day' | 'Night' | 'Weekend';
-  
-  // Production info
-  productionItems: ProductionItem[]; // Jobs/pieces poured that day
-  
-  // Issues found
-  issues: QualityIssue[];
-  
-  // Overall status/summary
-  overallStatus: 'Good' | 'Issues Found' | 'Critical Issues';
-  notes?: string;
-  
-  // Metadata
-  createdBy: string; // User email
-  createdAt: number;
-  updatedAt: number;
-  
-  // Photos
-  photoUris?: string[];
-}
-
-// Individual Quality Issue within a log entry
 export interface QualityIssue {
   id: string;
   issueCodeId: string; // References IssueCode
@@ -110,4 +139,12 @@ export interface QualityMetrics {
   averageIssuesPerLog: number;
   criticalIssueCount: number;
   resolutionRate: number; // % of issues resolved
+}
+
+// Job lookup database (mock for now - could be real API later)
+export interface JobLookup {
+  jobNumber: string;
+  jobName: string;
+  customer?: string;
+  location?: string;
 }

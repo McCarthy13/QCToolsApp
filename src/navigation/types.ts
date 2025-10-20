@@ -17,7 +17,11 @@ export type RootStackParamList = {
       topStrandPattern?: string;
       productWidth?: number;
       offcutSide?: 'L1' | 'L2';
-    }
+    };
+    // Quality log integration
+    fromQualityLog?: boolean;
+    qualityLogId?: string;
+    qualityEntryId?: string;
   };
   SlippageSummary: { 
     slippages: Array<{ 
@@ -39,6 +43,10 @@ export type RootStackParamList = {
       productWidth?: number;
       offcutSide?: 'L1' | 'L2';
     };
+    // Quality log integration
+    fromQualityLog?: boolean;
+    qualityLogId?: string;
+    qualityEntryId?: string;
   };
   SlippageHistory: undefined;
   EmailComposer: {
