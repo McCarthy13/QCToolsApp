@@ -35,6 +35,12 @@ import AdmixLibraryAddEditScreen from "./src/screens/AdmixLibraryAddEditScreen";
 import ContactsScreen from "./src/screens/ContactsScreen";
 import ContactDetailScreen from "./src/screens/ContactDetailScreen";
 import ContactAddEditScreen from "./src/screens/ContactAddEditScreen";
+import QualityLogDashboardScreen from "./src/screens/QualityLogDashboardScreen";
+import QualityLogListScreen from "./src/screens/QualityLogListScreen";
+import QualityLogDetailScreen from "./src/screens/QualityLogDetailScreen";
+import QualityLogAddEditScreen from "./src/screens/QualityLogAddEditScreen";
+import QualityLogMetricsScreen from "./src/screens/QualityLogMetricsScreen";
+import IssueCodeLibraryScreen from "./src/screens/IssueCodeLibraryScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -561,6 +567,73 @@ export default function App() {
               component={ContactAddEditScreen}
               options={({ route }) => ({
                 title: route.params?.contactId ? "Edit Contact" : "Add Contact",
+              })}
+            />
+            <Stack.Screen
+              name="QualityLogDashboard"
+              component={QualityLogDashboardScreen}
+              options={({ navigation }) => ({
+                title: "Quality Logs",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="QualityLogList"
+              component={QualityLogListScreen}
+              options={({ navigation, route }) => ({
+                title: `${route.params?.department} Logs`,
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="QualityLogDetail"
+              component={QualityLogDetailScreen}
+              options={({ navigation }) => ({
+                title: "Log Details",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="QualityLogAddEdit"
+              component={QualityLogAddEditScreen}
+              options={({ route }) => ({
+                title: route.params?.logId ? "Edit Log Entry" : "New Log Entry",
+              })}
+            />
+            <Stack.Screen
+              name="QualityLogMetrics"
+              component={QualityLogMetricsScreen}
+              options={({ navigation }) => ({
+                title: "Quality Metrics",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="IssueCodeLibrary"
+              component={IssueCodeLibraryScreen}
+              options={({ navigation }) => ({
+                title: "Issue Code Library",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
               })}
             />
           </Stack.Navigator>

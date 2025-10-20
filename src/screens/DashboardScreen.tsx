@@ -60,6 +60,15 @@ const tools: Tool[] = [
     route: 'AggregateGradation',
   },
   {
+    id: 'quality-logs',
+    name: 'Quality Logs',
+    description: 'Track quality issues and production logs by department',
+    icon: 'clipboard',
+    color: '#EC4899',
+    bgColor: '#FCE7F3',
+    route: 'QualityLogDashboard',
+  },
+  {
     id: 'aggregate-library',
     name: 'Aggregate Library',
     description: 'Comprehensive database of aggregate characteristics',

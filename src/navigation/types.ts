@@ -71,9 +71,10 @@ export type RootStackParamList = {
   Contacts: undefined;
   ContactDetail: { contactId: string };
   ContactAddEdit: { contactId?: string };
-  QualityLogs: undefined;
-  QualityLogEntry: { logId?: string; department?: string };
+  QualityLogDashboard: undefined;
+  QualityLogList: { department: string };
   QualityLogDetail: { logId: string };
+  QualityLogAddEdit: { logId?: string; department?: string };
   QualityLogMetrics: undefined;
-  IssueCodeManagement: undefined;
+  IssueCodeLibrary: undefined;
 };
