@@ -61,7 +61,12 @@ export async function parseScheduleImage(
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
 
-IMPORTANT INSTRUCTIONS:
+CRITICAL INSTRUCTIONS:
+- IGNORE all highlighter marks, pen markups, handwritten notes, or any annotations on the paper
+- ONLY extract the PRINTED/TYPED text from the original schedule
+- Do NOT try to interpret what the markups mean
+- Focus ONLY on: Job Number, ID Number, and Mark Number from the printed schedule
+
 - Create ONE entry per piece (if there are 5 pieces with marks M1-M5, create 5 separate entries)
 - Extract the ID number from the "ID" column for each piece
 - Extract the Mark number (M1, M2, M3, etc) individually for each piece
@@ -69,15 +74,15 @@ IMPORTANT INSTRUCTIONS:
 - Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
 
 For each INDIVIDUAL piece in the schedule, extract:
-- Job Number (CRITICAL)
-- Job Name (if visible)
-- ID Number (from ID column - CRITICAL)
+- Job Number (CRITICAL - from printed schedule)
+- Job Name (if visible in printed text)
+- ID Number (from ID column - CRITICAL - ignore any handwritten IDs)
 - Mark Number (single mark like M1, M2, not ranges like M1-M5)
 - Product Type (beam, slab, column, etc.)
 - Concrete Yards (for this specific piece)
 - Mix Design (PSI rating if visible)
 - Scheduled Time
-- Any special notes or instructions
+- Any special notes FROM PRINTED TEXT ONLY
 
 Return ONLY a valid JSON object with this structure:
 {
@@ -92,7 +97,7 @@ Return ONLY a valid JSON object with this structure:
       "concreteYards": 2.5,
       "mixDesign": "6000 PSI",
       "scheduledTime": "8:00 AM",
-      "notes": "any special instructions",
+      "notes": "any special instructions FROM PRINTED TEXT",
       "confidence": 0.95
     },
     {
@@ -118,6 +123,8 @@ CRITICAL RULES:
 - If 5 pieces share the same job but have different marks (M1-M5), create 5 entries
 - Confidence should be 0-1 (how certain you are about the data)
 - IGNORE any form/bed/line information - do not include formBed field
+- IGNORE ALL HIGHLIGHTER, PEN MARKS, AND HANDWRITTEN ANNOTATIONS
+- Extract ONLY the original printed/typed schedule data
 - Be precise with numbers (job numbers, ID numbers, yards)`;
 
     // Call AI with vision
