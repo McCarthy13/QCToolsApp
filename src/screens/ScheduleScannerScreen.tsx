@@ -6,7 +6,7 @@
 
 import React, { useState, useRef } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -20,6 +20,7 @@ type ScannerRouteProp = RouteProp<RootStackParamList, 'ScheduleScanner'>;
 export default function ScheduleScannerScreen() {
   const navigation = useNavigation<ScannerNavigationProp>();
   const route = useRoute<ScannerRouteProp>();
+  const insets = useSafeAreaInsets();
   
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
@@ -129,7 +130,7 @@ export default function ScheduleScannerScreen() {
           enableTorch={flash}
         >
           {/* Top Bar */}
-          <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+          <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
               <Pressable
                 onPress={() => navigation.goBack()}
@@ -149,10 +150,10 @@ export default function ScheduleScannerScreen() {
                 <Ionicons name={flash ? 'flash' : 'flash-off'} size={24} color="#fff" />
               </Pressable>
             </View>
-          </SafeAreaView>
+          </View>
 
           {/* Instructions */}
-          <View style={{ position: 'absolute', top: 100, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }}>
+          <View style={{ position: 'absolute', top: insets.top + 80, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }}>
             <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 12 }}>
               <Text style={{ color: '#fff', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
                 Position the paper schedule within the frame. Ensure all text is visible and well-lit.
@@ -166,7 +167,7 @@ export default function ScheduleScannerScreen() {
           </View>
 
           {/* Bottom Controls */}
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10, paddingBottom: 40 }}>
+          <View style={{ position: 'absolute', bottom: insets.bottom, left: 0, right: 0, zIndex: 10, paddingBottom: 40 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 32 }}>
               <View style={{ width: 64 }} />
               
