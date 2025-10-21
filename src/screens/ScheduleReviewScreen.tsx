@@ -126,12 +126,13 @@ export default function ScheduleReviewScreen() {
         scheduledTime: entry.scheduledTime || undefined,
         jobNumber: entry.jobNumber,
         jobName: entry.jobName || undefined,
+        idNumber: entry.idNumber || undefined,
         markNumbers: entry.markNumber || undefined, // Single mark
         pieceCount: 1, // Always 1 since we have individual entries
         productType: entry.productType || undefined,
         concreteYards: entry.concreteYards || undefined,
         mixDesign: entry.mixDesign || undefined,
-        notes: entry.notes ? `ID: ${entry.idNumber || 'N/A'} | ${entry.notes}` : `ID: ${entry.idNumber || 'N/A'}`,
+        notes: entry.notes || undefined,
         status: "Scheduled",
         foreman: undefined,
         createdBy: "Scanner",
@@ -267,6 +268,18 @@ export default function ScheduleReviewScreen() {
                 jobNumberLabel="Job Number"
                 jobNameLabel="Job Name"
                 theme="dark"
+              />
+            </View>
+
+            {/* ID Number */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>ID Number</Text>
+              <TextInput
+                value={entry.idNumber || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'idNumber', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="ID from schedule"
+                placeholderTextColor="#6b7280"
               />
             </View>
 
