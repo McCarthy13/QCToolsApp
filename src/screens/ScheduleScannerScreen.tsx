@@ -128,6 +128,7 @@ export default function ScheduleScannerScreen() {
           style={{ flex: 1 }}
           facing={facing}
           enableTorch={flash}
+          autofocus="on"
         >
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
@@ -156,7 +157,7 @@ export default function ScheduleScannerScreen() {
           <View style={{ position: 'absolute', top: insets.top + 80, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }}>
             <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 12 }}>
               <Text style={{ color: '#fff', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
-                Position the paper schedule within the frame. Ensure all text is visible and well-lit.
+                Position the paper schedule within the frame. Tap anywhere to focus if text appears blurry.
               </Text>
             </View>
           </View>
