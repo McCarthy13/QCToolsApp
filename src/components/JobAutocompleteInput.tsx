@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 import { useJobAutocomplete, JobSuggestion } from '../utils/jobAutocomplete';
 
 interface JobAutocompleteInputProps {
@@ -14,6 +17,7 @@ interface JobAutocompleteInputProps {
   jobNameLabel?: string;
   required?: boolean;
   theme?: 'light' | 'dark';
+  enableCreatePrompt?: boolean;
 }
 
 export default function JobAutocompleteInput({
@@ -27,12 +31,68 @@ export default function JobAutocompleteInput({
   jobNameLabel = "Job Name",
   required = false,
   theme = 'light',
+  enableCreatePrompt = true,
 }: JobAutocompleteInputProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { findByJobNumber, searchByJobName } = useJobAutocomplete();
   
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<JobSuggestion[]>([]);
   const [focusedField, setFocusedField] = useState<'number' | 'name' | null>(null);
+  const [lastCheckedJobNumber, setLastCheckedJobNumber] = useState<string>('');
+
+  // Reset last checked when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // When returning from project creation, check if the job now exists
+      if (lastCheckedJobNumber && jobNumber.trim() === lastCheckedJobNumber) {
+        const project = findByJobNumber(lastCheckedJobNumber);
+        if (project && !jobName) {
+          // Project was created, auto-fill the name
+          onJobNameChange(project.jobName);
+          if (onJobSelect) {
+            onJobSelect(project.jobNumber, project.jobName);
+          }
+        }
+      }
+    }, [lastCheckedJobNumber, jobNumber, jobName])
+  );
+
+  // Check if job number exists and prompt to create if not
+  const checkJobNumberExists = (jobNum: string) => {
+    if (!enableCreatePrompt || !jobNum.trim() || jobNum === lastCheckedJobNumber) {
+      return;
+    }
+
+    const trimmed = jobNum.trim();
+    const project = findByJobNumber(trimmed);
+    
+    if (!project && trimmed.length >= 3) {
+      setLastCheckedJobNumber(trimmed);
+      
+      Alert.alert(
+        'Job Not Found',
+        `"${trimmed}" is not in the Project Library.\n\nWould you like to create a new project with this job number?`,
+        [
+          {
+            text: 'Not Now',
+            style: 'cancel',
+          },
+          {
+            text: 'Create Project',
+            onPress: () => {
+              // Navigate to create new project with pre-filled job number
+              navigation.navigate('ProjectLibraryAddEdit', { 
+                prefilledJobNumber: trimmed,
+                prefilledJobName: jobName.trim() || undefined,
+                returnScreen: 'current',
+              });
+            },
+          },
+        ]
+      );
+    }
+  };
 
   // Auto-populate job name when job number is entered
   useEffect(() => {
@@ -40,6 +100,7 @@ export default function JobAutocompleteInput({
       const project = findByJobNumber(jobNumber);
       if (project && project.jobName !== jobName) {
         onJobNameChange(project.jobName);
+        setLastCheckedJobNumber(jobNumber.trim());
         if (onJobSelect) {
           onJobSelect(project.jobNumber, project.jobName);
         }
@@ -100,7 +161,15 @@ export default function JobAutocompleteInput({
           value={jobNumber}
           onChangeText={onJobNumberChange}
           onFocus={() => setFocusedField('number')}
-          onBlur={() => setTimeout(() => setFocusedField(null), 200)}
+          onBlur={() => {
+            setTimeout(() => {
+              setFocusedField(null);
+              // Check if job number exists when user finishes typing
+              if (jobNumber.trim()) {
+                checkJobNumberExists(jobNumber);
+              }
+            }, 300);
+          }}
           placeholder="Enter job number"
           placeholderTextColor={inputStyles.placeholderColor}
           editable={!disabled}

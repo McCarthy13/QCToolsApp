@@ -88,7 +88,12 @@ export type RootStackParamList = {
   ProductLibrary: undefined;
   ProjectLibrary: undefined;
   ProjectLibraryDetail: { projectId: string };
-  ProjectLibraryAddEdit: { projectId?: string };
+  ProjectLibraryAddEdit: { 
+    projectId?: string;
+    prefilledJobNumber?: string;
+    prefilledJobName?: string;
+    returnScreen?: string;
+  };
   DailyPourSchedule: { date?: string; department?: string } | undefined;
   ScheduleScanner: { date?: string; department?: string };
   ScheduleReview: { entries: any[]; date: string; department?: string };

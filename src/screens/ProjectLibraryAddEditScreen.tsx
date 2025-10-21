@@ -11,7 +11,7 @@ import { PieceCountByType } from '../types/project-library';
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibraryAddEdit'>;
 
 export default function ProjectLibraryAddEditScreen({ navigation, route }: Props) {
-  const { projectId } = route.params;
+  const { projectId, prefilledJobNumber, prefilledJobName, returnScreen } = route.params;
   const isEditing = !!projectId;
   
   const currentUser = useAuthStore((s) => s.currentUser);
@@ -21,8 +21,12 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
   
   const existingProject = projectId ? getProjectById(projectId) : null;
   
-  const [jobNumber, setJobNumber] = useState(existingProject?.jobNumber || '');
-  const [jobName, setJobName] = useState(existingProject?.jobName || '');
+  const [jobNumber, setJobNumber] = useState(
+    existingProject?.jobNumber || prefilledJobNumber || ''
+  );
+  const [jobName, setJobName] = useState(
+    existingProject?.jobName || prefilledJobName || ''
+  );
   const [location, setLocation] = useState(existingProject?.location || '');
   const [salesperson, setSalesperson] = useState(existingProject?.salesperson || '');
   const [projectManager, setProjectManager] = useState(existingProject?.projectManager || '');
@@ -65,7 +69,14 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
       addProject(projectData);
     }
 
-    navigation.goBack();
+    // Navigate back appropriately
+    if (returnScreen === 'current') {
+      // User came from another screen to create project, go back to that screen
+      navigation.goBack();
+    } else {
+      // Normal flow, go back to list
+      navigation.goBack();
+    }
   };
 
   const handleAddPieceCount = () => {
@@ -98,9 +109,14 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
         <Pressable onPress={() => navigation.goBack()} className="p-2">
           <Ionicons name="close" size={24} color="#111827" />
         </Pressable>
-        <Text className="text-lg font-bold text-gray-900">
-          {isEditing ? 'Edit Project' : 'New Project'}
-        </Text>
+        <View className="flex-1 items-center">
+          <Text className="text-lg font-bold text-gray-900">
+            {isEditing ? 'Edit Project' : 'New Project'}
+          </Text>
+          {returnScreen === 'current' && !isEditing && (
+            <Text className="text-xs text-gray-500">Creating from job entry</Text>
+          )}
+        </View>
         <Pressable onPress={handleSave} className="p-2">
           <Text className="text-base font-semibold text-blue-600">Save</Text>
         </Pressable>
@@ -112,6 +128,23 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
       >
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
           <View className="p-4 gap-4">
+            {/* Info banner when creating from another screen */}
+            {returnScreen === 'current' && !isEditing && (
+              <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-2">
+                <View className="flex-row items-start">
+                  <Ionicons name="information-circle" size={20} color="#3B82F6" style={{ marginRight: 8, marginTop: 2 }} />
+                  <View className="flex-1">
+                    <Text className="text-sm font-semibold text-blue-900 mb-1">
+                      Quick Project Creation
+                    </Text>
+                    <Text className="text-sm text-blue-700">
+                      After saving, you'll return to your previous screen with the job information filled in.
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
             {/* Job Information */}
             <View className="bg-white rounded-xl p-4 border border-gray-200">
               <Text className="text-sm font-semibold text-gray-500 mb-3">JOB INFORMATION</Text>
