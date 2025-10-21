@@ -25,6 +25,7 @@ export interface IssueCode {
   description: string;
   department?: DepartmentType; // Optional: specific to department or global
   severity: IssueSeverity;
+  tolerance?: string; // Tolerance specification - varies by department
   createdAt: number;
   updatedAt: number;
 }

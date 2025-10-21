@@ -46,7 +46,6 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
 
   // Form state
   const [date, setDate] = useState(existingLog?.date || Date.now());
-  const [shift, setShift] = useState<"Day" | "Night" | "Weekend" | undefined>(existingLog?.shift);
   const [entries, setEntries] = useState<ExtrudedQualityEntry[]>(existingLog?.extrudedEntries || []);
   const [overallStatus, setOverallStatus] = useState<"Good" | "Issues Found" | "Critical Issues">(
     existingLog?.overallStatus || "Good"
@@ -239,7 +238,6 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
       updateLog(logId, {
         department: "Extruded",
         date,
-        shift,
         extrudedEntries: entries,
         overallStatus,
         notes: notes || undefined,
@@ -248,7 +246,6 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
       addLog({
         department: "Extruded",
         date,
-        shift,
         extrudedEntries: entries,
         overallStatus,
         notes: notes || undefined,
@@ -288,40 +285,6 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
                   year: "numeric" 
                 })}
               </Text>
-            </View>
-
-            {/* Shift Selection */}
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                Shift
-              </Text>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                {(["Day", "Night", "Weekend"] as const).map((shiftOption) => (
-                  <Pressable
-                    key={shiftOption}
-                    onPress={() => setShift(shift === shiftOption ? undefined : shiftOption)}
-                    style={{
-                      flex: 1,
-                      backgroundColor: shift === shiftOption ? "#3B82F6" : "#FFFFFF",
-                      paddingVertical: 12,
-                      borderRadius: 12,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: shift === shiftOption ? "#3B82F6" : "#E5E7EB",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: shift === shiftOption ? "#FFFFFF" : "#6B7280",
-                      }}
-                    >
-                      {shiftOption}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
             </View>
 
             {/* Quality Entries */}

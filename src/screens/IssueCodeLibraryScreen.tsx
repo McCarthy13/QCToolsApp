@@ -21,6 +21,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState<IssueSeverity>("Minor");
   const [department, setDepartment] = useState<DepartmentType | undefined>();
+  const [tolerance, setTolerance] = useState("");
 
   const handleAdd = () => {
     if (!code.trim() || !title.trim() || !description.trim()) {
@@ -40,6 +41,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
       description,
       severity,
       department,
+      tolerance: tolerance.trim() || undefined,
     });
 
     // Reset form
@@ -48,6 +50,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
     setDescription("");
     setSeverity("Minor");
     setDepartment(undefined);
+    setTolerance("");
     setShowModal(false);
   };
 
@@ -199,6 +202,14 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
                           <Text style={{ fontSize: 14, color: "#6B7280", lineHeight: 20 }}>
                             {issueCode.description}
                           </Text>
+                          {issueCode.tolerance && (
+                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+                              <Ionicons name="resize-outline" size={14} color="#6366F1" />
+                              <Text style={{ fontSize: 13, color: "#6366F1", marginLeft: 4, fontWeight: "500" }}>
+                                Tolerance: {issueCode.tolerance}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                         <Pressable
                           onPress={() => handleDelete(issueCode.id)}
@@ -373,6 +384,30 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
                     </View>
                     <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 6 }}>
                       Leave unselected for global availability
+                    </Text>
+                  </View>
+
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Tolerance (Optional)
+                    </Text>
+                    <TextInput
+                      value={tolerance}
+                      onChangeText={setTolerance}
+                      placeholder="e.g., ±1/8 inch or ±3mm"
+                      placeholderTextColor="#9CA3AF"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
+                    <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 6 }}>
+                      Tolerance specification varies by department
                     </Text>
                   </View>
                 </View>
