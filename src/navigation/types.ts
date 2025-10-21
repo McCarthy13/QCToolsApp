@@ -86,7 +86,7 @@ export type RootStackParamList = {
   QualityLogMetrics: undefined;
   IssueCodeLibrary: undefined;
   ProductLibrary: undefined;
-  DailyPourSchedule: undefined;
+  DailyPourSchedule: { date?: string; department?: string } | undefined;
   ScheduleScanner: { date?: string; department?: string };
   ScheduleReview: { entries: any[]; date: string; department?: string };
 };

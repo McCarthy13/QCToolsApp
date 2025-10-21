@@ -11,7 +11,7 @@ import { isEliPlanConfigured } from "../api/eliplan";
 
 type Props = NativeStackScreenProps<RootStackParamList, "DailyPourSchedule">;
 
-export default function DailyPourScheduleScreen({ navigation }: Props) {
+export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore((s) => s.currentUser);
   const forms = usePourScheduleStore((s) => s.forms);
@@ -30,17 +30,21 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
     initializeDefaultForms();
   }, []);
 
-  const [selectedDate, setSelectedDate] = useState(Date.now());
-  const [expandedDepartment, setExpandedDepartment] = useState<PourDepartment | null>("Precast");
+  // Get initial date and department from navigation params (if coming from scanner)
+  const initialDate = route.params?.date ? new Date(route.params.date).getTime() : Date.now();
+  const initialDepartment = route.params?.department as PourDepartment | null;
+
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [expandedDepartment, setExpandedDepartment] = useState<PourDepartment | null>(initialDepartment || "Precast");
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingPourId, setEditingPourId] = useState<string | null>(null);
   
   // Department for adding/scanning (user must select first)
-  const [activeDepartment, setActiveDepartment] = useState<PourDepartment | null>(null);
+  const [activeDepartment, setActiveDepartment] = useState<PourDepartment | null>(initialDepartment);
   
   // Form state for pour entry
-  const [selectedDepartment, setSelectedDepartment] = useState<PourDepartment>("Precast");
+  const [selectedDepartment, setSelectedDepartment] = useState<PourDepartment>(initialDepartment || "Precast");
   const [selectedFormBedId, setSelectedFormBedId] = useState("");
   const [jobNumber, setJobNumber] = useState("");
   const [jobName, setJobName] = useState("");

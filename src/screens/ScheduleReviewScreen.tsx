@@ -142,15 +142,27 @@ export default function ScheduleReviewScreen() {
       console.log('Import Debug Info:\n' + debugInfo.join('\n\n'));
     }
 
+    const dateStr = normalizedDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const deptStr = suggestedDepartment || 'schedule';
+
     Alert.alert(
-      'Success',
-      `Imported ${imported} ${imported === 1 ? 'entry' : 'entries'} to the daily pour schedule.` +
-      (__DEV__ ? '\n\nCheck console for debug info.' : ''),
+      'Import Successful! ✓',
+      `${imported} ${imported === 1 ? 'piece' : 'pieces'} imported to:\n\n` +
+      `📅 Date: ${dateStr}\n` +
+      (suggestedDepartment ? `🏭 Department: ${suggestedDepartment}\n\n` : '\n') +
+      `You'll be taken to the schedule to view your entries.`,
       [
         {
-          text: 'OK',
+          text: 'View Schedule',
           onPress: () => {
-            navigation.navigate('DailyPourSchedule');
+            navigation.navigate('DailyPourSchedule', {
+              date: selectedDate.toISOString(),
+              department: suggestedDepartment || undefined,
+            });
           },
         },
       ]
