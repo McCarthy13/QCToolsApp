@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +29,7 @@ export default function ScheduleScannerScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedEntries, setParsedEntries] = useState<ParsedScheduleEntry[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
   
   const cameraRef = useRef<CameraView>(null);
   const selectedDate = route.params?.date ? new Date(route.params.date) : new Date();
@@ -113,6 +114,16 @@ export default function ScheduleScannerScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
+  const handleTapToFocus = (event: any) => {
+    const { locationX, locationY } = event.nativeEvent;
+    setFocusPoint({ x: locationX, y: locationY });
+    
+    // Hide focus indicator after 1 second
+    setTimeout(() => {
+      setFocusPoint(null);
+    }, 1000);
+  };
+
   const handleRetake = () => {
     setCapturedImage(null);
     setShowResults(false);
@@ -123,71 +134,92 @@ export default function ScheduleScannerScreen() {
   if (!capturedImage && !showResults) {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <CameraView
-          ref={cameraRef}
-          style={{ flex: 1 }}
-          facing={facing}
-          enableTorch={flash}
-          autofocus="on"
-        >
-          {/* Top Bar */}
-          <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
-              <Pressable
-                onPress={() => navigation.goBack()}
-                style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
-              >
-                <Ionicons name="close" size={24} color="#fff" />
-              </Pressable>
-              
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-                Scan Schedule
-              </Text>
-              
-              <Pressable
-                onPress={toggleFlash}
-                style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
-              >
-                <Ionicons name={flash ? 'flash' : 'flash-off'} size={24} color="#fff" />
-              </Pressable>
-            </View>
-          </View>
+        <TouchableWithoutFeedback onPress={handleTapToFocus}>
+          <View style={{ flex: 1 }}>
+            <CameraView
+              ref={cameraRef}
+              style={{ flex: 1 }}
+              facing={facing}
+              enableTorch={flash}
+              autofocus="on"
+            >
+              {/* Top Bar */}
+              <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
+                  <Pressable
+                    onPress={() => navigation.goBack()}
+                    style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
+                  >
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </Pressable>
+                  
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                    Scan Schedule
+                  </Text>
+                  
+                  <Pressable
+                    onPress={toggleFlash}
+                    style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
+                  >
+                    <Ionicons name={flash ? 'flash' : 'flash-off'} size={24} color="#fff" />
+                  </Pressable>
+                </View>
+              </View>
 
-          {/* Instructions */}
-          <View style={{ position: 'absolute', top: insets.top + 80, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }}>
-            <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 12 }}>
-              <Text style={{ color: '#fff', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
-                Position the paper schedule within the frame. Tap anywhere to focus if text appears blurry.
-              </Text>
-            </View>
-          </View>
+              {/* Instructions */}
+              <View style={{ position: 'absolute', top: insets.top + 80, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }}>
+                <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 12 }}>
+                  <Text style={{ color: '#fff', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+                    Position the paper schedule within the frame. Tap anywhere to focus if text appears blurry.
+                  </Text>
+                </View>
+              </View>
 
-          {/* Frame Guide */}
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 5 }}>
-            <View style={{ width: '85%', height: '60%', borderWidth: 3, borderColor: '#3b82f6', borderRadius: 12, backgroundColor: 'transparent' }} />
-          </View>
+              {/* Focus Indicator */}
+              {focusPoint && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: focusPoint.x - 40,
+                    top: focusPoint.y - 40,
+                    width: 80,
+                    height: 80,
+                    borderWidth: 2,
+                    borderColor: '#FFD700',
+                    borderRadius: 40,
+                    zIndex: 20,
+                  }}
+                />
+              )}
 
-          {/* Bottom Controls */}
-          <View style={{ position: 'absolute', bottom: insets.bottom, left: 0, right: 0, zIndex: 10, paddingBottom: 40 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 32 }}>
-              <View style={{ width: 64 }} />
-              
-              <Pressable
-                onPress={handleCapture}
-                style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#3b82f6' }}
-              >
-                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#3b82f6' }} />
-              </Pressable>
-              
-              <Pressable
-                onPress={toggleCameraFacing}
-                style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Ionicons name="camera-reverse" size={32} color="#fff" />
-              </Pressable>
-            </View>
+              {/* Frame Guide */}
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 5 }}>
+                <View style={{ width: '85%', height: '60%', borderWidth: 3, borderColor: '#3b82f6', borderRadius: 12, backgroundColor: 'transparent' }} />
+              </View>
+
+              {/* Bottom Controls */}
+              <View style={{ position: 'absolute', bottom: insets.bottom, left: 0, right: 0, zIndex: 10, paddingBottom: 40 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 32 }}>
+                  <View style={{ width: 64 }} />
+                  
+                  <Pressable
+                    onPress={handleCapture}
+                    style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#3b82f6' }}
+                  >
+                    <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#3b82f6' }} />
+                  </Pressable>
+                  
+                  <Pressable
+                    onPress={toggleCameraFacing}
+                    style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    <Ionicons name="camera-reverse" size={32} color="#fff" />
+                  </Pressable>
+                </View>
+              </View>
+            </CameraView>
           </View>
-        </CameraView>
+        </TouchableWithoutFeedback>
       </View>
     );
   }
