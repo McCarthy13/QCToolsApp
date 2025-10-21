@@ -29,7 +29,7 @@ export default function ScheduleReviewScreen() {
   const [entries, setEntries] = useState<ParsedScheduleEntry[]>(route.params.entries);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
-  const selectedDate = new Date(route.params.date);
+  const [selectedDate, setSelectedDate] = useState(new Date(route.params.date));
 
   const handleUpdateEntry = (index: number, field: keyof ParsedScheduleEntry, value: any) => {
     const updated = [...entries];
@@ -377,6 +377,58 @@ export default function ScheduleReviewScreen() {
             </Text>
           </View>
         )}
+      </View>
+
+      {/* Pour Date Selector */}
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <View style={{ backgroundColor: '#1f2937', borderRadius: 12, padding: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Ionicons name="calendar" size={18} color="#60a5fa" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#60a5fa', fontSize: 14, fontWeight: '600' }}>
+              Pour Date
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Pressable
+              onPress={() => {
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() - 1);
+                setSelectedDate(newDate);
+              }}
+              style={{ padding: 8, backgroundColor: '#374151', borderRadius: 8 }}
+            >
+              <Ionicons name="chevron-back" size={20} color="#fff" />
+            </Pressable>
+
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', flex: 1, textAlign: 'center' }}>
+              {selectedDate.toLocaleDateString('en-US', { 
+                weekday: 'short',
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </Text>
+
+            <Pressable
+              onPress={() => {
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() + 1);
+                setSelectedDate(newDate);
+              }}
+              style={{ padding: 8, backgroundColor: '#374151', borderRadius: 8 }}
+            >
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() => setSelectedDate(new Date())}
+            style={{ marginTop: 8, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#60a5fa', fontSize: 13 }}>
+              Today
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Bulk Assign Button */}
