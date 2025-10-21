@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useJobAutocomplete, JobSuggestion } from '../utils/jobAutocomplete';
+import { validateJobNumber, getValidationMessage, extractJobNumber } from '../utils/jobNumberValidation';
 
 interface JobAutocompleteInputProps {
   jobNumber: string;
@@ -40,6 +41,54 @@ export default function JobAutocompleteInput({
   const [suggestions, setSuggestions] = useState<JobSuggestion[]>([]);
   const [focusedField, setFocusedField] = useState<'number' | 'name' | null>(null);
   const [lastCheckedJobNumber, setLastCheckedJobNumber] = useState<string>('');
+  const [validationError, setValidationError] = useState<string>('');
+
+  // Validate job number on change
+  const handleJobNumberChange = (value: string) => {
+    onJobNumberChange(value);
+    
+    // Clear error as user types
+    if (validationError) {
+      setValidationError('');
+    }
+  };
+
+  // Validate job number format
+  const validateAndCheckJobNumber = (jobNum: string) => {
+    if (!jobNum.trim()) {
+      return;
+    }
+
+    const validation = validateJobNumber(jobNum);
+    
+    if (!validation.isValid) {
+      // Show validation error
+      setValidationError(validation.error || 'Invalid job number format');
+      
+      Alert.alert(
+        'Invalid Job Number',
+        `${validation.error}\n\nJob number must be:\n• Exactly 6 digits\n• 2nd and 3rd digits must match\n\nExample: 255096, 144523, 366789`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // If we extracted some digits, offer to auto-correct
+              if (validation.cleaned && validation.cleaned.length > 0) {
+                // Focus back on the input
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // Valid format, clear any errors
+    setValidationError('');
+    
+    // Check if job exists in library
+    checkJobNumberExists(validation.cleaned || jobNum);
+  };
 
   // Reset last checked when screen comes into focus
   useFocusEffect(
@@ -65,9 +114,17 @@ export default function JobAutocompleteInput({
     }
 
     const trimmed = jobNum.trim();
+    
+    // First validate format
+    const validation = validateJobNumber(trimmed);
+    if (!validation.isValid) {
+      // Validation already showed error in validateAndCheckJobNumber
+      return;
+    }
+    
     const project = findByJobNumber(trimmed);
     
-    if (!project && trimmed.length >= 3) {
+    if (!project) {
       setLastCheckedJobNumber(trimmed);
       
       Alert.alert(
@@ -159,30 +216,45 @@ export default function JobAutocompleteInput({
         </Text>
         <TextInput
           value={jobNumber}
-          onChangeText={onJobNumberChange}
+          onChangeText={handleJobNumberChange}
           onFocus={() => setFocusedField('number')}
           onBlur={() => {
             setTimeout(() => {
               setFocusedField(null);
-              // Check if job number exists when user finishes typing
+              // Validate and check if job number exists when user finishes typing
               if (jobNumber.trim()) {
-                checkJobNumberExists(jobNumber);
+                validateAndCheckJobNumber(jobNumber);
               }
             }, 300);
           }}
-          placeholder="Enter job number"
+          placeholder="Enter 6-digit job number"
           placeholderTextColor={inputStyles.placeholderColor}
           editable={!disabled}
+          keyboardType="number-pad"
+          maxLength={10}
           style={{
             backgroundColor: inputStyles.backgroundColor,
             borderWidth: 1,
-            borderColor: inputStyles.borderColor,
+            borderColor: validationError ? '#EF4444' : inputStyles.borderColor,
             borderRadius: 12,
             padding: 12,
             fontSize: 16,
             color: inputStyles.textColor,
           }}
         />
+        {validationError && (
+          <View className="flex-row items-start mt-2">
+            <Ionicons name="alert-circle" size={16} color="#EF4444" style={{ marginRight: 4, marginTop: 1 }} />
+            <Text style={{ fontSize: 12, color: '#EF4444', flex: 1 }}>
+              {validationError}
+            </Text>
+          </View>
+        )}
+        {!validationError && focusedField === 'number' && (
+          <Text style={{ fontSize: 11, color: labelColor, marginTop: 4, opacity: 0.6 }}>
+            Format: 6 digits, 2nd and 3rd must match (e.g., 255096)
+          </Text>
+        )}
       </View>
 
       {/* Job Name Input with Suggestions */}

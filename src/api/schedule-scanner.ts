@@ -5,6 +5,7 @@
  */
 
 import { getOpenAIClient } from './openai';
+import { extractJobNumber } from '../utils/jobNumberValidation';
 
 export interface ParsedScheduleEntry {
   formBed?: string; // User-assigned only, not from AI
@@ -162,9 +163,15 @@ CRITICAL RULES:
     
     const parsed = JSON.parse(jsonStr);
 
+    // Clean and extract job numbers from entries
+    const cleanedEntries = (parsed.entries || []).map((entry: ParsedScheduleEntry) => ({
+      ...entry,
+      jobNumber: extractJobNumber(entry.jobNumber), // Remove letters/prefixes
+    }));
+
     return {
       success: true,
-      entries: parsed.entries || [],
+      entries: cleanedEntries,
       date: parsed.date,
       rawText: content,
     };

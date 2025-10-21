@@ -7,6 +7,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import { useAuthStore } from '../state/authStore';
 import { PieceCountByType } from '../types/project-library';
+import { validateJobNumber, getValidationMessage } from '../utils/jobNumberValidation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibraryAddEdit'>;
 
@@ -46,13 +47,24 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
       return;
     }
 
+    // Validate job number format
+    const validation = validateJobNumber(jobNumber);
+    if (!validation.isValid) {
+      Alert.alert(
+        'Invalid Job Number',
+        `${validation.error}\n\nJob number must be:\n• Exactly 6 digits\n• 2nd and 3rd digits must match\n\nExample: 255096, 144523, 366789`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!currentUser) {
       Alert.alert('Error', 'You must be logged in');
       return;
     }
 
     const projectData = {
-      jobNumber: jobNumber.trim(),
+      jobNumber: validation.cleaned || jobNumber.trim(),
       jobName: jobName.trim(),
       location: location.trim() || undefined,
       salesperson: salesperson.trim() || undefined,
@@ -157,10 +169,15 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                   <TextInput
                     value={jobNumber}
                     onChangeText={setJobNumber}
-                    placeholder="Enter job number"
+                    placeholder="6 digits (e.g., 255096)"
                     placeholderTextColor="#9CA3AF"
+                    keyboardType="number-pad"
+                    maxLength={10}
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
                   />
+                  <Text className="text-xs text-gray-500 mt-1">
+                    Format: 6 digits, 2nd and 3rd must match
+                  </Text>
                 </View>
 
                 <View>
