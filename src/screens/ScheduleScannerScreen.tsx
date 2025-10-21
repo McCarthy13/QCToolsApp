@@ -226,7 +226,7 @@ export default function ScheduleScannerScreen() {
   // Results Preview
   if (showResults) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }} edges={['top', 'left', 'right']}>
         {/* Header */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#374151' }}>
           <Pressable onPress={() => navigation.goBack()}>

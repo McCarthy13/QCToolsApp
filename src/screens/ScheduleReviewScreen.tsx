@@ -49,10 +49,11 @@ export default function ScheduleReviewScreen() {
     const updated = entries.map(entry => ({ ...entry, formBed: bedName }));
     setEntries(updated);
     setShowBulkAssignModal(false);
+    
     Alert.alert(
-      'Beds Assigned',
-      `All ${entries.length} pieces assigned to ${bedName}`,
-      [{ text: 'OK' }]
+      'Beds Assigned ✓',
+      `All ${entries.length} pieces assigned to ${bedName}.\n\nNext: Click "Import All" button below to save these entries.`,
+      [{ text: 'Got it' }]
     );
   };
 
