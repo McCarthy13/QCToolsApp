@@ -246,10 +246,13 @@ export default function ScheduleScannerScreen() {
           <View style={{ padding: 16, paddingTop: 0 }}>
             <View style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 16 }}>
               <Text style={{ color: '#10b981', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
-                ✓ Found {parsedEntries.length} {parsedEntries.length === 1 ? 'Entry' : 'Entries'}
+                ✓ Found {parsedEntries.length} {parsedEntries.length === 1 ? 'Piece' : 'Pieces'}
               </Text>
-              <Text style={{ color: '#9ca3af', fontSize: 14 }}>
-                Review and confirm the extracted data
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 4 }}>
+                Each piece extracted as individual entry
+              </Text>
+              <Text style={{ color: '#f59e0b', fontSize: 13 }}>
+                ⚠ You will assign Form/Bed in the next step
               </Text>
             </View>
 
@@ -257,8 +260,8 @@ export default function ScheduleScannerScreen() {
             {parsedEntries.map((entry, index) => (
               <View key={index} style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600' }}>
-                    {entry.formBed || 'Unknown Form'}
+                  <Text style={{ color: entry.formBed ? '#3b82f6' : '#f59e0b', fontSize: 16, fontWeight: '600' }}>
+                    {entry.formBed || '⚠ Bed Not Detected'}
                   </Text>
                   {entry.confidence && (
                     <Text style={{ color: entry.confidence > 0.7 ? '#10b981' : '#f59e0b', fontSize: 12 }}>
@@ -268,6 +271,12 @@ export default function ScheduleScannerScreen() {
                 </View>
 
                 <View style={{ gap: 8 }}>
+                  {entry.idNumber && (
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={{ color: '#9ca3af', width: 100 }}>ID:</Text>
+                      <Text style={{ color: '#fff', flex: 1 }}>{entry.idNumber}</Text>
+                    </View>
+                  )}
                   {entry.jobNumber && (
                     <View style={{ flexDirection: 'row' }}>
                       <Text style={{ color: '#9ca3af', width: 100 }}>Job #:</Text>
@@ -280,16 +289,10 @@ export default function ScheduleScannerScreen() {
                       <Text style={{ color: '#fff', flex: 1 }}>{entry.jobName}</Text>
                     </View>
                   )}
-                  {entry.markNumbers && (
+                  {entry.markNumber && (
                     <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Marks:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.markNumbers}</Text>
-                    </View>
-                  )}
-                  {entry.pieceCount && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Pieces:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.pieceCount}</Text>
+                      <Text style={{ color: '#9ca3af', width: 100 }}>Mark:</Text>
+                      <Text style={{ color: '#fff', flex: 1 }}>{entry.markNumber}</Text>
                     </View>
                   )}
                   {entry.productType && (

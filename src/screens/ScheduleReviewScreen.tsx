@@ -13,6 +13,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { ParsedScheduleEntry } from '../api/schedule-scanner';
 import { usePourScheduleStore } from '../state/pourScheduleStore';
+import { PourDepartment } from '../types/pour-schedule';
 
 type ReviewNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ScheduleReview'>;
 type ReviewRouteProp = RouteProp<RootStackParamList, 'ScheduleReview'>;
@@ -22,6 +23,8 @@ export default function ScheduleReviewScreen() {
   const route = useRoute<ReviewRouteProp>();
   
   const addPourEntry = usePourScheduleStore((s) => s.addPourEntry);
+  const forms = usePourScheduleStore((s) => s.forms);
+  const getFormsByDepartment = usePourScheduleStore((s) => s.getFormsByDepartment);
   
   const [entries, setEntries] = useState<ParsedScheduleEntry[]>(route.params.entries);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -60,25 +63,37 @@ export default function ScheduleReviewScreen() {
       return;
     }
 
+    // Check if all entries have formBed assigned
+    const missingForms = entries.filter(e => !e.formBed || !e.formBed.trim());
+    if (missingForms.length > 0) {
+      Alert.alert(
+        'Missing Form/Bed Assignments',
+        `${missingForms.length} ${missingForms.length === 1 ? 'entry needs' : 'entries need'} a Form/Bed assigned. Please assign forms to all entries before importing.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     let imported = 0;
     entries.forEach((entry) => {
-      // Convert parsed entry to pour entry format
-      // Note: We need to map formBed name to actual department
-      // For now, defaulting to "Precast" - ideally would check form list
+      // Find the form to get proper department
+      const form = forms.find(f => f.name === entry.formBed || f.id === entry.formBed);
+      const department = form?.department || "Precast";
+      
       addPourEntry({
-        formBedId: entry.formBed,
-        formBedName: entry.formBed,
-        department: (entry.department as any) || "Precast",
+        formBedId: form?.id || entry.formBed || '',
+        formBedName: form?.name || entry.formBed || '',
+        department: department,
         scheduledDate: selectedDate.getTime(),
         scheduledTime: entry.scheduledTime || undefined,
         jobNumber: entry.jobNumber,
         jobName: entry.jobName || undefined,
-        markNumbers: entry.markNumbers || undefined,
-        pieceCount: entry.pieceCount || undefined,
+        markNumbers: entry.markNumber || undefined, // Single mark
+        pieceCount: 1, // Always 1 since we have individual entries
         productType: entry.productType || undefined,
         concreteYards: entry.concreteYards || undefined,
         mixDesign: entry.mixDesign || undefined,
-        notes: entry.notes || undefined,
+        notes: entry.notes ? `ID: ${entry.idNumber || 'N/A'} | ${entry.notes}` : `ID: ${entry.idNumber || 'N/A'}`,
         status: "Scheduled",
         foreman: undefined,
         createdBy: "Scanner",
@@ -121,14 +136,49 @@ export default function ScheduleReviewScreen() {
 
         <ScrollView>
           <View style={{ gap: 16 }}>
-            {/* Form Bed */}
+            {/* Form / Bed Picker */}
             <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Form / Bed *</Text>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Form / Bed * (Required)</Text>
+              <View style={{ backgroundColor: '#1f2937', borderRadius: 8, padding: 12 }}>
+                <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                  {forms.filter(f => f.isActive).map((form) => (
+                    <Pressable
+                      key={form.id}
+                      onPress={() => handleUpdateEntry(selectedIndex, 'formBed', form.name)}
+                      style={{
+                        padding: 12,
+                        backgroundColor: entry.formBed === form.name ? '#3b82f6' : '#374151',
+                        borderRadius: 8,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 14, fontWeight: entry.formBed === form.name ? '600' : '400' }}>
+                        {form.name} ({form.department})
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                {entry.formBed && (
+                  <Text style={{ color: '#10b981', fontSize: 12, marginTop: 8 }}>
+                    ✓ Selected: {entry.formBed}
+                  </Text>
+                )}
+                {!entry.formBed && (
+                  <Text style={{ color: '#f59e0b', fontSize: 12, marginTop: 8 }}>
+                    ⚠ Please select a form/bed
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* ID Number */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>ID Number</Text>
               <TextInput
-                value={entry.formBed}
-                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'formBed', text)}
+                value={entry.idNumber || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'idNumber', text)}
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
-                placeholder="e.g., BL1, FTE1"
+                placeholder="ID from schedule"
                 placeholderTextColor="#6b7280"
               />
             </View>
@@ -157,28 +207,15 @@ export default function ScheduleReviewScreen() {
               />
             </View>
 
-            {/* Mark Numbers */}
+            {/* Mark Number (Single) */}
             <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Mark Numbers</Text>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Mark Number</Text>
               <TextInput
-                value={entry.markNumbers || ''}
-                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'markNumbers', text)}
+                value={entry.markNumber || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'markNumber', text)}
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
-                placeholder="e.g., M1-M5"
+                placeholder="e.g., M1, M2"
                 placeholderTextColor="#6b7280"
-              />
-            </View>
-
-            {/* Piece Count */}
-            <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Piece Count</Text>
-              <TextInput
-                value={entry.pieceCount?.toString() || ''}
-                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'pieceCount', parseInt(text) || 0)}
-                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
-                placeholder="0"
-                placeholderTextColor="#6b7280"
-                keyboardType="numeric"
               />
             </View>
 
@@ -307,11 +344,11 @@ export default function ScheduleReviewScreen() {
           <View key={index} style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
-                  {entry.formBed || 'Unknown Form'}
+                <Text style={{ color: entry.formBed ? '#3b82f6' : '#f59e0b', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
+                  {entry.formBed || '⚠ No Bed Assigned'}
                 </Text>
                 <Text style={{ color: '#fff', fontSize: 14 }}>
-                  Job {entry.jobNumber}
+                  Job {entry.jobNumber}{entry.idNumber ? ` • ID: ${entry.idNumber}` : ''}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -331,19 +368,19 @@ export default function ScheduleReviewScreen() {
             </View>
 
             <View style={{ gap: 4 }}>
+              {entry.idNumber && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  🆔 ID: {entry.idNumber}
+                </Text>
+              )}
               {entry.jobName && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
                   📋 {entry.jobName}
                 </Text>
               )}
-              {entry.markNumbers && (
+              {entry.markNumber && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
-                  🏷️ {entry.markNumbers}
-                </Text>
-              )}
-              {entry.pieceCount && (
-                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
-                  📦 {entry.pieceCount} pieces
+                  🏷️ Mark: {entry.markNumber}
                 </Text>
               )}
               {entry.concreteYards && (
@@ -359,6 +396,11 @@ export default function ScheduleReviewScreen() {
               {entry.scheduledTime && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
                   ⏰ {entry.scheduledTime}
+                </Text>
+              )}
+              {!entry.formBed && (
+                <Text style={{ color: '#f59e0b', fontSize: 13, marginTop: 4 }}>
+                  ⚠ No form/bed assigned
                 </Text>
               )}
             </View>

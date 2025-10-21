@@ -7,11 +7,11 @@
 import { getOpenAIClient } from './openai';
 
 export interface ParsedScheduleEntry {
-  formBed: string;
+  formBed?: string; // Optional - user will assign manually
   jobNumber: string;
   jobName?: string;
-  markNumbers?: string;
-  pieceCount?: number;
+  idNumber?: string; // ID column from schedule
+  markNumber?: string; // Single mark (M1, M2, etc)
   productType?: string;
   concreteYards?: number;
   mixDesign?: string;
@@ -56,19 +56,26 @@ export async function parseScheduleImage(
       }));
 
     // Create prompt for AI to parse the schedule
-    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Extract all pour entries from this image.
+    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Extract ALL individual pieces from this image as SEPARATE entries.
 
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
 
-For each entry in the schedule, extract:
-- Form/Bed name (e.g., BL1, BL3, FTE1, Columns, etc.)
+IMPORTANT INSTRUCTIONS:
+- Create ONE entry per piece (if there are 5 pieces with marks M1-M5, create 5 separate entries)
+- Extract the ID number from the "ID" column for each piece
+- Extract the Mark number (M1, M2, M3, etc) individually for each piece
+- Do NOT group pieces together
+- Form/Bed name may be unclear - extract if visible but user will verify
+
+For each INDIVIDUAL piece in the schedule, extract:
+- Form/Bed name (if visible, may be unclear)
 - Job Number
 - Job Name (if visible)
-- Mark Numbers (e.g., M1, M2-M5, etc.)
-- Piece Count
+- ID Number (from ID column - this is critical)
+- Mark Number (single mark like M1, M2, not ranges like M1-M5)
 - Product Type (beam, slab, column, etc.)
-- Concrete Yards
+- Concrete Yards (for this specific piece)
 - Mix Design (PSI rating if visible)
 - Scheduled Time
 - Any special notes
@@ -78,29 +85,43 @@ Return ONLY a valid JSON object with this structure:
   "date": "date from schedule if visible",
   "entries": [
     {
-      "formBed": "BL1",
+      "formBed": "BL1 or unclear",
       "jobNumber": "12345",
       "jobName": "Project Name",
-      "markNumbers": "M1-M5",
-      "pieceCount": 5,
+      "idNumber": "ID from ID column",
+      "markNumber": "M1",
       "productType": "Beam",
-      "concreteYards": 12.5,
+      "concreteYards": 2.5,
       "mixDesign": "6000 PSI",
       "scheduledTime": "8:00 AM",
       "notes": "any special instructions",
       "department": "Precast",
       "confidence": 0.95
+    },
+    {
+      "formBed": "BL1 or unclear",
+      "jobNumber": "12345",
+      "jobName": "Project Name",
+      "idNumber": "another ID",
+      "markNumber": "M2",
+      "productType": "Beam",
+      "concreteYards": 2.5,
+      "mixDesign": "6000 PSI",
+      "scheduledTime": "8:00 AM",
+      "notes": "",
+      "confidence": 0.95
     }
   ]
 }
 
-IMPORTANT:
+CRITICAL:
 - Return ONLY the JSON, no other text
 - Use null for missing fields
+- ONE entry per individual piece, not grouped
+- Extract ID numbers carefully from the ID column
+- If 5 pieces share the same job but have different marks (M1-M5), create 5 entries
 - Confidence should be 0-1 (how certain you are about the data)
-- If multiple pieces are on one form, create separate entries or use markNumbers range
-- Extract ALL visible entries from the schedule
-- Be precise with numbers (job numbers, piece counts, yards)`;
+- Be precise with numbers (job numbers, ID numbers, yards)`;
 
     // Call AI with vision
     const client = getOpenAIClient();
@@ -163,8 +184,9 @@ export function validateParsedEntries(
   const invalid: ParsedScheduleEntry[] = [];
 
   for (const entry of entries) {
-    // Must have at minimum: formBed and jobNumber
-    if (entry.formBed && entry.jobNumber) {
+    // Must have at minimum: jobNumber
+    // formBed is optional since user will assign it
+    if (entry.jobNumber) {
       valid.push(entry);
     } else {
       invalid.push(entry);
@@ -224,7 +246,7 @@ Maintain the layout and structure as much as possible. Return plain text.`;
     const extractedText = extractResponse.choices[0]?.message?.content || '';
 
     // Step 2: Structure the text
-    const structurePrompt = `Parse this production schedule text into structured JSON:
+    const structurePrompt = `Parse this production schedule text into structured JSON. Create ONE entry per individual piece.
 
 ${extractedText}
 
@@ -233,15 +255,17 @@ Return JSON with this structure:
   "date": "date if visible",
   "entries": [
     {
-      "formBed": "form name",
+      "formBed": "form name or null",
       "jobNumber": "job number",
-      "markNumbers": "mark numbers",
-      "pieceCount": number,
+      "idNumber": "ID from ID column",
+      "markNumber": "single mark like M1, M2",
       "concreteYards": number,
       "confidence": 0-1
     }
   ]
-}`;
+}
+
+IMPORTANT: Create separate entries for each piece, extract ID numbers from ID column.`;
 
     const structureResponse = await client.chat.completions.create({
       model: 'gpt-4o',
