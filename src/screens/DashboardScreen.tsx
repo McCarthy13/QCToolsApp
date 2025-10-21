@@ -69,6 +69,15 @@ const tools: Tool[] = [
     route: 'QualityLogDashboard',
   },
   {
+    id: 'daily-pour-schedule',
+    name: 'Daily Pour Schedule',
+    description: 'Manage concrete pours by department and form/bed',
+    icon: 'calendar',
+    color: '#14B8A6',
+    bgColor: '#F0FDFA',
+    route: 'DailyPourSchedule',
+  },
+  {
     id: 'product-library',
     name: 'Product Library',
     description: 'Manage product types and tolerance specifications',

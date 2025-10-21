@@ -86,4 +86,5 @@ export type RootStackParamList = {
   QualityLogMetrics: undefined;
   IssueCodeLibrary: undefined;
   ProductLibrary: undefined;
+  DailyPourSchedule: undefined;
 };
