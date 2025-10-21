@@ -265,7 +265,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
 
           <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827", marginBottom: 16 }}>Select Department</Text>
           <View style={{ gap: 16 }}>
-            {departments.map((dept) => {
+            {[viewingDepartment].map((dept) => {
               const deptEntries = todayEntries.filter(e => e.department === dept);
               const deptYards = deptEntries.reduce((sum, e) => sum + (e.concreteYards || 0), 0);
               const colors = getDepartmentColor(dept);
@@ -319,11 +319,20 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
         <View style={{ padding: 24 }}>
           {/* Header */}
           <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 28, fontWeight: "700", color: "#111827", marginBottom: 8 }}>
-              Daily Pour Schedule
+            <Pressable
+              onPress={() => setViewingDepartment(null)}
+              style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={deptColors.accent} />
+              <Text style={{ fontSize: 16, fontWeight: "600", color: deptColors.accent, marginLeft: 8 }}>
+                Change Department
+              </Text>
+            </Pressable>
+            <Text style={{ fontSize: 28, fontWeight: "700", color: deptColors.color, marginBottom: 8 }}>
+              {viewingDepartment}
             </Text>
             <Text style={{ fontSize: 16, color: "#6B7280" }}>
-              Manage concrete pours by department and form/bed
+              Manage concrete pours and schedules
             </Text>
           </View>
 
@@ -379,83 +388,24 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
             {/* Summary */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>Total Pours</Text>
+                <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>Pours</Text>
                 <Text style={{ fontSize: 24, fontWeight: "700", color: "#111827" }}>
-                  {todayEntries.length}
+                  {departmentEntries.length}
                 </Text>
               </View>
               <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>Total Yards</Text>
-                <Text style={{ fontSize: 24, fontWeight: "700", color: "#111827" }}>
-                  {totalYards.toFixed(1)}
+                <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>Yards</Text>
+                <Text style={{ fontSize: 24, fontWeight: "700", color: deptColors.accent }}>
+                  {departmentYards.toFixed(1)}
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Department Selection for Actions */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 12 }}>
-              Select Department to Add/Scan Pours
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-              {departments.map((dept) => {
-                const colors = getDepartmentColor(dept);
-                const isSelected = activeDepartment === dept;
-                
-                return (
-                  <Pressable
-                    key={dept}
-                    onPress={() => {
-                      setActiveDepartment(dept);
-                      setSelectedDepartment(dept);
-                    }}
-                    style={{
-                      flex: 1,
-                      minWidth: "45%",
-                      backgroundColor: isSelected ? colors.accent : "#FFFFFF",
-                      borderRadius: 12,
-                      padding: 14,
-                      borderWidth: 2,
-                      borderColor: isSelected ? colors.accent : "#E5E7EB",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ 
-                      fontSize: 15, 
-                      fontWeight: "600", 
-                      color: isSelected ? "#FFFFFF" : colors.color 
-                    }}>
-                      {dept}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          {/* Action Buttons */}
+          <View style={{ gap: 12, marginBottom: 24 }}>
 
-          {/* Action Buttons - Only show when department is selected */}
-          {activeDepartment && (
-            <View style={{ gap: 12, marginBottom: 24 }}>
-              <View style={{ 
-                backgroundColor: getDepartmentColor(activeDepartment).bg, 
-                borderRadius: 12, 
-                padding: 12,
-                marginBottom: 8,
-                borderWidth: 1,
-                borderColor: getDepartmentColor(activeDepartment).accent + "40",
-              }}>
-                <Text style={{ 
-                  fontSize: 14, 
-                  fontWeight: "600", 
-                  color: getDepartmentColor(activeDepartment).color,
-                  textAlign: "center"
-                }}>
-                  Adding/Scanning for: {activeDepartment}
-                </Text>
-              </View>
-
-              {/* Top Row: Add Pour */}
+              
               <Pressable
                 onPress={() => {
                   resetForm();
@@ -481,12 +431,10 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 </Text>
               </Pressable>
 
-              {/* Bottom Row: Scan & Sync */}
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <Pressable
+              <Pressable
                   onPress={() => navigation.navigate("ScheduleScanner", { 
                     date: new Date(selectedDate).toISOString(),
-                    department: activeDepartment,
+                    department: viewingDepartment,
                   })}
                   style={{
                     flex: 1,
@@ -508,122 +456,11 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                     Scan Schedule
                   </Text>
                 </Pressable>
-
-                <Pressable
-                  onPress={handleSyncWithEliPlan}
-                  disabled={isSyncing}
-                  style={{
-                    flex: 1,
-                    backgroundColor: isSyncing ? "#D1D5DB" : isEliPlanConfigured() ? "#10B981" : "#6B7280",
-                    borderRadius: 16,
-                    padding: 16,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
-                >
-                  {isSyncing ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="sync" size={20} color="#FFFFFF" />
-                      <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                        {isEliPlanConfigured() ? "Sync" : "Config"}
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {/* Configuration Status */}
-          {!isEliPlanConfigured() && (
-            <View style={{ 
-              backgroundColor: "#FEF3C7", 
-              borderRadius: 12, 
-              padding: 12, 
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: "#FDE68A",
-              flexDirection: "row",
-              alignItems: "center",
-            }}>
-              <Ionicons name="information-circle" size={20} color="#92400E" />
-              <Text style={{ fontSize: 12, color: "#92400E", marginLeft: 8, flex: 1 }}>
-                EliPlan sync not configured. Tap "Configure" button for setup instructions.
-              </Text>
-            </View>
-          )}
-
-          {/* Last Sync Info */}
-          {lastSyncTime && isEliPlanConfigured() && (
-            <View style={{ 
-              backgroundColor: "#F0FDF4", 
-              borderRadius: 12, 
-              padding: 12, 
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: "#BBF7D0",
-            }}>
-              <Text style={{ fontSize: 12, color: "#166534" }}>
-                Last synced: {new Date(lastSyncTime).toLocaleString()}
-              </Text>
-            </View>
-          )}
-
-          {/* Debug Info - Shows all entries count */}
-          {__DEV__ && (
-            <Pressable
-              onPress={() => {
-                const allEntries = usePourScheduleStore.getState().pourEntries;
-                const startOfDay = new Date(selectedDate);
-                startOfDay.setHours(0, 0, 0, 0);
-                const endOfDay = new Date(selectedDate);
-                endOfDay.setHours(23, 59, 59, 999);
-                
-                const entriesDebug = allEntries.slice(0, 5).map((e, i) => 
-                  `${i+1}. Job ${e.jobNumber} - ${e.formBedName}\n` +
-                  `   Date: ${new Date(e.scheduledDate).toLocaleString()}\n` +
-                  `   Timestamp: ${e.scheduledDate}\n` +
-                  `   Dept: ${e.department}`
-                ).join('\n\n');
-                
-                Alert.alert(
-                  "Debug Info",
-                  `Total entries in store: ${allEntries.length}\n\n` +
-                  `Entries for selected date: ${todayEntries.length}\n\n` +
-                  `Selected date: ${new Date(selectedDate).toLocaleString()}\n` +
-                  `Start of day: ${startOfDay.toLocaleString()} (${startOfDay.getTime()})\n` +
-                  `End of day: ${endOfDay.toLocaleString()} (${endOfDay.getTime()})\n\n` +
-                  `Extruded forms: ${forms.filter(f => f.department === 'Extruded').map(f => f.name).join(', ')}\n\n` +
-                  `Recent entries:\n${entriesDebug || 'None'}`,
-                  [{ text: "OK" }]
-                );
-              }}
-              style={{
-                backgroundColor: "#FEE2E2",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 16,
-                borderWidth: 1,
-                borderColor: "#FCA5A5",
-              }}
-            >
-              <Text style={{ fontSize: 12, color: "#991B1B", fontWeight: "600" }}>
-                🐛 Debug: Tap to view entry count and date info
-              </Text>
-            </Pressable>
-          )}
+          </View>
 
           {/* Departments */}
           <View style={{ gap: 16 }}>
-            {departments.map((dept) => {
+            {[viewingDepartment].map((dept) => {
               const deptForms = getFormsByDepartment(dept);
               const deptEntries = todayEntries.filter(e => e.department === dept);
               const deptYards = deptEntries.reduce((sum, e) => sum + (e.concreteYards || 0), 0);
