@@ -176,6 +176,18 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
   };
 
   const handleSyncWithEliPlan = async () => {
+    if (!isEliPlanConfigured()) {
+      Alert.alert(
+        "EliPlan Not Configured",
+        "To enable EliPlan sync, add your API credentials to the .env file:\n\n" +
+        "EXPO_PUBLIC_ELIPLAN_API_URL=your_api_url\n" +
+        "EXPO_PUBLIC_ELIPLAN_API_KEY=your_api_key\n\n" +
+        "Contact your administrator or EliPlan support for credentials.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     if (!currentUser) {
       Alert.alert("Error", "You must be logged in to sync");
       return;
@@ -315,38 +327,55 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
               </Text>
             </Pressable>
 
-            {isEliPlanConfigured() && (
-              <Pressable
-                onPress={handleSyncWithEliPlan}
-                disabled={isSyncing}
-                style={{
-                  backgroundColor: isSyncing ? "#D1D5DB" : "#10B981",
-                  borderRadius: 16,
-                  padding: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minWidth: 140,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-              >
-                {isSyncing ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="sync" size={20} color="#FFFFFF" />
-                    <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                      Sync EliPlan
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            )}
+            <Pressable
+              onPress={handleSyncWithEliPlan}
+              disabled={isSyncing}
+              style={{
+                backgroundColor: isSyncing ? "#D1D5DB" : isEliPlanConfigured() ? "#10B981" : "#6B7280",
+                borderRadius: 16,
+                padding: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 140,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+              {isSyncing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="sync" size={20} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
+                    {isEliPlanConfigured() ? "Sync EliPlan" : "Configure"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
           </View>
+
+          {/* Configuration Status */}
+          {!isEliPlanConfigured() && (
+            <View style={{ 
+              backgroundColor: "#FEF3C7", 
+              borderRadius: 12, 
+              padding: 12, 
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "#FDE68A",
+              flexDirection: "row",
+              alignItems: "center",
+            }}>
+              <Ionicons name="information-circle" size={20} color="#92400E" />
+              <Text style={{ fontSize: 12, color: "#92400E", marginLeft: 8, flex: 1 }}>
+                EliPlan sync not configured. Tap "Configure" button for setup instructions.
+              </Text>
+            </View>
+          )}
 
           {/* Last Sync Info */}
           {lastSyncTime && isEliPlanConfigured() && (
