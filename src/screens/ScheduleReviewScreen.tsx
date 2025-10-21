@@ -136,11 +136,23 @@ export default function ScheduleReviewScreen() {
 
         <ScrollView>
           <View style={{ gap: 16 }}>
-            {/* Form / Bed Picker */}
+            {/* Form / Bed Picker - REQUIRED */}
+            <View style={{ backgroundColor: '#374151', padding: 12, borderRadius: 8, marginBottom: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="layers" size={20} color="#60a5fa" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#60a5fa', fontSize: 14, fontWeight: '600' }}>
+                  Assign Current Form/Bed
+                </Text>
+              </View>
+              <Text style={{ color: '#9ca3af', fontSize: 12 }}>
+                Where is this piece actually being poured today?
+              </Text>
+            </View>
+
             <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Form / Bed * (Required)</Text>
-              <View style={{ backgroundColor: '#1f2937', borderRadius: 8, padding: 12 }}>
-                <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Select Form / Bed *</Text>
+              <View style={{ backgroundColor: '#1f2937', borderRadius: 8, padding: 12, maxHeight: 200 }}>
+                <ScrollView nestedScrollEnabled>
                   {forms.filter(f => f.isActive).map((form) => (
                     <Pressable
                       key={form.id}
@@ -158,17 +170,23 @@ export default function ScheduleReviewScreen() {
                     </Pressable>
                   ))}
                 </ScrollView>
-                {entry.formBed && (
-                  <Text style={{ color: '#10b981', fontSize: 12, marginTop: 8 }}>
-                    ✓ Selected: {entry.formBed}
-                  </Text>
-                )}
-                {!entry.formBed && (
-                  <Text style={{ color: '#f59e0b', fontSize: 12, marginTop: 8 }}>
-                    ⚠ Please select a form/bed
-                  </Text>
-                )}
               </View>
+              {entry.formBed && (
+                <View style={{ backgroundColor: '#065f46', padding: 10, borderRadius: 8, marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="checkmark-circle" size={18} color="#10b981" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#10b981', fontSize: 13, fontWeight: '600' }}>
+                    Assigned to: {entry.formBed}
+                  </Text>
+                </View>
+              )}
+              {!entry.formBed && (
+                <View style={{ backgroundColor: '#78350f', padding: 10, borderRadius: 8, marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+                  <Ionicons name="alert-circle" size={18} color="#f59e0b" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#f59e0b', fontSize: 13 }}>
+                    Required: Select a form/bed above
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* ID Number */}
@@ -333,9 +351,20 @@ export default function ScheduleReviewScreen() {
 
       {/* Entry Count */}
       <View style={{ padding: 16, paddingBottom: 8 }}>
-        <Text style={{ color: '#9ca3af', fontSize: 14 }}>
-          {entries.length} {entries.length === 1 ? 'entry' : 'entries'} ready to import
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
+          {entries.length} {entries.length === 1 ? 'piece' : 'pieces'} scanned
         </Text>
+        <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+          Assign current Form/Bed for each piece
+        </Text>
+        {entries.filter(e => !e.formBed).length > 0 && (
+          <View style={{ backgroundColor: '#374151', padding: 12, borderRadius: 8, marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="alert-circle" size={20} color="#f59e0b" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#f59e0b', fontSize: 13, flex: 1 }}>
+              {entries.filter(e => !e.formBed).length} {entries.filter(e => !e.formBed).length === 1 ? 'piece needs' : 'pieces need'} bed assignment
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Entry List */}
@@ -344,19 +373,33 @@ export default function ScheduleReviewScreen() {
           <View key={index} style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: entry.formBed ? '#3b82f6' : '#f59e0b', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
-                  {entry.formBed || '⚠ No Bed Assigned'}
-                </Text>
-                <Text style={{ color: '#fff', fontSize: 14 }}>
-                  Job {entry.jobNumber}{entry.idNumber ? ` • ID: ${entry.idNumber}` : ''}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  {entry.formBed ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={18} color="#10b981" style={{ marginRight: 6 }} />
+                      <Text style={{ color: '#10b981', fontSize: 16, fontWeight: '600' }}>
+                        {entry.formBed}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="alert-circle" size={18} color="#f59e0b" style={{ marginRight: 6 }} />
+                      <Text style={{ color: '#f59e0b', fontSize: 16, fontWeight: '600' }}>
+                        Bed Not Assigned
+                      </Text>
+                    </>
+                  )}
+                </View>
+                <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+                  {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`} • Job {entry.jobNumber}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Pressable
                   onPress={() => setSelectedIndex(index)}
-                  style={{ padding: 8, backgroundColor: '#374151', borderRadius: 8 }}
+                  style={{ padding: 8, backgroundColor: entry.formBed ? '#374151' : '#78350f', borderRadius: 8 }}
                 >
-                  <Ionicons name="create-outline" size={20} color="#3b82f6" />
+                  <Ionicons name={entry.formBed ? "create-outline" : "add-circle"} size={20} color={entry.formBed ? "#3b82f6" : "#f59e0b"} />
                 </Pressable>
                 <Pressable
                   onPress={() => handleRemoveEntry(index)}
@@ -368,19 +411,14 @@ export default function ScheduleReviewScreen() {
             </View>
 
             <View style={{ gap: 4 }}>
-              {entry.idNumber && (
+              {entry.markNumber && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
-                  🆔 ID: {entry.idNumber}
+                  🏷️ Mark: {entry.markNumber}
                 </Text>
               )}
               {entry.jobName && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
                   📋 {entry.jobName}
-                </Text>
-              )}
-              {entry.markNumber && (
-                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
-                  🏷️ Mark: {entry.markNumber}
                 </Text>
               )}
               {entry.concreteYards && (
@@ -396,11 +434,6 @@ export default function ScheduleReviewScreen() {
               {entry.scheduledTime && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
                   ⏰ {entry.scheduledTime}
-                </Text>
-              )}
-              {!entry.formBed && (
-                <Text style={{ color: '#f59e0b', fontSize: 13, marginTop: 4 }}>
-                  ⚠ No form/bed assigned
                 </Text>
               )}
             </View>

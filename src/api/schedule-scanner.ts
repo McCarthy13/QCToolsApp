@@ -7,7 +7,7 @@
 import { getOpenAIClient } from './openai';
 
 export interface ParsedScheduleEntry {
-  formBed?: string; // Optional - user will assign manually
+  formBed?: string; // User-assigned only, not from AI
   jobNumber: string;
   jobName?: string;
   idNumber?: string; // ID column from schedule
@@ -66,26 +66,24 @@ IMPORTANT INSTRUCTIONS:
 - Extract the ID number from the "ID" column for each piece
 - Extract the Mark number (M1, M2, M3, etc) individually for each piece
 - Do NOT group pieces together
-- Form/Bed name may be unclear - extract if visible but user will verify
+- Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
 
 For each INDIVIDUAL piece in the schedule, extract:
-- Form/Bed name (if visible, may be unclear)
-- Job Number
+- Job Number (CRITICAL)
 - Job Name (if visible)
-- ID Number (from ID column - this is critical)
+- ID Number (from ID column - CRITICAL)
 - Mark Number (single mark like M1, M2, not ranges like M1-M5)
 - Product Type (beam, slab, column, etc.)
 - Concrete Yards (for this specific piece)
 - Mix Design (PSI rating if visible)
 - Scheduled Time
-- Any special notes
+- Any special notes or instructions
 
 Return ONLY a valid JSON object with this structure:
 {
   "date": "date from schedule if visible",
   "entries": [
     {
-      "formBed": "BL1 or unclear",
       "jobNumber": "12345",
       "jobName": "Project Name",
       "idNumber": "ID from ID column",
@@ -95,11 +93,9 @@ Return ONLY a valid JSON object with this structure:
       "mixDesign": "6000 PSI",
       "scheduledTime": "8:00 AM",
       "notes": "any special instructions",
-      "department": "Precast",
       "confidence": 0.95
     },
     {
-      "formBed": "BL1 or unclear",
       "jobNumber": "12345",
       "jobName": "Project Name",
       "idNumber": "another ID",
@@ -114,13 +110,14 @@ Return ONLY a valid JSON object with this structure:
   ]
 }
 
-CRITICAL:
+CRITICAL RULES:
 - Return ONLY the JSON, no other text
 - Use null for missing fields
 - ONE entry per individual piece, not grouped
 - Extract ID numbers carefully from the ID column
 - If 5 pieces share the same job but have different marks (M1-M5), create 5 entries
 - Confidence should be 0-1 (how certain you are about the data)
+- IGNORE any form/bed/line information - do not include formBed field
 - Be precise with numbers (job numbers, ID numbers, yards)`;
 
     // Call AI with vision
@@ -255,7 +252,6 @@ Return JSON with this structure:
   "date": "date if visible",
   "entries": [
     {
-      "formBed": "form name or null",
       "jobNumber": "job number",
       "idNumber": "ID from ID column",
       "markNumber": "single mark like M1, M2",
@@ -265,7 +261,7 @@ Return JSON with this structure:
   ]
 }
 
-IMPORTANT: Create separate entries for each piece, extract ID numbers from ID column.`;
+IMPORTANT: Create separate entries for each piece, extract ID numbers from ID column. DO NOT include formBed field.`;
 
     const structureResponse = await client.chat.completions.create({
       model: 'gpt-4o',

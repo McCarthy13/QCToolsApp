@@ -248,51 +248,41 @@ export default function ScheduleScannerScreen() {
               <Text style={{ color: '#10b981', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
                 ✓ Found {parsedEntries.length} {parsedEntries.length === 1 ? 'Piece' : 'Pieces'}
               </Text>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 4 }}>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>
                 Each piece extracted as individual entry
               </Text>
-              <Text style={{ color: '#f59e0b', fontSize: 13 }}>
-                ⚠ You will assign Form/Bed in the next step
-              </Text>
+              <View style={{ backgroundColor: '#374151', padding: 12, borderRadius: 8, flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="information-circle" size={20} color="#60a5fa" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#60a5fa', fontSize: 13, flex: 1 }}>
+                  Next: Assign Form/Bed to each piece based on current production plan
+                </Text>
+              </View>
             </View>
 
             {/* Entry Cards */}
             {parsedEntries.map((entry, index) => (
               <View key={index} style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <Text style={{ color: entry.formBed ? '#3b82f6' : '#f59e0b', fontSize: 16, fontWeight: '600' }}>
-                    {entry.formBed || '⚠ Bed Not Detected'}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
+                      {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`}
+                    </Text>
+                    <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+                      Job {entry.jobNumber}{entry.markNumber ? ` • ${entry.markNumber}` : ''}
+                    </Text>
+                  </View>
                   {entry.confidence && (
                     <Text style={{ color: entry.confidence > 0.7 ? '#10b981' : '#f59e0b', fontSize: 12 }}>
-                      {Math.round(entry.confidence * 100)}% confidence
+                      {Math.round(entry.confidence * 100)}%
                     </Text>
                   )}
                 </View>
 
                 <View style={{ gap: 8 }}>
-                  {entry.idNumber && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>ID:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.idNumber}</Text>
-                    </View>
-                  )}
-                  {entry.jobNumber && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Job #:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.jobNumber}</Text>
-                    </View>
-                  )}
                   {entry.jobName && (
                     <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Job Name:</Text>
+                      <Text style={{ color: '#9ca3af', width: 100 }}>Project:</Text>
                       <Text style={{ color: '#fff', flex: 1 }}>{entry.jobName}</Text>
-                    </View>
-                  )}
-                  {entry.markNumber && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Mark:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.markNumber}</Text>
                     </View>
                   )}
                   {entry.productType && (
