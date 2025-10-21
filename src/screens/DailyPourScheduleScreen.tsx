@@ -25,11 +25,9 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
   const syncWithEliPlan = usePourScheduleStore((s) => s.syncWithEliPlan);
   const lastSyncTime = usePourScheduleStore((s) => s.lastSyncTime);
 
-  // Initialize forms on mount
+  // Initialize forms on mount (always run to ensure migrations)
   useEffect(() => {
-    if (forms.length === 0) {
-      initializeDefaultForms();
-    }
+    initializeDefaultForms();
   }, []);
 
   const [selectedDate, setSelectedDate] = useState(Date.now());

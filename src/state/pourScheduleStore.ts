@@ -322,6 +322,21 @@ export const usePourScheduleStore = create<PourScheduleState>()(
               });
             });
           });
+        } else {
+          // Migration: Add missing Extruded beds if they don't exist
+          const extrudedForms = state.forms.filter(f => f.department === 'Extruded');
+          const extrudedBedNumbers = ['1', '2', '3', '4', '5', '6'];
+          
+          extrudedBedNumbers.forEach((bedNum) => {
+            const exists = extrudedForms.some(f => f.name === bedNum);
+            if (!exists) {
+              state.addForm({
+                name: bedNum,
+                department: 'Extruded',
+                isActive: true,
+              });
+            }
+          });
         }
       },
     }),
