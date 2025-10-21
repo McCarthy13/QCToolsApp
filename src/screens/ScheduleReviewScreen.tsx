@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, TextInput, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -28,12 +28,24 @@ export default function ScheduleReviewScreen() {
   
   const [entries, setEntries] = useState<ParsedScheduleEntry[]>(route.params.entries);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const selectedDate = new Date(route.params.date);
 
   const handleUpdateEntry = (index: number, field: keyof ParsedScheduleEntry, value: any) => {
     const updated = [...entries];
     updated[index] = { ...updated[index], [field]: value };
     setEntries(updated);
+  };
+
+  const handleBulkAssignBed = (bedName: string) => {
+    const updated = entries.map(entry => ({ ...entry, formBed: bedName }));
+    setEntries(updated);
+    setShowBulkAssignModal(false);
+    Alert.alert(
+      'Beds Assigned',
+      `All ${entries.length} pieces assigned to ${bedName}`,
+      [{ text: 'OK' }]
+    );
   };
 
   const handleRemoveEntry = (index: number) => {
@@ -367,6 +379,19 @@ export default function ScheduleReviewScreen() {
         )}
       </View>
 
+      {/* Bulk Assign Button */}
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <Pressable
+          onPress={() => setShowBulkAssignModal(true)}
+          style={{ backgroundColor: '#8B5CF6', padding: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Ionicons name="copy" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>
+            Assign All to Same Bed
+          </Text>
+        </Pressable>
+      </View>
+
       {/* Entry List */}
       <ScrollView style={{ flex: 1, padding: 16, paddingTop: 8 }}>
         {entries.map((entry, index) => (
@@ -474,6 +499,68 @@ export default function ScheduleReviewScreen() {
           </Pressable>
         </View>
       )}
+
+      {/* Bulk Assign Modal */}
+      <Modal
+        visible={showBulkAssignModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowBulkAssignModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#111827', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '70%' }}>
+            {/* Modal Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#374151' }}>
+              <View>
+                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 4 }}>
+                  Assign All to Same Bed
+                </Text>
+                <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+                  {entries.length} pieces will be assigned
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowBulkAssignModal(false)}>
+                <Ionicons name="close" size={24} color="#9ca3af" />
+              </Pressable>
+            </View>
+
+            {/* Form/Bed List */}
+            <ScrollView style={{ padding: 16 }}>
+              {forms.filter(f => f.isActive).map((form) => (
+                <Pressable
+                  key={form.id}
+                  onPress={() => handleBulkAssignBed(form.name)}
+                  style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 2, borderColor: '#374151' }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View>
+                      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
+                        {form.name}
+                      </Text>
+                      <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+                        {form.department}{form.capacity ? ` • ${form.capacity}` : ''}
+                      </Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={20} color="#3b82f6" />
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {/* Cancel Button */}
+            <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#374151' }}>
+              <Pressable
+                onPress={() => setShowBulkAssignModal(false)}
+                style={{ backgroundColor: '#374151', padding: 14, borderRadius: 12, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#9ca3af', fontSize: 16, fontWeight: '600' }}>
+                  Cancel
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
