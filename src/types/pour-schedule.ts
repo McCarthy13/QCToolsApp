@@ -85,7 +85,7 @@ export interface DepartmentConfig {
 // Default form/bed configurations
 export const DEFAULT_FORMS: Record<PourDepartment, string[]> = {
   'Precast': ['BL1', 'BL3', 'BL4', 'BL6', 'FTE1', 'FTE2', 'FTW1', 'FTW2', 'Columns', 'STAD', 'STAIRS'],
-  'Extruded': [], // User can add custom forms
+  'Extruded': ['1', '2', '3', '4', '5', '6'],
   'Wall Panels': [], // User can add custom forms
   'Flexicore': [], // User can add custom forms
 };
