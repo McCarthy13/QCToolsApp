@@ -69,6 +69,15 @@ const tools: Tool[] = [
     route: 'QualityLogDashboard',
   },
   {
+    id: 'product-library',
+    name: 'Product Library',
+    description: 'Manage product types and tolerance specifications',
+    icon: 'cube',
+    color: '#6366F1',
+    bgColor: '#EEF2FF',
+    route: 'ProductLibrary',
+  },
+  {
     id: 'aggregate-library',
     name: 'Aggregate Library',
     description: 'Comprehensive database of aggregate characteristics',
