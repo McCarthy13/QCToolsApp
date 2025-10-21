@@ -265,7 +265,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
 
           <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827", marginBottom: 16 }}>Select Department</Text>
           <View style={{ gap: 16 }}>
-            {[viewingDepartment].map((dept) => {
+            {departments.map((dept) => {
               const deptEntries = todayEntries.filter(e => e.department === dept);
               const deptYards = deptEntries.reduce((sum, e) => sum + (e.concreteYards || 0), 0);
               const colors = getDepartmentColor(dept);
