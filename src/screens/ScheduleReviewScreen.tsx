@@ -390,8 +390,11 @@ export default function ScheduleReviewScreen() {
                     </>
                   )}
                 </View>
-                <Text style={{ color: '#9ca3af', fontSize: 14 }}>
-                  {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`} • Job {entry.jobNumber}
+                <Text style={{ color: '#3b82f6', fontSize: 15, fontWeight: '600', marginBottom: 2 }}>
+                  Job {entry.jobNumber}{entry.markNumber ? ` • ${entry.markNumber}` : ''}
+                </Text>
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>

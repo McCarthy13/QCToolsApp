@@ -265,10 +265,10 @@ export default function ScheduleScannerScreen() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
-                      {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`}
+                      Job {entry.jobNumber}{entry.markNumber ? ` • ${entry.markNumber}` : ''}
                     </Text>
                     <Text style={{ color: '#9ca3af', fontSize: 14 }}>
-                      Job {entry.jobNumber}{entry.markNumber ? ` • ${entry.markNumber}` : ''}
+                      {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`}
                     </Text>
                   </View>
                   {entry.confidence && (
