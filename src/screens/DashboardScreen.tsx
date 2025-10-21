@@ -194,44 +194,86 @@ export default function DashboardScreen() {
             </Text>
           </View>
 
-          {/* Tools Grid */}
-          <View className="space-y-4">
+          {/* Tools Grid - 3 Columns */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }}>
             {tools.map((tool) => (
-              <Pressable
+              <View 
                 key={tool.id}
-                onPress={() => handleToolPress(tool)}
-                disabled={tool.comingSoon}
-                className={`rounded-2xl p-6 shadow-sm ${
-                  tool.comingSoon ? 'opacity-60' : 'active:opacity-80'
-                }`}
-                style={{ backgroundColor: tool.bgColor }}
+                style={{ width: '33.333%', padding: 6 }}
               >
-                <View className="flex-row items-start justify-between mb-4">
-                  <View 
-                    className="rounded-xl p-3"
-                    style={{ backgroundColor: tool.color }}
-                  >
-                    <Ionicons name={tool.icon} size={32} color="white" />
-                  </View>
-                  {tool.comingSoon && (
-                    <View className="bg-yellow-100 px-3 py-1.5 rounded-full">
-                      <Text className="text-xs font-bold text-yellow-700">
-                        COMING SOON
-                      </Text>
+                <Pressable
+                  onPress={() => handleToolPress(tool)}
+                  disabled={tool.comingSoon}
+                  style={{
+                    backgroundColor: tool.bgColor,
+                    borderRadius: 16,
+                    padding: 12,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
+                    opacity: tool.comingSoon ? 0.6 : 1,
+                    minHeight: 160,
+                  }}
+                >
+                  {/* Icon */}
+                  <View style={{ alignItems: 'center', marginBottom: 8 }}>
+                    <View 
+                      style={{
+                        backgroundColor: tool.color,
+                        borderRadius: 12,
+                        padding: 10,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <Ionicons name={tool.icon} size={28} color="white" />
                     </View>
-                  )}
-                  {!tool.comingSoon && (
-                    <Ionicons name="chevron-forward" size={24} color={tool.color} />
-                  )}
-                </View>
+                    
+                    {tool.comingSoon && (
+                      <View style={{ 
+                        backgroundColor: '#FEF3C7', 
+                        paddingHorizontal: 6, 
+                        paddingVertical: 2, 
+                        borderRadius: 8,
+                        marginBottom: 4,
+                      }}>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#92400E' }}>
+                          SOON
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-                <Text className="text-xl font-bold text-gray-900 mb-2">
-                  {tool.name}
-                </Text>
-                <Text className="text-sm text-gray-600 leading-5">
-                  {tool.description}
-                </Text>
-              </Pressable>
+                  {/* Tool Name */}
+                  <Text 
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '700',
+                      color: '#111827',
+                      textAlign: 'center',
+                      marginBottom: 4,
+                      lineHeight: 16,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {tool.name}
+                  </Text>
+                  
+                  {/* Description */}
+                  <Text 
+                    style={{
+                      fontSize: 10,
+                      color: '#6B7280',
+                      textAlign: 'center',
+                      lineHeight: 13,
+                    }}
+                    numberOfLines={3}
+                  >
+                    {tool.description}
+                  </Text>
+                </Pressable>
+              </View>
             ))}
           </View>
 
