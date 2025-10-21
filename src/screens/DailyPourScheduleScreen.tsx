@@ -318,106 +318,76 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 12 }}>
-          {/* Header */}
-          <View style={{ marginBottom: 10 }}>
+        <View style={{ padding: 10 }}>
+          {/* Compact Header with Back Button */}
+          <View style={{ marginBottom: 8 }}>
             <Pressable
               onPress={() => setViewingDepartment(null)}
-              style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}
+              style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}
             >
-              <Ionicons name="arrow-back" size={20} color={deptColors.accent} />
-              <Text style={{ fontSize: 13, fontWeight: "600", color: deptColors.accent, marginLeft: 4 }}>
+              <Ionicons name="arrow-back" size={18} color={deptColors.accent} />
+              <Text style={{ fontSize: 12, fontWeight: "600", color: deptColors.accent, marginLeft: 4 }}>
                 Change Department
               </Text>
             </Pressable>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: deptColors.color, marginBottom: 2 }}>
-              {viewingDepartment}
-            </Text>
-            <Text style={{ fontSize: 12, color: "#6B7280" }}>
-              Manage concrete pours and schedules
-            </Text>
-          </View>
-
-          {/* Date Selector */}
-          <View style={{ marginBottom: 10 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <Pressable
-                onPress={() => changeDate(-1)}
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 8,
-                  padding: 8,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                }}
-              >
-                <Ionicons name="chevron-back" size={18} color="#111827" />
-              </Pressable>
-
-              <View style={{ flex: 1, marginHorizontal: 8, alignItems: "center" }}>
-                <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827" }}>
-                  {new Date(selectedDate).toLocaleDateString("en-US", { 
-                    weekday: "short", 
-                    month: "short", 
-                    day: "numeric"
-                  })}
-                </Text>
-                <Pressable onPress={() => setSelectedDate(Date.now())}>
-                  <Text style={{ fontSize: 11, color: "#3B82F6", fontWeight: "500" }}>
-                    Today
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.color }}>
+                {viewingDepartment}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#E5E7EB" }}>
+                  <Text style={{ fontSize: 10, color: "#6B7280" }}>Pours</Text>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827", textAlign: "center" }}>
+                    {departmentEntries.length}
                   </Text>
-                </Pressable>
-              </View>
-
-              <Pressable
-                onPress={() => changeDate(1)}
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 8,
-                  padding: 8,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                }}
-              >
-                <Ionicons name="chevron-forward" size={18} color="#111827" />
-              </Pressable>
-            </View>
-
-            {/* Summary */}
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                <Text style={{ fontSize: 10, color: "#6B7280", marginBottom: 1 }}>Pours</Text>
-                <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>
-                  {departmentEntries.length}
-                </Text>
-              </View>
-              <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                <Text style={{ fontSize: 10, color: "#6B7280", marginBottom: 1 }}>Yards</Text>
-                <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.accent }}>
-                  {departmentYards.toFixed(1)}
-                </Text>
+                </View>
+                <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#E5E7EB" }}>
+                  <Text style={{ fontSize: 10, color: "#6B7280" }}>Yards</Text>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: deptColors.accent, textAlign: "center" }}>
+                    {departmentYards.toFixed(1)}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View style={{ gap: 8, marginBottom: 12 }}>
+          {/* Compact Date Selector */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8, backgroundColor: "#FFFFFF", borderRadius: 8, padding: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
+            <Pressable onPress={() => changeDate(-1)} style={{ padding: 4 }}>
+              <Ionicons name="chevron-back" size={20} color="#111827" />
+            </Pressable>
+            <View style={{ alignItems: "center" }}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
+                {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              </Text>
+              <Pressable onPress={() => setSelectedDate(Date.now())}>
+                <Text style={{ fontSize: 10, color: "#3B82F6", fontWeight: "500" }}>Today</Text>
+              </Pressable>
+            </View>
+            <Pressable onPress={() => changeDate(1)} style={{ padding: 4 }}>
+              <Ionicons name="chevron-forward" size={20} color="#111827" />
+            </Pressable>
+          </View>
+
+          {/* Compact Action Buttons */}
+          <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
             <Pressable
               onPress={() => {
                 resetForm();
                 setShowAddModal(true);
               }}
               style={{
+                flex: 1,
                 backgroundColor: "#3B82F6",
-                borderRadius: 10,
-                padding: 12,
+                borderRadius: 8,
+                padding: 10,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-              <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "600", marginLeft: 6 }}>
+              <Ionicons name="add-circle" size={18} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600", marginLeft: 4 }}>
                 Add Pour
               </Text>
             </Pressable>
@@ -428,208 +398,160 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 department: viewingDepartment,
               })}
               style={{
+                flex: 1,
                 backgroundColor: "#8B5CF6",
-                borderRadius: 10,
-                padding: 12,
+                borderRadius: 8,
+                padding: 10,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <Ionicons name="scan" size={18} color="#FFFFFF" />
-              <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "600", marginLeft: 6 }}>
-                Scan Schedule
+              <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600", marginLeft: 4 }}>
+                Scan
               </Text>
             </Pressable>
           </View>
 
-          {/* Departments */}
-          <View style={{ gap: 16 }}>
-            {[viewingDepartment].map((dept) => {
-              const deptForms = getFormsByDepartment(dept);
-              const deptEntries = todayEntries.filter(e => e.department === dept);
-              const deptYards = deptEntries.reduce((sum, e) => sum + (e.concreteYards || 0), 0);
-              const isExpanded = viewingDepartment === dept;
-              const colors = getDepartmentColor(dept);
+          {/* Forms & Pours List */}
+          {(() => {
+            const deptForms = getFormsByDepartment(viewingDepartment);
+            const deptEntries = todayEntries.filter(e => e.department === viewingDepartment);
+            const colors = getDepartmentColor(viewingDepartment);
 
+            if (deptForms.length === 0) {
               return (
-                <View
-                  key={dept}
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: "#E5E7EB",
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* Department Header */}
-                  <Pressable
-                    onPress={() => setViewingDepartment(isExpanded ? null : dept)}
-                    style={{
-                      backgroundColor: colors.bg,
-                      padding: 16,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 18, fontWeight: "700", color: colors.color, marginBottom: 4 }}>
-                        {dept}
-                      </Text>
-                      <View style={{ flexDirection: "row", gap: 16 }}>
-                        <Text style={{ fontSize: 13, color: colors.color }}>
-                          {deptForms.length} Forms
-                        </Text>
-                        <Text style={{ fontSize: 13, color: colors.color }}>
-                          {deptEntries.length} Pours
-                        </Text>
-                        <Text style={{ fontSize: 13, color: colors.color, fontWeight: "600" }}>
-                          {deptYards.toFixed(1)} yds³
-                        </Text>
-                      </View>
-                    </View>
-                    <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={24} color={colors.color} />
-                  </Pressable>
+                <View style={{ padding: 20, alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 10 }}>
+                  <Ionicons name="construct-outline" size={28} color="#9CA3AF" />
+                  <Text style={{ fontSize: 13, color: "#6B7280", marginTop: 6 }}>
+                    No forms configured for this department
+                  </Text>
+                </View>
+              );
+            }
 
-                  {/* Expanded Content - Forms and Pours */}
-                  {isExpanded && (
-                    <View style={{ padding: 16 }}>
-                      {deptForms.length === 0 ? (
-                        <View style={{ padding: 24, alignItems: "center" }}>
-                          <Ionicons name="construct-outline" size={32} color="#9CA3AF" />
-                          <Text style={{ fontSize: 14, color: "#6B7280", marginTop: 8 }}>
-                            No forms configured for this department
+            return (
+              <View style={{ gap: 6 }}>
+                {deptForms.map((form) => {
+                  const formPours = deptEntries.filter(e => e.formBedId === form.id);
+                  
+                  return (
+                    <View
+                      key={form.id}
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: 8,
+                        padding: 8,
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    >
+                      {/* Form Header - More Compact */}
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: formPours.length > 0 ? 6 : 0 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
+                            {form.name}
+                          </Text>
+                          {form.capacity && (
+                            <Text style={{ fontSize: 11, color: "#6B7280" }}>
+                              Cap: {form.capacity}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={{
+                          backgroundColor: formPours.length > 0 ? colors.bg : "#F3F4F6",
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 6,
+                        }}>
+                          <Text style={{ fontSize: 11, fontWeight: "600", color: formPours.length > 0 ? colors.color : "#6B7280" }}>
+                            {formPours.length}
                           </Text>
                         </View>
-                      ) : (
-                        <View style={{ gap: 12 }}>
-                          {deptForms.map((form) => {
-                            const formPours = deptEntries.filter(e => e.formBedId === form.id);
+                      </View>
+
+                      {/* Pour Entries - Ultra Compact */}
+                      {formPours.length > 0 && (
+                        <View style={{ gap: 4 }}>
+                          {formPours.map((pour) => {
+                            const statusColors = getStatusColor(pour.status);
                             
                             return (
                               <View
-                                key={form.id}
+                                key={pour.id}
                                 style={{
                                   backgroundColor: "#F9FAFB",
-                                  borderRadius: 12,
-                                  padding: 12,
+                                  borderRadius: 6,
+                                  padding: 8,
                                   borderWidth: 1,
                                   borderColor: "#E5E7EB",
                                 }}
                               >
-                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: formPours.length > 0 ? 12 : 0 }}>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                   <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 2 }}>
-                                      {form.name}
-                                    </Text>
-                                    {form.capacity && (
-                                      <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                                        Capacity: {form.capacity}
+                                    {/* Job # and Status on one line */}
+                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#111827" }}>
+                                        #{pour.jobNumber}
+                                      </Text>
+                                      <View style={{ backgroundColor: statusColors.bg, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                                        <Text style={{ fontSize: 9, fontWeight: "600", color: statusColors.text }}>
+                                          {pour.status}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                    {/* Job Name if exists */}
+                                    {pour.jobName && (
+                                      <Text style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                                        {pour.jobName}
                                       </Text>
                                     )}
+                                    {/* Compact details row */}
+                                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                                      {pour.markNumbers && (
+                                        <Text style={{ fontSize: 11, color: "#6B7280" }}>
+                                          {pour.markNumbers}
+                                        </Text>
+                                      )}
+                                      {pour.pieceCount && (
+                                        <Text style={{ fontSize: 11, color: "#6B7280" }}>
+                                          {pour.pieceCount}pc
+                                        </Text>
+                                      )}
+                                      {pour.concreteYards && (
+                                        <Text style={{ fontSize: 11, color: colors.accent, fontWeight: "600" }}>
+                                          {pour.concreteYards}yd³
+                                        </Text>
+                                      )}
+                                      {pour.scheduledTime && (
+                                        <Text style={{ fontSize: 11, color: "#6B7280" }}>
+                                          {pour.scheduledTime}
+                                        </Text>
+                                      )}
+                                    </View>
                                   </View>
-                                  <View style={{
-                                    backgroundColor: formPours.length > 0 ? colors.bg : "#F3F4F6",
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 4,
-                                    borderRadius: 8,
-                                  }}>
-                                    <Text style={{ fontSize: 12, fontWeight: "600", color: formPours.length > 0 ? colors.color : "#6B7280" }}>
-                                      {formPours.length} {formPours.length === 1 ? "Pour" : "Pours"}
-                                    </Text>
+                                  {/* Action buttons - smaller */}
+                                  <View style={{ flexDirection: "row", gap: 6 }}>
+                                    <Pressable onPress={() => handleEditPour(pour)} style={{ padding: 2 }}>
+                                      <Ionicons name="pencil" size={14} color="#3B82F6" />
+                                    </Pressable>
+                                    <Pressable onPress={() => handleDeletePour(pour.id)} style={{ padding: 2 }}>
+                                      <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                                    </Pressable>
                                   </View>
                                 </View>
-
-                                {/* Pour Entries for this form */}
-                                {formPours.length > 0 && (
-                                  <View style={{ gap: 8 }}>
-                                    {formPours.map((pour) => {
-                                      const statusColors = getStatusColor(pour.status);
-                                      
-                                      return (
-                                        <View
-                                          key={pour.id}
-                                          style={{
-                                            backgroundColor: "#FFFFFF",
-                                            borderRadius: 8,
-                                            padding: 12,
-                                            borderWidth: 1,
-                                            borderColor: "#E5E7EB",
-                                          }}
-                                        >
-                                          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                                            <View style={{ flex: 1 }}>
-                                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                                <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827" }}>
-                                                  Job #{pour.jobNumber}
-                                                </Text>
-                                                <View style={{ backgroundColor: statusColors.bg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                                                  <Text style={{ fontSize: 10, fontWeight: "600", color: statusColors.text }}>
-                                                    {pour.status}
-                                                  </Text>
-                                                </View>
-                                              </View>
-                                              {pour.jobName && (
-                                                <Text style={{ fontSize: 13, color: "#111827", marginBottom: 4 }}>
-                                                  {pour.jobName}
-                                                </Text>
-                                              )}
-                                              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                                                {pour.markNumbers && (
-                                                  <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                                                    Marks: {pour.markNumbers}
-                                                  </Text>
-                                                )}
-                                                {pour.pieceCount && (
-                                                  <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                                                    {pour.pieceCount} pcs
-                                                  </Text>
-                                                )}
-                                                {pour.concreteYards && (
-                                                  <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "600" }}>
-                                                    {pour.concreteYards} yds³
-                                                  </Text>
-                                                )}
-                                                {pour.scheduledTime && (
-                                                  <Text style={{ fontSize: 12, color: "#6B7280" }}>
-                                                    {pour.scheduledTime}
-                                                  </Text>
-                                                )}
-                                              </View>
-                                            </View>
-                                            <View style={{ flexDirection: "row", gap: 8 }}>
-                                              <Pressable
-                                                onPress={() => handleEditPour(pour)}
-                                                style={{ padding: 4 }}
-                                              >
-                                                <Ionicons name="pencil" size={16} color="#3B82F6" />
-                                              </Pressable>
-                                              <Pressable
-                                                onPress={() => handleDeletePour(pour.id)}
-                                                style={{ padding: 4 }}
-                                              >
-                                                <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                                              </Pressable>
-                                            </View>
-                                          </View>
-                                        </View>
-                                      );
-                                    })}
-                                  </View>
-                                )}
                               </View>
                             );
                           })}
                         </View>
                       )}
                     </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
+                  );
+                })}
+              </View>
+            );
+          })()}
         </View>
       </ScrollView>
 
