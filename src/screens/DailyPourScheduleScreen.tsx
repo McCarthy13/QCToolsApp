@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, TextInput, Modal, Keyboard, TouchableWithoutFeedback, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, Modal, Keyboard, TouchableWithoutFeedback, Alert } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -8,6 +8,7 @@ import { useAuthStore } from "../state/authStore";
 import { useState, useEffect } from "react";
 import { PourDepartment, PourEntry, PourStatus } from "../types/pour-schedule";
 import { isEliPlanConfigured } from "../api/eliplan";
+import JobAutocompleteInput from "../components/JobAutocompleteInput";
 
 type Props = NativeStackScreenProps<RootStackParamList, "DailyPourSchedule">;
 
@@ -611,49 +612,14 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                     </View>
                   </View>
 
-                  {/* Job Number */}
-                  <View>
-                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                      Job # *
-                    </Text>
-                    <TextInput
-                      value={jobNumber}
-                      onChangeText={setJobNumber}
-                      placeholder="Enter job number"
-                      placeholderTextColor="#9CA3AF"
-                      style={{
-                        backgroundColor: "#F9FAFB",
-                        borderRadius: 12,
-                        padding: 12,
-                        fontSize: 14,
-                        color: "#111827",
-                        borderWidth: 1,
-                        borderColor: "#E5E7EB",
-                      }}
-                    />
-                  </View>
-
-                  {/* Job Name */}
-                  <View>
-                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                      Job Name
-                    </Text>
-                    <TextInput
-                      value={jobName}
-                      onChangeText={setJobName}
-                      placeholder="Enter job name"
-                      placeholderTextColor="#9CA3AF"
-                      style={{
-                        backgroundColor: "#F9FAFB",
-                        borderRadius: 12,
-                        padding: 12,
-                        fontSize: 14,
-                        color: "#111827",
-                        borderWidth: 1,
-                        borderColor: "#E5E7EB",
-                      }}
-                    />
-                  </View>
+                  {/* Job Number & Name with Autocomplete */}
+                  <JobAutocompleteInput
+                    jobNumber={jobNumber}
+                    jobName={jobName}
+                    onJobNumberChange={setJobNumber}
+                    onJobNameChange={setJobName}
+                    required={true}
+                  />
 
                   {/* Mark Numbers */}
                   <View>

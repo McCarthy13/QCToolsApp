@@ -13,7 +13,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { ParsedScheduleEntry } from '../api/schedule-scanner';
 import { usePourScheduleStore } from '../state/pourScheduleStore';
-import { PourDepartment } from '../types/pour-schedule';
+import JobAutocompleteInput from '../components/JobAutocompleteInput';
 
 type ReviewNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ScheduleReview'>;
 type ReviewRouteProp = RouteProp<RootStackParamList, 'ScheduleReview'>;
@@ -256,27 +256,17 @@ export default function ScheduleReviewScreen() {
               />
             </View>
 
-            {/* Job Number */}
+            {/* Job Number & Name with Autocomplete */}
             <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Job Number *</Text>
-              <TextInput
-                value={entry.jobNumber}
-                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'jobNumber', text)}
-                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
-                placeholder="Job number"
-                placeholderTextColor="#6b7280"
-              />
-            </View>
-
-            {/* Job Name */}
-            <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Job Name</Text>
-              <TextInput
-                value={entry.jobName || ''}
-                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'jobName', text)}
-                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
-                placeholder="Project name"
-                placeholderTextColor="#6b7280"
+              <JobAutocompleteInput
+                jobNumber={entry.jobNumber}
+                jobName={entry.jobName || ''}
+                onJobNumberChange={(text) => handleUpdateEntry(selectedIndex, 'jobNumber', text)}
+                onJobNameChange={(text) => handleUpdateEntry(selectedIndex, 'jobName', text)}
+                required={true}
+                jobNumberLabel="Job Number"
+                jobNameLabel="Job Name"
+                theme="dark"
               />
             </View>
 
