@@ -87,6 +87,15 @@ const tools: Tool[] = [
     route: 'ProductLibrary',
   },
   {
+    id: 'project-library',
+    name: 'Project Library',
+    description: 'Manage projects, team assignments, and piece counts',
+    icon: 'folder-open',
+    color: '#F59E0B',
+    bgColor: '#FEF3C7',
+    route: 'ProjectLibrary',
+  },
+  {
     id: 'aggregate-library',
     name: 'Aggregate Library',
     description: 'Comprehensive database of aggregate characteristics',

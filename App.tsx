@@ -42,6 +42,9 @@ import QualityLogAddEditScreen from "./src/screens/QualityLogAddEditScreen";
 import QualityLogMetricsScreen from "./src/screens/QualityLogMetricsScreen";
 import IssueCodeLibraryScreen from "./src/screens/IssueCodeLibraryScreen";
 import ProductLibraryScreen from "./src/screens/ProductLibraryScreen";
+import ProjectLibraryScreen from "./src/screens/ProjectLibraryScreen";
+import ProjectLibraryDetailScreen from "./src/screens/ProjectLibraryDetailScreen";
+import ProjectLibraryAddEditScreen from "./src/screens/ProjectLibraryAddEditScreen";
 import DailyPourScheduleScreen from "./src/screens/DailyPourScheduleScreen";
 import ScheduleScannerScreen from "./src/screens/ScheduleScannerScreen";
 import ScheduleReviewScreen from "./src/screens/ScheduleReviewScreen";
@@ -651,6 +654,21 @@ export default function App() {
                   </Pressable>
                 ),
               })}
+            />
+            <Stack.Screen
+              name="ProjectLibrary"
+              component={ProjectLibraryScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="ProjectLibraryDetail"
+              component={ProjectLibraryDetailScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="ProjectLibraryAddEdit"
+              component={ProjectLibraryAddEditScreen}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="DailyPourSchedule"
