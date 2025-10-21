@@ -85,4 +85,5 @@ export type RootStackParamList = {
   QualityLogAddEdit: { logId?: string; department?: string };
   QualityLogMetrics: undefined;
   IssueCodeLibrary: undefined;
+  ProductLibrary: undefined;
 };

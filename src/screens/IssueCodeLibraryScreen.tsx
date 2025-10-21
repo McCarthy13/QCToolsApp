@@ -4,8 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
 import { useQualityLogStore } from "../state/qualityLogStore";
+import { useProductLibraryStore } from "../state/productLibraryStore";
 import { useState } from "react";
 import { IssueSeverity, DepartmentType } from "../types/quality-log";
+import { ProductType } from "../types/product-library";
 
 type Props = NativeStackScreenProps<RootStackParamList, "IssueCodeLibrary">;
 
@@ -14,6 +16,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
   const issueCodes = useQualityLogStore((s) => s.issueCodes);
   const addIssueCode = useQualityLogStore((s) => s.addIssueCode);
   const deleteIssueCode = useQualityLogStore((s) => s.deleteIssueCode);
+  const products = useProductLibraryStore((s) => s.products);
 
   const [showModal, setShowModal] = useState(false);
   const [code, setCode] = useState("");
@@ -21,7 +24,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState<IssueSeverity>("Minor");
   const [department, setDepartment] = useState<DepartmentType | undefined>();
-  const [tolerance, setTolerance] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<ProductType[]>([]);
 
   const handleAdd = () => {
     if (!code.trim() || !title.trim() || !description.trim()) {
@@ -35,13 +38,25 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
       return;
     }
 
+    if (selectedProducts.length === 0) {
+      Alert.alert("Warning", "No products selected. This issue code will not have tolerance references.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Save Anyway", onPress: () => performAdd(codeNum) },
+      ]);
+      return;
+    }
+
+    performAdd(codeNum);
+  };
+
+  const performAdd = (codeNum: number) => {
     addIssueCode({
       code: codeNum,
       title,
       description,
       severity,
       department,
-      tolerance: tolerance.trim() || undefined,
+      applicableProducts: selectedProducts,
     });
 
     // Reset form
@@ -50,7 +65,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
     setDescription("");
     setSeverity("Minor");
     setDepartment(undefined);
-    setTolerance("");
+    setSelectedProducts([]);
     setShowModal(false);
   };
 
@@ -202,12 +217,17 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
                           <Text style={{ fontSize: 14, color: "#6B7280", lineHeight: 20 }}>
                             {issueCode.description}
                           </Text>
-                          {issueCode.tolerance && (
-                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
-                              <Ionicons name="resize-outline" size={14} color="#6366F1" />
-                              <Text style={{ fontSize: 13, color: "#6366F1", marginLeft: 4, fontWeight: "500" }}>
-                                Tolerance: {issueCode.tolerance}
+                          {issueCode.applicableProducts && issueCode.applicableProducts.length > 0 && (
+                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, flexWrap: "wrap", gap: 4 }}>
+                              <Ionicons name="cube-outline" size={14} color="#6366F1" />
+                              <Text style={{ fontSize: 13, color: "#6366F1", fontWeight: "500" }}>
+                                Products:
                               </Text>
+                              {issueCode.applicableProducts.map((product, idx) => (
+                                <Text key={idx} style={{ fontSize: 12, color: "#6366F1" }}>
+                                  {product}{idx < issueCode.applicableProducts.length - 1 ? "," : ""}
+                                </Text>
+                              ))}
                             </View>
                           )}
                         </View>
@@ -389,26 +409,55 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
 
                   <View>
                     <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                      Tolerance (Optional)
+                      Applicable Products
                     </Text>
-                    <TextInput
-                      value={tolerance}
-                      onChangeText={setTolerance}
-                      placeholder="e.g., ±1/8 inch or ±3mm"
-                      placeholderTextColor="#9CA3AF"
-                      style={{
-                        backgroundColor: "#F9FAFB",
-                        borderRadius: 12,
-                        padding: 12,
-                        fontSize: 14,
-                        color: "#111827",
-                        borderWidth: 1,
-                        borderColor: "#E5E7EB",
-                      }}
-                    />
-                    <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 6 }}>
-                      Tolerance specification varies by department
-                    </Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {products.map((product) => {
+                        const isSelected = selectedProducts.includes(product.name);
+                        return (
+                          <Pressable
+                            key={product.id}
+                            onPress={() => {
+                              if (isSelected) {
+                                setSelectedProducts(selectedProducts.filter((p) => p !== product.name));
+                              } else {
+                                setSelectedProducts([...selectedProducts, product.name]);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: isSelected ? "#6366F1" : "#F3F4F6",
+                              paddingVertical: 8,
+                              paddingHorizontal: 12,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "600",
+                                color: isSelected ? "#FFFFFF" : "#6B7280",
+                              }}
+                            >
+                              {product.name}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                      <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
+                        Select products this issue applies to
+                      </Text>
+                      <Pressable
+                        onPress={() => navigation.navigate("ProductLibrary")}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                      >
+                        <Ionicons name="add-circle-outline" size={16} color="#3B82F6" />
+                        <Text style={{ fontSize: 12, color: "#3B82F6", fontWeight: "500" }}>
+                          Manage Products
+                        </Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
               </ScrollView>

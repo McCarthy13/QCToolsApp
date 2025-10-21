@@ -1,5 +1,7 @@
 // Quality Log Types for Department-Specific Logging
 
+import { ProductType } from './product-library';
+
 export type DepartmentType = 'Flexicore' | 'Wall Panels' | 'Extruded' | 'Precast';
 
 export type IssueStatus = 'Open' | 'In Progress' | 'Resolved' | 'Deferred' | 'Rejected';
@@ -25,7 +27,7 @@ export interface IssueCode {
   description: string;
   department?: DepartmentType; // Optional: specific to department or global
   severity: IssueSeverity;
-  tolerance?: string; // Tolerance specification - varies by department
+  applicableProducts: ProductType[]; // Product types this issue applies to
   createdAt: number;
   updatedAt: number;
 }

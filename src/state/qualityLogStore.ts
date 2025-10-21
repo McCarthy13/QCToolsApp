@@ -415,16 +415,76 @@ export const useQualityLogStore = create<QualityLogState>()(
         // Initialize common issue codes if none exist
         if (state.issueCodes.length === 0) {
           const defaultCodes = [
-            { code: 101, title: 'Concrete Segregation', severity: 'Major' as IssueSeverity, description: 'Separation of coarse aggregates from concrete mix' },
-            { code: 102, title: 'Surface Defects', severity: 'Minor' as IssueSeverity, description: 'Minor surface imperfections or blemishes' },
-            { code: 103, title: 'Honeycomb', severity: 'Critical' as IssueSeverity, description: 'Voids in concrete due to incomplete consolidation' },
-            { code: 201, title: 'Dimensional Variance', severity: 'Major' as IssueSeverity, description: 'Product dimensions outside tolerance' },
-            { code: 202, title: 'Cracking', severity: 'Critical' as IssueSeverity, description: 'Structural or surface cracks in product' },
-            { code: 203, title: 'Spalling', severity: 'Major' as IssueSeverity, description: 'Flaking or chipping of concrete surface' },
-            { code: 301, title: 'Color Variation', severity: 'Minor' as IssueSeverity, description: 'Inconsistent coloring in finished product' },
-            { code: 302, title: 'Embedded Items Misplaced', severity: 'Major' as IssueSeverity, description: 'Inserts, anchors, or embeds not in correct position' },
-            { code: 401, title: 'Form Damage', severity: 'Observation' as IssueSeverity, description: 'Mold or form showing signs of wear or damage' },
-            { code: 402, title: 'Release Agent Issue', severity: 'Minor' as IssueSeverity, description: 'Problem with form release application' },
+            { 
+              code: 101, 
+              title: 'Concrete Segregation', 
+              severity: 'Major' as IssueSeverity, 
+              description: 'Separation of coarse aggregates from concrete mix',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
+            },
+            { 
+              code: 102, 
+              title: 'Surface Defects', 
+              severity: 'Minor' as IssueSeverity, 
+              description: 'Minor surface imperfections or blemishes',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
+            },
+            { 
+              code: 103, 
+              title: 'Honeycomb', 
+              severity: 'Critical' as IssueSeverity, 
+              description: 'Voids in concrete due to incomplete consolidation',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Columns', 'Wall Panels'] as any[]
+            },
+            { 
+              code: 201, 
+              title: 'Dimensional Variance', 
+              severity: 'Major' as IssueSeverity, 
+              description: 'Product dimensions outside tolerance',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
+            },
+            { 
+              code: 202, 
+              title: 'Cracking', 
+              severity: 'Critical' as IssueSeverity, 
+              description: 'Structural or surface cracks in product',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
+            },
+            { 
+              code: 203, 
+              title: 'Spalling', 
+              severity: 'Major' as IssueSeverity, 
+              description: 'Flaking or chipping of concrete surface',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Columns', 'Wall Panels'] as any[]
+            },
+            { 
+              code: 301, 
+              title: 'Color Variation', 
+              severity: 'Minor' as IssueSeverity, 
+              description: 'Inconsistent coloring in finished product',
+              applicableProducts: ['Wall Panels'] as any[]
+            },
+            { 
+              code: 302, 
+              title: 'Embedded Items Misplaced', 
+              severity: 'Major' as IssueSeverity, 
+              description: 'Inserts, anchors, or embeds not in correct position',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Columns', 'Wall Panels'] as any[]
+            },
+            { 
+              code: 401, 
+              title: 'Form Damage', 
+              severity: 'Observation' as IssueSeverity, 
+              description: 'Mold or form showing signs of wear or damage',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
+            },
+            { 
+              code: 402, 
+              title: 'Release Agent Issue', 
+              severity: 'Minor' as IssueSeverity, 
+              description: 'Problem with form release application',
+              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
+            },
           ];
           
           defaultCodes.forEach((codeData) => {

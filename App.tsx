@@ -41,6 +41,7 @@ import QualityLogDetailScreen from "./src/screens/QualityLogDetailScreen";
 import QualityLogAddEditScreen from "./src/screens/QualityLogAddEditScreen";
 import QualityLogMetricsScreen from "./src/screens/QualityLogMetricsScreen";
 import IssueCodeLibraryScreen from "./src/screens/IssueCodeLibraryScreen";
+import ProductLibraryScreen from "./src/screens/ProductLibraryScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -629,6 +630,18 @@ export default function App() {
               component={IssueCodeLibraryScreen}
               options={({ navigation }) => ({
                 title: "Issue Code Library",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="ProductLibrary"
+              component={ProductLibraryScreen}
+              options={({ navigation }) => ({
+                title: "Product Library",
                 headerRight: () => (
                   <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
                     <Ionicons name="home-outline" size={24} color="#111827" />
