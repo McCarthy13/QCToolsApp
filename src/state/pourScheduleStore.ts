@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PourEntry, DailySchedule, FormBed, PourDepartment, DEFAULT_FORMS } from '../types/pour-schedule';
+import { fetchEliPlanSchedule, EliPlanScheduleItem, mapEliPlanDepartment, mapEliPlanStatus } from '../api/eliplan';
 
 interface PourScheduleState {
   // Data
   pourEntries: PourEntry[];
   schedules: DailySchedule[];
   forms: FormBed[];
+  lastSyncTime: number | null;
   
   // Form/Bed Operations
   addForm: (form: Omit<FormBed, 'id'>) => string;
@@ -31,6 +33,9 @@ interface PourScheduleState {
   getScheduleForDate: (date: number, department: PourDepartment) => DailySchedule | undefined;
   getTotalYardsForDate: (date: number, department?: PourDepartment) => number;
   
+  // EliPlan Sync
+  syncWithEliPlan: (date: Date, createdBy: string) => Promise<{ success: boolean; imported: number; error?: string }>;
+  
   // Utility
   clearAllData: () => void;
   initializeDefaultForms: () => void;
@@ -42,6 +47,7 @@ export const usePourScheduleStore = create<PourScheduleState>()(
       pourEntries: [],
       schedules: [],
       forms: [],
+      lastSyncTime: null,
       
       // Form/Bed Operations
       addForm: (form) => {
@@ -177,6 +183,117 @@ export const usePourScheduleStore = create<PourScheduleState>()(
       getTotalYardsForDate: (date, department) => {
         const entries = get().getPourEntriesByDate(date, department);
         return entries.reduce((sum, entry) => sum + (entry.concreteYards || 0), 0);
+      },
+      
+      // EliPlan Sync
+      syncWithEliPlan: async (date, createdBy) => {
+        try {
+          // Fetch data from EliPlan
+          const eliplanData = await fetchEliPlanSchedule(date);
+          
+          const state = get();
+          let imported = 0;
+          
+          // Process each EliPlan item
+          for (const item of eliplanData) {
+            // Map department
+            const department = mapEliPlanDepartment(item.department);
+            if (!department) {
+              console.warn(`Skipping item with unmapped department: ${item.department}`);
+              continue;
+            }
+            
+            // Find or create form/bed
+            let formBedId: string | undefined;
+            let formBedName = item.workstation || 'Unknown';
+            
+            // Try to find existing form
+            const existingForm = state.forms.find(
+              f => f.department === department && 
+              f.name.toLowerCase() === formBedName.toLowerCase()
+            );
+            
+            if (existingForm) {
+              formBedId = existingForm.id;
+              formBedName = existingForm.name;
+            } else {
+              // Create new form if workstation is provided
+              if (item.workstation) {
+                formBedId = state.addForm({
+                  name: item.workstation,
+                  department,
+                  isActive: true,
+                  notes: 'Auto-created from EliPlan',
+                });
+              } else {
+                // Skip if no workstation specified
+                console.warn(`Skipping item without workstation: Job ${item.jobNumber}`);
+                continue;
+              }
+            }
+            
+            // Check if entry already exists for this job/date/form
+            const existingEntry = state.pourEntries.find(
+              e => e.jobNumber === item.jobNumber &&
+                   e.scheduledDate === new Date(item.scheduledDate).getTime() &&
+                   e.formBedId === formBedId
+            );
+            
+            if (existingEntry) {
+              // Update existing entry
+              state.updatePourEntry(existingEntry.id, {
+                jobName: item.jobName || item.customerName,
+                markNumbers: item.markNumber,
+                pieceCount: item.pieceCount,
+                productType: item.productDescription || item.productCode,
+                dimensions: item.dimensions,
+                mixDesign: item.concreteGrade || item.mixDesignId,
+                concreteYards: item.concreteVolume,
+                scheduledTime: item.scheduledStartTime,
+                status: mapEliPlanStatus(item.status),
+                foreman: item.foreman,
+                notes: item.notes ? `${item.notes} (Synced from EliPlan)` : 'Synced from EliPlan',
+              });
+            } else {
+              // Create new entry
+              state.addPourEntry({
+                formBedId,
+                formBedName,
+                department,
+                jobNumber: item.jobNumber,
+                jobName: item.jobName || item.customerName,
+                markNumbers: item.markNumber,
+                pieceCount: item.pieceCount,
+                productType: item.productDescription || item.productCode,
+                dimensions: item.dimensions,
+                mixDesign: item.concreteGrade || item.mixDesignId,
+                concreteYards: item.concreteVolume,
+                scheduledDate: new Date(item.scheduledDate).getTime(),
+                scheduledTime: item.scheduledStartTime,
+                status: mapEliPlanStatus(item.status),
+                foreman: item.foreman,
+                notes: item.notes ? `${item.notes} (Synced from EliPlan)` : 'Synced from EliPlan',
+                createdBy,
+              });
+              imported++;
+            }
+          }
+          
+          // Update sync time
+          set({ lastSyncTime: Date.now() });
+          
+          return {
+            success: true,
+            imported,
+          };
+        } catch (error) {
+          console.error('EliPlan sync error:', error);
+          return {
+            success: false,
+            imported: 0,
+            error: error instanceof Error ? error.message : 'Unknown sync error',
+          };
+        }
       },
       
       // Utility

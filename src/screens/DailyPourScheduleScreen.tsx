@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, TextInput, Modal, Keyboard, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, Modal, Keyboard, TouchableWithoutFeedback, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -7,6 +7,7 @@ import { usePourScheduleStore } from "../state/pourScheduleStore";
 import { useAuthStore } from "../state/authStore";
 import { useState, useEffect } from "react";
 import { PourDepartment, PourEntry, PourStatus } from "../types/pour-schedule";
+import { isEliPlanConfigured } from "../api/eliplan";
 
 type Props = NativeStackScreenProps<RootStackParamList, "DailyPourSchedule">;
 
@@ -21,6 +22,8 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
   const deletePourEntry = usePourScheduleStore((s) => s.deletePourEntry);
   const getTotalYardsForDate = usePourScheduleStore((s) => s.getTotalYardsForDate);
   const initializeDefaultForms = usePourScheduleStore((s) => s.initializeDefaultForms);
+  const syncWithEliPlan = usePourScheduleStore((s) => s.syncWithEliPlan);
+  const lastSyncTime = usePourScheduleStore((s) => s.lastSyncTime);
 
   // Initialize forms on mount
   useEffect(() => {
@@ -32,6 +35,7 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
   const [selectedDate, setSelectedDate] = useState(Date.now());
   const [expandedDepartment, setExpandedDepartment] = useState<PourDepartment | null>("Precast");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [editingPourId, setEditingPourId] = useState<string | null>(null);
   
   // Form state for pour entry
@@ -171,6 +175,35 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
     setSelectedDate(newDate.getTime());
   };
 
+  const handleSyncWithEliPlan = async () => {
+    if (!currentUser) {
+      Alert.alert("Error", "You must be logged in to sync");
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const result = await syncWithEliPlan(new Date(selectedDate), currentUser.email);
+      
+      if (result.success) {
+        Alert.alert(
+          "Sync Successful",
+          `Imported ${result.imported} pour ${result.imported === 1 ? 'entry' : 'entries'} from EliPlan`,
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert("Sync Failed", result.error || "Unknown error occurred");
+      }
+    } catch (error) {
+      Alert.alert(
+        "Sync Error",
+        error instanceof Error ? error.message : "Failed to connect to EliPlan"
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const todayEntries = getPourEntriesByDate(selectedDate);
   const totalYards = getTotalYardsForDate(selectedDate);
 
@@ -254,32 +287,82 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
             </View>
           </View>
 
-          {/* Add Pour Button */}
-          <Pressable
-            onPress={() => {
-              resetForm();
-              setShowAddModal(true);
-            }}
-            style={{
-              backgroundColor: "#3B82F6",
-              borderRadius: 16,
-              padding: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
-            }}
-          >
-            <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600", marginLeft: 8 }}>
-              Add Pour Entry
-            </Text>
-          </Pressable>
+          {/* Action Buttons */}
+          <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
+            <Pressable
+              onPress={() => {
+                resetForm();
+                setShowAddModal(true);
+              }}
+              style={{
+                flex: 1,
+                backgroundColor: "#3B82F6",
+                borderRadius: 16,
+                padding: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+              <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600", marginLeft: 8 }}>
+                Add Pour
+              </Text>
+            </Pressable>
+
+            {isEliPlanConfigured() && (
+              <Pressable
+                onPress={handleSyncWithEliPlan}
+                disabled={isSyncing}
+                style={{
+                  backgroundColor: isSyncing ? "#D1D5DB" : "#10B981",
+                  borderRadius: 16,
+                  padding: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minWidth: 140,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+              >
+                {isSyncing ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="sync" size={20} color="#FFFFFF" />
+                    <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
+                      Sync EliPlan
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            )}
+          </View>
+
+          {/* Last Sync Info */}
+          {lastSyncTime && isEliPlanConfigured() && (
+            <View style={{ 
+              backgroundColor: "#F0FDF4", 
+              borderRadius: 12, 
+              padding: 12, 
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "#BBF7D0",
+            }}>
+              <Text style={{ fontSize: 12, color: "#166534" }}>
+                Last synced: {new Date(lastSyncTime).toLocaleString()}
+              </Text>
+            </View>
+          )}
 
           {/* Departments */}
           <View style={{ gap: 16 }}>
