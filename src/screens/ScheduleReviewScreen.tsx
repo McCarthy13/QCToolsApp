@@ -1,0 +1,401 @@
+/**
+ * Schedule Review Screen
+ * 
+ * Review and edit AI-parsed schedule entries before importing
+ */
+
+import React, { useState } from 'react';
+import { View, Text, Pressable, ScrollView, TextInput, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
+import { ParsedScheduleEntry } from '../api/schedule-scanner';
+import { usePourScheduleStore } from '../state/pourScheduleStore';
+
+type ReviewNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ScheduleReview'>;
+type ReviewRouteProp = RouteProp<RootStackParamList, 'ScheduleReview'>;
+
+export default function ScheduleReviewScreen() {
+  const navigation = useNavigation<ReviewNavigationProp>();
+  const route = useRoute<ReviewRouteProp>();
+  
+  const addPourEntry = usePourScheduleStore((s) => s.addPourEntry);
+  
+  const [entries, setEntries] = useState<ParsedScheduleEntry[]>(route.params.entries);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const selectedDate = new Date(route.params.date);
+
+  const handleUpdateEntry = (index: number, field: keyof ParsedScheduleEntry, value: any) => {
+    const updated = [...entries];
+    updated[index] = { ...updated[index], [field]: value };
+    setEntries(updated);
+  };
+
+  const handleRemoveEntry = (index: number) => {
+    Alert.alert(
+      'Remove Entry',
+      'Are you sure you want to remove this entry?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            const updated = entries.filter((_, i) => i !== index);
+            setEntries(updated);
+            if (selectedIndex === index) {
+              setSelectedIndex(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleImportAll = () => {
+    if (entries.length === 0) {
+      Alert.alert('No Entries', 'There are no entries to import.');
+      return;
+    }
+
+    let imported = 0;
+    entries.forEach((entry) => {
+      // Convert parsed entry to pour entry format
+      // Note: We need to map formBed name to actual department
+      // For now, defaulting to "Precast" - ideally would check form list
+      addPourEntry({
+        formBedId: entry.formBed,
+        formBedName: entry.formBed,
+        department: (entry.department as any) || "Precast",
+        scheduledDate: selectedDate.getTime(),
+        scheduledTime: entry.scheduledTime || undefined,
+        jobNumber: entry.jobNumber,
+        jobName: entry.jobName || undefined,
+        markNumbers: entry.markNumbers || undefined,
+        pieceCount: entry.pieceCount || undefined,
+        productType: entry.productType || undefined,
+        concreteYards: entry.concreteYards || undefined,
+        mixDesign: entry.mixDesign || undefined,
+        notes: entry.notes || undefined,
+        status: "Scheduled",
+        foreman: undefined,
+        createdBy: "Scanner",
+      });
+      imported++;
+    });
+
+    Alert.alert(
+      'Success',
+      `Imported ${imported} ${imported === 1 ? 'entry' : 'entries'} to the daily pour schedule.`,
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.navigate('DailyPourSchedule');
+          },
+        },
+      ]
+    );
+  };
+
+  // Render edit form for selected entry
+  const renderEditForm = () => {
+    if (selectedIndex === null) return null;
+    const entry = entries[selectedIndex];
+
+    return (
+      <View style={{ flex: 1, backgroundColor: '#111827', padding: 16 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
+            Edit Entry
+          </Text>
+          <Pressable
+            onPress={() => setSelectedIndex(null)}
+            style={{ padding: 8 }}
+          >
+            <Ionicons name="close" size={24} color="#9ca3af" />
+          </Pressable>
+        </View>
+
+        <ScrollView>
+          <View style={{ gap: 16 }}>
+            {/* Form Bed */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Form / Bed *</Text>
+              <TextInput
+                value={entry.formBed}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'formBed', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., BL1, FTE1"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Job Number */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Job Number *</Text>
+              <TextInput
+                value={entry.jobNumber}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'jobNumber', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="Job number"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Job Name */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Job Name</Text>
+              <TextInput
+                value={entry.jobName || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'jobName', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="Project name"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Mark Numbers */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Mark Numbers</Text>
+              <TextInput
+                value={entry.markNumbers || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'markNumbers', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., M1-M5"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Piece Count */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Piece Count</Text>
+              <TextInput
+                value={entry.pieceCount?.toString() || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'pieceCount', parseInt(text) || 0)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="0"
+                placeholderTextColor="#6b7280"
+                keyboardType="numeric"
+              />
+            </View>
+
+            {/* Product Type */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Product Type</Text>
+              <TextInput
+                value={entry.productType || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'productType', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., Beam, Slab"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Concrete Yards */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Concrete Yards</Text>
+              <TextInput
+                value={entry.concreteYards?.toString() || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'concreteYards', parseFloat(text) || 0)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="0.0"
+                placeholderTextColor="#6b7280"
+                keyboardType="decimal-pad"
+              />
+            </View>
+
+            {/* Mix Design */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Mix Design</Text>
+              <TextInput
+                value={entry.mixDesign || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'mixDesign', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 6000 PSI"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Scheduled Time */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Scheduled Time</Text>
+              <TextInput
+                value={entry.scheduledTime || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'scheduledTime', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 8:00 AM"
+                placeholderTextColor="#6b7280"
+              />
+            </View>
+
+            {/* Notes */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Notes</Text>
+              <TextInput
+                value={entry.notes || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'notes', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16, height: 80 }}
+                placeholder="Additional notes"
+                placeholderTextColor="#6b7280"
+                multiline
+                textAlignVertical="top"
+              />
+            </View>
+
+            {/* Confidence */}
+            {entry.confidence !== undefined && (
+              <View style={{ backgroundColor: '#1f2937', padding: 12, borderRadius: 8 }}>
+                <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+                  AI Confidence: <Text style={{ color: entry.confidence > 0.7 ? '#10b981' : '#f59e0b', fontWeight: '600' }}>
+                    {Math.round(entry.confidence * 100)}%
+                  </Text>
+                </Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Done Button */}
+        <Pressable
+          onPress={() => setSelectedIndex(null)}
+          style={{ backgroundColor: '#3b82f6', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16 }}
+        >
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+            Done Editing
+          </Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  // If editing an entry, show edit form
+  if (selectedIndex !== null) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }} edges={['top', 'left', 'right']}>
+        {renderEditForm()}
+      </SafeAreaView>
+    );
+  }
+
+  // Main list view
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#374151' }}>
+        <Pressable onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
+          Review Entries
+        </Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* Entry Count */}
+      <View style={{ padding: 16, paddingBottom: 8 }}>
+        <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+          {entries.length} {entries.length === 1 ? 'entry' : 'entries'} ready to import
+        </Text>
+      </View>
+
+      {/* Entry List */}
+      <ScrollView style={{ flex: 1, padding: 16, paddingTop: 8 }}>
+        {entries.map((entry, index) => (
+          <View key={index} style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
+                  {entry.formBed || 'Unknown Form'}
+                </Text>
+                <Text style={{ color: '#fff', fontSize: 14 }}>
+                  Job {entry.jobNumber}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setSelectedIndex(index)}
+                  style={{ padding: 8, backgroundColor: '#374151', borderRadius: 8 }}
+                >
+                  <Ionicons name="create-outline" size={20} color="#3b82f6" />
+                </Pressable>
+                <Pressable
+                  onPress={() => handleRemoveEntry(index)}
+                  style={{ padding: 8, backgroundColor: '#374151', borderRadius: 8 }}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={{ gap: 4 }}>
+              {entry.jobName && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  📋 {entry.jobName}
+                </Text>
+              )}
+              {entry.markNumbers && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  🏷️ {entry.markNumbers}
+                </Text>
+              )}
+              {entry.pieceCount && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  📦 {entry.pieceCount} pieces
+                </Text>
+              )}
+              {entry.concreteYards && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  🏗️ {entry.concreteYards} yd³
+                </Text>
+              )}
+              {entry.mixDesign && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  🧪 {entry.mixDesign}
+                </Text>
+              )}
+              {entry.scheduledTime && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  ⏰ {entry.scheduledTime}
+                </Text>
+              )}
+            </View>
+
+            {entry.confidence !== undefined && (
+              <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#374151' }}>
+                <Text style={{ color: entry.confidence > 0.7 ? '#10b981' : '#f59e0b', fontSize: 12 }}>
+                  {Math.round(entry.confidence * 100)}% confidence
+                </Text>
+              </View>
+            )}
+          </View>
+        ))}
+
+        {entries.length === 0 && (
+          <View style={{ alignItems: 'center', padding: 32 }}>
+            <Ionicons name="document-outline" size={64} color="#374151" style={{ marginBottom: 16 }} />
+            <Text style={{ color: '#9ca3af', fontSize: 16, textAlign: 'center' }}>
+              No entries to review
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Action Buttons */}
+      {entries.length > 0 && (
+        <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#374151', gap: 12 }}>
+          <Pressable
+            onPress={handleImportAll}
+            style={{ backgroundColor: '#10b981', padding: 16, borderRadius: 12, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+              Import All {entries.length} {entries.length === 1 ? 'Entry' : 'Entries'}
+            </Text>
+          </Pressable>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}

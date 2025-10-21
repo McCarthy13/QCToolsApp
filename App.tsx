@@ -43,6 +43,8 @@ import QualityLogMetricsScreen from "./src/screens/QualityLogMetricsScreen";
 import IssueCodeLibraryScreen from "./src/screens/IssueCodeLibraryScreen";
 import ProductLibraryScreen from "./src/screens/ProductLibraryScreen";
 import DailyPourScheduleScreen from "./src/screens/DailyPourScheduleScreen";
+import ScheduleScannerScreen from "./src/screens/ScheduleScannerScreen";
+import ScheduleReviewScreen from "./src/screens/ScheduleReviewScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -661,6 +663,21 @@ export default function App() {
                   </Pressable>
                 ),
               })}
+            />
+            <Stack.Screen
+              name="ScheduleScanner"
+              component={ScheduleScannerScreen}
+              options={{
+                headerShown: false,
+                presentation: "fullScreenModal",
+              }}
+            />
+            <Stack.Screen
+              name="ScheduleReview"
+              component={ScheduleReviewScreen}
+              options={{
+                presentation: "modal",
+              }}
             />
           </Stack.Navigator>
           <StatusBar style="auto" />
