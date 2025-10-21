@@ -36,6 +36,9 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingPourId, setEditingPourId] = useState<string | null>(null);
   
+  // Department for adding/scanning (user must select first)
+  const [activeDepartment, setActiveDepartment] = useState<PourDepartment | null>(null);
+  
   // Form state for pour entry
   const [selectedDepartment, setSelectedDepartment] = useState<PourDepartment>("Precast");
   const [selectedFormBedId, setSelectedFormBedId] = useState("");
@@ -300,41 +303,76 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View style={{ gap: 12, marginBottom: 24 }}>
-            {/* Top Row: Add Pour */}
-            <Pressable
-              onPress={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-              style={{
-                backgroundColor: "#3B82F6",
-                borderRadius: 16,
-                padding: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 3,
-              }}
-            >
-              <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-              <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600", marginLeft: 8 }}>
-                Add Pour
-              </Text>
-            </Pressable>
+          {/* Department Selection for Actions */}
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 12 }}>
+              Select Department to Add/Scan Pours
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+              {departments.map((dept) => {
+                const colors = getDepartmentColor(dept);
+                const isSelected = activeDepartment === dept;
+                
+                return (
+                  <Pressable
+                    key={dept}
+                    onPress={() => {
+                      setActiveDepartment(dept);
+                      setSelectedDepartment(dept);
+                    }}
+                    style={{
+                      flex: 1,
+                      minWidth: "45%",
+                      backgroundColor: isSelected ? colors.accent : "#FFFFFF",
+                      borderRadius: 12,
+                      padding: 14,
+                      borderWidth: 2,
+                      borderColor: isSelected ? colors.accent : "#E5E7EB",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ 
+                      fontSize: 15, 
+                      fontWeight: "600", 
+                      color: isSelected ? "#FFFFFF" : colors.color 
+                    }}>
+                      {dept}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
-            {/* Bottom Row: Scan & Sync */}
-            <View style={{ flexDirection: "row", gap: 12 }}>
+          {/* Action Buttons - Only show when department is selected */}
+          {activeDepartment && (
+            <View style={{ gap: 12, marginBottom: 24 }}>
+              <View style={{ 
+                backgroundColor: getDepartmentColor(activeDepartment).bg, 
+                borderRadius: 12, 
+                padding: 12,
+                marginBottom: 8,
+                borderWidth: 1,
+                borderColor: getDepartmentColor(activeDepartment).accent + "40",
+              }}>
+                <Text style={{ 
+                  fontSize: 14, 
+                  fontWeight: "600", 
+                  color: getDepartmentColor(activeDepartment).color,
+                  textAlign: "center"
+                }}>
+                  Adding/Scanning for: {activeDepartment}
+                </Text>
+              </View>
+
+              {/* Top Row: Add Pour */}
               <Pressable
-                onPress={() => navigation.navigate("ScheduleScanner", { date: new Date(selectedDate).toISOString() })}
+                onPress={() => {
+                  resetForm();
+                  setShowAddModal(true);
+                }}
                 style={{
-                  flex: 1,
-                  backgroundColor: "#8B5CF6",
+                  backgroundColor: "#3B82F6",
                   borderRadius: 16,
                   padding: 16,
                   flexDirection: "row",
@@ -347,43 +385,72 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
                   elevation: 3,
                 }}
               >
-                <Ionicons name="scan" size={20} color="#FFFFFF" />
-                <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                  Scan Schedule
+                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+                <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600", marginLeft: 8 }}>
+                  Add Pour
                 </Text>
               </Pressable>
 
-              <Pressable
-                onPress={handleSyncWithEliPlan}
-                disabled={isSyncing}
-                style={{
-                  flex: 1,
-                  backgroundColor: isSyncing ? "#D1D5DB" : isEliPlanConfigured() ? "#10B981" : "#6B7280",
-                  borderRadius: 16,
-                  padding: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-              >
-                {isSyncing ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="sync" size={20} color="#FFFFFF" />
-                    <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                      {isEliPlanConfigured() ? "Sync" : "Config"}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
+              {/* Bottom Row: Scan & Sync */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <Pressable
+                  onPress={() => navigation.navigate("ScheduleScanner", { 
+                    date: new Date(selectedDate).toISOString(),
+                    department: activeDepartment,
+                  })}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#8B5CF6",
+                    borderRadius: 16,
+                    padding: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                >
+                  <Ionicons name="scan" size={20} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
+                    Scan Schedule
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleSyncWithEliPlan}
+                  disabled={isSyncing}
+                  style={{
+                    flex: 1,
+                    backgroundColor: isSyncing ? "#D1D5DB" : isEliPlanConfigured() ? "#10B981" : "#6B7280",
+                    borderRadius: 16,
+                    padding: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                >
+                  {isSyncing ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="sync" size={20} color="#FFFFFF" />
+                      <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
+                        {isEliPlanConfigured() ? "Sync" : "Config"}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Configuration Status */}
           {!isEliPlanConfigured() && (

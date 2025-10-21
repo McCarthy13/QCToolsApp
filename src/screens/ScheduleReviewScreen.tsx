@@ -30,6 +30,14 @@ export default function ScheduleReviewScreen() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(route.params.date));
+  
+  // Get the department from route params (passed from scanner)
+  const suggestedDepartment = route.params.department;
+  
+  // Filter forms to show only from suggested department if provided
+  const availableForms = suggestedDepartment 
+    ? forms.filter(f => f.department === suggestedDepartment && f.isActive)
+    : forms.filter(f => f.isActive);
 
   const handleUpdateEntry = (index: number, field: keyof ParsedScheduleEntry, value: any) => {
     const updated = [...entries];
@@ -187,7 +195,7 @@ export default function ScheduleReviewScreen() {
               <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Select Form / Bed *</Text>
               <View style={{ backgroundColor: '#1f2937', borderRadius: 8, padding: 12, maxHeight: 200 }}>
                 <ScrollView nestedScrollEnabled>
-                  {forms.filter(f => f.isActive).map((form) => (
+                  {availableForms.map((form) => (
                     <Pressable
                       key={form.id}
                       onPress={() => handleUpdateEntry(selectedIndex, 'formBed', form.name)}
@@ -385,6 +393,19 @@ export default function ScheduleReviewScreen() {
 
       {/* Entry Count */}
       <View style={{ padding: 16, paddingBottom: 8 }}>
+        {suggestedDepartment && (
+          <View style={{ backgroundColor: '#1f2937', padding: 12, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#3b82f6' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="business" size={18} color="#60a5fa" style={{ marginRight: 8 }} />
+              <Text style={{ color: '#60a5fa', fontSize: 14, fontWeight: '600' }}>
+                Importing to: {suggestedDepartment}
+              </Text>
+            </View>
+            <Text style={{ color: '#9ca3af', fontSize: 12, marginTop: 4 }}>
+              Only showing forms from this department
+            </Text>
+          </View>
+        )}
         <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
           {entries.length} {entries.length === 1 ? 'piece' : 'pieces'} scanned
         </Text>
@@ -600,7 +621,7 @@ export default function ScheduleReviewScreen() {
 
             {/* Form/Bed List */}
             <ScrollView style={{ padding: 16 }}>
-              {forms.filter(f => f.isActive).map((form) => (
+              {availableForms.map((form) => (
                 <Pressable
                   key={form.id}
                   onPress={() => handleBulkAssignBed(form.name)}

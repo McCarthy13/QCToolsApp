@@ -33,6 +33,7 @@ export default function ScheduleScannerScreen() {
   
   const cameraRef = useRef<CameraView>(null);
   const selectedDate = route.params?.date ? new Date(route.params.date) : new Date();
+  const selectedDepartment = route.params?.department;
 
   // Request permission if not granted
   if (!permission) {
@@ -105,6 +106,7 @@ export default function ScheduleScannerScreen() {
     navigation.navigate('ScheduleReview', {
       entries: parsedEntries,
       date: selectedDate.toISOString(),
+      department: selectedDepartment,
     });
   };
 
