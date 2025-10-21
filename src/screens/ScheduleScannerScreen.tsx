@@ -29,7 +29,6 @@ export default function ScheduleScannerScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedEntries, setParsedEntries] = useState<ParsedScheduleEntry[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
   
   const cameraRef = useRef<CameraView>(null);
   const selectedDate = route.params?.date ? new Date(route.params.date) : new Date();
@@ -67,7 +66,8 @@ export default function ScheduleScannerScreen() {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 1.0,
+        skipProcessing: false,
       });
 
       if (photo?.uri) {
@@ -116,16 +116,6 @@ export default function ScheduleScannerScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
-  const handleTapToFocus = (event: any) => {
-    const { locationX, locationY } = event.nativeEvent;
-    setFocusPoint({ x: locationX, y: locationY });
-    
-    // Hide focus indicator after 1 second
-    setTimeout(() => {
-      setFocusPoint(null);
-    }, 1000);
-  };
-
   const handleRetake = () => {
     setCapturedImage(null);
     setShowResults(false);
@@ -142,13 +132,8 @@ export default function ScheduleScannerScreen() {
           facing={facing}
           enableTorch={flash}
           autofocus="on"
+          mode="picture"
         >
-          {/* Tap to Focus Overlay */}
-          <Pressable 
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}
-            onPress={handleTapToFocus}
-          />
-
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
@@ -174,30 +159,15 @@ export default function ScheduleScannerScreen() {
 
           {/* Instructions */}
           <View style={{ position: 'absolute', top: insets.top + 80, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }} pointerEvents="none">
-            <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 12 }}>
-              <Text style={{ color: '#fff', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
-                Position the paper schedule within the frame. Tap anywhere to focus if text appears blurry.
+            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', padding: 16, borderRadius: 12 }}>
+              <Text style={{ color: '#FFD700', fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
+                📏 Hold 8-12 inches away
+              </Text>
+              <Text style={{ color: '#fff', fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+                Keep steady • Use flash if blurry • Ensure good lighting for best focus
               </Text>
             </View>
           </View>
-
-          {/* Focus Indicator */}
-          {focusPoint && (
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                left: focusPoint.x - 40,
-                top: focusPoint.y - 40,
-                width: 80,
-                height: 80,
-                borderWidth: 2,
-                borderColor: '#FFD700',
-                borderRadius: 40,
-                zIndex: 20,
-              }}
-            />
-          )}
 
           {/* Frame Guide */}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 5, pointerEvents: 'none' }}>
