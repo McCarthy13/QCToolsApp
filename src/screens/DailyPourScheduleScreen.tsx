@@ -318,35 +318,35 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 24 }}>
+        <View style={{ padding: 16 }}>
           {/* Header */}
-          <View style={{ marginBottom: 24 }}>
+          <View style={{ marginBottom: 16 }}>
             <Pressable
               onPress={() => setViewingDepartment(null)}
-              style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}
+              style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}
             >
-              <Ionicons name="arrow-back" size={24} color={deptColors.accent} />
-              <Text style={{ fontSize: 16, fontWeight: "600", color: deptColors.accent, marginLeft: 8 }}>
+              <Ionicons name="arrow-back" size={22} color={deptColors.accent} />
+              <Text style={{ fontSize: 14, fontWeight: "600", color: deptColors.accent, marginLeft: 6 }}>
                 Change Department
               </Text>
             </Pressable>
-            <Text style={{ fontSize: 28, fontWeight: "700", color: deptColors.color, marginBottom: 8 }}>
+            <Text style={{ fontSize: 24, fontWeight: "700", color: deptColors.color, marginBottom: 4 }}>
               {viewingDepartment}
             </Text>
-            <Text style={{ fontSize: 16, color: "#6B7280" }}>
+            <Text style={{ fontSize: 14, color: "#6B7280" }}>
               Manage concrete pours and schedules
             </Text>
           </View>
 
           {/* Date Selector */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <View style={{ marginBottom: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <Pressable
                 onPress={() => changeDate(-1)}
                 style={{
                   backgroundColor: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 12,
+                  borderRadius: 10,
+                  padding: 10,
                   borderWidth: 1,
                   borderColor: "#E5E7EB",
                 }}
@@ -354,20 +354,19 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 <Ionicons name="chevron-back" size={20} color="#111827" />
               </Pressable>
 
-              <View style={{ flex: 1, marginHorizontal: 12, alignItems: "center" }}>
-                <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827" }}>
+              <View style={{ flex: 1, marginHorizontal: 10, alignItems: "center" }}>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827" }}>
                   {new Date(selectedDate).toLocaleDateString("en-US", { 
-                    weekday: "long", 
-                    month: "long", 
-                    day: "numeric",
-                    year: "numeric"
+                    weekday: "short", 
+                    month: "short", 
+                    day: "numeric"
                   })}
                 </Text>
                 <Pressable
                   onPress={() => setSelectedDate(Date.now())}
-                  style={{ marginTop: 4 }}
+                  style={{ marginTop: 2 }}
                 >
-                  <Text style={{ fontSize: 13, color: "#3B82F6", fontWeight: "500" }}>
+                  <Text style={{ fontSize: 12, color: "#3B82F6", fontWeight: "500" }}>
                     Today
                   </Text>
                 </Pressable>
@@ -377,8 +376,8 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 onPress={() => changeDate(1)}
                 style={{
                   backgroundColor: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 12,
+                  borderRadius: 10,
+                  padding: 10,
                   borderWidth: 1,
                   borderColor: "#E5E7EB",
                 }}
@@ -388,16 +387,16 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
             </View>
 
             {/* Summary */}
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>Pours</Text>
-                <Text style={{ fontSize: 24, fontWeight: "700", color: "#111827" }}>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#E5E7EB" }}>
+                <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 2 }}>Pours</Text>
+                <Text style={{ fontSize: 20, fontWeight: "700", color: "#111827" }}>
                   {departmentEntries.length}
                 </Text>
               </View>
-              <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>Yards</Text>
-                <Text style={{ fontSize: 24, fontWeight: "700", color: deptColors.accent }}>
+              <View style={{ flex: 1, backgroundColor: "#FFFFFF", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#E5E7EB" }}>
+                <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 2 }}>Yards</Text>
+                <Text style={{ fontSize: 20, fontWeight: "700", color: deptColors.accent }}>
                   {departmentYards.toFixed(1)}
                 </Text>
               </View>
@@ -405,59 +404,56 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
           </View>
 
           {/* Action Buttons */}
-          <View style={{ gap: 12, marginBottom: 24 }}>
+          <View style={{ gap: 10, marginBottom: 16 }}>
+            <Pressable
+              onPress={() => {
+                resetForm();
+                setShowAddModal(true);
+              }}
+              style={{
+                backgroundColor: "#3B82F6",
+                borderRadius: 12,
+                padding: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="add-circle" size={22} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
+                Add Pour
+              </Text>
+            </Pressable>
 
-              
-              <Pressable
-                onPress={() => {
-                  resetForm();
-                  setShowAddModal(true);
-                }}
-                style={{
-                  backgroundColor: "#3B82F6",
-                  borderRadius: 16,
-                  padding: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-              >
-                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
-                <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600", marginLeft: 8 }}>
-                  Add Pour
-                </Text>
-              </Pressable>
-
-              <Pressable
-                  onPress={() => navigation.navigate("ScheduleScanner", { 
-                    date: new Date(selectedDate).toISOString(),
-                    department: viewingDepartment,
-                  })}
-                  style={{
-                    flex: 1,
-                    backgroundColor: "#8B5CF6",
-                    borderRadius: 16,
-                    padding: 16,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
-                >
-                  <Ionicons name="scan" size={20} color="#FFFFFF" />
-                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
-                    Scan Schedule
-                  </Text>
-                </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate("ScheduleScanner", { 
+                date: new Date(selectedDate).toISOString(),
+                department: viewingDepartment,
+              })}
+              style={{
+                backgroundColor: "#8B5CF6",
+                borderRadius: 12,
+                padding: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="scan" size={20} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginLeft: 8 }}>
+                Scan Schedule
+              </Text>
+            </Pressable>
           </View>
 
           {/* Departments */}
