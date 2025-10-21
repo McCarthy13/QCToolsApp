@@ -100,11 +100,11 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     const pourData: Omit<PourEntry, 'id' | 'createdAt' | 'updatedAt'> = {
       formBedId: selectedFormBedId,
       formBedName: selectedForm.name,
-      department: selectedDepartment,
+      department: selectedForm.department,
       jobNumber: jobNumber.trim(),
       jobName: jobName.trim() || undefined,
       markNumbers: markNumbers.trim() || undefined,
-      pieceCount: pieceCount ? parseInt(pieceCount) : undefined,
+      pieceCount: 1,
       productType: productType.trim() || undefined,
       dimensions: dimensions.trim() || undefined,
       mixDesign: mixDesign.trim() || undefined,
@@ -580,40 +580,6 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
 
               <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
                 <View style={{ gap: 16 }}>
-                  {/* Department */}
-                  <View>
-                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                      Department *
-                    </Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                      {departments.map((dept) => (
-                        <Pressable
-                          key={dept}
-                          onPress={() => {
-                            setSelectedDepartment(dept);
-                            setSelectedFormBedId(""); // Reset form selection
-                          }}
-                          style={{
-                            backgroundColor: selectedDepartment === dept ? "#3B82F6" : "#F3F4F6",
-                            paddingVertical: 8,
-                            paddingHorizontal: 12,
-                            borderRadius: 8,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              fontWeight: "600",
-                              color: selectedDepartment === dept ? "#FFFFFF" : "#6B7280",
-                            }}
-                          >
-                            {dept}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-
                   {/* Form/Bed Selection */}
                   <View>
                     <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
@@ -689,93 +655,48 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                     />
                   </View>
 
-                  {/* Row: Mark Numbers & Piece Count */}
-                  <View style={{ flexDirection: "row", gap: 12 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                        Mark #s
-                      </Text>
-                      <TextInput
-                        value={markNumbers}
-                        onChangeText={setMarkNumbers}
-                        placeholder="e.g., M1-M5"
-                        placeholderTextColor="#9CA3AF"
-                        style={{
-                          backgroundColor: "#F9FAFB",
-                          borderRadius: 12,
-                          padding: 12,
-                          fontSize: 14,
-                          color: "#111827",
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                        }}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                        Piece Count
-                      </Text>
-                      <TextInput
-                        value={pieceCount}
-                        onChangeText={setPieceCount}
-                        placeholder="0"
-                        placeholderTextColor="#9CA3AF"
-                        keyboardType="number-pad"
-                        style={{
-                          backgroundColor: "#F9FAFB",
-                          borderRadius: 12,
-                          padding: 12,
-                          fontSize: 14,
-                          color: "#111827",
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                        }}
-                      />
-                    </View>
+                  {/* Mark Numbers */}
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Mark #s
+                    </Text>
+                    <TextInput
+                      value={markNumbers}
+                      onChangeText={setMarkNumbers}
+                      placeholder="e.g., M1-M5"
+                      placeholderTextColor="#9CA3AF"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
                   </View>
 
-                  {/* Row: Product Type & Dimensions */}
-                  <View style={{ flexDirection: "row", gap: 12 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                        Product Type
-                      </Text>
-                      <TextInput
-                        value={productType}
-                        onChangeText={setProductType}
-                        placeholder="e.g., Beam"
-                        placeholderTextColor="#9CA3AF"
-                        style={{
-                          backgroundColor: "#F9FAFB",
-                          borderRadius: 12,
-                          padding: 12,
-                          fontSize: 14,
-                          color: "#111827",
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                        }}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                        Dimensions
-                      </Text>
-                      <TextInput
-                        value={dimensions}
-                        onChangeText={setDimensions}
-                        placeholder="e.g., 8x4x6"
-                        placeholderTextColor="#9CA3AF"
-                        style={{
-                          backgroundColor: "#F9FAFB",
-                          borderRadius: 12,
-                          padding: 12,
-                          fontSize: 14,
-                          color: "#111827",
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                        }}
-                      />
-                    </View>
+                  {/* Dimensions */}
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Dimensions
+                    </Text>
+                    <TextInput
+                      value={dimensions}
+                      onChangeText={setDimensions}
+                      placeholder="e.g., 8x4x6"
+                      placeholderTextColor="#9CA3AF"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
                   </View>
 
                   {/* Row: Mix Design & Concrete Yards */}
