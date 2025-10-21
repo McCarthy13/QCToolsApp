@@ -217,6 +217,9 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
   const todayEntries = getPourEntriesByDate(selectedDate);
   const totalYards = getTotalYardsForDate(selectedDate);
 
+  // Debug: Get all entries
+  const allEntriesInStore = usePourScheduleStore((s) => s.pourEntries);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <ScrollView style={{ flex: 1 }}>
@@ -415,6 +418,50 @@ export default function DailyPourScheduleScreen({ navigation }: Props) {
                 Last synced: {new Date(lastSyncTime).toLocaleString()}
               </Text>
             </View>
+          )}
+
+          {/* Debug Info - Shows all entries count */}
+          {__DEV__ && (
+            <Pressable
+              onPress={() => {
+                const allEntries = usePourScheduleStore.getState().pourEntries;
+                const startOfDay = new Date(selectedDate);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(selectedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                
+                const entriesDebug = allEntries.slice(0, 5).map((e, i) => 
+                  `${i+1}. Job ${e.jobNumber} - ${e.formBedName}\n` +
+                  `   Date: ${new Date(e.scheduledDate).toLocaleString()}\n` +
+                  `   Timestamp: ${e.scheduledDate}\n` +
+                  `   Dept: ${e.department}`
+                ).join('\n\n');
+                
+                Alert.alert(
+                  "Debug Info",
+                  `Total entries in store: ${allEntries.length}\n\n` +
+                  `Entries for selected date: ${todayEntries.length}\n\n` +
+                  `Selected date: ${new Date(selectedDate).toLocaleString()}\n` +
+                  `Start of day: ${startOfDay.toLocaleString()} (${startOfDay.getTime()})\n` +
+                  `End of day: ${endOfDay.toLocaleString()} (${endOfDay.getTime()})\n\n` +
+                  `Extruded forms: ${forms.filter(f => f.department === 'Extruded').map(f => f.name).join(', ')}\n\n` +
+                  `Recent entries:\n${entriesDebug || 'None'}`,
+                  [{ text: "OK" }]
+                );
+              }}
+              style={{
+                backgroundColor: "#FEE2E2",
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: "#FCA5A5",
+              }}
+            >
+              <Text style={{ fontSize: 12, color: "#991B1B", fontWeight: "600" }}>
+                🐛 Debug: Tap to view entry count and date info
+              </Text>
+            </Pressable>
           )}
 
           {/* Departments */}

@@ -87,16 +87,33 @@ export default function ScheduleReviewScreen() {
     }
 
     let imported = 0;
+    const debugInfo: string[] = [];
+    
+    // Normalize the selected date to midnight to avoid timezone/time issues
+    const normalizedDate = new Date(selectedDate);
+    normalizedDate.setHours(0, 0, 0, 0);
+    const scheduledDateTimestamp = normalizedDate.getTime();
+    
     entries.forEach((entry) => {
       // Find the form to get proper department
       const form = forms.find(f => f.name === entry.formBed || f.id === entry.formBed);
       const department = form?.department || "Precast";
       
+      debugInfo.push(
+        `Entry: Job ${entry.jobNumber}\n` +
+        `  formBed: "${entry.formBed}"\n` +
+        `  form found: ${form ? 'YES' : 'NO'}\n` +
+        `  formBedId: "${form?.id || entry.formBed}"\n` +
+        `  formBedName: "${form?.name || entry.formBed}"\n` +
+        `  department: "${department}"\n` +
+        `  scheduledDate: ${scheduledDateTimestamp} (${normalizedDate.toLocaleString()})`
+      );
+      
       addPourEntry({
         formBedId: form?.id || entry.formBed || '',
         formBedName: form?.name || entry.formBed || '',
         department: department,
-        scheduledDate: selectedDate.getTime(),
+        scheduledDate: scheduledDateTimestamp,
         scheduledTime: entry.scheduledTime || undefined,
         jobNumber: entry.jobNumber,
         jobName: entry.jobName || undefined,
@@ -113,9 +130,14 @@ export default function ScheduleReviewScreen() {
       imported++;
     });
 
+    if (__DEV__) {
+      console.log('Import Debug Info:\n' + debugInfo.join('\n\n'));
+    }
+
     Alert.alert(
       'Success',
-      `Imported ${imported} ${imported === 1 ? 'entry' : 'entries'} to the daily pour schedule.`,
+      `Imported ${imported} ${imported === 1 ? 'entry' : 'entries'} to the daily pour schedule.` +
+      (__DEV__ ? '\n\nCheck console for debug info.' : ''),
       [
         {
           text: 'OK',
