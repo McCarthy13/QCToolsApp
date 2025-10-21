@@ -35,7 +35,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   const initialDepartment = route.params?.department as PourDepartment | null;
 
   const [selectedDate, setSelectedDate] = useState(initialDate);
-  const [expandedDepartment, setExpandedDepartment] = useState<PourDepartment | null>(initialDepartment || "Precast");
+  const [viewingDepartment, setViewingDepartment] = useState<PourDepartment | null>(initialDepartment);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingPourId, setEditingPourId] = useState<string | null>(null);
@@ -541,7 +541,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               const deptForms = getFormsByDepartment(dept);
               const deptEntries = todayEntries.filter(e => e.department === dept);
               const deptYards = deptEntries.reduce((sum, e) => sum + (e.concreteYards || 0), 0);
-              const isExpanded = expandedDepartment === dept;
+              const isExpanded = viewingDepartment === dept;
               const colors = getDepartmentColor(dept);
 
               return (
@@ -557,7 +557,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 >
                   {/* Department Header */}
                   <Pressable
-                    onPress={() => setExpandedDepartment(isExpanded ? null : dept)}
+                    onPress={() => setViewingDepartment(isExpanded ? null : dept)}
                     style={{
                       backgroundColor: colors.bg,
                       padding: 16,
