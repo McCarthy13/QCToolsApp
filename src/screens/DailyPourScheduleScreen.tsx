@@ -49,6 +49,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   const [selectedFormBedId, setSelectedFormBedId] = useState("");
   const [jobNumber, setJobNumber] = useState("");
   const [jobName, setJobName] = useState("");
+  const [idNumber, setIdNumber] = useState("");
   const [markNumbers, setMarkNumbers] = useState("");
   const [pieceCount, setPieceCount] = useState("");
   const [productType, setProductType] = useState("");
@@ -104,6 +105,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
       department: selectedForm.department,
       jobNumber: jobNumber.trim(),
       jobName: jobName.trim() || undefined,
+      idNumber: idNumber.trim() || undefined,
       markNumbers: markNumbers.trim() || undefined,
       pieceCount: 1,
       productType: productType.trim() || undefined,
@@ -133,6 +135,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     setSelectedFormBedId("");
     setJobNumber("");
     setJobName("");
+    setIdNumber("");
     setMarkNumbers("");
     setPieceCount("");
     setProductType("");
@@ -151,6 +154,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     setSelectedFormBedId(pour.formBedId);
     setJobNumber(pour.jobNumber);
     setJobName(pour.jobName || "");
+    setIdNumber(pour.idNumber || "");
     setMarkNumbers(pour.markNumbers || "");
     setPieceCount(pour.pieceCount?.toString() || "");
     setProductType(pour.productType || "");
@@ -335,7 +339,13 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.color }}>
                 {viewingDepartment}
               </Text>
-              <View style={{ flexDirection: "row", gap: 6 }}>
+              <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                <Pressable
+                  onPress={() => navigation.navigate("ScheduleSearch")}
+                  style={{ backgroundColor: "#FFFFFF", borderRadius: 6, padding: 8, borderWidth: 1, borderColor: "#E5E7EB" }}
+                >
+                  <Ionicons name="search" size={18} color="#3B82F6" />
+                </Pressable>
                 <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#E5E7EB" }}>
                   <Text style={{ fontSize: 10, color: "#6B7280" }}>Pours</Text>
                   <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827", textAlign: "center" }}>
@@ -620,6 +630,28 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                     onJobNameChange={setJobName}
                     required={true}
                   />
+
+                  {/* ID Number */}
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      ID #
+                    </Text>
+                    <TextInput
+                      value={idNumber}
+                      onChangeText={setIdNumber}
+                      placeholder="ID number"
+                      placeholderTextColor="#9CA3AF"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
+                  </View>
 
                   {/* Mark Numbers */}
                   <View>

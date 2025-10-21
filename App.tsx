@@ -46,6 +46,7 @@ import ProjectLibraryScreen from "./src/screens/ProjectLibraryScreen";
 import ProjectLibraryDetailScreen from "./src/screens/ProjectLibraryDetailScreen";
 import ProjectLibraryAddEditScreen from "./src/screens/ProjectLibraryAddEditScreen";
 import DailyPourScheduleScreen from "./src/screens/DailyPourScheduleScreen";
+import ScheduleSearchScreen from "./src/screens/ScheduleSearchScreen";
 import ScheduleScannerScreen from "./src/screens/ScheduleScannerScreen";
 import ScheduleReviewScreen from "./src/screens/ScheduleReviewScreen";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -681,6 +682,11 @@ export default function App() {
                   </Pressable>
                 ),
               })}
+            />
+            <Stack.Screen
+              name="ScheduleSearch"
+              component={ScheduleSearchScreen}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="ScheduleScanner"

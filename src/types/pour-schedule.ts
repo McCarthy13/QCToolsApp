@@ -24,6 +24,7 @@ export interface PourEntry {
   // Job details
   jobNumber: string;
   jobName?: string;
+  idNumber?: string; // ID number from production schedule
   markNumbers?: string; // e.g., "M1-M5" or "M1, M3, M7"
   pieceCount?: number;
   

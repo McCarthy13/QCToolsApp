@@ -95,6 +95,7 @@ export type RootStackParamList = {
     returnScreen?: string;
   };
   DailyPourSchedule: { date?: string; department?: string } | undefined;
+  ScheduleSearch: undefined;
   ScheduleScanner: { date?: string; department?: string };
   ScheduleReview: { entries: any[]; date: string; department?: string };
 };
