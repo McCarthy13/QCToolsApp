@@ -40,11 +40,13 @@ import QualityLogListScreen from "./src/screens/QualityLogListScreen";
 import QualityLogDetailScreen from "./src/screens/QualityLogDetailScreen";
 import QualityLogAddEditScreen from "./src/screens/QualityLogAddEditScreen";
 import QualityLogMetricsScreen from "./src/screens/QualityLogMetricsScreen";
+import QualityLogSearchScreen from "./src/screens/QualityLogSearchScreen";
 import IssueCodeLibraryScreen from "./src/screens/IssueCodeLibraryScreen";
 import ProductLibraryScreen from "./src/screens/ProductLibraryScreen";
 import ProjectLibraryScreen from "./src/screens/ProjectLibraryScreen";
 import ProjectLibraryDetailScreen from "./src/screens/ProjectLibraryDetailScreen";
 import ProjectLibraryAddEditScreen from "./src/screens/ProjectLibraryAddEditScreen";
+import ProjectLibraryExportImportScreen from "./src/screens/ProjectLibraryExportImportScreen";
 import DailyPourScheduleScreen from "./src/screens/DailyPourScheduleScreen";
 import ScheduleSearchScreen from "./src/screens/ScheduleSearchScreen";
 import ScheduleScannerScreen from "./src/screens/ScheduleScannerScreen";
@@ -633,6 +635,11 @@ export default function App() {
               })}
             />
             <Stack.Screen
+              name="QualityLogSearch"
+              component={QualityLogSearchScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="IssueCodeLibrary"
               component={IssueCodeLibraryScreen}
               options={({ navigation }) => ({
@@ -669,6 +676,11 @@ export default function App() {
             <Stack.Screen
               name="ProjectLibraryAddEdit"
               component={ProjectLibraryAddEditScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="ProjectLibraryExportImport"
+              component={ProjectLibraryExportImportScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen

@@ -108,10 +108,10 @@ export default function QualityLogListScreen({ navigation, route }: Props) {
             <View style={{ gap: 12 }}>
               {logs.map((log) => {
                 const statusColor = getStatusColor(log.overallStatus);
-                const openIssues = log.issues.filter((i) => i.status === "Open").length;
-                const criticalIssues = log.issues.filter(
+                const openIssues = log.issues?.filter((i) => i.status === "Open").length || 0;
+                const criticalIssues = log.issues?.filter(
                   (i) => i.severity === "Critical"
-                ).length;
+                ).length || 0;
 
                 return (
                   <Pressable
@@ -172,7 +172,7 @@ export default function QualityLogListScreen({ navigation, route }: Props) {
                     </View>
 
                     {/* Production Items */}
-                    {log.productionItems.length > 0 && (
+                    {log.productionItems && log.productionItems.length > 0 && (
                       <View style={{ marginBottom: 12 }}>
                         <Text style={{ fontSize: 14, fontWeight: "600", color: "#6B7280", marginBottom: 6 }}>
                           Production: {log.productionItems.length}{" "}
@@ -205,30 +205,32 @@ export default function QualityLogListScreen({ navigation, route }: Props) {
                     )}
 
                     {/* Issue Stats */}
-                    <View style={{ flexDirection: "row", gap: 16, marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Ionicons name="alert-circle-outline" size={16} color="#6B7280" />
-                        <Text style={{ fontSize: 13, color: "#6B7280" }}>
-                          {log.issues.length} {log.issues.length === 1 ? "issue" : "issues"}
-                        </Text>
+                    {log.issues && log.issues.length > 0 && (
+                      <View style={{ flexDirection: "row", gap: 16, marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Ionicons name="alert-circle-outline" size={16} color="#6B7280" />
+                          <Text style={{ fontSize: 13, color: "#6B7280" }}>
+                            {log.issues.length} {log.issues.length === 1 ? "issue" : "issues"}
+                          </Text>
+                        </View>
+                        {openIssues > 0 && (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                            <Ionicons name="time-outline" size={16} color="#F59E0B" />
+                            <Text style={{ fontSize: 13, color: "#F59E0B", fontWeight: "600" }}>
+                              {openIssues} open
+                            </Text>
+                          </View>
+                        )}
+                        {criticalIssues > 0 && (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                            <Ionicons name="warning" size={16} color="#EF4444" />
+                            <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>
+                              {criticalIssues} critical
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                      {openIssues > 0 && (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Ionicons name="time-outline" size={16} color="#F59E0B" />
-                          <Text style={{ fontSize: 13, color: "#F59E0B", fontWeight: "600" }}>
-                            {openIssues} open
-                          </Text>
-                        </View>
-                      )}
-                      {criticalIssues > 0 && (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Ionicons name="warning" size={16} color="#EF4444" />
-                          <Text style={{ fontSize: 13, color: "#EF4444", fontWeight: "600" }}>
-                            {criticalIssues} critical
-                          </Text>
-                        </View>
-                      )}
-                    </View>
+                    )}
                   </Pressable>
                 );
               })}

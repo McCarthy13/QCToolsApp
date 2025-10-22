@@ -39,7 +39,7 @@ export default function ProjectLibraryScreen({ navigation }: Props) {
 
       {/* Search Bar */}
       <View className="px-4 py-3 bg-white border-b border-gray-200">
-        <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
+        <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mb-3">
           <Ionicons name="search" size={20} color="#6B7280" />
           <TextInput
             value={searchQuery}
@@ -54,6 +54,17 @@ export default function ProjectLibraryScreen({ navigation }: Props) {
             </Pressable>
           )}
         </View>
+
+        {/* Export/Import Button */}
+        <Pressable
+          onPress={() => navigation.navigate('ProjectLibraryExportImport')}
+          className="flex-row items-center justify-center bg-blue-50 border border-blue-200 rounded-lg py-2 px-3"
+        >
+          <Ionicons name="cloud-upload-outline" size={18} color="#3B82F6" />
+          <Text className="text-blue-600 text-sm font-semibold ml-2">
+            Export / Import
+          </Text>
+        </Pressable>
       </View>
 
       {/* Projects List */}

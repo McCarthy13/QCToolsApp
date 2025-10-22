@@ -84,6 +84,7 @@ export type RootStackParamList = {
   QualityLogDetail: { logId: string };
   QualityLogAddEdit: { logId?: string; department?: string };
   QualityLogMetrics: undefined;
+  QualityLogSearch: undefined;
   IssueCodeLibrary: undefined;
   ProductLibrary: undefined;
   ProjectLibrary: undefined;
@@ -94,6 +95,7 @@ export type RootStackParamList = {
     prefilledJobName?: string;
     returnScreen?: string;
   };
+  ProjectLibraryExportImport: undefined;
   DailyPourSchedule: { date?: string; department?: string } | undefined;
   ScheduleSearch: undefined;
   ScheduleScanner: { date?: string; department?: string };

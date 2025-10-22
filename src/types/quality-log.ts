@@ -77,6 +77,10 @@ export interface QualityLogEntry {
   overallStatus: 'Good' | 'Issues Found' | 'Critical Issues';
   notes?: string;
   
+  // Legacy support - these properties may exist in older logs
+  productionItems?: ProductionItem[];
+  issues?: QualityIssue[];
+  
   // Metadata
   createdBy: string; // User email
   createdAt: number;

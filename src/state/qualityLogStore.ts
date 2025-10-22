@@ -130,7 +130,7 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  issues: [...log.issues, newIssue],
+                  issues: [...(log.issues || []), newIssue],
                   updatedAt: Date.now(),
                 }
               : log
@@ -144,7 +144,7 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  issues: log.issues.map((issue) =>
+                  issues: (log.issues || []).map((issue) =>
                     issue.id === issueId
                       ? { ...issue, ...updates, updatedAt: Date.now() }
                       : issue
@@ -162,7 +162,7 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  issues: log.issues.filter((issue) => issue.id !== issueId),
+                  issues: (log.issues || []).filter((issue) => issue.id !== issueId),
                   updatedAt: Date.now(),
                 }
               : log
@@ -176,11 +176,11 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  issues: log.issues.map((issue) =>
+                  issues: (log.issues || []).map((issue) =>
                     issue.id === issueId
                       ? {
                           ...issue,
-                          status: 'Resolved',
+                          status: 'Resolved' as IssueStatus,
                           resolvedBy,
                           resolvedAt: Date.now(),
                           actionTaken,
@@ -208,7 +208,7 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  productionItems: [...log.productionItems, newItem],
+                  productionItems: [...(log.productionItems || []), newItem],
                   updatedAt: Date.now(),
                 }
               : log
@@ -222,7 +222,7 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  productionItems: log.productionItems.map((item) =>
+                  productionItems: (log.productionItems || []).map((item) =>
                     item.id === itemId ? { ...item, ...updates } : item
                   ),
                   updatedAt: Date.now(),
@@ -238,7 +238,7 @@ export const useQualityLogStore = create<QualityLogState>()(
             log.id === logId
               ? {
                   ...log,
-                  productionItems: log.productionItems.filter((item) => item.id !== itemId),
+                  productionItems: (log.productionItems || []).filter((item) => item.id !== itemId),
                   updatedAt: Date.now(),
                 }
               : log
@@ -325,7 +325,7 @@ export const useQualityLogStore = create<QualityLogState>()(
         const logs = get().getLogsByDateRange(startDate, endDate, department);
         
         const totalLogs = logs.length;
-        const allIssues = logs.flatMap((log) => log.issues);
+        const allIssues = logs.flatMap((log) => log.issues || []);
         const totalIssues = allIssues.length;
         
         // Issues by status
@@ -338,7 +338,7 @@ export const useQualityLogStore = create<QualityLogState>()(
         };
         
         allIssues.forEach((issue) => {
-          issuesByStatus[issue.status]++;
+          if (issue) issuesByStatus[issue.status]++;
         });
         
         // Issues by severity
@@ -350,16 +350,18 @@ export const useQualityLogStore = create<QualityLogState>()(
         };
         
         allIssues.forEach((issue) => {
-          issuesBySeverity[issue.severity]++;
+          if (issue) issuesBySeverity[issue.severity]++;
         });
         
         // Issues by code
         const codeCount: Record<number, { title: string; count: number }> = {};
         allIssues.forEach((issue) => {
-          if (!codeCount[issue.issueCode]) {
-            codeCount[issue.issueCode] = { title: issue.issueTitle, count: 0 };
+          if (issue && issue.issueCode) {
+            if (!codeCount[issue.issueCode]) {
+              codeCount[issue.issueCode] = { title: issue.issueTitle, count: 0 };
+            }
+            codeCount[issue.issueCode].count++;
           }
-          codeCount[issue.issueCode].count++;
         });
         
         const issuesByCode = Object.entries(codeCount)

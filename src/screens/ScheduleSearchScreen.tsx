@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
+import { View, Text, Pressable, ScrollView, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { usePourScheduleStore } from '../state/pourScheduleStore';
-import { PourEntry } from '../types/pour-schedule';
+import { PourEntry, PourDepartment, PourStatus } from '../types/pour-schedule';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ScheduleSearch'>;
 
@@ -27,8 +27,55 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
   const [markNumber, setMarkNumber] = useState('');
   const [idNumber, setIdNumber] = useState('');
   
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedDepartments, setSelectedDepartments] = useState<Set<PourDepartment>>(new Set());
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<'scheduled' | 'in-progress' | 'poured'>>(new Set());
+  const [dateRangeEnabled, setDateRangeEnabled] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState<'start' | 'end' | null>(null);
+  
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+
+  const allDepartments: PourDepartment[] = ['Precast', 'Extruded', 'Wall Panels', 'Flexicore'];
+
+  const toggleDepartment = (dept: PourDepartment) => {
+    const newSet = new Set(selectedDepartments);
+    if (newSet.has(dept)) {
+      newSet.delete(dept);
+    } else {
+      newSet.add(dept);
+    }
+    setSelectedDepartments(newSet);
+  };
+
+  const toggleStatus = (status: 'scheduled' | 'in-progress' | 'poured') => {
+    const newSet = new Set(selectedStatuses);
+    if (newSet.has(status)) {
+      newSet.delete(status);
+    } else {
+      newSet.add(status);
+    }
+    setSelectedStatuses(newSet);
+  };
+
+  const clearFilters = () => {
+    setSelectedDepartments(new Set());
+    setSelectedStatuses(new Set());
+    setDateRangeEnabled(false);
+    setStartDate(null);
+    setEndDate(null);
+  };
+
+  const getFilterCount = () => {
+    let count = 0;
+    if (selectedDepartments.size > 0) count++;
+    if (selectedStatuses.size > 0) count++;
+    if (dateRangeEnabled && (startDate || endDate)) count++;
+    return count;
+  };
 
   const handleSearch = () => {
     // Check if at least one field has input
@@ -92,6 +139,7 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
         }
       }
 
+      // Apply advanced filters if any are active
       if (matches) {
         const entryDate = new Date(entry.scheduledDate);
         entryDate.setHours(0, 0, 0, 0);
@@ -108,12 +156,42 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
           status = 'scheduled';
         }
 
-        results.push({
-          entry,
-          scheduledDate: entryDate,
-          status,
-          daysFromNow: daysDiff,
-        });
+        // Department filter
+        if (selectedDepartments.size > 0 && !selectedDepartments.has(entry.department)) {
+          matches = false;
+        }
+
+        // Status filter
+        if (selectedStatuses.size > 0 && !selectedStatuses.has(status)) {
+          matches = false;
+        }
+
+        // Date range filter
+        if (dateRangeEnabled && matches) {
+          if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            if (entryTime < start.getTime()) {
+              matches = false;
+            }
+          }
+          if (endDate && matches) {
+            const end = new Date(endDate);
+            end.setHours(0, 0, 0, 0);
+            if (entryTime > end.getTime()) {
+              matches = false;
+            }
+          }
+        }
+
+        if (matches) {
+          results.push({
+            entry,
+            scheduledDate: entryDate,
+            status,
+            daysFromNow: daysDiff,
+          });
+        }
       }
     });
 
@@ -132,6 +210,7 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
     setIdNumber('');
     setSearchResults([]);
     setHasSearched(false);
+    clearFilters();
   };
 
   const getStatusColor = (status: string) => {
@@ -186,6 +265,176 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
       </View>
 
       <ScrollView className="flex-1">
+        {/* Advanced Filters Toggle */}
+        <View className="bg-white border-b border-gray-200 px-4 py-3">
+          <Pressable
+            onPress={() => setShowFilters(!showFilters)}
+            className="flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="options-outline" size={20} color="#3B82F6" />
+              <Text className="text-base font-semibold text-gray-900">
+                Advanced Filters
+              </Text>
+              {getFilterCount() > 0 && (
+                <View className="bg-blue-600 rounded-full px-2 py-0.5">
+                  <Text className="text-white text-xs font-bold">{getFilterCount()}</Text>
+                </View>
+              )}
+            </View>
+            <Ionicons
+              name={showFilters ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color="#6B7280"
+            />
+          </Pressable>
+
+          {showFilters && (
+            <View className="mt-4 gap-4">
+              {/* Department Filter */}
+              <View>
+                <Text className="text-sm font-semibold text-gray-700 mb-2">Department</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {allDepartments.map((dept) => (
+                    <Pressable
+                      key={dept}
+                      onPress={() => toggleDepartment(dept)}
+                      className={`px-3 py-2 rounded-lg border ${
+                        selectedDepartments.has(dept)
+                          ? 'bg-blue-600 border-blue-600'
+                          : 'bg-white border-gray-300'
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm font-medium ${
+                          selectedDepartments.has(dept) ? 'text-white' : 'text-gray-700'
+                        }`}
+                      >
+                        {dept}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Status Filter */}
+              <View>
+                <Text className="text-sm font-semibold text-gray-700 mb-2">Status</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  <Pressable
+                    onPress={() => toggleStatus('scheduled')}
+                    className={`px-3 py-2 rounded-lg border ${
+                      selectedStatuses.has('scheduled')
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        selectedStatuses.has('scheduled') ? 'text-white' : 'text-gray-700'
+                      }`}
+                    >
+                      Scheduled
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => toggleStatus('in-progress')}
+                    className={`px-3 py-2 rounded-lg border ${
+                      selectedStatuses.has('in-progress')
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        selectedStatuses.has('in-progress') ? 'text-white' : 'text-gray-700'
+                      }`}
+                    >
+                      Today
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => toggleStatus('poured')}
+                    className={`px-3 py-2 rounded-lg border ${
+                      selectedStatuses.has('poured')
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        selectedStatuses.has('poured') ? 'text-white' : 'text-gray-700'
+                      }`}
+                    >
+                      Poured
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Date Range Filter */}
+              <View>
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-sm font-semibold text-gray-700">Date Range</Text>
+                  <Pressable
+                    onPress={() => setDateRangeEnabled(!dateRangeEnabled)}
+                    className={`px-3 py-1 rounded-full ${
+                      dateRangeEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <Text className={`text-xs font-semibold ${dateRangeEnabled ? 'text-white' : 'text-gray-600'}`}>
+                      {dateRangeEnabled ? 'ON' : 'OFF'}
+                    </Text>
+                  </Pressable>
+                </View>
+                {dateRangeEnabled && (
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={() => {
+                        const today = new Date();
+                        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        setStartDate(thirtyDaysAgo);
+                        setEndDate(today);
+                      }}
+                      className="flex-1 bg-gray-100 border border-gray-300 rounded-lg py-2 items-center"
+                    >
+                      <Text className="text-xs text-gray-600 font-medium">Last 30 Days</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        const today = new Date();
+                        const nextThirtyDays = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                        setStartDate(today);
+                        setEndDate(nextThirtyDays);
+                      }}
+                      className="flex-1 bg-gray-100 border border-gray-300 rounded-lg py-2 items-center"
+                    >
+                      <Text className="text-xs text-gray-600 font-medium">Next 30 Days</Text>
+                    </Pressable>
+                  </View>
+                )}
+                {dateRangeEnabled && (startDate || endDate) && (
+                  <View className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                    <Text className="text-xs text-blue-800">
+                      {startDate ? startDate.toLocaleDateString() : 'No start'} → {endDate ? endDate.toLocaleDateString() : 'No end'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Clear Filters Button */}
+              {getFilterCount() > 0 && (
+                <Pressable
+                  onPress={clearFilters}
+                  className="bg-gray-100 border border-gray-300 rounded-lg py-2 items-center"
+                >
+                  <Text className="text-gray-700 text-sm font-semibold">Clear All Filters</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+        </View>
+
         {/* Search Fields */}
         <View className="bg-white border-b border-gray-200 p-4 gap-4">
           {/* Job Number */}

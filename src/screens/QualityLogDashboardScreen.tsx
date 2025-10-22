@@ -24,16 +24,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   const getDepartmentStats = (dept: DepartmentType) => {
     const deptLogs = logs.filter((log) => log.department === dept);
-    const totalIssues = deptLogs.reduce((sum, log) => sum + log.issues.length, 0);
+    const totalIssues = deptLogs.reduce((sum, log) => sum + (log.issues?.length || 0), 0);
     const openIssues = deptLogs.reduce(
       (sum, log) =>
-        sum + log.issues.filter((issue) => issue.status === "Open").length,
+        sum + (log.issues?.filter((issue) => issue.status === "Open").length || 0),
       0
     );
     const criticalIssues = deptLogs.reduce(
       (sum, log) =>
         sum +
-        log.issues.filter((issue) => issue.severity === "Critical").length,
+        (log.issues?.filter((issue) => issue.severity === "Critical").length || 0),
       0
     );
 
@@ -55,9 +55,17 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         <View className="p-6">
           {/* Header */}
           <View className="mb-6">
-            <Text className="text-3xl font-bold text-gray-900 mb-2">
-              Quality Logs
-            </Text>
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-3xl font-bold text-gray-900">
+                Quality Logs
+              </Text>
+              <Pressable
+                onPress={() => navigation.navigate("QualityLogSearch")}
+                className="bg-blue-600 rounded-full p-2"
+              >
+                <Ionicons name="search" size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
             <Text className="text-base text-gray-600">
               Track quality issues and metrics by department
             </Text>
