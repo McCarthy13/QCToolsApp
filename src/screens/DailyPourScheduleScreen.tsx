@@ -31,6 +31,13 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     initializeDefaultForms();
   }, []);
 
+  // Listen for route params changes to handle back navigation
+  useEffect(() => {
+    if (route.params?.department === undefined && viewingDepartment !== null) {
+      setViewingDepartment(null);
+    }
+  }, [route.params]);
+
   // Get initial date and department from navigation params (if coming from scanner)
   const initialDate = route.params?.date ? new Date(route.params.date).getTime() : Date.now();
   const initialDepartment = route.params?.department as PourDepartment | null;
@@ -399,15 +406,6 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
         <View style={{ padding: 10 }}>
           {/* Compact Header with Back Button */}
           <View style={{ marginBottom: 8 }}>
-            <Pressable
-              onPress={() => setViewingDepartment(null)}
-              style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}
-            >
-              <Ionicons name="arrow-back" size={18} color={deptColors.accent} />
-              <Text style={{ fontSize: 12, fontWeight: "600", color: deptColors.accent, marginLeft: 4 }}>
-                Change Department
-              </Text>
-            </Pressable>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.color }}>
                 {viewingDepartment}

@@ -686,8 +686,22 @@ export default function App() {
             <Stack.Screen
               name="DailyPourSchedule"
               component={DailyPourScheduleScreen}
-              options={({ navigation }) => ({
+              options={({ navigation, route }) => ({
                 title: "Daily Pour Schedule",
+                headerLeft: () => (
+                  <Pressable onPress={() => {
+                    const params = route.params as { department?: string } | undefined;
+                    if (params?.department) {
+                      // If viewing a department, go back to department selector
+                      navigation.setParams({ department: undefined } as any);
+                    } else {
+                      // If on department selector, go back to previous screen
+                      navigation.goBack();
+                    }
+                  }} style={{ marginLeft: 4 }}>
+                    <Ionicons name="arrow-back" size={24} color="#111827" />
+                  </Pressable>
+                ),
                 headerRight: () => (
                   <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
                     <Ionicons name="home-outline" size={24} color="#111827" />
