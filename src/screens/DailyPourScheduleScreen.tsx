@@ -527,9 +527,9 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                                           {pour.markNumbers}
                                         </Text>
                                       )}
-                                      {pour.pieceCount && (
+                                      {pour.idNumber && (
                                         <Text style={{ fontSize: 11, color: "#6B7280" }}>
-                                          {pour.pieceCount}pc
+                                          ID: {pour.idNumber}
                                         </Text>
                                       )}
                                       {pour.concreteYards && (
