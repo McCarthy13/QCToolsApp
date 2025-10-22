@@ -185,6 +185,22 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     setSelectedDate(newDate.getTime());
   };
 
+  const getDateLabel = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const selected = new Date(selectedDate);
+    selected.setHours(0, 0, 0, 0);
+    
+    const diffTime = selected.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === -1) return 'Yesterday';
+    if (diffDays === 1) return 'Tomorrow';
+    return null; // No label for other dates
+  };
+
   const handleSyncWithEliPlan = async () => {
     if (!isEliPlanConfigured()) {
       Alert.alert(
@@ -267,9 +283,11 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                   <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827" }}>
                     {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                   </Text>
-                  <Pressable onPress={() => setSelectedDate(Date.now())}>
-                    <Text style={{ fontSize: 11, color: "#3B82F6", fontWeight: "500" }}>Today</Text>
-                  </Pressable>
+                  {getDateLabel() && (
+                    <Pressable onPress={() => setSelectedDate(Date.now())}>
+                      <Text style={{ fontSize: 11, color: "#3B82F6", fontWeight: "500" }}>{getDateLabel()}</Text>
+                    </Pressable>
+                  )}
                 </View>
                 <Pressable onPress={() => changeDate(1)} style={{ backgroundColor: "#FFFFFF", borderRadius: 8, padding: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
                   <Ionicons name="chevron-forward" size={18} color="#111827" />
@@ -373,9 +391,11 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
                 {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
               </Text>
-              <Pressable onPress={() => setSelectedDate(Date.now())}>
-                <Text style={{ fontSize: 10, color: "#3B82F6", fontWeight: "500" }}>Today</Text>
-              </Pressable>
+              {getDateLabel() && (
+                <Pressable onPress={() => setSelectedDate(Date.now())}>
+                  <Text style={{ fontSize: 10, color: "#3B82F6", fontWeight: "500" }}>{getDateLabel()}</Text>
+                </Pressable>
+              )}
             </View>
             <Pressable onPress={() => changeDate(1)} style={{ padding: 4 }}>
               <Ionicons name="chevron-forward" size={20} color="#111827" />
