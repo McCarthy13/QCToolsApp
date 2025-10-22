@@ -13,6 +13,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { ParsedScheduleEntry } from '../api/schedule-scanner';
 import { usePourScheduleStore } from '../state/pourScheduleStore';
+import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import JobAutocompleteInput from '../components/JobAutocompleteInput';
 
 type ReviewNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ScheduleReview'>;
@@ -25,6 +26,10 @@ export default function ScheduleReviewScreen() {
   const addPourEntry = usePourScheduleStore((s) => s.addPourEntry);
   const forms = usePourScheduleStore((s) => s.forms);
   const getFormsByDepartment = usePourScheduleStore((s) => s.getFormsByDepartment);
+  
+  // Project Library integration
+  const projects = useProjectLibraryStore((s) => s.projects);
+  const addProject = useProjectLibraryStore((s) => s.addProject);
   
   const [entries, setEntries] = useState<ParsedScheduleEntry[]>(route.params.entries);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -95,6 +100,72 @@ export default function ScheduleReviewScreen() {
       return;
     }
 
+    // Check for job numbers not in Project Library
+    const existingJobNumbers = new Set(projects.map(p => p.jobNumber));
+    const missingJobNumbers = new Set<string>();
+    const missingJobDetails: { jobNumber: string; jobName?: string }[] = [];
+
+    entries.forEach(entry => {
+      if (!existingJobNumbers.has(entry.jobNumber)) {
+        if (!missingJobNumbers.has(entry.jobNumber)) {
+          missingJobNumbers.add(entry.jobNumber);
+          missingJobDetails.push({
+            jobNumber: entry.jobNumber,
+            jobName: entry.jobName,
+          });
+        }
+      }
+    });
+
+    // If there are missing job numbers, prompt user
+    if (missingJobDetails.length > 0) {
+      const jobList = missingJobDetails
+        .map(j => `  • ${j.jobNumber}${j.jobName ? ` (${j.jobName})` : ''}`)
+        .join('\n');
+
+      Alert.alert(
+        'Job(s) Not Found',
+        `The following job ${missingJobDetails.length === 1 ? 'number is' : 'numbers are'} not in the Project Library:\n\n${jobList}\n\nDo you want to create ${missingJobDetails.length === 1 ? 'it' : 'them'}?`,
+        [
+          {
+            text: 'No',
+            style: 'cancel',
+            onPress: () => {
+              // User can stay on review screen to edit entries
+            },
+          },
+          {
+            text: 'Yes, Create',
+            onPress: () => {
+              // Create the missing projects
+              missingJobDetails.forEach(job => {
+                addProject({
+                  jobNumber: job.jobNumber,
+                  jobName: job.jobName || `Job ${job.jobNumber}`,
+                  location: '',
+                  salesperson: '',
+                  projectManager: '',
+                  assignedEngineer: '',
+                  assignedDrafter: '',
+                  pieceCountByType: [],
+                  createdBy: 'Scanner',
+                });
+              });
+
+              // Now proceed with import
+              proceedWithImport();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // No missing jobs, proceed directly
+    proceedWithImport();
+  };
+
+  const proceedWithImport = () => {
     let imported = 0;
     const debugInfo: string[] = [];
     
