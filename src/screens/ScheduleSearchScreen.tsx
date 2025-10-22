@@ -601,9 +601,8 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
                     )}
 
                     <View className="flex-row items-center">
-                      <Ionicons name="cube-outline" size={14} color="#6B7280" />
-                      <Text className="text-sm text-gray-600 ml-2">
-                        {result.entry.formBedName}
+                      <Text className="text-sm text-gray-600">
+                        Form: {result.entry.formBedName}
                       </Text>
                     </View>
 
