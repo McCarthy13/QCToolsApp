@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
 import { usePourScheduleStore } from "../state/pourScheduleStore";
 import { useAuthStore } from "../state/authStore";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { PourDepartment, PourEntry, PourStatus } from "../types/pour-schedule";
 import { isEliPlanConfigured } from "../api/eliplan";
 import JobAutocompleteInput from "../components/JobAutocompleteInput";
@@ -30,13 +30,6 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   useEffect(() => {
     initializeDefaultForms();
   }, []);
-
-  // Listen for route params changes to handle back navigation
-  useEffect(() => {
-    if (route.params?.department === undefined && viewingDepartment !== null) {
-      setViewingDepartment(null);
-    }
-  }, [route.params]);
 
   // Get initial date and department from navigation params (if coming from scanner)
   const initialDate = route.params?.date ? new Date(route.params.date).getTime() : Date.now();
@@ -70,6 +63,34 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   const [foreman, setForeman] = useState("");
   const [notes, setNotes] = useState("");
 
+  // Update header back button based on viewing department
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <Pressable 
+          onPress={() => {
+            if (viewingDepartment) {
+              // If viewing a department, go back to department selector
+              setViewingDepartment(null);
+            } else {
+              // If on department selector, go back to previous screen
+              navigation.goBack();
+            }
+          }} 
+          style={{ marginLeft: 4 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#111827" />
+        </Pressable>
+      ),
+    });
+  }, [navigation, viewingDepartment]);
+
+  // Listen for route params changes to handle back navigation
+  useEffect(() => {
+    if (route.params?.department === undefined && viewingDepartment !== null) {
+      setViewingDepartment(null);
+    }
+  }, [route.params]);
   const departments: PourDepartment[] = ["Precast", "Extruded", "Wall Panels", "Flexicore"];
 
   const getDepartmentColor = (dept: PourDepartment) => {
@@ -406,6 +427,15 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
         <View style={{ padding: 10 }}>
           {/* Compact Header with Back Button */}
           <View style={{ marginBottom: 8 }}>
+            <Pressable
+              onPress={() => setViewingDepartment(null)}
+              style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}
+            >
+              <Ionicons name="arrow-back" size={18} color={deptColors.accent} />
+              <Text style={{ fontSize: 12, fontWeight: "600", color: deptColors.accent, marginLeft: 4 }}>
+                Change Department
+              </Text>
+            </Pressable>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.color }}>
                 {viewingDepartment}
