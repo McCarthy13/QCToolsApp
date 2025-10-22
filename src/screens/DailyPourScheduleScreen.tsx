@@ -40,6 +40,8 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [editingPourId, setEditingPourId] = useState<string | null>(null);
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+  const [dateInputText, setDateInputText] = useState("");
   
   // Department for adding/scanning (user must select first)
   const [activeDepartment, setActiveDepartment] = useState<PourDepartment | null>(initialDepartment);
@@ -201,6 +203,49 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     return null; // No label for other dates
   };
 
+  const openDatePicker = () => {
+    // Pre-fill with current selected date in MM/DD/YYYY format
+    const currentDate = new Date(selectedDate);
+    const formatted = `${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getDate().toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+    setDateInputText(formatted);
+    setShowDatePickerModal(true);
+  };
+
+  const handleDateSubmit = () => {
+    // Parse date in MM/DD/YYYY format
+    const parts = dateInputText.split('/');
+    if (parts.length !== 3) {
+      Alert.alert('Invalid Date', 'Please enter date in MM/DD/YYYY format');
+      return;
+    }
+
+    const month = parseInt(parts[0]) - 1; // Month is 0-indexed
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+
+    if (isNaN(month) || isNaN(day) || isNaN(year)) {
+      Alert.alert('Invalid Date', 'Please enter valid numbers for date');
+      return;
+    }
+
+    if (month < 0 || month > 11 || day < 1 || day > 31 || year < 1900 || year > 2100) {
+      Alert.alert('Invalid Date', 'Please enter a valid date');
+      return;
+    }
+
+    const newDate = new Date(year, month, day);
+    setSelectedDate(newDate.getTime());
+    setShowDatePickerModal(false);
+  };
+
+  const setQuickDate = (daysOffset: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    today.setDate(today.getDate() + daysOffset);
+    setSelectedDate(today.getTime());
+    setShowDatePickerModal(false);
+  };
+
   const handleSyncWithEliPlan = async () => {
     if (!isEliPlanConfigured()) {
       Alert.alert(
@@ -280,9 +325,11 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                   <Ionicons name="chevron-back" size={18} color="#111827" />
                 </Pressable>
                 <View style={{ flex: 1, marginHorizontal: 8, alignItems: "center" }}>
-                  <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827" }}>
-                    {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                  </Text>
+                  <Pressable onPress={openDatePicker}>
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827" }}>
+                      {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                    </Text>
+                  </Pressable>
                   {getDateLabel() && (
                     <Pressable onPress={() => setSelectedDate(Date.now())}>
                       <Text style={{ fontSize: 11, color: "#3B82F6", fontWeight: "500" }}>{getDateLabel()}</Text>
@@ -388,9 +435,11 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               <Ionicons name="chevron-back" size={20} color="#111827" />
             </Pressable>
             <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
-                {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-              </Text>
+              <Pressable onPress={openDatePicker}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
+                  {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                </Text>
+              </Pressable>
               {getDateLabel() && (
                 <Pressable onPress={() => setSelectedDate(Date.now())}>
                   <Text style={{ fontSize: 10, color: "#3B82F6", fontWeight: "500" }}>{getDateLabel()}</Text>
@@ -897,6 +946,120 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               </View>
             </View>
           </TouchableWithoutFeedback>
+        </View>
+      </Modal>
+
+      {/* Date Picker Modal */}
+      <Modal visible={showDatePickerModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 24,
+              padding: 24,
+              width: "85%",
+              maxWidth: 400,
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
+                Select Date
+              </Text>
+              <Pressable onPress={() => setShowDatePickerModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            {/* Quick Date Buttons */}
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
+              <Pressable
+                onPress={() => setQuickDate(-1)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: 8,
+                  padding: 12,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151" }}>Yesterday</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setQuickDate(0)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#3B82F6",
+                  borderRadius: 8,
+                  padding: 12,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#FFFFFF" }}>Today</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setQuickDate(1)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: 8,
+                  padding: 12,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151" }}>Tomorrow</Text>
+              </Pressable>
+            </View>
+
+            {/* Manual Date Input */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+              Or enter a date:
+            </Text>
+            <TextInput
+              value={dateInputText}
+              onChangeText={setDateInputText}
+              placeholder="MM/DD/YYYY"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numbers-and-punctuation"
+              style={{
+                backgroundColor: "#F9FAFB",
+                borderWidth: 1,
+                borderColor: "#D1D5DB",
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 16,
+                color: "#111827",
+                marginBottom: 20,
+              }}
+            />
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <Pressable
+                onPress={() => setShowDatePickerModal(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: 8,
+                  padding: 14,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#374151" }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDateSubmit}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#3B82F6",
+                  borderRadius: 8,
+                  padding: 14,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "600", color: "#FFFFFF" }}>Go to Date</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
