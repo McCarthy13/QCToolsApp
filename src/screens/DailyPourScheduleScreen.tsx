@@ -238,13 +238,21 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
       <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
         <ScrollView style={{ flex: 1 }}>
           <View style={{ padding: 12 }}>
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 20, fontWeight: "700", color: "#111827", marginBottom: 2 }}>
-                Daily Pour Schedule
-              </Text>
-              <Text style={{ fontSize: 13, color: "#6B7280" }}>
-                Select a department to view and manage
-              </Text>
+            <View style={{ marginBottom: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 20, fontWeight: "700", color: "#111827", marginBottom: 2 }}>
+                  Daily Pour Schedule
+                </Text>
+                <Text style={{ fontSize: 13, color: "#6B7280" }}>
+                  Select a department to view and manage
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => navigation.navigate("ScheduleSearch")}
+                style={{ backgroundColor: "#3B82F6", borderRadius: 10, padding: 12, marginLeft: 8 }}
+              >
+                <Ionicons name="search" size={22} color="#FFFFFF" />
+              </Pressable>
             </View>
 
             <View style={{ marginBottom: 12 }}>
@@ -340,12 +348,6 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 {viewingDepartment}
               </Text>
               <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                <Pressable
-                  onPress={() => navigation.navigate("ScheduleSearch")}
-                  style={{ backgroundColor: "#FFFFFF", borderRadius: 6, padding: 8, borderWidth: 1, borderColor: "#E5E7EB" }}
-                >
-                  <Ionicons name="search" size={18} color="#3B82F6" />
-                </Pressable>
                 <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#E5E7EB" }}>
                   <Text style={{ fontSize: 10, color: "#6B7280" }}>Pours</Text>
                   <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827", textAlign: "center" }}>
