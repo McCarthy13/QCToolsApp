@@ -16,21 +16,30 @@ interface SearchResult {
   daysFromNow: number;
 }
 
+type JobNameSearchType = 'equals' | 'contains';
+
 export default function ScheduleSearchScreen({ navigation }: Props) {
   const allEntries = usePourScheduleStore((s) => s.pourEntries);
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [jobNumber, setJobNumber] = useState('');
+  const [jobName, setJobName] = useState('');
+  const [jobNameSearchType, setJobNameSearchType] = useState<JobNameSearchType>('contains');
+  const [markNumber, setMarkNumber] = useState('');
+  const [idNumber, setIdNumber] = useState('');
+  
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = () => {
-    if (!searchQuery.trim()) {
+    // Check if at least one field has input
+    const hasInput = jobNumber.trim() || jobName.trim() || markNumber.trim() || idNumber.trim();
+    
+    if (!hasInput) {
       setSearchResults([]);
       setHasSearched(false);
       return;
     }
 
-    const query = searchQuery.trim().toLowerCase();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTime = today.getTime();
@@ -39,26 +48,48 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
     const results: SearchResult[] = [];
 
     allEntries.forEach(entry => {
-      let matches = false;
+      let matches = true;
 
-      // Check job number
-      if (entry.jobNumber.toLowerCase().includes(query)) {
-        matches = true;
+      // Check job number (if provided)
+      if (jobNumber.trim()) {
+        const query = jobNumber.trim().toLowerCase();
+        if (!entry.jobNumber.toLowerCase().includes(query)) {
+          matches = false;
+        }
       }
 
-      // Check job name
-      if (entry.jobName && entry.jobName.toLowerCase().includes(query)) {
-        matches = true;
+      // Check job name (if provided)
+      if (jobName.trim() && matches) {
+        const query = jobName.trim().toLowerCase();
+        const entryJobName = (entry.jobName || '').toLowerCase();
+        
+        if (jobNameSearchType === 'equals') {
+          if (entryJobName !== query) {
+            matches = false;
+          }
+        } else { // contains
+          if (!entryJobName.includes(query)) {
+            matches = false;
+          }
+        }
       }
 
-      // Check ID number
-      if (entry.idNumber && entry.idNumber.toLowerCase().includes(query)) {
-        matches = true;
+      // Check mark number (if provided)
+      if (markNumber.trim() && matches) {
+        const query = markNumber.trim().toLowerCase();
+        const entryMarkNumbers = (entry.markNumbers || '').toLowerCase();
+        if (!entryMarkNumbers.includes(query)) {
+          matches = false;
+        }
       }
 
-      // Check mark numbers
-      if (entry.markNumbers && entry.markNumbers.toLowerCase().includes(query)) {
-        matches = true;
+      // Check ID number (if provided)
+      if (idNumber.trim() && matches) {
+        const query = idNumber.trim().toLowerCase();
+        const entryIdNumber = (entry.idNumber || '').toLowerCase();
+        if (!entryIdNumber.includes(query)) {
+          matches = false;
+        }
       }
 
       if (matches) {
@@ -91,6 +122,16 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
 
     setSearchResults(results);
     setHasSearched(true);
+  };
+
+  const handleClear = () => {
+    setJobNumber('');
+    setJobName('');
+    setJobNameSearchType('contains');
+    setMarkNumber('');
+    setIdNumber('');
+    setSearchResults([]);
+    setHasSearched(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -131,49 +172,111 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
     <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="bg-white border-b border-gray-200 px-4 py-3">
-        <View className="flex-row items-center mb-3">
-          <Pressable onPress={() => navigation.goBack()} className="p-2 mr-2">
+        <View className="flex-row items-center justify-between mb-3">
+          <Pressable onPress={() => navigation.goBack()} className="p-2">
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900 flex-1">
+          <Text className="text-xl font-bold text-gray-900 flex-1 ml-2">
             Search Schedule
           </Text>
-        </View>
-
-        {/* Search Input */}
-        <View className="flex-row items-center gap-2">
-          <View className="flex-1 flex-row items-center bg-gray-100 rounded-lg px-3 py-2">
-            <Ionicons name="search" size={20} color="#6B7280" />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSearch}
-              placeholder="Job #, Job Name, Mark #, ID #..."
-              placeholderTextColor="#9CA3AF"
-              className="flex-1 ml-2 text-base text-gray-900"
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <Pressable onPress={() => {
-                setSearchQuery('');
-                setSearchResults([]);
-                setHasSearched(false);
-              }}>
-                <Ionicons name="close-circle" size={20} color="#6B7280" />
-              </Pressable>
-            )}
-          </View>
-          <Pressable
-            onPress={handleSearch}
-            className="bg-blue-600 rounded-lg px-4 py-3"
-          >
-            <Text className="text-white font-semibold">Search</Text>
+          <Pressable onPress={handleClear} className="px-3 py-2">
+            <Text className="text-sm font-semibold text-gray-600">Clear</Text>
           </Pressable>
         </View>
       </View>
 
-      {/* Results */}
       <ScrollView className="flex-1">
+        {/* Search Fields */}
+        <View className="bg-white border-b border-gray-200 p-4 gap-4">
+          {/* Job Number */}
+          <View>
+            <Text className="text-sm font-semibold text-gray-700 mb-2">Job Number</Text>
+            <TextInput
+              value={jobNumber}
+              onChangeText={setJobNumber}
+              placeholder="Enter job number"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
+            />
+          </View>
+
+          {/* Job Name */}
+          <View>
+            <Text className="text-sm font-semibold text-gray-700 mb-2">Job Name</Text>
+            <TextInput
+              value={jobName}
+              onChangeText={setJobName}
+              placeholder="Enter job name"
+              placeholderTextColor="#9CA3AF"
+              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
+            />
+            <View className="flex-row gap-2 mt-2">
+              <Pressable
+                onPress={() => setJobNameSearchType('equals')}
+                className={`flex-1 rounded-lg py-2 border ${
+                  jobNameSearchType === 'equals' 
+                    ? 'bg-blue-600 border-blue-600' 
+                    : 'bg-white border-gray-300'
+                }`}
+              >
+                <Text className={`text-center text-sm font-semibold ${
+                  jobNameSearchType === 'equals' ? 'text-white' : 'text-gray-700'
+                }`}>
+                  Equals
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setJobNameSearchType('contains')}
+                className={`flex-1 rounded-lg py-2 border ${
+                  jobNameSearchType === 'contains' 
+                    ? 'bg-blue-600 border-blue-600' 
+                    : 'bg-white border-gray-300'
+                }`}
+              >
+                <Text className={`text-center text-sm font-semibold ${
+                  jobNameSearchType === 'contains' ? 'text-white' : 'text-gray-700'
+                }`}>
+                  Contains
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Mark Number */}
+          <View>
+            <Text className="text-sm font-semibold text-gray-700 mb-2">Mark Number</Text>
+            <TextInput
+              value={markNumber}
+              onChangeText={setMarkNumber}
+              placeholder="e.g., M1, H105"
+              placeholderTextColor="#9CA3AF"
+              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
+            />
+          </View>
+
+          {/* ID Number */}
+          <View>
+            <Text className="text-sm font-semibold text-gray-700 mb-2">ID Number</Text>
+            <TextInput
+              value={idNumber}
+              onChangeText={setIdNumber}
+              placeholder="Enter ID number"
+              placeholderTextColor="#9CA3AF"
+              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
+            />
+          </View>
+
+          {/* Search Button */}
+          <Pressable
+            onPress={handleSearch}
+            className="bg-blue-600 rounded-lg py-3 items-center"
+          >
+            <Text className="text-white text-base font-semibold">Search</Text>
+          </Pressable>
+        </View>
+
+        {/* Results */}
         {!hasSearched ? (
           <View className="items-center justify-center p-8 mt-12">
             <Ionicons name="search-outline" size={64} color="#9CA3AF" />
@@ -181,17 +284,17 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
               Search for Pieces
             </Text>
             <Text className="text-gray-400 text-sm mt-2 text-center px-4">
-              Find scheduled, in-progress, or completed pours by Job #, Job Name, Mark #, or ID #
+              Fill in one or more fields above and tap Search to find pieces
             </Text>
           </View>
         ) : searchResults.length === 0 ? (
           <View className="items-center justify-center p-8 mt-12">
             <Ionicons name="document-text-outline" size={64} color="#9CA3AF" />
             <Text className="text-gray-500 text-base mt-4 text-center font-semibold">
-              No Results Found
+              No Matches Found
             </Text>
             <Text className="text-gray-400 text-sm mt-2 text-center px-4">
-              No pieces match "{searchQuery}"
+              No pieces match your search criteria
             </Text>
           </View>
         ) : (
