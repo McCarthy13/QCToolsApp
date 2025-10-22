@@ -401,7 +401,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
             >
               <Ionicons name="add-circle" size={18} color="#FFFFFF" />
               <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600", marginLeft: 4 }}>
-                Add Pour
+                Add Piece
               </Text>
             </Pressable>
 
@@ -584,7 +584,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                 <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
-                  {editingPourId ? "Edit Pour Entry" : "Add Pour Entry"}
+                  {editingPourId ? "Edit Piece" : "Add Piece"}
                 </Text>
                 <Pressable onPress={() => setShowAddModal(false)}>
                   <Ionicons name="close" size={24} color="#6B7280" />
