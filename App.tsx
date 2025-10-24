@@ -55,6 +55,10 @@ import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
+import YardMapScreen from "./src/screens/YardMapScreen";
+import YardDepartmentScreen from "./src/screens/YardDepartmentScreen";
+import YardProductSelectionScreen from "./src/screens/YardProductSelectionScreen";
+import YardSearchScreen from "./src/screens/YardSearchScreen";
 import { useAuthStore } from "./src/state/authStore";
 
 /*
@@ -715,6 +719,42 @@ export default function App() {
               options={{
                 presentation: "modal",
               }}
+            />
+            <Stack.Screen
+              name="YardMap"
+              component={YardMapScreen}
+              options={({ navigation }) => ({
+                title: "Yard Maps",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="YardDepartment"
+              component={YardDepartmentScreen}
+              options={({ navigation, route }) => ({
+                title: `${route.params?.department} Yard`,
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen
+              name="YardProductSelection"
+              component={YardProductSelectionScreen}
+              options={{
+                title: "Assign Yard Location",
+              }}
+            />
+            <Stack.Screen
+              name="YardSearch"
+              component={YardSearchScreen}
+              options={{ headerShown: false }}
             />
           </Stack.Navigator>
           <StatusBar style="auto" />

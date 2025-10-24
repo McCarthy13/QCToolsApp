@@ -100,4 +100,8 @@ export type RootStackParamList = {
   ScheduleSearch: undefined;
   ScheduleScanner: { date?: string; department?: string };
   ScheduleReview: { entries: any[]; date: string; department?: string };
+  YardMap: undefined;
+  YardDepartment: { department: string };
+  YardProductSelection: { pourEntryId: string; department: string };
+  YardSearch: undefined;
 };

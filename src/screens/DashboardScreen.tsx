@@ -78,6 +78,15 @@ const tools: Tool[] = [
     route: 'DailyPourSchedule',
   },
   {
+    id: 'yard-maps',
+    name: 'Yard Maps',
+    description: 'Track and locate yarded pieces by department',
+    icon: 'map',
+    color: '#8B5CF6',
+    bgColor: '#F5F3FF',
+    route: 'YardMap',
+  },
+  {
     id: 'product-library',
     name: 'Product Library',
     description: 'Manage product types and tolerance specifications',
