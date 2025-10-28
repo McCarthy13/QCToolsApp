@@ -137,18 +137,6 @@ export default function QualityLogListScreen({ navigation, route }: Props) {
                           <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827" }}>
                             {formatDate(log.date)}
                           </Text>
-                          {log.shift && (
-                            <View
-                              style={{
-                                backgroundColor: "#F3F4F6",
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                                borderRadius: 8,
-                              }}
-                            >
-                              <Text style={{ fontSize: 12, color: "#4B5563" }}>{log.shift}</Text>
-                            </View>
-                          )}
                         </View>
 
                         {/* Status Badge */}

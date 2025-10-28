@@ -38,7 +38,6 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
     existingLog?.department || (department as DepartmentType) || "Flexicore"
   );
   const [date, setDate] = useState(existingLog?.date || Date.now());
-  const [shift, setShift] = useState<"Day" | "Night" | "Weekend" | undefined>(existingLog?.shift);
   const [productionItems, setProductionItems] = useState<ProductionItem[]>(
     existingLog?.productionItems || []
   );
@@ -157,7 +156,6 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
       updateLog(logId, {
         department: selectedDepartment,
         date,
-        shift,
         productionItems,
         issues,
         overallStatus,
@@ -167,7 +165,6 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
       addLog({
         department: selectedDepartment,
         date,
-        shift,
         productionItems,
         issues,
         overallStatus,
@@ -204,40 +201,6 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
               <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827" }}>
                 {selectedDepartment}
               </Text>
-            </View>
-
-            {/* Shift Selection */}
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                Shift
-              </Text>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                {(["Day", "Night", "Weekend"] as const).map((shiftOption) => (
-                  <Pressable
-                    key={shiftOption}
-                    onPress={() => setShift(shift === shiftOption ? undefined : shiftOption)}
-                    style={{
-                      flex: 1,
-                      backgroundColor: shift === shiftOption ? "#3B82F6" : "#FFFFFF",
-                      paddingVertical: 12,
-                      borderRadius: 12,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: shift === shiftOption ? "#3B82F6" : "#E5E7EB",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: shift === shiftOption ? "#FFFFFF" : "#6B7280",
-                      }}
-                    >
-                      {shiftOption}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
             </View>
 
             {/* Production Items */}

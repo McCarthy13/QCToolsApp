@@ -143,12 +143,6 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
             <Text style={{ fontSize: 16, color: "#6B7280", marginBottom: 12 }}>
               {formatDate(log.date)}
             </Text>
-            {log.shift && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <Ionicons name="time-outline" size={16} color="#6B7280" />
-                <Text style={{ fontSize: 14, color: "#6B7280" }}>{log.shift} Shift</Text>
-              </View>
-            )}
             <View
               style={{
                 backgroundColor: overallStatusColor.bg,

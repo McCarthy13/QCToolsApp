@@ -389,16 +389,6 @@ export default function QualityLogSearchScreen({ navigation }: Props) {
                     </View>
                   )}
 
-                  {/* Shift */}
-                  {result.log.shift && (
-                    <View className="flex-row items-center mb-2">
-                      <Ionicons name="time-outline" size={14} color="#6B7280" />
-                      <Text className="text-sm text-gray-600 ml-2">
-                        {result.log.shift} Shift
-                      </Text>
-                    </View>
-                  )}
-
                   {/* Production Items Count or Extruded Entries Count */}
                   {result.log.extrudedEntries && result.log.extrudedEntries.length > 0 ? (
                     <View className="flex-row items-center mb-2">

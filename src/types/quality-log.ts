@@ -64,7 +64,6 @@ export interface QualityLogEntry {
   id: string;
   department: DepartmentType;
   date: number; // Date of the log entry
-  shift?: 'Day' | 'Night' | 'Weekend';
   
   // Department-specific entries
   extrudedEntries?: ExtrudedQualityEntry[]; // For Extruded department
