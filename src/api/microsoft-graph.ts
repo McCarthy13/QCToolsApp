@@ -103,10 +103,16 @@ export async function authenticateWithMicrosoft(): Promise<GraphAPIToken> {
     } else if (result.type === "error") {
       throw new Error(result.params.error_description || "Authentication failed");
     } else {
-      throw new Error("Authentication was cancelled");
+      // User cancelled - don't log as error, just throw for caller to handle
+      const cancelError = new Error("Authentication was cancelled");
+      cancelError.name = "AuthCancelledError";
+      throw cancelError;
     }
-  } catch (error) {
-    console.error("Microsoft authentication error:", error);
+  } catch (error: any) {
+    // Only log errors that aren't user cancellations
+    if (error.name !== "AuthCancelledError") {
+      console.error("Microsoft authentication error:", error);
+    }
     throw error;
   }
 }
