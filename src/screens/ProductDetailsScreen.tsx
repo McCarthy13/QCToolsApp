@@ -29,15 +29,10 @@ interface Props {
 
 // Product types/sizes for hollow-core planks
 const PRODUCT_TYPES = [
-  { id: "8024", label: '8" x 24"', height: 8, width: 24 },
-  { id: "8032", label: '8" x 32"', height: 8, width: 32 },
-  { id: "8048", label: '8" x 48"', height: 8, width: 48 },
-  { id: "1048", label: '10" x 48"', height: 10, width: 48 },
-  { id: "1248", label: '12" x 48"', height: 12, width: 48 },
-  { id: "1250", label: '12" x 50" (1250)', height: 12, width: 48 },
-  { id: "12024", label: '12" x 24"', height: 12, width: 24 },
-  { id: "12032", label: '12" x 32"', height: 12, width: 32 },
-  { id: "12048", label: '12" x 48"', height: 12, width: 48 },
+  { id: "8048", label: '8048', height: 8, width: 48 },
+  { id: "1048", label: '1048', height: 10, width: 48 },
+  { id: "1248", label: '1248', height: 12, width: 48 },
+  { id: "1250", label: '1250', height: 12, width: 50 },
 ];
 
 export default function ProductDetailsScreen({ navigation }: Props) {
@@ -569,7 +564,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                     {type.label}
                   </Text>
                   <Text className="text-gray-600 text-sm mt-1">
-                    Height: {type.height}" • Width: {type.width}"
+                    {type.height}" thick × {type.width}" wide hollow core slab
                   </Text>
                 </Pressable>
               ))}
