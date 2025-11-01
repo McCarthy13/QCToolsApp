@@ -306,3 +306,5 @@ Date: 2025-10-22T04:11:13.986Z
 - Changes made by agent 2025-11-01T19:35:04Z
 - Changes made by agent 2025-11-01T19:50:11Z: Added cross-section properties (A, Bw, Ig, Yb) and strand strength (fpu) fields to sub-product types in Product Library
 - Changes made by agent 2025-11-01T19:50:26Z
+- Changes made by agent 2025-11-01T19:57:20Z: Updated Dead Load field to use PSF units with auto-calculated PLF value based on 4ft width, changed f'pu from psi to ksi units
+- Changes made by agent 2025-11-01T19:57:35Z

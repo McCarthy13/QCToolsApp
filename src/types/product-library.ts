@@ -37,9 +37,10 @@ export interface SubProduct {
 
   // Strength characteristics
   deadLoad?: string; // e.g., "65 psf", "80 psf"
+  deadLoadPerLinearFoot?: number; // Auto-calculated from deadLoad (plf)
   fc28Day?: number; // f'c - 28-day concrete strength in psi (e.g., 5000, 6000)
   fciRelease?: number; // f'ci - Initial/release strength in psi (e.g., 3500, 4000)
-  fpu?: number; // f'pu - Ultimate tensile strength of strand in psi (e.g., 270000)
+  fpu?: number; // f'pu - Ultimate tensile strength of strand in ksi (e.g., 270)
 
   // Cross-section component (without strands, shows webs and cores)
   crossSectionComponent?: string; // Component name like "CrossSection8048", "CrossSection1048"

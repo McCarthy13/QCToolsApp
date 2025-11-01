@@ -56,10 +56,24 @@ export default function ProductLibraryScreen({ navigation }: Props) {
 
   // Strength characteristics
   const [subProductDeadLoad, setSubProductDeadLoad] = useState("");
+  const [subProductDeadLoadPerLinearFoot, setSubProductDeadLoadPerLinearFoot] = useState<number | null>(null);
   const [subProductFc28Day, setSubProductFc28Day] = useState("");
   const [subProductFciRelease, setSubProductFciRelease] = useState("");
   const [subProductFpu, setSubProductFpu] = useState("");
   const [subProductCrossSectionComponent, setSubProductCrossSectionComponent] = useState("");
+
+  // Auto-calculate dead load per linear foot when dead load (PSF) changes
+  useEffect(() => {
+    const psfValue = parseFloat(subProductDeadLoad);
+    if (!isNaN(psfValue) && psfValue > 0) {
+      // Dead load per linear foot = (PSF × 4 feet width)
+      // Using 4 feet as standard width (48 inches)
+      const plfValue = psfValue * 4;
+      setSubProductDeadLoadPerLinearFoot(plfValue);
+    } else {
+      setSubProductDeadLoadPerLinearFoot(null);
+    }
+  }, [subProductDeadLoad]);
 
   // Form state
   const [productType, setProductType] = useState<ProductType>("Beams");
@@ -217,6 +231,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductMomentOfInertia("");
     setSubProductDistanceToBottomFiber("");
     setSubProductDeadLoad("");
+    setSubProductDeadLoadPerLinearFoot(null);
     setSubProductFc28Day("");
     setSubProductFciRelease("");
     setSubProductFpu("");
@@ -240,6 +255,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductMomentOfInertia(subProduct.momentOfInertia?.toString() || "");
     setSubProductDistanceToBottomFiber(subProduct.distanceToBottomFiber?.toString() || "");
     setSubProductDeadLoad(subProduct.deadLoad || "");
+    setSubProductDeadLoadPerLinearFoot(subProduct.deadLoadPerLinearFoot || null);
     setSubProductFc28Day(subProduct.fc28Day?.toString() || "");
     setSubProductFciRelease(subProduct.fciRelease?.toString() || "");
     setSubProductFpu(subProduct.fpu?.toString() || "");
@@ -262,9 +278,10 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       momentOfInertia: subProductMomentOfInertia ? parseFloat(subProductMomentOfInertia) : undefined,
       distanceToBottomFiber: subProductDistanceToBottomFiber ? parseFloat(subProductDistanceToBottomFiber) : undefined,
       deadLoad: subProductDeadLoad || undefined,
+      deadLoadPerLinearFoot: subProductDeadLoadPerLinearFoot || undefined,
       fc28Day: subProductFc28Day ? parseInt(subProductFc28Day) : undefined,
       fciRelease: subProductFciRelease ? parseInt(subProductFciRelease) : undefined,
-      fpu: subProductFpu ? parseInt(subProductFpu) : undefined,
+      fpu: subProductFpu ? parseFloat(subProductFpu) : undefined,
       crossSectionComponent: subProductCrossSectionComponent || undefined,
     };
 
@@ -288,6 +305,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductMomentOfInertia("");
     setSubProductDistanceToBottomFiber("");
     setSubProductDeadLoad("");
+    setSubProductDeadLoadPerLinearFoot(null);
     setSubProductFc28Day("");
     setSubProductFciRelease("");
     setSubProductFpu("");
@@ -1295,16 +1313,20 @@ export default function ProductLibraryScreen({ navigation }: Props) {
 
                     {/* Dead Load */}
                     <View style={{ marginBottom: 12 }}>
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>
-                        Dead Load
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
+                        Dead Load (psf)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
+                        Pounds per square foot
                       </Text>
                       <TextInput
                         value={subProductDeadLoad}
                         onChangeText={setSubProductDeadLoad}
-                        placeholder="e.g., 65 psf, 80 psf"
+                        placeholder="e.g., 65, 80, 95"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
                         selectionColor="#3B82F6"
+                        keyboardType="decimal-pad"
                         style={{
                           backgroundColor: "#FFFFFF",
                           borderRadius: 8,
@@ -1315,6 +1337,16 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                           borderColor: "#E5E7EB",
                         }}
                       />
+                      {subProductDeadLoadPerLinearFoot !== null && (
+                        <View style={{ marginTop: 8, backgroundColor: "#F0F9FF", padding: 8, borderRadius: 6, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                          <Text style={{ fontSize: 12, color: "#1E40AF", fontWeight: "600" }}>
+                            Per Linear Foot: {subProductDeadLoadPerLinearFoot.toFixed(1)} plf
+                          </Text>
+                          <Text style={{ fontSize: 10, color: "#6B7280", marginTop: 2 }}>
+                            Based on 4 ft (48 in) width
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     {/* f'c - 28 Day Strength */}
@@ -1370,7 +1402,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     {/* f'pu - Ultimate Tensile Strength of Strand */}
                     <View style={{ marginBottom: 12 }}>
                       <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
-                        f'<Text style={{ fontSize: 10 }}>pu</Text> - Ultimate Tensile Strength (psi)
+                        f'<Text style={{ fontSize: 10 }}>pu</Text> - Ultimate Tensile Strength (ksi)
                       </Text>
                       <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
                         Ultimate tensile strength of the strand
@@ -1378,11 +1410,11 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       <TextInput
                         value={subProductFpu}
                         onChangeText={setSubProductFpu}
-                        placeholder="e.g., 270000"
+                        placeholder="e.g., 270"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
                         selectionColor="#3B82F6"
-                        keyboardType="numeric"
+                        keyboardType="decimal-pad"
                         style={{
                           backgroundColor: "#FFFFFF",
                           borderRadius: 8,
