@@ -392,18 +392,6 @@ export default function StrandPatternsScreen() {
                           {pattern.totalArea.toFixed(3)} in²
                         </Text>
                       </View>
-                      <View className="bg-gray-50 rounded-lg px-3 py-2">
-                        <Text className="text-xs text-gray-600">Moment of Inertia</Text>
-                        <Text className="text-sm font-semibold text-gray-900">
-                          {pattern.momentOfInertia.toLocaleString()} in⁴
-                        </Text>
-                      </View>
-                      <View className="bg-gray-50 rounded-lg px-3 py-2">
-                        <Text className="text-xs text-gray-600">Dead Load</Text>
-                        <Text className="text-sm font-semibold text-gray-900">
-                          {pattern.deadLoad.toLocaleString()} lb/ft
-                        </Text>
-                      </View>
                     </View>
                   </View>
                 </View>
@@ -482,8 +470,6 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [centroid, setCentroid] = useState('');
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
-  const [momentOfInertia, setMomentOfInertia] = useState(pattern?.momentOfInertia.toString() || '');
-  const [deadLoad, setDeadLoad] = useState(pattern?.deadLoad.toString() || '');
   const [errors, setErrors] = useState<string[]>([]);
 
   // Parse fraction or decimal input
@@ -610,18 +596,6 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       validationErrors.push('e value must be greater than 0');
     }
 
-    // Validate moment of inertia
-    const moi = parseFloat(momentOfInertia);
-    if (!momentOfInertia || isNaN(moi) || moi <= 0) {
-      validationErrors.push('Moment of inertia must be greater than 0');
-    }
-
-    // Validate dead load
-    const dl = parseFloat(deadLoad);
-    if (!deadLoad || isNaN(dl) || dl <= 0) {
-      validationErrors.push('Dead load must be greater than 0');
-    }
-
     // Validate strand size designations if strands exist
     if (count_3_8 + count_1_2 + count_0_6 > 0 && !validateStrandDesignations()) {
       const designated_3_8 = strandSizes.filter(s => s === '3/8').length;
@@ -666,7 +640,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
     }
 
     const patternId = `${patternNumber}-${pullingForce}`;
-    
+
     onSave({
       patternId,
       name: name.trim(),
@@ -679,8 +653,6 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       eValue: e,
       pullingForce: force,
       totalArea: calculateTotalArea(),
-      momentOfInertia: moi,
-      deadLoad: dl,
     });
   };
 
@@ -1082,44 +1054,6 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 keyboardType="decimal-pad"
                 value={eValue}
                 onChangeText={setEValue}
-              />
-            </View>
-
-            {/* Moment of Inertia */}
-            <View className="mb-4">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Moment of Inertia (in⁴)
-              </Text>
-              <Text className="text-xs text-gray-500 mb-2">
-                Enter the moment of inertia for the member cross-section (decimals allowed)
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-                placeholder="e.g., 3804.5"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="decimal-pad"
-                value={momentOfInertia}
-                onChangeText={setMomentOfInertia}
-              />
-            </View>
-
-            {/* Dead Load */}
-            <View className="mb-4">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Dead Load (lb/ft)
-              </Text>
-              <Text className="text-xs text-gray-500 mb-2">
-                Enter the dead load for this member size
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-                placeholder="e.g., 800"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="decimal-pad"
-                value={deadLoad}
-                onChangeText={setDeadLoad}
               />
             </View>
 
