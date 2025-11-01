@@ -18,6 +18,8 @@ import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1048 from "../components/CrossSection1048";
 import CrossSection1248 from "../components/CrossSection1248";
 import CrossSection1250 from "../components/CrossSection1250";
+import CrossSection1648 from "../components/CrossSection1648";
+import CrossSection1650 from "../components/CrossSection1650";
 
 type SlippageIdentifierScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -243,6 +245,22 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
             />
           ) : config.productType === '1250' ? (
             <CrossSection1250
+              scale={6}
+              activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          ) : config.productType === '1648' ? (
+            <CrossSection1648
+              scale={6}
+              activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          ) : config.productType === '1650' ? (
+            <CrossSection1650
               scale={6}
               activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
               offcutSide={config.offcutSide || null}
