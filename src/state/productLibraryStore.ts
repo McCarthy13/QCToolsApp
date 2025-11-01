@@ -35,6 +35,7 @@ interface ProductLibraryState {
 
   // Utility
   clearAllProducts: () => void;
+  migrateCrossSections: () => void;
   initializeDefaultProducts: () => void;
 }
 
@@ -270,12 +271,45 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
       getAllProductTypes: () => {
         return get().products.map((product) => product.name);
       },
-      
+
       // Utility
       clearAllProducts: () => {
         set({ products: [] });
       },
-      
+
+      // Migration utility to add cross-section components to existing sub-products
+      migrateCrossSections: () => {
+        set((state) => ({
+          products: state.products.map((product) => {
+            if (product.name === 'Hollow Core Slabs' && product.subProducts) {
+              return {
+                ...product,
+                subProducts: product.subProducts.map((subProduct) => {
+                  // Add cross-section component if missing
+                  if (!subProduct.crossSectionComponent) {
+                    const componentMap: Record<string, string> = {
+                      '8048': 'CrossSection8048',
+                      '1048': 'CrossSection1048',
+                      '1248': 'CrossSection1248',
+                      '1250': 'CrossSection1250',
+                    };
+
+                    return {
+                      ...subProduct,
+                      crossSectionComponent: componentMap[subProduct.name] || undefined,
+                      updatedAt: Date.now(),
+                    };
+                  }
+                  return subProduct;
+                }),
+                updatedAt: Date.now(),
+              };
+            }
+            return product;
+          }),
+        }));
+      },
+
       initializeDefaultProducts: () => {
         const state = get();
         

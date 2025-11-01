@@ -23,11 +23,15 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const updateSubProduct = useProductLibraryStore((s) => s.updateSubProduct);
   const deleteSubProduct = useProductLibraryStore((s) => s.deleteSubProduct);
   const initializeDefaultProducts = useProductLibraryStore((s) => s.initializeDefaultProducts);
+  const migrateCrossSections = useProductLibraryStore((s) => s.migrateCrossSections);
 
-  // Initialize default products on mount
+  // Initialize default products on mount and migrate cross-sections
   useEffect(() => {
     if (products.length === 0) {
       initializeDefaultProducts();
+    } else {
+      // Migrate existing products to add cross-section components
+      migrateCrossSections();
     }
   }, []);
 
