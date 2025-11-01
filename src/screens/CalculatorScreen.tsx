@@ -20,6 +20,7 @@ import {
   CamberInputs,
 } from '../utils/camber-calculations';
 import { useStrandPatternStore } from '../state/strandPatternStore';
+import { useProductLibraryStore } from '../state/productLibraryStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -42,7 +43,8 @@ export default function CalculatorScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { currentInputs, addCalculation } = useCalculatorStore();
   const { customPatterns } = useStrandPatternStore();
-  
+  const { products } = useProductLibraryStore();
+
   const [projectName, setProjectName] = useState('');
   const [projectNumber, setProjectNumber] = useState('');
   const [markNumber, setMarkNumber] = useState('');
@@ -53,13 +55,17 @@ export default function CalculatorScreen() {
   const [productWidth, setProductWidth] = useState('');
   const [offcutSide, setOffcutSide] = useState<'L1' | 'L2' | ''>('');
   const [memberType, setMemberType] = useState(currentInputs.memberType || 'hollow-core');
+
+  // Product selection
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedSubProductId, setSelectedSubProductId] = useState<string>('');
+  const [showProductModal, setShowProductModal] = useState(false);
+
   const [releaseStrength, setReleaseStrength] = useState('3500');
   const [concreteStrength, setConcreteStrength] = useState(
     currentInputs.concreteStrength?.toString() || '9000'
   );
   const [liveLoad, setLiveLoad] = useState(currentInputs.liveLoad?.toString() || '');
-  const [momentOfInertia, setMomentOfInertia] = useState('');
-  const [deadLoad, setDeadLoad] = useState('');
   const [strandPattern, setStrandPattern] = useState<string>('');
   const [topStrandPattern, setTopStrandPattern] = useState<string>('');
   const [showStrandModal, setShowStrandModal] = useState(false);
@@ -68,6 +74,14 @@ export default function CalculatorScreen() {
 
   // Get selected pattern to determine full width from pattern coordinates
   const selectedPattern = customPatterns.find(p => p.id === strandPattern);
+
+  // Get selected product and sub-product
+  const selectedProduct = products.find(p => p.id === selectedProductId);
+  const selectedSubProduct = selectedProduct?.subProducts?.find(sp => sp.id === selectedSubProductId);
+
+  // Get moment of inertia and dead load from selected sub-product
+  const momentOfInertia = selectedSubProduct?.momentOfInertia || 0;
+  const deadLoad = selectedSubProduct?.deadLoadPerLinearFoot || 0;
   
   // Calculate full width from strand coordinates if available, otherwise default to 48"
   const fullWidth = selectedPattern?.strandCoordinates && selectedPattern.strandCoordinates.length > 0
@@ -121,8 +135,8 @@ export default function CalculatorScreen() {
       memberType: memberType as CamberInputs['memberType'],
       releaseStrength: parseFloat(releaseStrength),
       concreteStrength: parseFloat(concreteStrength),
-      momentOfInertia: parseFloat(momentOfInertia) || selectedPattern?.momentOfInertia || 0,
-      deadLoad: parseFloat(deadLoad) || selectedPattern?.deadLoad || 0,
+      momentOfInertia: momentOfInertia || selectedPattern?.momentOfInertia || 0,
+      deadLoad: deadLoad || selectedPattern?.deadLoad || 0,
       liveLoad: liveLoad ? parseFloat(liveLoad) : undefined,
       strandPattern: strandPattern || undefined,
       strandEValue: selectedPattern?.eValue,
@@ -605,42 +619,34 @@ export default function CalculatorScreen() {
               />
             </View>
 
-            {/* Moment of Inertia */}
+            {/* Product Type/Size Selector */}
             <View className="mb-5">
               <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Moment of Inertia (in⁴)
+                Product Type/Size
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                Enter the moment of inertia for the member cross-section
+                Select product to automatically populate moment of inertia and dead load
               </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 3804.5"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="decimal-pad"
-                value={momentOfInertia}
-                onChangeText={setMomentOfInertia}
-              />
-            </View>
-
-            {/* Dead Load */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Dead Load (lb/ft)
-              </Text>
-              <Text className="text-xs text-gray-500 mb-2">
-                Enter the dead load for this member
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 800"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="decimal-pad"
-                value={deadLoad}
-                onChangeText={setDeadLoad}
-              />
+              <Pressable
+                onPress={() => setShowProductModal(true)}
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 flex-row items-center justify-between"
+              >
+                <Text className={`text-base ${selectedSubProduct ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {selectedSubProduct ? `${selectedProduct?.name} - ${selectedSubProduct.name}` : 'Select product type/size'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </Pressable>
+              {selectedSubProduct && (
+                <View className="mt-2 bg-blue-50 rounded-lg p-3">
+                  <Text className="text-xs text-blue-900 font-semibold mb-1">Product Properties:</Text>
+                  <Text className="text-xs text-blue-800">
+                    • Moment of Inertia: {momentOfInertia.toLocaleString()} in⁴
+                  </Text>
+                  <Text className="text-xs text-blue-800">
+                    • Dead Load: {deadLoad.toLocaleString()} lb/ft
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Calculate Button */}
@@ -949,6 +955,145 @@ export default function CalculatorScreen() {
                 )}
             </ScrollView>
           </View>
+        </View>
+      </Modal>
+
+      {/* Product Selection Modal */}
+      <Modal
+        visible={showProductModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowProductModal(false)}
+      >
+        <View className="flex-1 bg-gray-50">
+          <View className="bg-white border-b border-gray-200 px-5 pt-3 pb-4" style={{ paddingTop: insets.top + 12 }}>
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-xl font-bold text-gray-900">
+                Select Product Type/Size
+              </Text>
+              <Pressable
+                onPress={() => setShowProductModal(false)}
+                className="w-8 h-8 items-center justify-center"
+              >
+                <Ionicons name="close" size={28} color="#6B7280" />
+              </Pressable>
+            </View>
+            <Text className="text-sm text-gray-600">
+              Choose a product to get moment of inertia and dead load values
+            </Text>
+          </View>
+
+          <ScrollView className="flex-1">
+            <View className="p-5">
+              {products.filter(p => p.isActive).map((product) => (
+                <View key={product.id} className="mb-4">
+                  <Text className="text-lg font-bold text-gray-900 mb-3">
+                    {product.name}
+                  </Text>
+
+                  {product.subProducts && product.subProducts.length > 0 ? (
+                    product.subProducts
+                      .filter(sp => sp.isActive && sp.momentOfInertia && sp.deadLoadPerLinearFoot)
+                      .map((subProduct) => (
+                        <Pressable
+                          key={subProduct.id}
+                          onPress={() => {
+                            setSelectedProductId(product.id);
+                            setSelectedSubProductId(subProduct.id);
+                            setShowProductModal(false);
+                          }}
+                          className={`mb-3 p-4 rounded-xl border-2 ${
+                            selectedSubProductId === subProduct.id
+                              ? 'bg-blue-50 border-blue-500'
+                              : 'bg-white border-gray-200'
+                          }`}
+                        >
+                          <View className="flex-row items-center justify-between mb-2">
+                            <Text className={`text-base font-bold ${
+                              selectedSubProductId === subProduct.id ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              {subProduct.name}
+                            </Text>
+                            {selectedSubProductId === subProduct.id && (
+                              <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+                            )}
+                          </View>
+
+                          {subProduct.description && (
+                            <Text className={`text-sm mb-2 ${
+                              selectedSubProductId === subProduct.id ? 'text-blue-800' : 'text-gray-600'
+                            }`}>
+                              {subProduct.description}
+                            </Text>
+                          )}
+
+                          <View className="mt-2">
+                            <Text className={`text-xs font-semibold mb-1 ${
+                              selectedSubProductId === subProduct.id ? 'text-blue-800' : 'text-gray-600'
+                            }`}>
+                              Properties:
+                            </Text>
+                            <Text className={`text-xs ${
+                              selectedSubProductId === subProduct.id ? 'text-blue-700' : 'text-gray-600'
+                            }`}>
+                              • Moment of Inertia: {subProduct.momentOfInertia?.toLocaleString()} in⁴
+                            </Text>
+                            <Text className={`text-xs ${
+                              selectedSubProductId === subProduct.id ? 'text-blue-700' : 'text-gray-600'
+                            }`}>
+                              • Dead Load: {subProduct.deadLoadPerLinearFoot?.toLocaleString()} lb/ft
+                            </Text>
+                            {subProduct.area && (
+                              <Text className={`text-xs ${
+                                selectedSubProductId === subProduct.id ? 'text-blue-700' : 'text-gray-600'
+                              }`}>
+                                • Area: {subProduct.area.toLocaleString()} in²
+                              </Text>
+                            )}
+                          </View>
+                        </Pressable>
+                      ))
+                  ) : (
+                    <View className="bg-gray-100 rounded-xl p-4">
+                      <Text className="text-sm text-gray-600 text-center">
+                        No sub-products available
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+
+              {products.filter(p => p.isActive).length === 0 && (
+                <View className="items-center py-12">
+                  <View className="bg-gray-100 rounded-full p-6 mb-4">
+                    <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
+                  </View>
+                  <Text className="text-lg font-semibold text-gray-900 mb-2">
+                    No Products
+                  </Text>
+                  <Text className="text-sm text-gray-600 text-center">
+                    Add products in the Product Library first
+                  </Text>
+                </View>
+              )}
+
+              {/* Clear Selection Button */}
+              {selectedSubProductId && (
+                <Pressable
+                  onPress={() => {
+                    setSelectedProductId('');
+                    setSelectedSubProductId('');
+                    setShowProductModal(false);
+                  }}
+                  className="mt-2 p-4 rounded-xl border border-red-300 bg-red-50"
+                >
+                  <Text className="text-center text-red-600 font-semibold">
+                    Clear Selection
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </KeyboardAvoidingView>
