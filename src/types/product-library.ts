@@ -19,23 +19,40 @@ export interface ToleranceSpec {
   notes?: string;
 }
 
+// Sub-product type (e.g., 8048, 1048, 1248 under Hollow Core Slabs)
+export interface SubProduct {
+  id: string;
+  name: string; // e.g., "8048", "1048", "1248", "1250"
+  description?: string;
+  tolerances: ToleranceSpec[];
+  typicalDimensions?: string;
+  weight?: string;
+  loadCapacity?: string;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // Product in the library
 export interface Product {
   id: string;
   name: ProductType;
   description?: string;
-  
+
   // Tolerances for this product type
   tolerances: ToleranceSpec[];
-  
+
+  // Sub-products (e.g., different slab types under Hollow Core Slabs)
+  subProducts?: SubProduct[];
+
   // Optional specifications
   typicalDimensions?: string; // e.g., "8' to 60' length"
   weight?: string;
   loadCapacity?: string;
-  
+
   // Status
   isActive: boolean;
-  
+
   // Metadata
   createdAt: number;
   updatedAt: number;

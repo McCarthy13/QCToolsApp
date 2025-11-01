@@ -1,27 +1,38 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Product, ProductType, ToleranceSpec } from '../types/product-library';
+import { Product, ProductType, ToleranceSpec, SubProduct } from '../types/product-library';
 
 interface ProductLibraryState {
   products: Product[];
-  
+
   // CRUD Operations
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   getProduct: (id: string) => Product | undefined;
   getProductByType: (type: ProductType) => Product | undefined;
-  
+
+  // Sub-Product Operations
+  addSubProduct: (productId: string, subProduct: Omit<SubProduct, 'id' | 'createdAt' | 'updatedAt'>) => string;
+  updateSubProduct: (productId: string, subProductId: string, updates: Partial<SubProduct>) => void;
+  deleteSubProduct: (productId: string, subProductId: string) => void;
+  getSubProduct: (productId: string, subProductId: string) => SubProduct | undefined;
+
   // Tolerance Operations
   addTolerance: (productId: string, tolerance: ToleranceSpec) => void;
   updateTolerance: (productId: string, toleranceIndex: number, tolerance: ToleranceSpec) => void;
   deleteTolerance: (productId: string, toleranceIndex: number) => void;
-  
+
+  // Sub-Product Tolerance Operations
+  addSubProductTolerance: (productId: string, subProductId: string, tolerance: ToleranceSpec) => void;
+  updateSubProductTolerance: (productId: string, subProductId: string, toleranceIndex: number, tolerance: ToleranceSpec) => void;
+  deleteSubProductTolerance: (productId: string, subProductId: string, toleranceIndex: number) => void;
+
   // Queries
   getActiveProducts: () => Product[];
   getAllProductTypes: () => ProductType[];
-  
+
   // Utility
   clearAllProducts: () => void;
   initializeDefaultProducts: () => void;
@@ -72,7 +83,71 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
       getProductByType: (type) => {
         return get().products.find((product) => product.name === type);
       },
-      
+
+      // Sub-Product Operations
+      addSubProduct: (productId, subProduct) => {
+        const subProductId = `subproduct-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const newSubProduct: SubProduct = {
+          ...subProduct,
+          id: subProductId,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  subProducts: [...(product.subProducts || []), newSubProduct],
+                  updatedAt: Date.now(),
+                }
+              : product
+          ),
+        }));
+
+        return subProductId;
+      },
+
+      updateSubProduct: (productId, subProductId, updates) => {
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  subProducts: (product.subProducts || []).map((subProduct) =>
+                    subProduct.id === subProductId
+                      ? { ...subProduct, ...updates, updatedAt: Date.now() }
+                      : subProduct
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : product
+          ),
+        }));
+      },
+
+      deleteSubProduct: (productId, subProductId) => {
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  subProducts: (product.subProducts || []).filter(
+                    (subProduct) => subProduct.id !== subProductId
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : product
+          ),
+        }));
+      },
+
+      getSubProduct: (productId, subProductId) => {
+        const product = get().products.find((p) => p.id === productId);
+        return product?.subProducts?.find((sp) => sp.id === subProductId);
+      },
+
       // Tolerance Operations
       addTolerance: (productId, tolerance) => {
         set((state) => ({
@@ -117,7 +192,76 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
           ),
         }));
       },
-      
+
+      // Sub-Product Tolerance Operations
+      addSubProductTolerance: (productId, subProductId, tolerance) => {
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  subProducts: (product.subProducts || []).map((subProduct) =>
+                    subProduct.id === subProductId
+                      ? {
+                          ...subProduct,
+                          tolerances: [...subProduct.tolerances, tolerance],
+                          updatedAt: Date.now(),
+                        }
+                      : subProduct
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : product
+          ),
+        }));
+      },
+
+      updateSubProductTolerance: (productId, subProductId, toleranceIndex, tolerance) => {
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  subProducts: (product.subProducts || []).map((subProduct) =>
+                    subProduct.id === subProductId
+                      ? {
+                          ...subProduct,
+                          tolerances: subProduct.tolerances.map((t, i) =>
+                            i === toleranceIndex ? tolerance : t
+                          ),
+                          updatedAt: Date.now(),
+                        }
+                      : subProduct
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : product
+          ),
+        }));
+      },
+
+      deleteSubProductTolerance: (productId, subProductId, toleranceIndex) => {
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  subProducts: (product.subProducts || []).map((subProduct) =>
+                    subProduct.id === subProductId
+                      ? {
+                          ...subProduct,
+                          tolerances: subProduct.tolerances.filter((_, i) => i !== toleranceIndex),
+                          updatedAt: Date.now(),
+                        }
+                      : subProduct
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : product
+          ),
+        }));
+      },
+
       // Queries
       getActiveProducts: () => {
         return get().products.filter((product) => product.isActive);
@@ -156,6 +300,64 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                 { dimension: 'Width', value: '±1/8 inch', notes: 'Standard width tolerance' },
                 { dimension: 'Thickness', value: '±1/8 inch', notes: 'Slab thickness' },
                 { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+              ],
+              subProducts: [
+                {
+                  id: 'hc-8048',
+                  name: '8048',
+                  description: '8" thick, 48" wide hollow core slab',
+                  tolerances: [
+                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
+                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
+                    { dimension: 'Thickness', value: '±1/8 inch', notes: '8" nominal thickness' },
+                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                  ],
+                  isActive: true,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                },
+                {
+                  id: 'hc-1048',
+                  name: '1048',
+                  description: '10" thick, 48" wide hollow core slab',
+                  tolerances: [
+                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
+                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
+                    { dimension: 'Thickness', value: '±1/8 inch', notes: '10" nominal thickness' },
+                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                  ],
+                  isActive: true,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                },
+                {
+                  id: 'hc-1248',
+                  name: '1248',
+                  description: '12" thick, 48" wide hollow core slab',
+                  tolerances: [
+                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
+                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
+                    { dimension: 'Thickness', value: '±1/8 inch', notes: '12" nominal thickness' },
+                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                  ],
+                  isActive: true,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                },
+                {
+                  id: 'hc-1250',
+                  name: '1250',
+                  description: '12" thick, 50" wide hollow core slab',
+                  tolerances: [
+                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
+                    { dimension: 'Width', value: '±1/8 inch', notes: '50" standard width' },
+                    { dimension: 'Thickness', value: '±1/8 inch', notes: '12" nominal thickness' },
+                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                  ],
+                  isActive: true,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                },
               ],
               isActive: true,
             },

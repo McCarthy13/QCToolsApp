@@ -15,6 +15,9 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const addProduct = useProductLibraryStore((s) => s.addProduct);
   const updateProduct = useProductLibraryStore((s) => s.updateProduct);
   const deleteProduct = useProductLibraryStore((s) => s.deleteProduct);
+  const addSubProduct = useProductLibraryStore((s) => s.addSubProduct);
+  const updateSubProduct = useProductLibraryStore((s) => s.updateSubProduct);
+  const deleteSubProduct = useProductLibraryStore((s) => s.deleteSubProduct);
   const initializeDefaultProducts = useProductLibraryStore((s) => s.initializeDefaultProducts);
 
   // Initialize default products on mount
@@ -27,7 +30,16 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
-  
+  const [expandedSubProductId, setExpandedSubProductId] = useState<string | null>(null);
+
+  // Sub-product modal state
+  const [showSubProductModal, setShowSubProductModal] = useState(false);
+  const [editingSubProductId, setEditingSubProductId] = useState<string | null>(null);
+  const [currentProductId, setCurrentProductId] = useState<string | null>(null);
+  const [subProductName, setSubProductName] = useState("");
+  const [subProductDescription, setSubProductDescription] = useState("");
+  const [subProductTolerances, setSubProductTolerances] = useState<ToleranceSpec[]>([]);
+
   // Form state
   const [productType, setProductType] = useState<ProductType>("Beams");
   const [description, setDescription] = useState("");
@@ -62,10 +74,20 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       notes: notes.trim() || undefined,
     };
 
-    if (editingToleranceIndex !== null) {
-      setTolerances(tolerances.map((t, i) => (i === editingToleranceIndex ? newTolerance : t)));
+    // Check if we're editing sub-product tolerances
+    if (showSubProductModal) {
+      if (editingToleranceIndex !== null) {
+        setSubProductTolerances(subProductTolerances.map((t, i) => (i === editingToleranceIndex ? newTolerance : t)));
+      } else {
+        setSubProductTolerances([...subProductTolerances, newTolerance]);
+      }
     } else {
-      setTolerances([...tolerances, newTolerance]);
+      // Otherwise, we're editing product tolerances
+      if (editingToleranceIndex !== null) {
+        setTolerances(tolerances.map((t, i) => (i === editingToleranceIndex ? newTolerance : t)));
+      } else {
+        setTolerances([...tolerances, newTolerance]);
+      }
     }
 
     // Reset tolerance form
@@ -159,6 +181,69 @@ export default function ProductLibraryScreen({ navigation }: Props) {
         text: "Delete",
         style: "destructive",
         onPress: () => deleteProduct(productId),
+      },
+    ]);
+  };
+
+  // Sub-product handlers
+  const handleAddSubProduct = (productId: string) => {
+    setCurrentProductId(productId);
+    setSubProductName("");
+    setSubProductDescription("");
+    setSubProductTolerances([]);
+    setEditingSubProductId(null);
+    setShowSubProductModal(true);
+  };
+
+  const handleEditSubProduct = (productId: string, subProductId: string) => {
+    const product = products.find((p) => p.id === productId);
+    const subProduct = product?.subProducts?.find((sp) => sp.id === subProductId);
+    if (!subProduct) return;
+
+    setCurrentProductId(productId);
+    setEditingSubProductId(subProductId);
+    setSubProductName(subProduct.name);
+    setSubProductDescription(subProduct.description || "");
+    setSubProductTolerances([...subProduct.tolerances]);
+    setShowSubProductModal(true);
+  };
+
+  const handleSaveSubProduct = () => {
+    if (!currentProductId || !subProductName.trim()) {
+      Alert.alert("Error", "Sub-product name is required");
+      return;
+    }
+
+    if (editingSubProductId) {
+      updateSubProduct(currentProductId, editingSubProductId, {
+        name: subProductName,
+        description: subProductDescription,
+        tolerances: subProductTolerances,
+      });
+    } else {
+      addSubProduct(currentProductId, {
+        name: subProductName,
+        description: subProductDescription,
+        tolerances: subProductTolerances,
+        isActive: true,
+      });
+    }
+
+    setShowSubProductModal(false);
+    setCurrentProductId(null);
+    setEditingSubProductId(null);
+    setSubProductName("");
+    setSubProductDescription("");
+    setSubProductTolerances([]);
+  };
+
+  const handleDeleteSubProduct = (productId: string, subProductId: string) => {
+    Alert.alert("Delete Sub-Product", "Are you sure you want to delete this sub-product?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => deleteSubProduct(productId, subProductId),
       },
     ]);
   };
@@ -292,46 +377,211 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         </View>
                       </Pressable>
 
-                      {/* Expanded Tolerances */}
+                      {/* Expanded Tolerances and Sub-Products */}
                       {isExpanded && (
-                        <View style={{ padding: 16, paddingTop: 0, borderTopWidth: 1, borderTopColor: "#E5E7EB" }}>
-                          <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 12 }}>
-                            Tolerances:
-                          </Text>
-                          {product.tolerances.length === 0 ? (
-                            <Text style={{ fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
-                              No tolerances defined
-                            </Text>
-                          ) : (
-                            <View style={{ gap: 8 }}>
-                              {product.tolerances.map((tolerance, index) => (
-                                <View
-                                  key={index}
+                        <View style={{ padding: 16, paddingTop: 0 }}>
+                          {/* Sub-Products Section */}
+                          {(product.subProducts && product.subProducts.length > 0) && (
+                            <View style={{ marginBottom: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#E5E7EB" }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151" }}>
+                                  Sub-Products ({product.subProducts.length}):
+                                </Text>
+                                <Pressable
+                                  onPress={() => handleAddSubProduct(product.id)}
                                   style={{
-                                    backgroundColor: "#F9FAFB",
-                                    padding: 12,
-                                    borderRadius: 8,
-                                    borderWidth: 1,
-                                    borderColor: "#E5E7EB",
+                                    backgroundColor: "#10B981",
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 6,
+                                    borderRadius: 6,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 4,
                                   }}
                                 >
-                                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
-                                      {tolerance.dimension}
-                                    </Text>
-                                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#6366F1" }}>
-                                      {tolerance.value}
-                                    </Text>
-                                  </View>
-                                  {tolerance.notes && (
-                                    <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-                                      {tolerance.notes}
-                                    </Text>
-                                  )}
-                                </View>
-                              ))}
+                                  <Ionicons name="add" size={16} color="#FFFFFF" />
+                                  <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}>Add Sub-Product</Text>
+                                </Pressable>
+                              </View>
+                              <View style={{ gap: 8 }}>
+                                {product.subProducts.map((subProduct) => {
+                                  const isSubExpanded = expandedSubProductId === subProduct.id;
+                                  return (
+                                    <View
+                                      key={subProduct.id}
+                                      style={{
+                                        backgroundColor: "#F3F4F6",
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: "#D1D5DB",
+                                        overflow: "hidden",
+                                      }}
+                                    >
+                                      <Pressable
+                                        onPress={() => setExpandedSubProductId(isSubExpanded ? null : subProduct.id)}
+                                        style={{ padding: 12 }}
+                                      >
+                                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                          <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827", marginBottom: 2 }}>
+                                              {subProduct.name}
+                                            </Text>
+                                            {subProduct.description && (
+                                              <Text style={{ fontSize: 13, color: "#6B7280" }}>
+                                                {subProduct.description}
+                                              </Text>
+                                            )}
+                                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, gap: 4 }}>
+                                              <Ionicons name="resize-outline" size={12} color="#10B981" />
+                                              <Text style={{ fontSize: 12, color: "#10B981", fontWeight: "500" }}>
+                                                {subProduct.tolerances.length} {subProduct.tolerances.length === 1 ? "tolerance" : "tolerances"}
+                                              </Text>
+                                            </View>
+                                          </View>
+                                          <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                                            <Pressable
+                                              onPress={() => handleEditSubProduct(product.id, subProduct.id)}
+                                              style={{
+                                                backgroundColor: "#DBEAFE",
+                                                padding: 6,
+                                                borderRadius: 6,
+                                              }}
+                                            >
+                                              <Ionicons name="pencil" size={14} color="#2563EB" />
+                                            </Pressable>
+                                            <Pressable
+                                              onPress={() => handleDeleteSubProduct(product.id, subProduct.id)}
+                                              style={{
+                                                backgroundColor: "#FEE2E2",
+                                                padding: 6,
+                                                borderRadius: 6,
+                                              }}
+                                            >
+                                              <Ionicons name="trash-outline" size={14} color="#DC2626" />
+                                            </Pressable>
+                                            <Ionicons
+                                              name={isSubExpanded ? "chevron-up" : "chevron-down"}
+                                              size={18}
+                                              color="#6B7280"
+                                            />
+                                          </View>
+                                        </View>
+                                      </Pressable>
+
+                                      {/* Sub-Product Tolerances */}
+                                      {isSubExpanded && (
+                                        <View style={{ padding: 12, paddingTop: 0, borderTopWidth: 1, borderTopColor: "#D1D5DB" }}>
+                                          <Text style={{ fontSize: 13, fontWeight: "600", color: "#4B5563", marginBottom: 8 }}>
+                                            Tolerances:
+                                          </Text>
+                                          {subProduct.tolerances.length === 0 ? (
+                                            <Text style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic" }}>
+                                              No tolerances defined
+                                            </Text>
+                                          ) : (
+                                            <View style={{ gap: 6 }}>
+                                              {subProduct.tolerances.map((tolerance, index) => (
+                                                <View
+                                                  key={index}
+                                                  style={{
+                                                    backgroundColor: "#FFFFFF",
+                                                    padding: 10,
+                                                    borderRadius: 6,
+                                                    borderWidth: 1,
+                                                    borderColor: "#E5E7EB",
+                                                  }}
+                                                >
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#111827" }}>
+                                                      {tolerance.dimension}
+                                                    </Text>
+                                                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#10B981" }}>
+                                                      {tolerance.value}
+                                                    </Text>
+                                                  </View>
+                                                  {tolerance.notes && (
+                                                    <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
+                                                      {tolerance.notes}
+                                                    </Text>
+                                                  )}
+                                                </View>
+                                              ))}
+                                            </View>
+                                          )}
+                                        </View>
+                                      )}
+                                    </View>
+                                  );
+                                })}
+                              </View>
                             </View>
                           )}
+
+                          {/* Add Sub-Product Button (if no sub-products yet) */}
+                          {(!product.subProducts || product.subProducts.length === 0) && (
+                            <View style={{ marginBottom: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#E5E7EB" }}>
+                              <Pressable
+                                onPress={() => handleAddSubProduct(product.id)}
+                                style={{
+                                  backgroundColor: "#F0FDF4",
+                                  padding: 12,
+                                  borderRadius: 8,
+                                  borderWidth: 1,
+                                  borderColor: "#86EFAC",
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: 6,
+                                }}
+                              >
+                                <Ionicons name="add-circle" size={18} color="#10B981" />
+                                <Text style={{ color: "#10B981", fontSize: 13, fontWeight: "600" }}>
+                                  Add Sub-Product Type
+                                </Text>
+                              </Pressable>
+                            </View>
+                          )}
+
+                          {/* Product-level Tolerances */}
+                          <View style={{ borderTopWidth: 1, borderTopColor: "#E5E7EB", paddingTop: 16 }}>
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 12 }}>
+                              Product Tolerances:
+                            </Text>
+                            {product.tolerances.length === 0 ? (
+                              <Text style={{ fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
+                                No tolerances defined
+                              </Text>
+                            ) : (
+                              <View style={{ gap: 8 }}>
+                                {product.tolerances.map((tolerance, index) => (
+                                  <View
+                                    key={index}
+                                    style={{
+                                      backgroundColor: "#F9FAFB",
+                                      padding: 12,
+                                      borderRadius: 8,
+                                      borderWidth: 1,
+                                      borderColor: "#E5E7EB",
+                                    }}
+                                  >
+                                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
+                                        {tolerance.dimension}
+                                      </Text>
+                                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#6366F1" }}>
+                                        {tolerance.value}
+                                      </Text>
+                                    </View>
+                                    {tolerance.notes && (
+                                      <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
+                                        {tolerance.notes}
+                                      </Text>
+                                    )}
+                                  </View>
+                                ))}
+                              </View>
+                            )}
+                          </View>
                         </View>
                       )}
                     </View>
@@ -664,6 +914,209 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                 >
                   <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
                     {editingToleranceIndex !== null ? "Update" : "Add"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </Modal>
+
+      {/* Add/Edit Sub-Product Modal */}
+      <Modal visible={showSubProductModal} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                padding: 24,
+                paddingBottom: insets.bottom + 24,
+                maxHeight: "90%",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+                <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
+                  {editingSubProductId ? "Edit Sub-Product" : "Add Sub-Product"}
+                </Text>
+                <Pressable onPress={() => setShowSubProductModal(false)}>
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ maxHeight: 500 }} keyboardShouldPersistTaps="handled">
+                <View style={{ gap: 16 }}>
+                  {/* Sub-Product Name */}
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Sub-Product Name *
+                    </Text>
+                    <TextInput
+                      value={subProductName}
+                      onChangeText={setSubProductName}
+                      placeholder="e.g., 8048, 1048, 1248, 1250"
+                      placeholderTextColor="#9CA3AF"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
+                  </View>
+
+                  {/* Description */}
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Description
+                    </Text>
+                    <TextInput
+                      value={subProductDescription}
+                      onChangeText={setSubProductDescription}
+                      placeholder="Brief description..."
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      numberOfLines={2}
+                      textAlignVertical="top"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                        minHeight: 60,
+                      }}
+                    />
+                  </View>
+
+                  {/* Tolerances */}
+                  <View>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151" }}>
+                        Tolerances
+                      </Text>
+                      <Pressable
+                        onPress={() => {
+                          setDimension("");
+                          setValue("");
+                          setNotes("");
+                          setEditingToleranceIndex(null);
+                          setShowToleranceModal(true);
+                        }}
+                        style={{
+                          backgroundColor: "#10B981",
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 6,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <Ionicons name="add" size={16} color="#FFFFFF" />
+                        <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}>Add</Text>
+                      </Pressable>
+                    </View>
+
+                    {subProductTolerances.length === 0 ? (
+                      <View
+                        style={{
+                          backgroundColor: "#F9FAFB",
+                          padding: 16,
+                          borderRadius: 8,
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, color: "#9CA3AF" }}>
+                          No tolerances added yet
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={{ gap: 8 }}>
+                        {subProductTolerances.map((tolerance, index) => (
+                          <View
+                            key={index}
+                            style={{
+                              backgroundColor: "#F9FAFB",
+                              padding: 12,
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: "#E5E7EB",
+                            }}
+                          >
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 2 }}>
+                                  {tolerance.dimension}: {tolerance.value}
+                                </Text>
+                                {tolerance.notes && (
+                                  <Text style={{ fontSize: 12, color: "#6B7280" }}>
+                                    {tolerance.notes}
+                                  </Text>
+                                )}
+                              </View>
+                              <View style={{ flexDirection: "row", gap: 8 }}>
+                                <Pressable
+                                  onPress={() => {
+                                    setDimension(tolerance.dimension);
+                                    setValue(tolerance.value);
+                                    setNotes(tolerance.notes || "");
+                                    setEditingToleranceIndex(index);
+                                    setShowToleranceModal(true);
+                                  }}
+                                  style={{ padding: 4 }}
+                                >
+                                  <Ionicons name="pencil" size={16} color="#3B82F6" />
+                                </Pressable>
+                                <Pressable
+                                  onPress={() => setSubProductTolerances(subProductTolerances.filter((_, i) => i !== index))}
+                                  style={{ padding: 4 }}
+                                >
+                                  <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                                </Pressable>
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </ScrollView>
+
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+                <Pressable
+                  onPress={() => setShowSubProductModal(false)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#F3F4F6",
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#6B7280", fontSize: 16, fontWeight: "600" }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSaveSubProduct}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#10B981",
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+                    {editingSubProductId ? "Update" : "Save"}
                   </Text>
                 </Pressable>
               </View>
