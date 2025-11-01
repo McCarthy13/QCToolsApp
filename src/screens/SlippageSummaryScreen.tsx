@@ -13,6 +13,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1048 from "../components/CrossSection1048";
 import CrossSection1248 from "../components/CrossSection1248";
+import CrossSection1250 from "../components/CrossSection1250";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -278,6 +279,16 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             />
           ) : config.productType === '1248' ? (
             <CrossSection1248
+              scale={9}
+              activeStrands={activeStrandIndices || undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              slippages={slippages}
+              showSlippageValues={true}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          ) : config.productType === '1250' ? (
+            <CrossSection1250
               scale={9}
               activeStrands={activeStrandIndices || undefined}
               offcutSide={config.offcutSide || null}
