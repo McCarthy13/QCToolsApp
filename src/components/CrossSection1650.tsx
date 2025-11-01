@@ -38,14 +38,14 @@ export default function CrossSection1650({
   const HEIGHT = 16;
 
   // Flange dimensions
-  const BOTTOM_FLANGE = 1.375; // 1 3/8"
-  const TOP_FLANGE = HEIGHT - 13.1875 - 1.375; // Remaining top flange
+  const BOTTOM_FLANGE = 2.375; // 2 3/8"
+  const TOP_FLANGE = HEIGHT - 11.25 - 2.375; // Remaining top flange
 
-  // Core dimensions - 4 cores total (same as 1648, but this variant may have thicker webs)
-  const CORE_WIDTH = 9; // 9"
-  const CORE_HEIGHT = 13.1875; // 13 3/16"
-  const EDGE_TO_FIRST_CORE = 2.8125; // 2 13/16"
-  const CORE_SPACING = 2.1875; // 2 3/16"
+  // Core dimensions - 4 cores total (thicker webs than 1648)
+  const CORE_WIDTH = 7.625; // 7 5/8"
+  const CORE_HEIGHT = 11.25; // 11 1/4"
+  const EDGE_TO_FIRST_CORE = 3.1875; // 3 3/16"
+  const CORE_SPACING = 3.6875; // 3 11/16"
   const NUM_CORES = 4;
 
   // Strand positions (x from left edge, y from bottom)

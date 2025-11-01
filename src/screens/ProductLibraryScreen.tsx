@@ -600,10 +600,10 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                                 <CrossSection1250 scale={4} showDimensions={false} />
                                               )}
                                               {subProduct.name === '1648' && (
-                                                <CrossSection1648 scale={4} showDimensions={false} />
+                                                <CrossSection1648 scale={2} showDimensions={false} />
                                               )}
                                               {subProduct.name === '1650' && (
-                                                <CrossSection1650 scale={4} showDimensions={false} />
+                                                <CrossSection1650 scale={2} showDimensions={false} />
                                               )}
                                             </View>
                                           )}
