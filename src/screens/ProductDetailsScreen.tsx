@@ -204,7 +204,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                 placeholder="Enter project name"
                 placeholderTextColor="#9CA3AF"
-                cursorColor="#3B82F6"
+                cursorColor="#000000"
                 value={projectName}
                 onChangeText={setProjectName}
               />
@@ -218,7 +218,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                 placeholder="Enter project number"
                 placeholderTextColor="#9CA3AF"
-                cursorColor="#3B82F6"
+                cursorColor="#000000"
                 value={projectNumber}
                 onChangeText={setProjectNumber}
               />
@@ -233,7 +233,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                   className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                   placeholder="Mark #"
                   placeholderTextColor="#9CA3AF"
-                  cursorColor="#3B82F6"
+                  cursorColor="#000000"
                   value={markNumber}
                   onChangeText={setMarkNumber}
                 />
@@ -247,7 +247,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                   className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                   placeholder="ID #"
                   placeholderTextColor="#9CA3AF"
-                  cursorColor="#3B82F6"
+                  cursorColor="#000000"
                   value={idNumber}
                   onChangeText={setIdNumber}
                 />
@@ -264,7 +264,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                   className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                   placeholder="Feet"
                   placeholderTextColor="#9CA3AF"
-                  cursorColor="#3B82F6"
+                  cursorColor="#000000"
                   value={spanFeet}
                   onChangeText={setSpanFeet}
                   keyboardType="numeric"
@@ -274,7 +274,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                   className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                   placeholder="Inches"
                   placeholderTextColor="#9CA3AF"
-                  cursorColor="#3B82F6"
+                  cursorColor="#000000"
                   value={spanInches}
                   onChangeText={setSpanInches}
                   keyboardType="numeric"
@@ -307,7 +307,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., 28 or 28 1/2 or 28.5"
                 placeholderTextColor="#9CA3AF"
-                cursorColor="#3B82F6"
+                cursorColor="#000000"
                 value={productWidth}
                 onChangeText={setProductWidth}
                 keyboardType="default"

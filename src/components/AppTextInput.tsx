@@ -13,7 +13,7 @@ export const AppTextInput = React.forwardRef<TextInput, TextInputProps>(
     return (
       <TextInput
         ref={ref}
-        cursorColor={cursorColor || '#3B82F6'}
+        cursorColor={cursorColor || '#000000'}
         selectionColor={selectionColor || '#3B82F6'}
         {...rest}
       />

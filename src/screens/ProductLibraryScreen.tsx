@@ -882,7 +882,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setDescription}
                       placeholder="Brief description of this product type..."
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
+                      cursorColor="#000000"
                       selectionColor="#3B82F6"
                       multiline
                       numberOfLines={2}
@@ -1066,7 +1066,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     onChangeText={setDimension}
                     placeholder="e.g., Length, Width, Thickness"
                     placeholderTextColor="#9CA3AF"
-                    cursorColor="#3B82F6"
+                    cursorColor="#000000"
                     selectionColor="#3B82F6"
                     style={{
                       backgroundColor: "#F9FAFB",
@@ -1090,7 +1090,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setMinValue}
                       placeholder="e.g., -1/8, 0"
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
+                      cursorColor="#000000"
                       selectionColor="#3B82F6"
                       style={{
                         backgroundColor: "#F9FAFB",
@@ -1113,7 +1113,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setMaxValue}
                       placeholder="e.g., +1/8, +1/4"
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
+                      cursorColor="#000000"
                       selectionColor="#3B82F6"
                       style={{
                         backgroundColor: "#F9FAFB",
@@ -1137,7 +1137,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     onChangeText={setNotes}
                     placeholder="Additional details..."
                     placeholderTextColor="#9CA3AF"
-                    cursorColor="#3B82F6"
+                    cursorColor="#000000"
                     selectionColor="#3B82F6"
                     multiline
                     numberOfLines={2}
@@ -1233,7 +1233,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setSubProductName}
                       placeholder="e.g., 8048, 1048, 1248, 1250"
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
+                      cursorColor="#000000"
                       selectionColor="#3B82F6"
                       style={{
                         backgroundColor: "#F9FAFB",
@@ -1257,7 +1257,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setSubProductDescription}
                       placeholder="Brief description..."
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
+                      cursorColor="#000000"
                       selectionColor="#3B82F6"
                       multiline
                       numberOfLines={2}
@@ -1294,7 +1294,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductArea}
                         placeholder="e.g., 293, 373"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="decimal-pad"
                         style={{
@@ -1322,7 +1322,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductEffectiveWebWidth}
                         placeholder="e.g., 24.5, 28.2"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="decimal-pad"
                         style={{
@@ -1350,7 +1350,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductMomentOfInertia}
                         placeholder="e.g., 5107, 10780"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="decimal-pad"
                         style={{
@@ -1378,7 +1378,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductDistanceToBottomFiber}
                         placeholder="e.g., 4.0, 6.0"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="decimal-pad"
                         style={{
@@ -1413,7 +1413,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductDeadLoad}
                         placeholder="e.g., 65, 80, 95"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="decimal-pad"
                         style={{
@@ -1448,7 +1448,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductFc28Day}
                         placeholder="e.g., 5000, 6000"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="numeric"
                         style={{
@@ -1473,7 +1473,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductFciRelease}
                         placeholder="e.g., 3500, 4000"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="numeric"
                         style={{
@@ -1501,7 +1501,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductFpu}
                         placeholder="e.g., 270"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
+                        cursorColor="#000000"
                         selectionColor="#3B82F6"
                         keyboardType="decimal-pad"
                         style={{
