@@ -16,6 +16,7 @@ import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1048 from "../components/CrossSection1048";
+import CrossSection1248 from "../components/CrossSection1248";
 
 type SlippageIdentifierScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -225,6 +226,14 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
           </Text>
           {config.productType === '1048' ? (
             <CrossSection1048
+              scale={6}
+              activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          ) : config.productType === '1248' ? (
+            <CrossSection1248
               scale={6}
               activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
               offcutSide={config.offcutSide || null}
