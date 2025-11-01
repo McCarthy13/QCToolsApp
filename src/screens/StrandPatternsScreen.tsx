@@ -1091,14 +1091,14 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 Moment of Inertia (in⁴)
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                Enter the moment of inertia for the member cross-section
+                Enter the moment of inertia for the member cross-section (decimals allowed)
               </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-                placeholder="e.g., 3804"
+                placeholder="e.g., 3804.5"
                 placeholderTextColor="#9CA3AF"
                 cursorColor="#000000"
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
                 value={momentOfInertia}
                 onChangeText={setMomentOfInertia}
               />
