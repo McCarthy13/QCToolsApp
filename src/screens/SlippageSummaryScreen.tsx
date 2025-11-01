@@ -11,6 +11,7 @@ import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistor
 import { useAuthStore } from "../state/authStore";
 import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
+import CrossSection1048 from "../components/CrossSection1048";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -264,15 +265,27 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section with Slippage Values
           </Text>
-          <CrossSection8048
-            scale={9}
-            activeStrands={activeStrandIndices || undefined}
-            offcutSide={config.offcutSide || null}
-            productWidth={config.productWidth}
-            slippages={slippages}
-            showSlippageValues={true}
-            strandCoordinates={selectedPattern?.strandCoordinates}
-          />
+          {config.productType.startsWith('10') ? (
+            <CrossSection1048
+              scale={9}
+              activeStrands={activeStrandIndices || undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              slippages={slippages}
+              showSlippageValues={true}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          ) : (
+            <CrossSection8048
+              scale={9}
+              activeStrands={activeStrandIndices || undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              slippages={slippages}
+              showSlippageValues={true}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          )}
         </View>
 
         {/* Cut-width info banner - more compact */}

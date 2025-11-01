@@ -15,6 +15,7 @@ import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import CrossSection8048 from "../components/CrossSection8048";
+import CrossSection1048 from "../components/CrossSection1048";
 
 type SlippageIdentifierScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -220,15 +221,25 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
         {/* Cross-section diagram */}
         <View className="items-center my-4">
           <Text className="text-gray-700 text-xs font-semibold mb-2">
-            Cross Section - 8048 Hollow Core Plank
+            Cross Section - {config.productType} Hollow Core Plank
           </Text>
-          <CrossSection8048
-            scale={6}
-            activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
-            offcutSide={config.offcutSide || null}
-            productWidth={config.productWidth}
-            strandCoordinates={selectedPattern?.strandCoordinates}
-          />
+          {config.productType.startsWith('10') ? (
+            <CrossSection1048
+              scale={6}
+              activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          ) : (
+            <CrossSection8048
+              scale={6}
+              activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}
+              offcutSide={config.offcutSide || null}
+              productWidth={config.productWidth}
+              strandCoordinates={selectedPattern?.strandCoordinates}
+            />
+          )}
         </View>
 
         {/* Cut-width info banner */}
