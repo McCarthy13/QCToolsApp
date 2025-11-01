@@ -33,23 +33,25 @@ export default function CrossSection1048({
   showSlippageValues = false,
   strandCoordinates,
 }: CrossSection1048Props) {
-  // Dimensions in inches - 10" tall x 48" wide (same width as 8048, taller height)
+  // Dimensions in inches - 10" tall x 48" wide
+  // This is a distinct product type with 5 cores (not a scaled 8048)
   const FULL_WIDTH = 48;
   const HEIGHT = 10;
 
-  // Flange dimensions (scaled from 8048 by height ratio 10/8 = 1.25)
-  const TOP_FLANGE = 1.484375; // 1.1875 * 1.25
-  const BOTTOM_FLANGE = 1.484375; // 1.1875 * 1.25
+  // Flange dimensions
+  const TOP_FLANGE = 1.375; // 1 3/8"
+  const BOTTOM_FLANGE = 1.375; // 1 3/8"
 
-  // Core dimensions
-  const CORE_WIDTH = 5.5; // Same as 8048 (width doesn't scale)
-  const CORE_HEIGHT = 7.03125; // 5.625 * 1.25 (height scales)
-  const EDGE_TO_FIRST_CORE = 2.625; // Same as 8048 (width doesn't scale)
-  const CORE_SPACING = 1.9375; // Same as 8048 (width doesn't scale)
+  // Core dimensions - 5 cores total (different from 8048's 6 cores)
+  const CORE_WIDTH = 7.25; // 7 1/4"
+  const CORE_HEIGHT = 7.25; // 7 1/4"
+  const EDGE_TO_FIRST_CORE = 2.75; // 2 3/4"
+  const CORE_SPACING = 1.9166; // Space between cores
+  const NUM_CORES = 5;
 
   // Strand positions (x from left edge, y from bottom)
-  // Use custom coordinates if provided, otherwise use defaults for 7-strand pattern
-  // X positions same as 8048, Y position scaled by 1.25
+  // Use custom coordinates if provided, otherwise use defaults for 6-strand pattern (5 cores)
+  // Strands are centered between cores and edges
   const STRAND_POSITIONS = strandCoordinates ?
     strandCoordinates.map((coord, index) => ({
       x: coord.x,
@@ -57,13 +59,12 @@ export default function CrossSection1048({
       id: index + 1
     })) :
     [
-      { x: 1.3125, y: 2.65625, id: 1 },    // Centered between left edge and Core 1
-      { x: 9.09375, y: 2.65625, id: 2 },   // Centered between Core 1 and Core 2
-      { x: 16.53125, y: 2.65625, id: 3 },  // Centered between Core 2 and Core 3
-      { x: 23.96875, y: 2.65625, id: 4 },  // Centered between Core 3 and Core 4
-      { x: 31.40625, y: 2.65625, id: 5 },  // Centered between Core 4 and Core 5
-      { x: 38.84375, y: 2.65625, id: 6 },  // Centered between Core 5 and Core 6
-      { x: 46.65625, y: 2.65625, id: 7 },  // Centered between Core 6 and right edge
+      { x: 1.375, y: 2.46, id: 1 },      // Centered between left edge and Core 1
+      { x: 10.9583, y: 2.46, id: 2 },    // Centered between Core 1 and Core 2
+      { x: 20.1249, y: 2.46, id: 3 },    // Centered between Core 2 and Core 3
+      { x: 29.2915, y: 2.46, id: 4 },    // Centered between Core 3 and Core 4
+      { x: 38.4581, y: 2.46, id: 5 },    // Centered between Core 4 and Core 5
+      { x: 47.3332, y: 2.46, id: 6 },    // Centered between Core 5 and right edge
     ];
 
   // Calculate display dimensions
@@ -78,10 +79,10 @@ export default function CrossSection1048({
   }
   // L2 cut or no cut = show from left (xOffset = 0)
 
-  // Calculate core positions (6 cores total)
+  // Calculate core positions (5 cores total for 1048)
   const coreY = BOTTOM_FLANGE * scale;
   const cores = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < NUM_CORES; i++) {
     const coreX = (EDGE_TO_FIRST_CORE + i * (CORE_WIDTH + CORE_SPACING)) * scale;
     cores.push({
       x: coreX - xOffset,

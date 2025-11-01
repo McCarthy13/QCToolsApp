@@ -223,7 +223,7 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section - {config.productType} Hollow Core Plank
           </Text>
-          {config.productType.startsWith('10') ? (
+          {config.productType === '1048' ? (
             <CrossSection1048
               scale={6}
               activeStrands={activeStrandIndices !== null ? activeStrandIndices.map(i => i + 1) : undefined}

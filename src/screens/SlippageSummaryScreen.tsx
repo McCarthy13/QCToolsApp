@@ -265,7 +265,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section with Slippage Values
           </Text>
-          {config.productType.startsWith('10') ? (
+          {config.productType === '1048' ? (
             <CrossSection1048
               scale={9}
               activeStrands={activeStrandIndices || undefined}
