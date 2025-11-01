@@ -47,9 +47,18 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const [subProductName, setSubProductName] = useState("");
   const [subProductDescription, setSubProductDescription] = useState("");
   const [subProductTolerances, setSubProductTolerances] = useState<ToleranceSpec[]>([]);
+
+  // Cross-section properties
+  const [subProductArea, setSubProductArea] = useState("");
+  const [subProductEffectiveWebWidth, setSubProductEffectiveWebWidth] = useState("");
+  const [subProductMomentOfInertia, setSubProductMomentOfInertia] = useState("");
+  const [subProductDistanceToBottomFiber, setSubProductDistanceToBottomFiber] = useState("");
+
+  // Strength characteristics
   const [subProductDeadLoad, setSubProductDeadLoad] = useState("");
   const [subProductFc28Day, setSubProductFc28Day] = useState("");
   const [subProductFciRelease, setSubProductFciRelease] = useState("");
+  const [subProductFpu, setSubProductFpu] = useState("");
   const [subProductCrossSectionComponent, setSubProductCrossSectionComponent] = useState("");
 
   // Form state
@@ -203,9 +212,14 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductName("");
     setSubProductDescription("");
     setSubProductTolerances([]);
+    setSubProductArea("");
+    setSubProductEffectiveWebWidth("");
+    setSubProductMomentOfInertia("");
+    setSubProductDistanceToBottomFiber("");
     setSubProductDeadLoad("");
     setSubProductFc28Day("");
     setSubProductFciRelease("");
+    setSubProductFpu("");
     setSubProductCrossSectionComponent("");
     setEditingSubProductId(null);
     setShowSubProductModal(true);
@@ -221,9 +235,14 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductName(subProduct.name);
     setSubProductDescription(subProduct.description || "");
     setSubProductTolerances([...subProduct.tolerances]);
+    setSubProductArea(subProduct.area?.toString() || "");
+    setSubProductEffectiveWebWidth(subProduct.effectiveWebWidth?.toString() || "");
+    setSubProductMomentOfInertia(subProduct.momentOfInertia?.toString() || "");
+    setSubProductDistanceToBottomFiber(subProduct.distanceToBottomFiber?.toString() || "");
     setSubProductDeadLoad(subProduct.deadLoad || "");
     setSubProductFc28Day(subProduct.fc28Day?.toString() || "");
     setSubProductFciRelease(subProduct.fciRelease?.toString() || "");
+    setSubProductFpu(subProduct.fpu?.toString() || "");
     setSubProductCrossSectionComponent(subProduct.crossSectionComponent || "");
     setShowSubProductModal(true);
   };
@@ -238,9 +257,14 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       name: subProductName,
       description: subProductDescription,
       tolerances: subProductTolerances,
+      area: subProductArea ? parseFloat(subProductArea) : undefined,
+      effectiveWebWidth: subProductEffectiveWebWidth ? parseFloat(subProductEffectiveWebWidth) : undefined,
+      momentOfInertia: subProductMomentOfInertia ? parseFloat(subProductMomentOfInertia) : undefined,
+      distanceToBottomFiber: subProductDistanceToBottomFiber ? parseFloat(subProductDistanceToBottomFiber) : undefined,
       deadLoad: subProductDeadLoad || undefined,
       fc28Day: subProductFc28Day ? parseInt(subProductFc28Day) : undefined,
       fciRelease: subProductFciRelease ? parseInt(subProductFciRelease) : undefined,
+      fpu: subProductFpu ? parseInt(subProductFpu) : undefined,
       crossSectionComponent: subProductCrossSectionComponent || undefined,
     };
 
@@ -259,9 +283,14 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductName("");
     setSubProductDescription("");
     setSubProductTolerances([]);
+    setSubProductArea("");
+    setSubProductEffectiveWebWidth("");
+    setSubProductMomentOfInertia("");
+    setSubProductDistanceToBottomFiber("");
     setSubProductDeadLoad("");
     setSubProductFc28Day("");
     setSubProductFciRelease("");
+    setSubProductFpu("");
     setSubProductCrossSectionComponent("");
   };
 
@@ -1139,10 +1168,129 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     />
                   </View>
 
+                  {/* Cross-Section Properties */}
+                  <View style={{ backgroundColor: "#F0FDF4", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#86EFAC" }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#065F46", marginBottom: 12 }}>
+                      Cross-Section Properties
+                    </Text>
+
+                    {/* Area (A) */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
+                        A - Area (in²)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
+                        Area of concrete in the cross-section
+                      </Text>
+                      <TextInput
+                        value={subProductArea}
+                        onChangeText={setSubProductArea}
+                        placeholder="e.g., 293, 373"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
+                        keyboardType="decimal-pad"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* Effective Web Width (Bw) */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
+                        B<Text style={{ fontSize: 10 }}>w</Text> - Effective Web Width (in)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
+                        Effective web width
+                      </Text>
+                      <TextInput
+                        value={subProductEffectiveWebWidth}
+                        onChangeText={setSubProductEffectiveWebWidth}
+                        placeholder="e.g., 24.5, 28.2"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
+                        keyboardType="decimal-pad"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* Moment of Inertia (Ig) */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
+                        I<Text style={{ fontSize: 10 }}>g</Text> - Moment of Inertia (in⁴)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
+                        Moment of inertia of the cross-section
+                      </Text>
+                      <TextInput
+                        value={subProductMomentOfInertia}
+                        onChangeText={setSubProductMomentOfInertia}
+                        placeholder="e.g., 5107, 10780"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
+                        keyboardType="decimal-pad"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* Distance to Bottom Fiber (Yb) */}
+                    <View>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
+                        Y<Text style={{ fontSize: 10 }}>b</Text> - Distance to Bottom Fiber (in)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
+                        Distance from neutral axis to extreme bottom fiber
+                      </Text>
+                      <TextInput
+                        value={subProductDistanceToBottomFiber}
+                        onChangeText={setSubProductDistanceToBottomFiber}
+                        placeholder="e.g., 4.0, 6.0"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
+                        keyboardType="decimal-pad"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+                  </View>
+
                   {/* Technical Specifications */}
                   <View style={{ backgroundColor: "#F0F9FF", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#BFDBFE" }}>
                     <Text style={{ fontSize: 14, fontWeight: "600", color: "#1E40AF", marginBottom: 12 }}>
-                      Technical Specifications
+                      Strength Characteristics
                     </Text>
 
                     {/* Dead Load */}
@@ -1203,6 +1351,34 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         value={subProductFciRelease}
                         onChangeText={setSubProductFciRelease}
                         placeholder="e.g., 3500, 4000"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
+                        keyboardType="numeric"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* f'pu - Ultimate Tensile Strength of Strand */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 4 }}>
+                        f'<Text style={{ fontSize: 10 }}>pu</Text> - Ultimate Tensile Strength (psi)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginBottom: 6 }}>
+                        Ultimate tensile strength of the strand
+                      </Text>
+                      <TextInput
+                        value={subProductFpu}
+                        onChangeText={setSubProductFpu}
+                        placeholder="e.g., 270000"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
                         selectionColor="#3B82F6"

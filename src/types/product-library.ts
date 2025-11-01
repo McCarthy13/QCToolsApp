@@ -29,10 +29,17 @@ export interface SubProduct {
   weight?: string;
   loadCapacity?: string;
 
-  // Technical specifications
+  // Cross-section properties (before strength characteristics)
+  area?: number; // A - Area of concrete in cross-section (in²)
+  effectiveWebWidth?: number; // Bw - Effective web width (inches)
+  momentOfInertia?: number; // Ig - Moment of inertia of cross-section (in⁴)
+  distanceToBottomFiber?: number; // Yb - Distance from neutral axis to extreme bottom fiber (inches)
+
+  // Strength characteristics
   deadLoad?: string; // e.g., "65 psf", "80 psf"
   fc28Day?: number; // f'c - 28-day concrete strength in psi (e.g., 5000, 6000)
   fciRelease?: number; // f'ci - Initial/release strength in psi (e.g., 3500, 4000)
+  fpu?: number; // f'pu - Ultimate tensile strength of strand in psi (e.g., 270000)
 
   // Cross-section component (without strands, shows webs and cores)
   crossSectionComponent?: string; // Component name like "CrossSection8048", "CrossSection1048"
