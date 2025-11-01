@@ -28,16 +28,6 @@ import { parseMeasurementInput } from '../utils/cn';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Calculator'>;
 
-const memberTypes = [
-  { value: 'beam', label: 'Beam' },
-  { value: 'double-tee', label: 'Double Tee' },
-  { value: 'hollow-core', label: 'Hollow Core' },
-  { value: 'single-tee', label: 'Single Tee' },
-  { value: 'solid-slab', label: 'Solid Slab' },
-  { value: 'wall-panel', label: 'Wall Panel' },
-  { value: 'stadia', label: 'Stadia' },
-] as const;
-
 export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
@@ -54,18 +44,12 @@ export default function CalculatorScreen() {
   const [spanFraction, setSpanFraction] = useState('0');
   const [productWidth, setProductWidth] = useState('');
   const [offcutSide, setOffcutSide] = useState<'L1' | 'L2' | ''>('');
-  const [memberType, setMemberType] = useState(currentInputs.memberType || 'hollow-core');
 
   // Product selection
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [selectedSubProductId, setSelectedSubProductId] = useState<string>('');
   const [showProductModal, setShowProductModal] = useState(false);
 
-  const [releaseStrength, setReleaseStrength] = useState('3500');
-  const [concreteStrength, setConcreteStrength] = useState(
-    currentInputs.concreteStrength?.toString() || '9000'
-  );
-  const [liveLoad, setLiveLoad] = useState(currentInputs.liveLoad?.toString() || '');
   const [strandPattern, setStrandPattern] = useState<string>('');
   const [topStrandPattern, setTopStrandPattern] = useState<string>('');
   const [showStrandModal, setShowStrandModal] = useState(false);
@@ -82,12 +66,12 @@ export default function CalculatorScreen() {
   // Get moment of inertia and dead load from selected sub-product
   const momentOfInertia = selectedSubProduct?.momentOfInertia || 0;
   const deadLoad = selectedSubProduct?.deadLoadPerLinearFoot || 0;
-  
+
   // Calculate full width from strand coordinates if available, otherwise default to 48"
   const fullWidth = selectedPattern?.strandCoordinates && selectedPattern.strandCoordinates.length > 0
     ? Math.max(...selectedPattern.strandCoordinates.map(c => c.x))
     : 48;
-  
+
   // Check if this is a cut-width product
   const parsedWidth = productWidth.trim() ? parseMeasurementInput(productWidth) : null;
   const tolerance = 0.001;
@@ -115,29 +99,47 @@ export default function CalculatorScreen() {
     return 0;
   };
 
-  const handleCalculate = () => {
-    const spanInFeet = getSpanInFeet();
-    
-    // Get selected custom pattern
-    const selectedPattern = customPatterns.find(p => p.id === strandPattern);
-    
-    // Parse product width if provided
-    const parsedWidth = productWidth.trim() ? parseMeasurementInput(productWidth) : null;
-    
+  const handleContinue = () => {
+    const validationErrors: string[] = [];
+
+    // Required validations
+    if (!selectedSubProductId) {
+      validationErrors.push('Product Type/Size is required');
+    }
+    if (!strandPattern) {
+      validationErrors.push('Strand Pattern is required');
+    }
+
     // Validate offcut side if cut-width
     if (isCutWidth && !offcutSide) {
-      setErrors(['Offcut side is required for cut-width products']);
+      validationErrors.push('Offcut side is required for cut-width products');
+    }
+
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
       return;
     }
-    
+
+    setErrors([]);
+
+    // Navigate to next screen or continue with calculation
+    // For now, we'll keep the existing calculation logic
+    const spanInFeet = getSpanInFeet();
+
+    // Get selected custom pattern
+    const selectedPattern = customPatterns.find(p => p.id === strandPattern);
+
+    // Parse product width if provided
+    const parsedWidth = productWidth.trim() ? parseMeasurementInput(productWidth) : null;
+
     const inputs: Partial<CamberInputs> = {
       span: spanInFeet,
-      memberType: memberType as CamberInputs['memberType'],
-      releaseStrength: parseFloat(releaseStrength),
-      concreteStrength: parseFloat(concreteStrength),
+      memberType: 'hollow-core',
+      releaseStrength: 3500,
+      concreteStrength: 9000,
       momentOfInertia: momentOfInertia || selectedPattern?.momentOfInertia || 0,
       deadLoad: deadLoad || selectedPattern?.deadLoad || 0,
-      liveLoad: liveLoad ? parseFloat(liveLoad) : undefined,
+      liveLoad: undefined,
       strandPattern: strandPattern || undefined,
       strandEValue: selectedPattern?.eValue,
       topStrandPattern: topStrandPattern || undefined,
@@ -148,15 +150,8 @@ export default function CalculatorScreen() {
       idNumber: idNumber || undefined,
     };
 
-    const validationErrors = validateInputs(inputs);
-    if (validationErrors.length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setErrors([]);
     const results = calculateCamber(inputs as CamberInputs);
-    
+
     const record = {
       id: Date.now().toString(),
       timestamp: Date.now(),
@@ -164,136 +159,64 @@ export default function CalculatorScreen() {
       results,
       projectName: projectName || undefined,
     };
-    
+
     addCalculation(record);
     navigation.navigate('Results', { calculation: record });
-  };
-
-  const renderStrandPatternSelector = (
-    label: string,
-    isTopStrand: boolean
-  ) => {
-    const selectedId = isTopStrand ? topStrandPattern : strandPattern;
-    const selectedPattern = customPatterns.find(p => p.id === selectedId);
-    const setModal = isTopStrand ? setShowTopStrandModal : setShowStrandModal;
-    
-    return (
-      <View className="mb-5">
-        <Text className="text-sm font-semibold text-gray-700 mb-2">
-          {label}
-        </Text>
-        <Text className="text-xs text-gray-500 mb-2">
-          Select prestressing strand configuration
-        </Text>
-        <Pressable
-          onPress={() => setModal(true)}
-          className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 flex-row items-center justify-between"
-        >
-          <View className="flex-1 flex-row items-center gap-2">
-            <Text className={`text-base ${selectedId ? 'text-gray-900' : 'text-gray-400'}`}>
-              {selectedId && selectedPattern ? `${selectedPattern.patternId} - ${selectedPattern.name}` : 'Select strand pattern'}
-            </Text>
-            {selectedId && selectedPattern && (
-              <View className={`px-2 py-1 rounded ${
-                selectedPattern.position === 'Top' ? 'bg-blue-100' : 
-                selectedPattern.position === 'Bottom' ? 'bg-green-100' : 
-                'bg-purple-100'
-              }`}>
-                <Text className={`text-xs font-semibold ${
-                  selectedPattern.position === 'Top' ? 'text-blue-700' : 
-                  selectedPattern.position === 'Bottom' ? 'text-green-700' : 
-                  'text-purple-700'
-                }`}>
-                  {selectedPattern.position}
-                </Text>
-              </View>
-            )}
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-        </Pressable>
-        {selectedId && selectedPattern && (
-          <View className="mt-2 bg-purple-50 rounded-lg p-3">
-            <Text className="text-xs font-semibold text-purple-900 mb-1">Pattern Details:</Text>
-            {selectedPattern.strand_3_8 > 0 && (
-              <Text className="text-xs text-purple-800">
-                • {selectedPattern.strand_3_8}× 3/8" strands
-              </Text>
-            )}
-            {selectedPattern.strand_1_2 > 0 && (
-              <Text className="text-xs text-purple-800">
-                • {selectedPattern.strand_1_2}× 1/2" strands
-              </Text>
-            )}
-            {selectedPattern.strand_0_6 > 0 && (
-              <Text className="text-xs text-purple-800">
-                • {selectedPattern.strand_0_6}× 0.6" strands
-              </Text>
-            )}
-            <Text className="text-xs text-purple-800 mt-1">
-              • e value: {selectedPattern.eValue}"
-            </Text>
-            <Text className="text-xs text-purple-800">
-              • Pulling force: {selectedPattern.pullingForce}%
-            </Text>
-            <Text className="text-xs text-purple-800">
-              • Total area: {selectedPattern.totalArea.toFixed(3)} in²
-            </Text>
-          </View>
-        )}
-      </View>
-    );
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-50"
+      className="flex-1 bg-white"
+      style={{ paddingTop: insets.top }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="p-5">
-            {/* Header */}
-            <View className="mb-6">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="text-3xl font-bold text-gray-900 mb-2">
-                    Camber Calculator
+          {/* Header */}
+          <View className="px-6 py-4 border-b border-gray-200">
+            <Text className="text-gray-900 text-2xl font-bold">
+              Camber Calculator
+            </Text>
+            <Text className="text-gray-600 text-sm mt-1">
+              Configure project details and select strand pattern
+            </Text>
+          </View>
+
+          {/* Error Display */}
+          {errors.length > 0 && (
+            <View className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <View className="flex-row items-start">
+                <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                <View className="ml-2 flex-1">
+                  <Text className="text-red-800 font-semibold text-sm mb-1">
+                    Please fix the following:
                   </Text>
-                  <Text className="text-base text-gray-600">
-                    Calculate precast concrete member camber
-                  </Text>
+                  {errors.map((error, index) => (
+                    <Text key={index} className="text-red-700 text-sm">
+                      • {error}
+                    </Text>
+                  ))}
                 </View>
-                <Pressable
-                  onPress={() => navigation.navigate('History')}
-                  className="bg-blue-500 rounded-full p-3 ml-3"
-                >
-                  <Ionicons name="time-outline" size={24} color="white" />
-                </Pressable>
               </View>
             </View>
+          )}
 
-            {/* Error Messages */}
-            {errors.length > 0 && (
-              <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                {errors.map((error, index) => (
-                  <Text key={index} className="text-red-700 text-sm mb-1">
-                    • {error}
-                  </Text>
-                ))}
-              </View>
-            )}
+          {/* Optional Project Information */}
+          <View className="px-6 mt-6">
+            <Text className="text-gray-900 text-lg font-semibold mb-4">
+              Project Information (Optional)
+            </Text>
 
-            {/* Project Name (Optional) */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Project Name (Optional)
+            <View className="mb-4">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Project Name
               </Text>
               <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                 placeholder="Enter project name"
                 placeholderTextColor="#9CA3AF"
                 cursorColor="#000000"
@@ -302,13 +225,12 @@ export default function CalculatorScreen() {
               />
             </View>
 
-            {/* Project Number (Optional) */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Project # (Optional)
+            <View className="mb-4">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Project Number
               </Text>
               <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                 placeholder="Enter project number"
                 placeholderTextColor="#9CA3AF"
                 cursorColor="#000000"
@@ -317,138 +239,100 @@ export default function CalculatorScreen() {
               />
             </View>
 
-            {/* Mark Number (Optional) */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Mark # (Optional)
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="Enter mark number"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                value={markNumber}
-                onChangeText={setMarkNumber}
-              />
-            </View>
-
-            {/* ID Number (Optional) */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                ID # (Optional)
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="Enter ID number"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                value={idNumber}
-                onChangeText={setIdNumber}
-              />
-            </View>
-
-            {/* Member Type Selection */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Member Type
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {memberTypes.map((type) => (
-                  <Pressable
-                    key={type.value}
-                    onPress={() => setMemberType(type.value)}
-                    className={`px-4 py-3 rounded-xl border ${
-                      memberType === type.value
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'bg-white border-gray-300'
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm font-medium ${
-                        memberType === type.value ? 'text-white' : 'text-gray-700'
-                      }`}
-                    >
-                      {type.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            {/* Span Input */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Span
-              </Text>
-              <View className="flex-row gap-2">
-                {/* Feet */}
-                <View className="flex-1">
-                  <Text className="text-xs text-gray-600 mb-1">Feet</Text>
-                  <TextInput
-                    className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                    placeholder="40"
-                    placeholderTextColor="#9CA3AF"
-                    cursorColor="#000000"
-                    keyboardType="numeric"
-                    value={spanFeet}
-                    onChangeText={setSpanFeet}
-                  />
-                </View>
-                
-                {/* Inches */}
-                <View className="flex-1">
-                  <Text className="text-xs text-gray-600 mb-1">Inches</Text>
-                  <TextInput
-                    className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                    placeholder="0"
-                    placeholderTextColor="#9CA3AF"
-                    cursorColor="#000000"
-                    keyboardType="numeric"
-                    value={spanInches}
-                    onChangeText={setSpanInches}
-                  />
-                </View>
-                
-                {/* Fraction */}
-                <View className="flex-1">
-                  <Text className="text-xs text-gray-600 mb-1">Fraction</Text>
-                  <Pressable
-                    onPress={() => {
-                      const fractions = ['0', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
-                      const currentIndex = fractions.indexOf(spanFraction);
-                      const nextIndex = (currentIndex + 1) % fractions.length;
-                      setSpanFraction(fractions[nextIndex]);
-                    }}
-                    className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 items-center justify-center"
-                  >
-                    <Text className="text-base text-gray-900 font-medium">
-                      {spanFraction === '0' ? '0' : spanFraction}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-              
-              {/* Display total in decimal */}
-              {(spanFeet || spanInches || spanFraction !== '0') && (
-                <Text className="text-xs text-gray-500 mt-2">
-                  Total: {getSpanInFeet().toFixed(3)} feet
+            <View className="flex-row gap-3 mb-4">
+              <View className="flex-1">
+                <Text className="text-gray-700 text-sm font-medium mb-2">
+                  Mark Number
                 </Text>
-              )}
+                <TextInput
+                  className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                  placeholder="Mark #"
+                  placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
+                  value={markNumber}
+                  onChangeText={setMarkNumber}
+                />
+              </View>
+
+              <View className="flex-1">
+                <Text className="text-gray-700 text-sm font-medium mb-2">
+                  ID Number
+                </Text>
+                <TextInput
+                  className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                  placeholder="ID #"
+                  placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
+                  value={idNumber}
+                  onChangeText={setIdNumber}
+                />
+              </View>
             </View>
 
-            {/* Product Width Input */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
+            {/* Span Entry */}
+            <View className="mb-6">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Span (Optional)
+              </Text>
+              <View className="flex-row items-center gap-2">
+                <TextInput
+                  className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                  placeholder="Feet"
+                  placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
+                  value={spanFeet}
+                  onChangeText={setSpanFeet}
+                  keyboardType="numeric"
+                />
+                <Text className="text-gray-600 font-medium">-</Text>
+                <TextInput
+                  className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                  placeholder="Inches"
+                  placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
+                  value={spanInches}
+                  onChangeText={setSpanInches}
+                  keyboardType="numeric"
+                />
+                <Pressable
+                  className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 min-w-[80px] items-center"
+                  onPress={() => {
+                    const fractions = ['0', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
+                    const currentIndex = fractions.indexOf(spanFraction);
+                    const nextIndex = (currentIndex + 1) % fractions.length;
+                    setSpanFraction(fractions[nextIndex]);
+                  }}
+                >
+                  <Text className="text-gray-900 font-medium">
+                    {spanFraction === '0' ? '0' : spanFraction}"
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Product Width Entry */}
+            <View className="mb-6">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
                 Product Width (Optional)
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
                 For cut-width products, enter actual width in inches (decimal or fraction)
               </Text>
               <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 8,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  fontSize: 16,
+                  color: '#111827',
+                }}
                 placeholder="e.g., 28 or 28 1/2 or 28.5"
                 placeholderTextColor="#9CA3AF"
                 cursorColor="#000000"
+                selectionColor="#000000"
                 value={productWidth}
                 onChangeText={setProductWidth}
                 keyboardType="default"
@@ -457,8 +341,8 @@ export default function CalculatorScreen() {
 
             {/* Offcut Side Selector - Only show for cut-width products */}
             {isCutWidth && (
-              <View className="mb-5">
-                <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
+              <View className="mb-6">
+                <View className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-3">
                   <View className="flex-row items-start">
                     <Ionicons name="cut" size={20} color="#F59E0B" />
                     <View className="flex-1 ml-3">
@@ -472,7 +356,7 @@ export default function CalculatorScreen() {
                   </View>
                 </View>
 
-                <Text className="text-sm font-semibold text-gray-700 mb-2">
+                <Text className="text-gray-700 text-sm font-medium mb-2">
                   Offcut Side <Text className="text-red-500">*</Text>
                 </Text>
                 <Text className="text-xs text-gray-500 mb-3">
@@ -483,7 +367,7 @@ export default function CalculatorScreen() {
                 <View className="flex-row gap-3 mb-3">
                   <Pressable
                     onPress={() => setOffcutSide('L1')}
-                    className={`flex-1 rounded-xl py-3 px-4 border-2 ${
+                    className={`flex-1 rounded-lg py-3 px-4 border-2 ${
                       offcutSide === 'L1'
                         ? 'bg-blue-50 border-blue-500'
                         : 'bg-white border-gray-300'
@@ -501,7 +385,7 @@ export default function CalculatorScreen() {
 
                   <Pressable
                     onPress={() => setOffcutSide('L2')}
-                    className={`flex-1 rounded-xl py-3 px-4 border-2 ${
+                    className={`flex-1 rounded-lg py-3 px-4 border-2 ${
                       offcutSide === 'L2'
                         ? 'bg-blue-50 border-blue-500'
                         : 'bg-white border-gray-300'
@@ -519,11 +403,11 @@ export default function CalculatorScreen() {
                 </View>
 
                 {/* Visual Diagram */}
-                <View className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <View className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <Text className="text-xs font-semibold text-gray-700 mb-3 text-center">
                     Visual Guide
                   </Text>
-                  
+
                   {/* L1 Cut Diagram */}
                   <View className="mb-4">
                     <Text className="text-xs text-gray-600 mb-2">L1 Cut (Left removed):</Text>
@@ -558,436 +442,140 @@ export default function CalculatorScreen() {
                 )}
               </View>
             )}
+          </View>
 
-            {/* Strand Pattern (Required) */}
-            {renderStrandPatternSelector('Strand Pattern', false)}
+          {/* Required Configuration */}
+          <View className="px-6 mb-6">
+            <Text className="text-gray-900 text-lg font-semibold mb-4">
+              Configuration <Text className="text-red-500">*</Text>
+            </Text>
 
-            {/* Top Strand Pattern (Optional) */}
-            {renderStrandPatternSelector('Top Strand Pattern (Optional)', true)}
-
-            {/* Release Strength */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Release Strength f&apos;ci (psi)
-              </Text>
-              <Text className="text-xs text-gray-500 mb-2">
-                Concrete strength at time of release/detensioning
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 3500"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="numeric"
-                value={releaseStrength}
-                onChangeText={setReleaseStrength}
-              />
-            </View>
-
-            {/* 28-Day Concrete Strength */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                28-Day Strength f&apos;c (psi)
-              </Text>
-              <Text className="text-xs text-gray-500 mb-2">
-                Design concrete strength at 28 days
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 9000"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="numeric"
-                value={concreteStrength}
-                onChangeText={setConcreteStrength}
-              />
-            </View>
-
-            {/* Live Load (Optional) */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Live Load (lb/ft) - Optional
-              </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
-                placeholder="e.g., 200"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                keyboardType="numeric"
-                value={liveLoad}
-                onChangeText={setLiveLoad}
-              />
-            </View>
-
-            {/* Product Type/Size Selector */}
-            <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
-                Product Type/Size
-              </Text>
-              <Text className="text-xs text-gray-500 mb-2">
-                Select product to automatically populate moment of inertia and dead load
+            {/* Product Type/Size */}
+            <View className="mb-4">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Product Type/Size <Text className="text-red-500">*</Text>
               </Text>
               <Pressable
+                className={`bg-white border ${
+                  errors.includes('Product Type/Size is required')
+                    ? 'border-red-500'
+                    : 'border-gray-300'
+                } rounded-lg px-4 py-3 flex-row items-center justify-between`}
                 onPress={() => setShowProductModal(true)}
-                className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 flex-row items-center justify-between"
               >
-                <Text className={`text-base ${selectedSubProduct ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {selectedSubProduct ? `${selectedProduct?.name} - ${selectedSubProduct.name}` : 'Select product type/size'}
+                <Text
+                  className={`text-base ${
+                    selectedSubProduct ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  {selectedSubProduct
+                    ? `${selectedProduct?.name} - ${selectedSubProduct.name}`
+                    : 'Select product type/size'}
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </Pressable>
-              {selectedSubProduct && (
-                <View className="mt-2 bg-blue-50 rounded-lg p-3">
-                  <Text className="text-xs text-blue-900 font-semibold mb-1">Product Properties:</Text>
-                  <Text className="text-xs text-blue-800">
-                    • Moment of Inertia: {momentOfInertia.toLocaleString()} in⁴
+            </View>
+
+            {/* Strand Pattern */}
+            <View className="mb-4">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-gray-700 text-sm font-medium">
+                  Strand Pattern <Text className="text-red-500">*</Text>
+                </Text>
+                <Pressable
+                  onPress={() => navigation.navigate('StrandPatterns')}
+                  className="flex-row items-center"
+                >
+                  <Ionicons name="add-circle-outline" size={16} color="#3B82F6" />
+                  <Text className="text-blue-500 text-xs ml-1">
+                    Manage Patterns
                   </Text>
-                  <Text className="text-xs text-blue-800">
-                    • Dead Load: {deadLoad.toLocaleString()} lb/ft
-                  </Text>
-                </View>
+                </Pressable>
+              </View>
+              <Pressable
+                className={`bg-white border ${
+                  errors.includes('Strand Pattern is required')
+                    ? 'border-red-500'
+                    : 'border-gray-300'
+                } rounded-lg px-4 py-3 flex-row items-center justify-between`}
+                onPress={() => setShowStrandModal(true)}
+              >
+                <Text
+                  className={`text-base ${
+                    strandPattern ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  {selectedPattern
+                    ? selectedPattern.name
+                    : 'Select strand pattern'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </Pressable>
+              {customPatterns.length === 0 && (
+                <Text className="text-orange-600 text-xs mt-1">
+                  No patterns available. Create one in Strand Patterns.
+                </Text>
               )}
             </View>
 
-            {/* Calculate Button */}
+            {/* Top Strand Pattern (Optional) */}
+            <View className="mb-4">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Top Strand Pattern (Optional)
+              </Text>
+              <Pressable
+                className="bg-white border border-gray-300 rounded-lg px-4 py-3 flex-row items-center justify-between"
+                onPress={() => setShowTopStrandModal(true)}
+              >
+                <Text
+                  className={`text-base ${
+                    topStrandPattern ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  {topStrandPattern
+                    ? customPatterns.find(p => p.id === topStrandPattern)?.name
+                    : 'None'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Continue Button */}
+          <View className="px-6">
             <Pressable
-              onPress={handleCalculate}
               className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600"
+              onPress={handleContinue}
             >
               <Text className="text-white text-base font-semibold">
-                Calculate Camber
-              </Text>
-            </Pressable>
-
-            {/* View History Button */}
-            <Pressable
-              onPress={() => navigation.navigate('History')}
-              className="bg-white border border-gray-300 rounded-xl py-4 items-center active:bg-gray-50 mt-3"
-            >
-              <Text className="text-gray-700 text-base font-semibold">
-                View History
+                Continue to Input Values
               </Text>
             </Pressable>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
 
-      {/* Strand Pattern Selection Modal */}
-      <Modal
-        visible={showStrandModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowStrandModal(false)}
-      >
-        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <Pressable onPress={() => setShowStrandModal(false)} className="flex-1" />
-          <View className="bg-white rounded-t-3xl" style={{ height: '75%' }}>
-            <View className="p-5 border-b border-gray-200">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-xl font-bold text-gray-900">
-                  Select Strand Pattern
-                </Text>
-                <Pressable onPress={() => setShowStrandModal(false)}>
-                  <Ionicons name="close" size={24} color="#6B7280" />
-                </Pressable>
-              </View>
-            </View>
-            
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
-              {customPatterns.length > 0 ? (
-                <>
-                  <Text className="text-sm font-bold text-gray-900 mb-3">Strand Patterns</Text>
-                  {customPatterns.map((pattern) => (
-                      <Pressable
-                        key={pattern.id}
-                        onPress={() => {
-                          setStrandPattern(pattern.id);
-                          setShowStrandModal(false);
-                        }}
-                        className={`mb-3 p-4 rounded-xl border ${
-                          strandPattern === pattern.id
-                            ? 'bg-purple-50 border-purple-500'
-                            : 'bg-white border-gray-300'
-                        }`}
-                      >
-                        <View className="flex-row items-center justify-between mb-2">
-                          <View className="flex-1 flex-row items-center gap-2">
-                            <Text className={`text-base font-semibold ${
-                              strandPattern === pattern.id ? 'text-purple-900' : 'text-gray-900'
-                            }`}>
-                              {pattern.patternId} - {pattern.name}
-                            </Text>
-                            <View className={`px-2 py-1 rounded ${
-                              pattern.position === 'Top' ? 'bg-blue-100' : 
-                              pattern.position === 'Bottom' ? 'bg-green-100' : 
-                              'bg-purple-100'
-                            }`}>
-                              <Text className={`text-xs font-semibold ${
-                                pattern.position === 'Top' ? 'text-blue-700' : 
-                                pattern.position === 'Bottom' ? 'text-green-700' : 
-                                'text-purple-700'
-                              }`}>
-                                {pattern.position}
-                              </Text>
-                            </View>
-                          </View>
-                          {strandPattern === pattern.id && (
-                            <Ionicons name="checkmark-circle" size={24} color="#9333EA" />
-                          )}
-                        </View>
-                        
-                        <View className="mt-2">
-                          <Text className={`text-xs font-semibold mb-1 ${
-                            strandPattern === pattern.id ? 'text-purple-800' : 'text-gray-600'
-                          }`}>
-                            Configuration:
-                          </Text>
-                          {pattern.strand_3_8 > 0 && (
-                            <Text className={`text-xs ${
-                              strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                            }`}>
-                              • {pattern.strand_3_8} strands of 3/8" diameter
-                            </Text>
-                          )}
-                          {pattern.strand_1_2 > 0 && (
-                            <Text className={`text-xs ${
-                              strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                            }`}>
-                              • {pattern.strand_1_2} strands of 1/2" diameter
-                            </Text>
-                          )}
-                          {pattern.strand_0_6 > 0 && (
-                            <Text className={`text-xs ${
-                              strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                            }`}>
-                              • {pattern.strand_0_6} strands of 0.6" diameter
-                            </Text>
-                          )}
-                          <Text className={`text-xs mt-1 ${
-                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                          }`}>
-                            • e value: {pattern.eValue}"
-                          </Text>
-                          <Text className={`text-xs ${
-                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                          }`}>
-                            • Pulling force: {pattern.pullingForce}%
-                          </Text>
-                          <Text className={`text-xs ${
-                            strandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                          }`}>
-                            • Total strand area: {pattern.totalArea.toFixed(3)} in²
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </>
-                ) : (
-                  <View className="items-center py-12">
-                    <View className="bg-gray-100 rounded-full p-6 mb-4">
-                      <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
-                    </View>
-                    <Text className="text-lg font-semibold text-gray-900 mb-2">
-                      No Strand Patterns
-                    </Text>
-                    <Text className="text-sm text-gray-600 text-center mb-4">
-                      Create custom strand patterns in the{'\n'}Strand Patterns tab
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Clear Selection Button */}
-                {strandPattern && (
-                  <Pressable
-                    onPress={() => {
-                      setStrandPattern('');
-                      setShowStrandModal(false);
-                    }}
-                    className="mt-2 p-4 rounded-xl border border-red-300 bg-red-50"
-                  >
-                    <Text className="text-center text-red-600 font-semibold">
-                      Clear Selection
-                    </Text>
-                  </Pressable>
-                )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Top Strand Pattern Selection Modal */}
-      <Modal
-        visible={showTopStrandModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowTopStrandModal(false)}
-      >
-        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <Pressable onPress={() => setShowTopStrandModal(false)} className="flex-1" />
-          <View className="bg-white rounded-t-3xl" style={{ height: '75%' }}>
-            <View className="p-5 border-b border-gray-200">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-xl font-bold text-gray-900">
-                  Select Top Strand Pattern
-                </Text>
-                <Pressable onPress={() => setShowTopStrandModal(false)}>
-                  <Ionicons name="close" size={24} color="#6B7280" />
-                </Pressable>
-              </View>
-            </View>
-            
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
-              {customPatterns.length > 0 ? (
-                <>
-                  <Text className="text-sm font-bold text-gray-900 mb-3">Top Strand Patterns</Text>
-                  {customPatterns.map((pattern) => (
-                      <Pressable
-                        key={pattern.id}
-                        onPress={() => {
-                          setTopStrandPattern(pattern.id);
-                          setShowTopStrandModal(false);
-                        }}
-                        className={`mb-3 p-4 rounded-xl border ${
-                          topStrandPattern === pattern.id
-                            ? 'bg-purple-50 border-purple-500'
-                            : 'bg-white border-gray-300'
-                        }`}
-                      >
-                        <View className="flex-row items-center justify-between mb-2">
-                          <View className="flex-1 flex-row items-center gap-2">
-                            <Text className={`text-base font-semibold ${
-                              topStrandPattern === pattern.id ? 'text-purple-900' : 'text-gray-900'
-                            }`}>
-                              {pattern.patternId} - {pattern.name}
-                            </Text>
-                            <View className={`px-2 py-1 rounded ${
-                              pattern.position === 'Top' ? 'bg-blue-100' : 
-                              pattern.position === 'Bottom' ? 'bg-green-100' : 
-                              'bg-purple-100'
-                            }`}>
-                              <Text className={`text-xs font-semibold ${
-                                pattern.position === 'Top' ? 'text-blue-700' : 
-                                pattern.position === 'Bottom' ? 'text-green-700' : 
-                                'text-purple-700'
-                              }`}>
-                                {pattern.position}
-                              </Text>
-                            </View>
-                          </View>
-                          {topStrandPattern === pattern.id && (
-                            <Ionicons name="checkmark-circle" size={24} color="#9333EA" />
-                          )}
-                        </View>
-                        
-                        <View className="mt-2">
-                          <Text className={`text-xs font-semibold mb-1 ${
-                            topStrandPattern === pattern.id ? 'text-purple-800' : 'text-gray-600'
-                          }`}>
-                            Configuration:
-                          </Text>
-                          {pattern.strand_3_8 > 0 && (
-                            <Text className={`text-xs ${
-                              topStrandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                            }`}>
-                              • {pattern.strand_3_8} strands of 3/8" diameter
-                            </Text>
-                          )}
-                          {pattern.strand_1_2 > 0 && (
-                            <Text className={`text-xs ${
-                              topStrandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                            }`}>
-                              • {pattern.strand_1_2} strands of 1/2" diameter
-                            </Text>
-                          )}
-                          {pattern.strand_0_6 > 0 && (
-                            <Text className={`text-xs ${
-                              topStrandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                            }`}>
-                              • {pattern.strand_0_6} strands of 0.6" diameter
-                            </Text>
-                          )}
-                          <Text className={`text-xs mt-1 ${
-                            topStrandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                          }`}>
-                            • e value: {pattern.eValue}"
-                          </Text>
-                          <Text className={`text-xs ${
-                            topStrandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                          }`}>
-                            • Pulling force: {pattern.pullingForce}%
-                          </Text>
-                          <Text className={`text-xs ${
-                            topStrandPattern === pattern.id ? 'text-purple-700' : 'text-gray-600'
-                          }`}>
-                            • Total strand area: {pattern.totalArea.toFixed(3)} in²
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </>
-                ) : (
-                  <View className="items-center py-12">
-                    <View className="bg-gray-100 rounded-full p-6 mb-4">
-                      <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
-                    </View>
-                    <Text className="text-lg font-semibold text-gray-900 mb-2">
-                      No Strand Patterns
-                    </Text>
-                    <Text className="text-sm text-gray-600 text-center mb-4">
-                      Create custom strand patterns in the{'\n'}Strand Patterns tab
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Clear Selection Button */}
-                {topStrandPattern && (
-                  <Pressable
-                    onPress={() => {
-                      setTopStrandPattern('');
-                      setShowTopStrandModal(false);
-                    }}
-                    className="mt-2 p-4 rounded-xl border border-red-300 bg-red-50"
-                  >
-                    <Text className="text-center text-red-600 font-semibold">
-                      Clear Selection
-                    </Text>
-                  </Pressable>
-                )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
       {/* Product Selection Modal */}
       <Modal
         visible={showProductModal}
+        transparent
         animationType="slide"
-        presentationStyle="pageSheet"
         onRequestClose={() => setShowProductModal(false)}
       >
-        <View className="flex-1 bg-gray-50">
-          <View className="bg-white border-b border-gray-200 px-5 pt-3 pb-4" style={{ paddingTop: insets.top + 12 }}>
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-xl font-bold text-gray-900">
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-3xl max-h-[70%]">
+            <View className="p-4 border-b border-gray-200 flex-row items-center justify-between">
+              <Text className="text-gray-900 text-lg font-semibold">
                 Select Product Type/Size
               </Text>
-              <Pressable
-                onPress={() => setShowProductModal(false)}
-                className="w-8 h-8 items-center justify-center"
-              >
-                <Ionicons name="close" size={28} color="#6B7280" />
+              <Pressable onPress={() => setShowProductModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
               </Pressable>
             </View>
-            <Text className="text-sm text-gray-600">
-              Choose a product to get moment of inertia and dead load values
-            </Text>
-          </View>
-
-          <ScrollView className="flex-1">
-            <View className="p-5">
+            <ScrollView className="p-4">
               {products.filter(p => p.isActive).map((product) => (
                 <View key={product.id} className="mb-4">
-                  <Text className="text-lg font-bold text-gray-900 mb-3">
+                  <Text className="text-base font-bold text-gray-900 mb-3">
                     {product.name}
                   </Text>
 
@@ -1001,8 +589,9 @@ export default function CalculatorScreen() {
                             setSelectedProductId(product.id);
                             setSelectedSubProductId(subProduct.id);
                             setShowProductModal(false);
+                            setErrors([]);
                           }}
-                          className={`mb-3 p-4 rounded-xl border-2 ${
+                          className={`mb-3 p-4 rounded-lg border ${
                             selectedSubProductId === subProduct.id
                               ? 'bg-blue-50 border-blue-500'
                               : 'bg-white border-gray-200'
@@ -1010,7 +599,7 @@ export default function CalculatorScreen() {
                         >
                           <View className="flex-row items-center justify-between mb-2">
                             <Text className={`text-base font-bold ${
-                              selectedSubProductId === subProduct.id ? 'text-blue-900' : 'text-gray-900'
+                              selectedSubProductId === subProduct.id ? 'text-blue-600' : 'text-gray-900'
                             }`}>
                               {subProduct.name}
                             </Text>
@@ -1054,7 +643,7 @@ export default function CalculatorScreen() {
                         </Pressable>
                       ))
                   ) : (
-                    <View className="bg-gray-100 rounded-xl p-4">
+                    <View className="bg-gray-100 rounded-lg p-4">
                       <Text className="text-sm text-gray-600 text-center">
                         No sub-products available
                       </Text>
@@ -1064,36 +653,148 @@ export default function CalculatorScreen() {
               ))}
 
               {products.filter(p => p.isActive).length === 0 && (
-                <View className="items-center py-12">
-                  <View className="bg-gray-100 rounded-full p-6 mb-4">
-                    <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
-                  </View>
-                  <Text className="text-lg font-semibold text-gray-900 mb-2">
-                    No Products
-                  </Text>
-                  <Text className="text-sm text-gray-600 text-center">
-                    Add products in the Product Library first
+                <View className="items-center py-8">
+                  <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
+                  <Text className="text-gray-600 text-base mt-4 text-center">
+                    No products available.{'\n'}Add products in Product Library.
                   </Text>
                 </View>
               )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
-              {/* Clear Selection Button */}
-              {selectedSubProductId && (
-                <Pressable
-                  onPress={() => {
-                    setSelectedProductId('');
-                    setSelectedSubProductId('');
-                    setShowProductModal(false);
-                  }}
-                  className="mt-2 p-4 rounded-xl border border-red-300 bg-red-50"
+      {/* Strand Pattern Selection Modal */}
+      <Modal
+        visible={showStrandModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStrandModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-3xl max-h-[70%]">
+            <View className="p-4 border-b border-gray-200 flex-row items-center justify-between">
+              <Text className="text-gray-900 text-lg font-semibold">
+                Select Strand Pattern
+              </Text>
+              <Pressable onPress={() => setShowStrandModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+            <ScrollView className="p-4">
+              {customPatterns.length === 0 ? (
+                <View className="items-center py-8">
+                  <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
+                  <Text className="text-gray-600 text-base mt-4 text-center">
+                    No strand patterns available.{'\n'}Create one in Strand Patterns.
+                  </Text>
+                </View>
+              ) : (
+                customPatterns.map((pattern) => (
+                  <Pressable
+                    key={pattern.id}
+                    className={`p-4 mb-2 rounded-lg border ${
+                      strandPattern === pattern.id
+                        ? 'bg-blue-50 border-blue-500'
+                        : 'bg-white border-gray-200'
+                    }`}
+                    onPress={() => {
+                      setStrandPattern(pattern.id);
+                      setShowStrandModal(false);
+                      setErrors([]);
+                    }}
+                  >
+                    <Text
+                      className={`text-base font-semibold ${
+                        strandPattern === pattern.id
+                          ? 'text-blue-600'
+                          : 'text-gray-900'
+                      }`}
+                    >
+                      {pattern.name}
+                    </Text>
+                    <Text className="text-gray-600 text-sm mt-1">
+                      Pattern ID: {pattern.patternId} • Position: {pattern.position}
+                    </Text>
+                  </Pressable>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Top Strand Pattern Selection Modal */}
+      <Modal
+        visible={showTopStrandModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTopStrandModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-3xl max-h-[70%]">
+            <View className="p-4 border-b border-gray-200 flex-row items-center justify-between">
+              <Text className="text-gray-900 text-lg font-semibold">
+                Select Top Strand Pattern
+              </Text>
+              <Pressable onPress={() => setShowTopStrandModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+            <ScrollView className="p-4">
+              {/* None Option */}
+              <Pressable
+                className={`p-4 mb-2 rounded-lg border ${
+                  topStrandPattern === ''
+                    ? 'bg-blue-50 border-blue-500'
+                    : 'bg-white border-gray-200'
+                }`}
+                onPress={() => {
+                  setTopStrandPattern('');
+                  setShowTopStrandModal(false);
+                }}
+              >
+                <Text
+                  className={`text-base font-semibold ${
+                    topStrandPattern === ''
+                      ? 'text-blue-600'
+                      : 'text-gray-900'
+                  }`}
                 >
-                  <Text className="text-center text-red-600 font-semibold">
-                    Clear Selection
+                  None
+                </Text>
+              </Pressable>
+
+              {customPatterns.map((pattern) => (
+                <Pressable
+                  key={pattern.id}
+                  className={`p-4 mb-2 rounded-lg border ${
+                    topStrandPattern === pattern.id
+                      ? 'bg-blue-50 border-blue-500'
+                      : 'bg-white border-gray-200'
+                  }`}
+                  onPress={() => {
+                    setTopStrandPattern(pattern.id);
+                    setShowTopStrandModal(false);
+                  }}
+                >
+                  <Text
+                    className={`text-base font-semibold ${
+                      topStrandPattern === pattern.id
+                        ? 'text-blue-600'
+                        : 'text-gray-900'
+                    }`}
+                  >
+                    {pattern.name}
+                  </Text>
+                  <Text className="text-gray-600 text-sm mt-1">
+                    Pattern ID: {pattern.patternId} • Position: {pattern.position}
                   </Text>
                 </Pressable>
-              )}
-            </View>
-          </ScrollView>
+              ))}
+            </ScrollView>
+          </View>
         </View>
       </Modal>
     </KeyboardAvoidingView>
