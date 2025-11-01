@@ -24,14 +24,16 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const deleteSubProduct = useProductLibraryStore((s) => s.deleteSubProduct);
   const initializeDefaultProducts = useProductLibraryStore((s) => s.initializeDefaultProducts);
   const migrateCrossSections = useProductLibraryStore((s) => s.migrateCrossSections);
+  const migrateTolerances = useProductLibraryStore((s) => s.migrateTolerances);
 
-  // Initialize default products on mount and migrate cross-sections
+  // Initialize default products on mount and run migrations
   useEffect(() => {
     if (products.length === 0) {
       initializeDefaultProducts();
     } else {
-      // Migrate existing products to add cross-section components
+      // Migrate existing products to add cross-section components and update tolerance format
       migrateCrossSections();
+      migrateTolerances();
     }
   }, []);
 
@@ -84,7 +86,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const [showToleranceModal, setShowToleranceModal] = useState(false);
   const [editingToleranceIndex, setEditingToleranceIndex] = useState<number | null>(null);
   const [dimension, setDimension] = useState("");
-  const [value, setValue] = useState("");
+  const [minValue, setMinValue] = useState("");
+  const [maxValue, setMaxValue] = useState("");
   const [notes, setNotes] = useState("");
 
   const productTypes: ProductType[] = [
@@ -98,14 +101,15 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   ];
 
   const handleAddTolerance = () => {
-    if (!dimension.trim() || !value.trim()) {
-      Alert.alert("Error", "Dimension and value are required");
+    if (!dimension.trim() || !minValue.trim() || !maxValue.trim()) {
+      Alert.alert("Error", "Dimension, min value, and max value are required");
       return;
     }
 
     const newTolerance: ToleranceSpec = {
       dimension: dimension.trim(),
-      value: value.trim(),
+      min: minValue.trim(),
+      max: maxValue.trim(),
       notes: notes.trim() || undefined,
     };
 
@@ -127,7 +131,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
 
     // Reset tolerance form
     setDimension("");
-    setValue("");
+    setMinValue("");
+    setMaxValue("");
     setNotes("");
     setEditingToleranceIndex(null);
     setShowToleranceModal(false);
@@ -136,7 +141,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const handleEditTolerance = (index: number) => {
     const tolerance = tolerances[index];
     setDimension(tolerance.dimension);
-    setValue(tolerance.value);
+    setMinValue(tolerance.min);
+    setMaxValue(tolerance.max);
     setNotes(tolerance.notes || "");
     setEditingToleranceIndex(index);
     setShowToleranceModal(true);
@@ -698,7 +704,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                                       {tolerance.dimension}
                                                     </Text>
                                                     <Text style={{ fontSize: 13, fontWeight: "600", color: "#10B981" }}>
-                                                      {tolerance.value}
+                                                      {tolerance.min} to {tolerance.max}
                                                     </Text>
                                                   </View>
                                                   {tolerance.notes && (
@@ -771,7 +777,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                         {tolerance.dimension}
                                       </Text>
                                       <Text style={{ fontSize: 14, fontWeight: "600", color: "#6366F1" }}>
-                                        {tolerance.value}
+                                        {tolerance.min} to {tolerance.max}
                                       </Text>
                                     </View>
                                     {tolerance.notes && (
@@ -895,7 +901,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       <Pressable
                         onPress={() => {
                           setDimension("");
-                          setValue("");
+                          setMinValue("");
+                          setMaxValue("");
                           setNotes("");
                           setEditingToleranceIndex(null);
                           setShowToleranceModal(true);
@@ -946,7 +953,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                               <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 2 }}>
-                                  {tolerance.dimension}: {tolerance.value}
+                                  {tolerance.dimension}: {tolerance.min} to {tolerance.max}
                                 </Text>
                                 {tolerance.notes && (
                                   <Text style={{ fontSize: 12, color: "#6B7280" }}>
@@ -1065,27 +1072,52 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                   />
                 </View>
 
-                <View>
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-                    Tolerance Value *
-                  </Text>
-                  <TextInput
-                    value={value}
-                    onChangeText={setValue}
-                    placeholder="e.g., ±1/8 inch, ±3mm"
-                    placeholderTextColor="#9CA3AF"
-                    cursorColor="#3B82F6"
-                    selectionColor="#3B82F6"
-                    style={{
-                      backgroundColor: "#F9FAFB",
-                      borderRadius: 12,
-                      padding: 12,
-                      fontSize: 14,
-                      color: "#111827",
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                    }}
-                  />
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Min Value *
+                    </Text>
+                    <TextInput
+                      value={minValue}
+                      onChangeText={setMinValue}
+                      placeholder="e.g., -1/8, 0"
+                      placeholderTextColor="#9CA3AF"
+                      cursorColor="#3B82F6"
+                      selectionColor="#3B82F6"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+                      Max Value *
+                    </Text>
+                    <TextInput
+                      value={maxValue}
+                      onChangeText={setMaxValue}
+                      placeholder="e.g., +1/8, +1/4"
+                      placeholderTextColor="#9CA3AF"
+                      cursorColor="#3B82F6"
+                      selectionColor="#3B82F6"
+                      style={{
+                        backgroundColor: "#F9FAFB",
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: "#111827",
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                      }}
+                    />
+                  </View>
                 </View>
 
                 <View>
@@ -1486,7 +1518,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       <Pressable
                         onPress={() => {
                           setDimension("");
-                          setValue("");
+                          setMinValue("");
+                          setMaxValue("");
                           setNotes("");
                           setEditingToleranceIndex(null);
                           setShowToleranceModal(true);
@@ -1537,7 +1570,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                               <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 2 }}>
-                                  {tolerance.dimension}: {tolerance.value}
+                                  {tolerance.dimension}: {tolerance.min} to {tolerance.max}
                                 </Text>
                                 {tolerance.notes && (
                                   <Text style={{ fontSize: 12, color: "#6B7280" }}>
@@ -1549,7 +1582,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                 <Pressable
                                   onPress={() => {
                                     setDimension(tolerance.dimension);
-                                    setValue(tolerance.value);
+                                    setMinValue(tolerance.min);
+                                    setMaxValue(tolerance.max);
                                     setNotes(tolerance.notes || "");
                                     setEditingToleranceIndex(index);
                                     setShowToleranceModal(true);

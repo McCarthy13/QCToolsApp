@@ -14,7 +14,8 @@ export type DimensionUnit = 'inches' | 'feet' | 'mm' | 'cm' | 'm';
 // Individual tolerance specification
 export interface ToleranceSpec {
   dimension: string; // e.g., "Length", "Width", "Thickness", "Camber"
-  value: string; // e.g., "±1/8 inch", "±3mm", "+1/4, -0"
+  min: string; // e.g., "-1/8", "-3mm", "0"
+  max: string; // e.g., "+1/8", "+3mm", "+1/4"
   unit?: DimensionUnit;
   notes?: string;
 }

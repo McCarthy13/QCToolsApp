@@ -310,6 +310,54 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
         }));
       },
 
+      // Migration utility to convert old tolerance format (value) to new format (min/max)
+      migrateTolerances: () => {
+        set((state) => ({
+          products: state.products.map((product) => {
+            // Helper function to convert old tolerance to new format
+            const convertTolerance = (tolerance: any) => {
+              if (tolerance.value && !tolerance.min && !tolerance.max) {
+                // Parse old value like "±1/4 inch" or "+1/4, -0"
+                const value = tolerance.value.trim();
+                let min = '0';
+                let max = '0';
+
+                if (value.startsWith('±')) {
+                  // Format: "±1/4 inch" -> min: "-1/4"", max: "+1/4""
+                  const amount = value.replace('±', '').replace(/\s*inch.*/, '').trim();
+                  min = `-${amount}"`;
+                  max = `+${amount}"`;
+                } else if (value.includes(',')) {
+                  // Format: "+1/4, -0" -> min: "0", max: "+1/4""
+                  const parts = value.split(',').map(p => p.trim());
+                  max = parts[0].includes('+') ? parts[0].replace(/\s*inch.*/, '') + '"' : parts[0] + '"';
+                  min = parts[1].includes('-') ? parts[1].replace(/\s*inch.*/, '') + '"' : parts[1] + '"';
+                  if (min === '-0"') min = '0';
+                }
+
+                return {
+                  ...tolerance,
+                  min,
+                  max,
+                  value: undefined, // Remove old field
+                };
+              }
+              return tolerance;
+            };
+
+            return {
+              ...product,
+              tolerances: product.tolerances.map(convertTolerance),
+              subProducts: product.subProducts?.map(subProduct => ({
+                ...subProduct,
+                tolerances: subProduct.tolerances.map(convertTolerance),
+              })),
+              updatedAt: Date.now(),
+            };
+          }),
+        }));
+      },
+
       initializeDefaultProducts: () => {
         const state = get();
         
@@ -319,10 +367,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Beams',
               description: 'Precast concrete beams for structural support',
               tolerances: [
-                { dimension: 'Length', value: '±1/2 inch', notes: 'Overall length tolerance' },
-                { dimension: 'Width', value: '±1/4 inch', notes: 'Cross-section width' },
-                { dimension: 'Depth', value: '±1/4 inch', notes: 'Cross-section depth' },
-                { dimension: 'Camber', value: '+1/2, -0', notes: 'Upward deflection' },
+                { dimension: 'Length', min: '-1/2"', max: '+1/2"', notes: 'Overall length tolerance' },
+                { dimension: 'Width', min: '-1/4"', max: '+1/4"', notes: 'Cross-section width' },
+                { dimension: 'Depth', min: '-1/4"', max: '+1/4"', notes: 'Cross-section depth' },
+                { dimension: 'Camber', min: '0', max: '+1/2"', notes: 'Upward deflection' },
               ],
               isActive: true,
             },
@@ -330,10 +378,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Hollow Core Slabs',
               description: 'Prestressed hollow core concrete slabs',
               tolerances: [
-                { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                { dimension: 'Width', value: '±1/8 inch', notes: 'Standard width tolerance' },
-                { dimension: 'Thickness', value: '±1/8 inch', notes: 'Slab thickness' },
-                { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Overall length' },
+                { dimension: 'Width', min: '-1/8"', max: '+1/8"', notes: 'Standard width tolerance' },
+                { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: 'Slab thickness' },
+                { dimension: 'Camber', min: '0', max: '+1/4"', notes: 'Maximum upward bow' },
               ],
               subProducts: [
                 {
@@ -345,10 +393,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   fciRelease: 3500,
                   crossSectionComponent: 'CrossSection8048',
                   tolerances: [
-                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
-                    { dimension: 'Thickness', value: '±1/8 inch', notes: '8" nominal thickness' },
-                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                    { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Overall length' },
+                    { dimension: 'Width', min: '-1/8"', max: '+1/8"', notes: '48" standard width' },
+                    { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: '8" nominal thickness' },
+                    { dimension: 'Camber', min: '0', max: '+1/4"', notes: 'Maximum upward bow' },
                   ],
                   isActive: true,
                   createdAt: Date.now(),
@@ -363,10 +411,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   fciRelease: 3500,
                   crossSectionComponent: 'CrossSection1048',
                   tolerances: [
-                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
-                    { dimension: 'Thickness', value: '±1/8 inch', notes: '10" nominal thickness' },
-                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                    { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Overall length' },
+                    { dimension: 'Width', min: '-1/8"', max: '+1/8"', notes: '48" standard width' },
+                    { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: '10" nominal thickness' },
+                    { dimension: 'Camber', min: '0', max: '+1/4"', notes: 'Maximum upward bow' },
                   ],
                   isActive: true,
                   createdAt: Date.now(),
@@ -381,10 +429,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   fciRelease: 3500,
                   crossSectionComponent: 'CrossSection1248',
                   tolerances: [
-                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
-                    { dimension: 'Thickness', value: '±1/8 inch', notes: '12" nominal thickness' },
-                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                    { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Overall length' },
+                    { dimension: 'Width', min: '-1/8"', max: '+1/8"', notes: '48" standard width' },
+                    { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: '12" nominal thickness' },
+                    { dimension: 'Camber', min: '0', max: '+1/4"', notes: 'Maximum upward bow' },
                   ],
                   isActive: true,
                   createdAt: Date.now(),
@@ -399,10 +447,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   fciRelease: 3500,
                   crossSectionComponent: 'CrossSection1250',
                   tolerances: [
-                    { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
-                    { dimension: 'Thickness', value: '±1/8 inch', notes: '12" nominal thickness' },
-                    { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
+                    { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Overall length' },
+                    { dimension: 'Width', min: '-1/8"', max: '+1/8"', notes: '48" standard width' },
+                    { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: '12" nominal thickness' },
+                    { dimension: 'Camber', min: '0', max: '+1/4"', notes: 'Maximum upward bow' },
                   ],
                   isActive: true,
                   createdAt: Date.now(),
@@ -415,9 +463,9 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Solid Slabs',
               description: 'Solid precast concrete slabs',
               tolerances: [
-                { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                { dimension: 'Width', value: '±1/8 inch', notes: 'Overall width' },
-                { dimension: 'Thickness', value: '±1/8 inch', notes: 'Slab thickness' },
+                { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Overall length' },
+                { dimension: 'Width', min: '-1/8"', max: '+1/8"', notes: 'Overall width' },
+                { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: 'Slab thickness' },
               ],
               isActive: true,
             },
@@ -425,10 +473,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Stadia',
               description: 'Stadium riser slabs and components',
               tolerances: [
-                { dimension: 'Length', value: '±3/8 inch', notes: 'Overall length' },
-                { dimension: 'Width', value: '±1/4 inch', notes: 'Overall width' },
-                { dimension: 'Riser Height', value: '±1/8 inch', notes: 'Step height tolerance' },
-                { dimension: 'Tread Depth', value: '±1/4 inch', notes: 'Step depth tolerance' },
+                { dimension: 'Length', min: '-3/8"', max: '+3/8"', notes: 'Overall length' },
+                { dimension: 'Width', min: '-1/4"', max: '+1/4"', notes: 'Overall width' },
+                { dimension: 'Riser Height', min: '-1/8"', max: '+1/8"', notes: 'Step height tolerance' },
+                { dimension: 'Tread Depth', min: '-1/4"', max: '+1/4"', notes: 'Step depth tolerance' },
               ],
               isActive: true,
             },
@@ -436,9 +484,9 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Columns',
               description: 'Precast concrete columns',
               tolerances: [
-                { dimension: 'Length', value: '±1/2 inch', notes: 'Overall height/length' },
-                { dimension: 'Cross Section', value: '±1/4 inch', notes: 'Width and depth' },
-                { dimension: 'Plumbness', value: '±1/4 inch per 10 ft', notes: 'Vertical alignment' },
+                { dimension: 'Length', min: '-1/2"', max: '+1/2"', notes: 'Overall height/length' },
+                { dimension: 'Cross Section', min: '-1/4"', max: '+1/4"', notes: 'Width and depth' },
+                { dimension: 'Plumbness', min: '-1/4"', max: '+1/4"', notes: 'Vertical alignment per 10 ft' },
               ],
               isActive: true,
             },
@@ -446,10 +494,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Wall Panels',
               description: 'Architectural and structural wall panels',
               tolerances: [
-                { dimension: 'Length', value: '±1/4 inch', notes: 'Panel length' },
-                { dimension: 'Height', value: '±1/4 inch', notes: 'Panel height' },
-                { dimension: 'Thickness', value: '±1/8 inch', notes: 'Panel thickness' },
-                { dimension: 'Squareness', value: '±1/8 inch', notes: 'Diagonal measurement difference' },
+                { dimension: 'Length', min: '-1/4"', max: '+1/4"', notes: 'Panel length' },
+                { dimension: 'Height', min: '-1/4"', max: '+1/4"', notes: 'Panel height' },
+                { dimension: 'Thickness', min: '-1/8"', max: '+1/8"', notes: 'Panel thickness' },
+                { dimension: 'Squareness', min: '-1/8"', max: '+1/8"', notes: 'Diagonal measurement difference' },
               ],
               isActive: true,
             },
@@ -457,10 +505,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
               name: 'Stairs',
               description: 'Precast concrete stair units',
               tolerances: [
-                { dimension: 'Length', value: '±1/2 inch', notes: 'Overall run length' },
-                { dimension: 'Width', value: '±1/4 inch', notes: 'Stair width' },
-                { dimension: 'Riser Height', value: '±1/8 inch', notes: 'Individual step height' },
-                { dimension: 'Tread Depth', value: '±1/8 inch', notes: 'Individual step depth' },
+                { dimension: 'Length', min: '-1/2"', max: '+1/2"', notes: 'Overall run length' },
+                { dimension: 'Width', min: '-1/4"', max: '+1/4"', notes: 'Stair width' },
+                { dimension: 'Riser Height', min: '-1/8"', max: '+1/8"', notes: 'Individual step height' },
+                { dimension: 'Tread Depth', min: '-1/8"', max: '+1/8"', notes: 'Individual step depth' },
               ],
               isActive: true,
             },
