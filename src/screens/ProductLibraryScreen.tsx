@@ -10,6 +10,8 @@ import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1048 from "../components/CrossSection1048";
 import CrossSection1248 from "../components/CrossSection1248";
 import CrossSection1250 from "../components/CrossSection1250";
+import CrossSection1648 from "../components/CrossSection1648";
+import CrossSection1650 from "../components/CrossSection1650";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ProductLibrary">;
 
@@ -596,6 +598,12 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                               )}
                                               {subProduct.name === '1250' && (
                                                 <CrossSection1250 scale={4} showDimensions={false} />
+                                              )}
+                                              {subProduct.name === '1648' && (
+                                                <CrossSection1648 scale={4} showDimensions={false} />
+                                              )}
+                                              {subProduct.name === '1650' && (
+                                                <CrossSection1650 scale={4} showDimensions={false} />
                                               )}
                                             </View>
                                           )}
