@@ -347,10 +347,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                 {
                   id: 'hc-1250',
                   name: '1250',
-                  description: '12" thick, 50" wide hollow core slab',
+                  description: '12" thick, 48" wide hollow core slab (thicker webs)',
                   tolerances: [
                     { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
-                    { dimension: 'Width', value: '±1/8 inch', notes: '50" standard width' },
+                    { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
                     { dimension: 'Thickness', value: '±1/8 inch', notes: '12" nominal thickness' },
                     { dimension: 'Camber', value: '+1/4, -0', notes: 'Maximum upward bow' },
                   ],

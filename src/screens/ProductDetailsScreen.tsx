@@ -32,7 +32,7 @@ const PRODUCT_TYPES = [
   { id: "8048", label: '8048', height: 8, width: 48 },
   { id: "1048", label: '1048', height: 10, width: 48 },
   { id: "1248", label: '1248', height: 12, width: 48 },
-  { id: "1250", label: '1250', height: 12, width: 50 },
+  { id: "1250", label: '1250', height: 12, width: 48 },
 ];
 
 export default function ProductDetailsScreen({ navigation }: Props) {
