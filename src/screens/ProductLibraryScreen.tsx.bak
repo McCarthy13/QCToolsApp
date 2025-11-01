@@ -751,7 +751,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setDescription}
                       placeholder="Brief description of this product type..."
                       placeholderTextColor="#9CA3AF"
-                     cursorColor="#3B82F6"
                       cursorColor="#3B82F6"
                       multiline
                       numberOfLines={2}
@@ -930,7 +929,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     onChangeText={setDimension}
                     placeholder="e.g., Length, Width, Thickness"
                     placeholderTextColor="#9CA3AF"
-                    cursorColor="#3B82F6"
                     style={{
                       backgroundColor: "#F9FAFB",
                       borderRadius: 12,
@@ -952,7 +950,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     onChangeText={setValue}
                     placeholder="e.g., ±1/8 inch, ±3mm"
                     placeholderTextColor="#9CA3AF"
-                    cursorColor="#3B82F6"
                     style={{
                       backgroundColor: "#F9FAFB",
                       borderRadius: 12,
@@ -974,7 +971,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     onChangeText={setNotes}
                     placeholder="Additional details..."
                     placeholderTextColor="#9CA3AF"
-                    cursorColor="#3B82F6"
                     multiline
                     numberOfLines={2}
                     textAlignVertical="top"
@@ -1065,7 +1061,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setSubProductName}
                       placeholder="e.g., 8048, 1048, 1248, 1250"
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -1088,7 +1083,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setSubProductDescription}
                       placeholder="Brief description..."
                       placeholderTextColor="#9CA3AF"
-                      cursorColor="#3B82F6"
                       multiline
                       numberOfLines={2}
                       textAlignVertical="top"
@@ -1121,7 +1115,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductDeadLoad}
                         placeholder="e.g., 65 psf, 80 psf"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
                         style={{
                           backgroundColor: "#FFFFFF",
                           borderRadius: 8,
@@ -1144,7 +1137,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductFc28Day}
                         placeholder="e.g., 5000, 6000"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
                         keyboardType="numeric"
                         style={{
                           backgroundColor: "#FFFFFF",
@@ -1168,7 +1160,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductFciRelease}
                         placeholder="e.g., 3500, 4000"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
                         keyboardType="numeric"
                         style={{
                           backgroundColor: "#FFFFFF",
@@ -1192,7 +1183,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         onChangeText={setSubProductCrossSectionComponent}
                         placeholder="e.g., CrossSection8048"
                         placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
                         style={{
                           backgroundColor: "#FFFFFF",
                           borderRadius: 8,
