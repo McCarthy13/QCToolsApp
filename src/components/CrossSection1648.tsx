@@ -33,19 +33,20 @@ export default function CrossSection1648({
   showSlippageValues = false,
   strandCoordinates,
 }: CrossSection1648Props) {
-  // Dimensions in inches
+  // Dimensions in inches - 16" tall x 48" wide
   const FULL_WIDTH = 48;
   const HEIGHT = 16;
 
   // Flange dimensions
-  const TOP_FLANGE = HEIGHT - 13.1875 - 1.375; // Remaining top flange
   const BOTTOM_FLANGE = 1.375; // 1 3/8"
+  const TOP_FLANGE = HEIGHT - 13.1875 - 1.375; // Remaining top flange
 
-  // Core dimensions
+  // Core dimensions - 4 cores total
   const CORE_WIDTH = 9; // 9"
   const CORE_HEIGHT = 13.1875; // 13 3/16"
   const EDGE_TO_FIRST_CORE = 2.8125; // 2 13/16"
   const CORE_SPACING = 2.1875; // 2 3/16"
+  const NUM_CORES = 4;
 
   // Strand positions (x from left edge, y from bottom)
   // Use custom coordinates if provided, otherwise use defaults
@@ -74,7 +75,7 @@ export default function CrossSection1648({
   // Calculate core positions (4 cores total)
   const coreY = BOTTOM_FLANGE * scale;
   const cores = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < NUM_CORES; i++) {
     const coreX = (EDGE_TO_FIRST_CORE + i * (CORE_WIDTH + CORE_SPACING)) * scale;
     cores.push({
       x: coreX - xOffset,
@@ -93,117 +94,263 @@ export default function CrossSection1648({
   // Calculate strand positions relative to the displayed section
   const visibleStrands = STRAND_POSITIONS.map(strand => ({
     ...strand,
-    displayX: strand.x * scale - xOffset,
-    displayY: displayHeight - (strand.y * scale),
+    displayX: (strand.x * scale) - xOffset,
+    displayY: displayHeight - (strand.y * scale), // Flip y for SVG coordinates
+    // If activeStrands is undefined, all strands are active (full-width product)
+    isActive: activeStrands ? activeStrands.includes(strand.id) : true,
+    isHighlighted: highlightedStrand === strand.id,
   })).filter(strand => {
+    // Only show strands within the visible area
     return strand.displayX >= 0 && strand.displayX <= displayWidth;
   });
 
-  // Helper function to get slippage for a strand
-  const getSlippageForStrand = (strandId: number) => {
-    return slippages.find(s => s.strandId === `S${strandId}`);
+  const svgWidth = displayWidth + 40; // Add padding
+  const svgHeight = displayHeight + 40 + (showSlippageValues ? 45 : 0); // Add extra space for E1/E2 values below
+  const padding = 20;
+
+  // Keyway dimensions - Y coordinates scaled by 2.0 (16/8), X coordinates same as 8048
+  // This maintains the same draft angle as 8048
+  // Bottom corner has 1" radius (0.5 * 2.0)
+  const keywayRadius = 1.0 * scale; // 0.5 * 2.0
+  const keywayPoints = [
+    { x: 0, y: 1.0 },       // After radius (0.5 * 2.0)
+    { x: 0.25, y: 1.25 },   // 1/4", 0.625" * 2.0
+    { x: 0.5625, y: 10 },   // 9/16", 5" * 2.0
+    { x: 0.75, y: 10.25 },  // 3/4", 5.125" * 2.0
+    { x: 0.8125, y: 13.75 }, // 13/16", 6.875" * 2.0
+    { x: 0.625, y: 14 },    // 5/8", 7" * 2.0
+    { x: 0.75, y: 15 },     // 3/4", 7.5" * 2.0
+    { x: 1.25, y: 16 },     // 1 1/4", 8" * 2.0 = 16" (top)
+  ].map(p => ({ x: p.x * scale, y: p.y * scale })); // Scale to pixels
+
+  // Build path for plank with keyway on keeper edge
+  const buildPlankPath = () => {
+    const x = padding;
+    const y = padding;
+    const w = displayWidth;
+    const h = displayHeight;
+
+    // Determine which edge gets the keyway (keeper edge) and which is straight (cut edge)
+    const hasKeyway = offcutSide !== null;
+    const leftHasKeyway = offcutSide === 'L2'; // L2 cut = left is keeper
+    const rightHasKeyway = offcutSide === 'L1'; // L1 cut = right is keeper
+
+    if (!hasKeyway) {
+      // Full width product - show keyway on BOTH sides
+      // Start at bottom-left with radius
+      let path = `M ${x + keywayRadius} ${y + h}`;
+
+      // Left bottom radius curve
+      path += ` Q ${x} ${y + h} ${x} ${y + h - keywayRadius}`;
+
+      // Follow keyway profile points going up the left edge
+      for (let i = 0; i < keywayPoints.length; i++) {
+        const point = keywayPoints[i];
+        path += ` L ${x + point.x} ${y + h - point.y}`;
+      }
+
+      // Top edge, ending before the right keyway starts
+      const topKeywayPoint = keywayPoints[keywayPoints.length - 1];
+      path += ` L ${x + w - topKeywayPoint.x} ${y}`;
+
+      // Follow keyway profile points going down the right edge (reversed and mirrored)
+      for (let i = keywayPoints.length - 1; i >= 0; i--) {
+        const point = keywayPoints[i];
+        path += ` L ${x + w - point.x} ${y + h - point.y}`;
+      }
+
+      // Right bottom radius curve
+      path += ` Q ${x + w} ${y + h} ${x + w - keywayRadius} ${y + h}`;
+
+      // Bottom edge back to start
+      path += ` L ${x + keywayRadius} ${y + h}`;
+
+      path += ` Z`;
+
+      return path;
+    }
+
+    // Build path with keyway on keeper edge using exact coordinates
+    let path = '';
+
+    if (leftHasKeyway) {
+      // Left edge has keyway, right edge is cut (straight)
+      // Start at bottom-left with radius
+      path = `M ${x + keywayRadius} ${y + h}`;
+
+      // Radius curve at bottom-left corner (going up and left)
+      path += ` Q ${x} ${y + h} ${x} ${y + h - keywayRadius}`;
+
+      // Follow keyway profile points going up the left edge
+      // Points are measured from bottom, so convert: (x_depth, y_height) to SVG coords
+      for (let i = 0; i < keywayPoints.length; i++) {
+        const point = keywayPoints[i];
+        path += ` L ${x + point.x} ${y + h - point.y}`;
+      }
+
+      // Top edge to top-right
+      path += ` L ${x + w} ${y}`;
+
+      // Right edge (straight cut)
+      path += ` L ${x + w} ${y + h}`;
+
+      // Bottom edge back to start
+      path += ` L ${x + keywayRadius} ${y + h}`;
+
+      path += ` Z`;
+    } else {
+      // Right edge has keyway, left edge is cut (straight)
+      // Mirror the keyway profile for the right edge
+      // Start at top-left
+      path = `M ${x} ${y}`;
+
+      // Top edge, ending before the keyway starts
+      const topKeywayPoint = keywayPoints[keywayPoints.length - 1];
+      path += ` L ${x + w - topKeywayPoint.x} ${y}`;
+
+      // Follow keyway profile points going down the right edge (reversed and mirrored)
+      for (let i = keywayPoints.length - 1; i >= 0; i--) {
+        const point = keywayPoints[i];
+        path += ` L ${x + w - point.x} ${y + h - point.y}`;
+      }
+
+      // Radius curve at bottom-right corner (going left and down)
+      path += ` Q ${x + w} ${y + h} ${x + w - keywayRadius} ${y + h}`;
+
+      // Bottom edge
+      path += ` L ${x} ${y + h}`;
+
+      // Left edge (straight cut)
+      path += ` L ${x} ${y}`;
+
+      path += ` Z`;
+    }
+
+    return path;
   };
 
-  // Determine active strands (if activeStrands is provided, use it; otherwise all are active)
-  const isStrandActive = (strandId: number) => {
-    if (activeStrands === undefined) return true; // All strands active if not specified
-    return activeStrands.includes(strandId);
-  };
+  // Generate a stable clip path ID
+  const clipPathId = React.useMemo(() => `plank-clip-${Math.random().toString(36).substr(2, 9)}`, []);
 
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={displayWidth} height={displayHeight} viewBox={`0 0 ${displayWidth} ${displayHeight}`}>
-        {/* Main cross-section rectangle (outline) */}
-        <Rect
-          x={0}
-          y={0}
-          width={displayWidth}
-          height={displayHeight}
+    <View style={{ width: svgWidth, height: svgHeight, alignSelf: 'center' }}>
+      <Svg width={svgWidth} height={svgHeight}>
+        {/* Define clip path for clean core cutting */}
+        <Defs>
+          <ClipPath id={clipPathId}>
+            <Rect
+              x={padding}
+              y={padding}
+              width={displayWidth}
+              height={displayHeight}
+            />
+          </ClipPath>
+        </Defs>
+
+        {/* Plank outline with keyway on keeper edge */}
+        <Path
+          d={buildPlankPath()}
           fill="#E5E7EB"
           stroke="#374151"
           strokeWidth={2}
         />
 
-        {/* Cores (voids) - only show when not highlighting/working with strands */}
-        {visibleCores.map((core, index) => (
-          <Ellipse
-            key={`core-${index}`}
-            cx={core.x + core.width / 2}
-            cy={core.y + core.height / 2}
-            rx={core.width / 2}
-            ry={core.height / 2}
-            fill="#FFFFFF"
-            stroke="#9CA3AF"
-            strokeWidth={1.5}
+        {/* Highlight cut edge with red line */}
+        {offcutSide === 'L1' && (
+          <Line
+            x1={padding}
+            y1={padding}
+            x2={padding}
+            y2={padding + displayHeight}
+            stroke="#EF4444"
+            strokeWidth={4}
+            strokeLinecap="round"
           />
-        ))}
+        )}
+        {offcutSide === 'L2' && (
+          <Line
+            x1={padding + displayWidth}
+            y1={padding}
+            x2={padding + displayWidth}
+            y2={padding + displayHeight}
+            stroke="#EF4444"
+            strokeWidth={4}
+            strokeLinecap="round"
+          />
+        )}
 
-        {/* Strands - only show when highlighting or working with them */}
+        {/* Cores (voids) - rendered at full size, clipped by plank boundary */}
+        {visibleCores.map((core, index) => {
+          // Only render cores that have any part visible
+          const coreRight = core.x + core.width;
+          if (coreRight <= 0 || core.x >= displayWidth) return null;
+
+          // Render the full ellipse at its true position, clip path handles cutting
+          return (
+            <Ellipse
+              key={`core-${index}`}
+              cx={padding + core.x + core.width / 2}
+              cy={padding + core.y + core.height / 2}
+              rx={core.width / 2}
+              ry={core.height / 2}
+              fill="white"
+              stroke="#9CA3AF"
+              strokeWidth={1.5}
+              clipPath={`url(#${clipPathId})`}
+            />
+          );
+        })}
+
+        {/* Strands - Only show when actively highlighting or working with strands */}
         {(highlightedStrand !== null || activeStrands !== undefined || showSlippageValues) && visibleStrands.map((strand) => {
-          const isHighlighted = highlightedStrand === strand.id;
-          const isActive = isStrandActive(strand.id);
-          const slippage = getSlippageForStrand(strand.id);
-
-          // Determine strand color
-          let strandColor = '#6B7280'; // Default gray
-          if (!isActive) {
-            strandColor = '#D1D5DB'; // Lighter gray for inactive
-          } else if (isHighlighted) {
-            strandColor = '#3B82F6'; // Blue for highlighted
-          }
+          const strandRadius = strand.isActive ? 5 : 3.5;
+          const strokeWidth = strand.isActive ? 2.5 : 1.5;
+          const fillColor = strand.isActive ? '#EF4444' : '#D1D5DB';
+          const strokeColor = strand.isHighlighted ? '#3B82F6' : (strand.isActive ? '#991B1B' : '#9CA3AF');
 
           return (
-            <React.Fragment key={`strand-${strand.id}`}>
-              {/* Strand circle */}
-              <Circle
-                cx={strand.displayX}
-                cy={strand.displayY}
-                r={scale * 0.25} // 0.5" diameter = 0.25" radius
-                fill={strandColor}
-                stroke={isHighlighted ? '#1D4ED8' : '#374151'}
-                strokeWidth={isHighlighted ? 2 : 1}
-              />
+            <Circle
+              key={`strand-${strand.id}`}
+              cx={padding + strand.displayX}
+              cy={padding + strand.displayY}
+              r={strandRadius}
+              fill={fillColor}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+            />
+          );
+        })}
 
-              {/* Strand label */}
+        {/* E1/E2 slippage values below strands */}
+        {showSlippageValues && visibleStrands.map((strand) => {
+          const slippage = slippages.find(s => s.strandId === `S${strand.id}`);
+          if (!slippage) return null;
+
+          return (
+            <React.Fragment key={`slippage-${strand.id}`}>
+              {/* E1 (Left slippage) */}
               <SvgText
-                x={strand.displayX}
-                y={strand.displayY + scale * 0.08}
-                fill="#FFFFFF"
-                fontSize={scale * 0.3}
-                fontWeight="bold"
+                x={padding + strand.displayX}
+                y={padding + displayHeight + 25}
+                fontSize={12}
+                fontWeight="600"
+                fill={slippage.leftExceedsOne ? '#EF4444' : '#10B981'}
                 textAnchor="middle"
               >
-                {strand.id}
+                E1: {slippage.leftSlippage}"
               </SvgText>
 
-              {/* Show slippage values if requested */}
-              {showSlippageValues && slippage && (
-                <>
-                  {/* Left slippage (E1) */}
-                  <SvgText
-                    x={strand.displayX - scale * 1}
-                    y={strand.displayY - scale * 0.5}
-                    fill={slippage.leftExceedsOne ? '#EF4444' : '#10B981'}
-                    fontSize={scale * 0.25}
-                    fontWeight="600"
-                    textAnchor="middle"
-                  >
-                    E1: {slippage.leftSlippage}"
-                  </SvgText>
-
-                  {/* Right slippage (E2) */}
-                  <SvgText
-                    x={strand.displayX + scale * 1}
-                    y={strand.displayY - scale * 0.5}
-                    fill={slippage.rightExceedsOne ? '#EF4444' : '#10B981'}
-                    fontSize={scale * 0.25}
-                    fontWeight="600"
-                    textAnchor="middle"
-                  >
-                    E2: {slippage.rightSlippage}"
-                  </SvgText>
-                </>
-              )}
+              {/* E2 (Right slippage) */}
+              <SvgText
+                x={padding + strand.displayX}
+                y={padding + displayHeight + 40}
+                fontSize={12}
+                fontWeight="600"
+                fill={slippage.rightExceedsOne ? '#EF4444' : '#10B981'}
+                textAnchor="middle"
+              >
+                E2: {slippage.rightSlippage}"
+              </SvgText>
             </React.Fragment>
           );
         })}
