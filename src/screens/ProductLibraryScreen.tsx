@@ -795,7 +795,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       </ScrollView>
 
       {/* Add/Edit Product Modal */}
-      <Modal visible={showAddModal} animationType="slide" transparent>
+      <Modal visible={showAddModal && !showToleranceModal} animationType="slide" transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
@@ -1151,7 +1151,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       </Modal>
 
       {/* Add/Edit Sub-Product Modal */}
-      <Modal visible={showSubProductModal} animationType="slide" transparent>
+      <Modal visible={showSubProductModal && !showToleranceModal} animationType="slide" transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
