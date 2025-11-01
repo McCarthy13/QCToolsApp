@@ -160,6 +160,7 @@ const AggregateLibraryAddEditScreen: React.FC<Props> = ({ navigation, route }) =
         onChangeText={setValue}
         placeholder={options?.placeholder}
         placeholderTextColor="#9ca3af"
+        cursorColor="#000000"
         keyboardType={options?.keyboardType || 'default'}
         multiline={options?.multiline}
         numberOfLines={options?.multiline ? 4 : 1}

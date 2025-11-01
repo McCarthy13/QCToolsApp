@@ -100,6 +100,7 @@ export default function LoginScreen({
                 className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="your@email.com"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -124,6 +125,7 @@ export default function LoginScreen({
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 pr-12 text-base text-gray-900"
                   placeholder="Enter password"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);

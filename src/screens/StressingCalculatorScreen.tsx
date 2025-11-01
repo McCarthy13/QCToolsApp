@@ -113,6 +113,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="e.g., 120.5"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={jackingForce}
               onChangeText={setJackingForce}
               keyboardType="decimal-pad"
@@ -131,6 +132,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="e.g., 400"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={bedLength}
               onChangeText={setBedLength}
               keyboardType="decimal-pad"
@@ -200,6 +202,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="e.g., 7"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={numberOfStrands}
               onChangeText={setNumberOfStrands}
               keyboardType="number-pad"
@@ -225,6 +228,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="e.g., 0.125"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={bedShortening}
               onChangeText={setBedShortening}
               keyboardType="decimal-pad"
@@ -243,6 +247,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="e.g., 1.5"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={frictionLoss}
               onChangeText={setFrictionLoss}
               keyboardType="decimal-pad"
@@ -261,6 +266,7 @@ export default function StressingCalculatorScreen({ navigation }: Props) {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="e.g., 0.25"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={anchorSetLoss}
               onChangeText={setAnchorSetLoss}
               keyboardType="decimal-pad"

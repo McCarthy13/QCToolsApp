@@ -325,6 +325,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="ID from schedule"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
               />
             </View>
 
@@ -351,6 +352,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="ID from schedule"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
               />
             </View>
 
@@ -363,6 +365,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="e.g., M1, M2"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
               />
             </View>
 
@@ -375,6 +378,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="e.g., Beam, Slab"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
               />
             </View>
 
@@ -387,6 +391,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="0.0"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
                 keyboardType="decimal-pad"
               />
             </View>
@@ -400,6 +405,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="e.g., 6000 PSI"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
               />
             </View>
 
@@ -412,6 +418,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
                 placeholder="e.g., 8:00 AM"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
               />
             </View>
 
@@ -424,6 +431,7 @@ export default function ScheduleReviewScreen() {
                 style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16, height: 80 }}
                 placeholder="Additional notes"
                 placeholderTextColor="#6b7280"
+                cursorColor="#000000"
                 multiline
                 textAlignVertical="top"
               />

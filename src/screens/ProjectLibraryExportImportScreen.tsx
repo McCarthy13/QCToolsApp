@@ -181,6 +181,7 @@ export default function ProjectLibraryExportImportScreen({ navigation }: Props) 
               onChangeText={setImportData}
               placeholder="Paste JSON data here..."
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               multiline
               numberOfLines={8}
               className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-sm text-gray-900 mb-3"

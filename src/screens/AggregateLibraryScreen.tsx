@@ -82,6 +82,7 @@ const AggregateLibraryScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setSearchQuery}
               placeholder="Search aggregates..."
               placeholderTextColor="#9ca3af"
+              cursorColor="#000000"
               className="flex-1 py-2 px-2 text-base"
             />
             {searchQuery.length > 0 && (

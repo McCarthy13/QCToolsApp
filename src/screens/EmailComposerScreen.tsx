@@ -225,6 +225,7 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
               style={styles.input}
               placeholder="recipient@example.com"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={toEmail}
               onChangeText={setToEmail}
               keyboardType="email-address"
@@ -241,6 +242,7 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
               style={styles.input}
               placeholder="cc@example.com"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               value={ccEmail}
               onChangeText={setCcEmail}
               keyboardType="email-address"

@@ -31,6 +31,9 @@ module.exports = {
         "8xl": "72px",
         "9xl": "80px",
       },
+      caretColor: {
+        DEFAULT: '#000000',
+      },
     },
   },
   darkMode: "class",

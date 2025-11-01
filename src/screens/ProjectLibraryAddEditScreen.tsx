@@ -171,6 +171,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setJobNumber}
                     placeholder="6 digits (e.g., 255096)"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     keyboardType="number-pad"
                     maxLength={10}
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
@@ -189,6 +190,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setJobName}
                     placeholder="Enter job name"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
                   />
                 </View>
@@ -200,6 +202,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setLocation}
                     placeholder="Enter project address"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     multiline
                     numberOfLines={2}
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
@@ -220,6 +223,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setSalesperson}
                     placeholder="Enter salesperson name"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
                   />
                 </View>
@@ -231,6 +235,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setProjectManager}
                     placeholder="Enter PM name"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
                   />
                 </View>
@@ -242,6 +247,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setAssignedEngineer}
                     placeholder="Enter engineer name"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
                   />
                 </View>
@@ -253,6 +259,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setAssignedDrafter}
                     placeholder="Enter drafter name"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
                   />
                 </View>
@@ -299,6 +306,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                     onChangeText={setNewProductType}
                     placeholder="Product type (e.g., Beam, Column)"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
                   />
                   <View className="flex-row gap-2">
@@ -307,6 +315,7 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
                       onChangeText={setNewCount}
                       placeholder="Count"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       keyboardType="number-pad"
                       className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-base text-gray-900"
                     />

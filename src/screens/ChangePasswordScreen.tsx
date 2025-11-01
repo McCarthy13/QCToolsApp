@@ -205,6 +205,7 @@ export default function ChangePasswordScreen({
                     className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 pr-12 text-base text-gray-900"
                     placeholder="Enter new password"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     value={newPassword}
                     onChangeText={(text) => {
                       setNewPassword(text);
@@ -242,6 +243,7 @@ export default function ChangePasswordScreen({
                     className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 pr-12 text-base text-gray-900"
                     placeholder="Re-enter new password"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     value={confirmPassword}
                     onChangeText={(text) => {
                       setConfirmPassword(text);

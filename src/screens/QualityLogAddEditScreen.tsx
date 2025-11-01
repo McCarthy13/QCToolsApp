@@ -416,6 +416,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                 onChangeText={setNotes}
                 placeholder="Add any additional notes..."
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -495,6 +496,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                           onChangeText={setProdJobName}
                           placeholder="Enter job name"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,
@@ -516,6 +518,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                           onChangeText={setProdJobNumber}
                           placeholder="Enter job number"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,
@@ -537,6 +540,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                           onChangeText={setProdPieceNumber}
                           placeholder="Enter piece number"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,
@@ -558,6 +562,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                           onChangeText={setProdProductType}
                           placeholder="e.g., Hollow Core Slab, Wall Panel"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,
@@ -660,6 +665,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                           onChangeText={setIssueDescription}
                           placeholder="Describe the quality issue in detail..."
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           multiline
                           numberOfLines={4}
                           textAlignVertical="top"
@@ -685,6 +691,7 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                           onChangeText={setIssueLocation}
                           placeholder="e.g., Bay 3, Line 2"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,

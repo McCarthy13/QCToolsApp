@@ -82,6 +82,7 @@ const ContactAddEditScreen: React.FC<Props> = ({ navigation, route }) => {
         onChangeText={setValue}
         placeholder={options?.placeholder}
         placeholderTextColor="#9ca3af"
+        cursorColor="#000000"
         keyboardType={options?.keyboardType || 'default'}
         autoCapitalize={options?.autoCapitalize || 'sentences'}
         multiline={options?.multiline}

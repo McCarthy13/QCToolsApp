@@ -145,6 +145,7 @@ export default function RegistrationScreen({
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                   placeholder="John"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={firstName}
                   onChangeText={(text) => {
                     setFirstName(text);
@@ -165,6 +166,7 @@ export default function RegistrationScreen({
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                   placeholder="Doe"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={lastName}
                   onChangeText={(text) => {
                     setLastName(text);
@@ -185,6 +187,7 @@ export default function RegistrationScreen({
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                   placeholder="Acme Precast Inc."
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={company}
                   onChangeText={(text) => {
                     setCompany(text);
@@ -205,6 +208,7 @@ export default function RegistrationScreen({
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                   placeholder="your@email.com"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);

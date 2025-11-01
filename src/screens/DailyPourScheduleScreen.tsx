@@ -740,6 +740,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                       onChangeText={setIdNumber}
                       placeholder="ID number"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -762,6 +763,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                       onChangeText={setMarkNumbers}
                       placeholder="e.g., M1-M5"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -784,6 +786,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                       onChangeText={setDimensions}
                       placeholder="e.g., 8x4x6"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -807,6 +810,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                         onChangeText={setMixDesign}
                         placeholder="e.g., 6000 PSI"
                         placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
                         style={{
                           backgroundColor: "#F9FAFB",
                           borderRadius: 12,
@@ -827,6 +831,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                         onChangeText={setConcreteYards}
                         placeholder="0.0"
                         placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
                         keyboardType="decimal-pad"
                         style={{
                           backgroundColor: "#F9FAFB",
@@ -852,6 +857,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                         onChangeText={setScheduledTime}
                         placeholder="e.g., 8:00 AM"
                         placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
                         style={{
                           backgroundColor: "#F9FAFB",
                           borderRadius: 12,
@@ -904,6 +910,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                       onChangeText={setForeman}
                       placeholder="Enter foreman name"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -926,6 +933,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                       onChangeText={setNotes}
                       placeholder="Additional notes..."
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       multiline
                       numberOfLines={3}
                       textAlignVertical="top"
@@ -1047,6 +1055,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               onChangeText={setDateInputText}
               placeholder="MM/DD/YYYY"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               keyboardType="numbers-and-punctuation"
               style={{
                 backgroundColor: "#F9FAFB",

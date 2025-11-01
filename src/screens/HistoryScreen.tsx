@@ -433,6 +433,7 @@ export default function HistoryScreen() {
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   placeholder="Search by project name"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={tempFilters.projectName || ''}
                   onChangeText={(text) => setTempFilters(prev => ({ ...prev, projectName: text || undefined }))}
                 />
@@ -447,6 +448,7 @@ export default function HistoryScreen() {
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   placeholder="Search by project number"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={tempFilters.projectNumber || ''}
                   onChangeText={(text) => setTempFilters(prev => ({ ...prev, projectNumber: text || undefined }))}
                 />
@@ -461,6 +463,7 @@ export default function HistoryScreen() {
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   placeholder="Search by mark number"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={tempFilters.markNumber || ''}
                   onChangeText={(text) => setTempFilters(prev => ({ ...prev, markNumber: text || undefined }))}
                 />
@@ -475,6 +478,7 @@ export default function HistoryScreen() {
                   className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   placeholder="Search by ID number"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   value={tempFilters.idNumber || ''}
                   onChangeText={(text) => setTempFilters(prev => ({ ...prev, idNumber: text || undefined }))}
                 />
@@ -609,6 +613,7 @@ export default function HistoryScreen() {
                       className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                       placeholder="0"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       keyboardType="decimal-pad"
                       value={tempFilters.minSpan?.toString() || ''}
                       onChangeText={(text) => {
@@ -623,6 +628,7 @@ export default function HistoryScreen() {
                       className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                       placeholder="∞"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       keyboardType="decimal-pad"
                       value={tempFilters.maxSpan?.toString() || ''}
                       onChangeText={(text) => {

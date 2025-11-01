@@ -284,6 +284,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
                       onChangeText={setCode}
                       placeholder="e.g., 101"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       keyboardType="number-pad"
                       style={{
                         backgroundColor: "#F9FAFB",
@@ -306,6 +307,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
                       onChangeText={setTitle}
                       placeholder="e.g., Concrete Segregation"
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -327,6 +329,7 @@ export default function IssueCodeLibraryScreen({ navigation }: Props) {
                       onChangeText={setDescription}
                       placeholder="Describe the issue in detail..."
                       placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
                       multiline
                       numberOfLines={3}
                       textAlignVertical="top"

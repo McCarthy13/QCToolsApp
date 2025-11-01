@@ -56,6 +56,7 @@ export const VoiceTextInput: React.FC<VoiceTextInputProps> = ({
         multiline={multiline}
         numberOfLines={multiline ? 6 : 1}
         selectTextOnFocus
+        cursorColor="#000000"
         className={`bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-base ${
           multiline ? 'min-h-[120px]' : ''
         }`}

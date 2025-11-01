@@ -722,6 +722,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                   className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   placeholder="101"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   keyboardType="number-pad"
                   maxLength={3}
                   value={patternNumber}
@@ -732,6 +733,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                   className="w-20 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   placeholder="75"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   keyboardType="number-pad"
                   maxLength={2}
                   value={pullingForce}
@@ -753,6 +755,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., Heavy Load Pattern"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={name}
                 onChangeText={setName}
               />
@@ -825,6 +828,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                     className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                     placeholder="0"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     keyboardType="number-pad"
                     value={strand_3_8}
                     onChangeText={setStrand_3_8}
@@ -837,6 +841,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                     className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                     placeholder="0"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     keyboardType="number-pad"
                     value={strand_1_2}
                     onChangeText={setStrand_1_2}
@@ -849,6 +854,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                     className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                     placeholder="0"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     keyboardType="number-pad"
                     value={strand_0_6}
                     onChangeText={setStrand_0_6}
@@ -987,6 +993,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                                   className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                                   placeholder="e.g., 2.5 or 2 1/2"
                                   placeholderTextColor="#9CA3AF"
+                                  cursorColor="#000000"
                                   value={coord.x}
                                   onChangeText={(text) => {
                                     const newCoords = [...strandCoordinates];
@@ -1003,6 +1010,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                                   className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
                                   placeholder="e.g., 3 or 2 7/8"
                                   placeholderTextColor="#9CA3AF"
+                                  cursorColor="#000000"
                                   value={coord.y}
                                   onChangeText={(text) => {
                                     const newCoords = [...strandCoordinates];
@@ -1033,6 +1041,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., 6 or 5 7/8"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={centroid}
                 onChangeText={setCentroid}
               />
@@ -1050,6 +1059,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., 2.125 or 2 1/8"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={strandHeight}
                 onChangeText={setStrandHeight}
               />
@@ -1068,6 +1078,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., 3.875"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 keyboardType="decimal-pad"
                 value={eValue}
                 onChangeText={setEValue}
@@ -1086,6 +1097,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., 3804"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 keyboardType="number-pad"
                 value={momentOfInertia}
                 onChangeText={setMomentOfInertia}
@@ -1104,6 +1116,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                 placeholder="e.g., 800"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 keyboardType="decimal-pad"
                 value={deadLoad}
                 onChangeText={setDeadLoad}

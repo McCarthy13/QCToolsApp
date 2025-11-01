@@ -286,6 +286,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="Enter project name"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={projectName}
                 onChangeText={setProjectName}
               />
@@ -300,6 +301,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="Enter project number"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={projectNumber}
                 onChangeText={setProjectNumber}
               />
@@ -314,6 +316,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="Enter mark number"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={markNumber}
                 onChangeText={setMarkNumber}
               />
@@ -328,6 +331,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="Enter ID number"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={idNumber}
                 onChangeText={setIdNumber}
               />
@@ -374,6 +378,7 @@ export default function CalculatorScreen() {
                     className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                     placeholder="40"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     keyboardType="numeric"
                     value={spanFeet}
                     onChangeText={setSpanFeet}
@@ -387,6 +392,7 @@ export default function CalculatorScreen() {
                     className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                     placeholder="0"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     keyboardType="numeric"
                     value={spanInches}
                     onChangeText={setSpanInches}
@@ -432,6 +438,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="e.g., 28 or 28 1/2 or 28.5"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 value={productWidth}
                 onChangeText={setProductWidth}
                 keyboardType="default"
@@ -560,6 +567,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="e.g., 3500"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 keyboardType="numeric"
                 value={releaseStrength}
                 onChangeText={setReleaseStrength}
@@ -578,6 +586,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="e.g., 9000"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 keyboardType="numeric"
                 value={concreteStrength}
                 onChangeText={setConcreteStrength}
@@ -593,6 +602,7 @@ export default function CalculatorScreen() {
                 className="bg-white border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
                 placeholder="e.g., 200"
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 keyboardType="numeric"
                 value={liveLoad}
                 onChangeText={setLiveLoad}

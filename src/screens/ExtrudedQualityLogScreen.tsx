@@ -453,6 +453,7 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
                 onChangeText={setNotes}
                 placeholder="Add any additional notes about this log..."
                 placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -534,6 +535,7 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
                           onChangeText={setJobNumber}
                           placeholder="e.g., 1001"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           keyboardType="number-pad"
                           style={{
                             backgroundColor: "#F9FAFB",
@@ -564,6 +566,7 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
                           onChangeText={setMarkNumber}
                           placeholder="Enter mark number"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,
@@ -586,6 +589,7 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
                           onChangeText={setIdNumber}
                           placeholder="Enter ID number"
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           style={{
                             backgroundColor: "#F9FAFB",
                             borderRadius: 12,
@@ -633,6 +637,7 @@ export default function ExtrudedQualityLogScreen({ navigation, route }: Props) {
                           onChangeText={setIssueDescription}
                           placeholder="Describe the quality issue or observation..."
                           placeholderTextColor="#9CA3AF"
+                          cursorColor="#000000"
                           multiline
                           numberOfLines={4}
                           textAlignVertical="top"

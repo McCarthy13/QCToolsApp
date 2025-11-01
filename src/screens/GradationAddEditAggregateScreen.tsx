@@ -255,6 +255,7 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
               Aggregate Name *
             </Text>
             <TextInput
+              cursorColor="#000000"
               value={name}
               onChangeText={setName}
               placeholder="e.g., Concrete Sand"
@@ -319,6 +320,7 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
                 Max Decant (%)
               </Text>
               <TextInput
+                cursorColor="#000000"
                 value={maxDecant}
                 onChangeText={setMaxDecant}
                 placeholder="Optional"
@@ -338,6 +340,7 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
                 Max Fineness Modulus
               </Text>
               <TextInput
+                cursorColor="#000000"
                 value={maxFM}
                 onChangeText={setMaxFM}
                 placeholder="Optional"
@@ -405,6 +408,7 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
 
               <View className="w-24 px-1">
                 <TextInput
+                  cursorColor="#000000"
                   value={getSieveDisplayValue(index, 'c33Lower')}
                   onChangeText={value => handleSieveChange(index, 'c33Lower', value)}
                   onFocus={() => handleSieveFocus(index, 'c33Lower')}
@@ -418,6 +422,7 @@ const GradationAddEditAggregateScreen: React.FC<Props> = ({ navigation, route })
 
               <View className="w-24 px-1">
                 <TextInput
+                  cursorColor="#000000"
                   value={getSieveDisplayValue(index, 'c33Upper')}
                   onChangeText={value => handleSieveChange(index, 'c33Upper', value)}
                   onFocus={() => handleSieveFocus(index, 'c33Upper')}

@@ -135,6 +135,7 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
             <View className="bg-white p-4 border-b border-gray-200">
               <Text className="text-sm font-medium text-gray-700 mb-2">Test Date</Text>
               <TextInput
+                cursorColor="#000000"
                 value={date}
                 onChangeText={setDate}
                 placeholder="MM/DD/YYYY"
@@ -196,6 +197,7 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
                     </Text>
                   </View>
                   <TextInput
+                    cursorColor="#000000"
                     ref={ref => { if (ref) inputRefs.current[index] = ref; }}
                     value={sieve.weightRetained as string}
                     onChangeText={value => handleWeightChange(index, value)}
@@ -219,6 +221,7 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
                     Washed Weight (g)
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     value={washedWeight}
                     onChangeText={setWashedWeight}
                     placeholder="0"

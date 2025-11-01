@@ -348,6 +348,7 @@ export default function DashboardScreen() {
                 onChangeText={setSearchQuery}
                 placeholder="Search across all libraries..."
                 placeholderTextColor="#9ca3af"
+                cursorColor="#000000"
                 autoFocus
                 className="flex-1 ml-3 text-base text-gray-900"
               />

@@ -253,6 +253,7 @@ export default function QualityLogSearchScreen({ navigation }: Props) {
               onChangeText={setJobNumber}
               placeholder="Enter job number"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               keyboardType="number-pad"
               className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
             />
@@ -266,6 +267,7 @@ export default function QualityLogSearchScreen({ navigation }: Props) {
               onChangeText={setJobName}
               placeholder="Enter job name"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
             />
           </View>
@@ -278,6 +280,7 @@ export default function QualityLogSearchScreen({ navigation }: Props) {
               onChangeText={setMarkNumber}
               placeholder="e.g., M1, H105"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
             />
           </View>
@@ -290,6 +293,7 @@ export default function QualityLogSearchScreen({ navigation }: Props) {
               onChangeText={setIdNumber}
               placeholder="Enter ID number"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
             />
           </View>
@@ -302,6 +306,7 @@ export default function QualityLogSearchScreen({ navigation }: Props) {
               onChangeText={setIssueCode}
               placeholder="Code number or title"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
             />
           </View>

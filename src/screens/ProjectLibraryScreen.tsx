@@ -46,6 +46,7 @@ export default function ProjectLibraryScreen({ navigation }: Props) {
             onChangeText={setSearchQuery}
             placeholder="Search by job # or name..."
             placeholderTextColor="#9CA3AF"
+            cursorColor="#000000"
             className="flex-1 ml-2 text-base text-gray-900"
           />
           {searchQuery.length > 0 && (

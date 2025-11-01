@@ -86,6 +86,7 @@ export default function YardSearchScreen({ navigation }: Props) {
               onChangeText={setSearchQuery}
               placeholder="Search by job number, ID, or mark..."
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               autoFocus
               style={{
                 flex: 1,

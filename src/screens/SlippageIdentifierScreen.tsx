@@ -341,6 +341,7 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                     }`}
                     placeholder="0.5"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     value={strand.leftExceedsOne ? ">1\"" : strand.leftSlippage}
                     onChangeText={(text) =>
                       updateSlippage(strand.strandId, "left", text)
@@ -384,6 +385,7 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
                     }`}
                     placeholder="0.5"
                     placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
                     value={strand.rightExceedsOne ? ">1\"" : strand.rightSlippage}
                     onChangeText={(text) =>
                       updateSlippage(strand.strandId, "right", text)

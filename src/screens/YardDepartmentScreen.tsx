@@ -217,6 +217,7 @@ export default function YardDepartmentScreen({ navigation, route }: Props) {
               onChangeText={setSearchQuery}
               placeholder="Search by job, ID, or mark number..."
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               style={{
                 flex: 1,
                 marginLeft: 8,
@@ -488,6 +489,7 @@ export default function YardDepartmentScreen({ navigation, route }: Props) {
               onChangeText={setDateInputText}
               placeholder="MM/DD/YYYY"
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               keyboardType="numbers-and-punctuation"
               style={{
                 backgroundColor: "#F9FAFB",

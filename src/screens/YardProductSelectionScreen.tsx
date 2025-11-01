@@ -300,6 +300,7 @@ export default function YardProductSelectionScreen({ navigation, route }: Props)
                   onChangeText={setCraneBay}
                   placeholder="e.g., Crane Bay 1"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   style={{
                     backgroundColor: "#F9FAFB",
                     borderRadius: 8,
@@ -320,6 +321,7 @@ export default function YardProductSelectionScreen({ navigation, route }: Props)
                   onChangeText={setRow}
                   placeholder="e.g., 38"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   style={{
                     backgroundColor: "#F9FAFB",
                     borderRadius: 8,
@@ -340,6 +342,7 @@ export default function YardProductSelectionScreen({ navigation, route }: Props)
                   onChangeText={setPosition}
                   placeholder="e.g., A"
                   placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
                   style={{
                     backgroundColor: "#F9FAFB",
                     borderRadius: 8,
@@ -438,6 +441,7 @@ export default function YardProductSelectionScreen({ navigation, route }: Props)
               onChangeText={setNotes}
               placeholder="Add any notes about this piece..."
               placeholderTextColor="#9CA3AF"
+              cursorColor="#000000"
               multiline
               numberOfLines={3}
               textAlignVertical="top"

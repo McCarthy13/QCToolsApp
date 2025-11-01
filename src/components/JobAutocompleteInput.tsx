@@ -232,6 +232,7 @@ export default function JobAutocompleteInput({
           editable={!disabled}
           keyboardType="number-pad"
           maxLength={10}
+          cursorColor="#000000"
           style={{
             backgroundColor: inputStyles.backgroundColor,
             borderWidth: 1,
@@ -271,6 +272,7 @@ export default function JobAutocompleteInput({
             placeholder="Enter or search job name"
             placeholderTextColor={inputStyles.placeholderColor}
             editable={!disabled}
+            cursorColor="#000000"
             style={{
               backgroundColor: inputStyles.backgroundColor,
               borderWidth: 1,

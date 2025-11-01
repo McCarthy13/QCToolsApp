@@ -267,6 +267,7 @@ export default function StrandLibraryScreen() {
                     Name *
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2"
                     placeholder='e.g., "1/2 inch Grade 270"'
                     value={formName}
@@ -280,6 +281,7 @@ export default function StrandLibraryScreen() {
                     Diameter (inches) *
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="e.g., 0.5"
                     value={formDiameter}
@@ -294,6 +296,7 @@ export default function StrandLibraryScreen() {
                     Cross-Sectional Area (in²) *
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="e.g., 0.153"
                     value={formArea}
@@ -308,6 +311,7 @@ export default function StrandLibraryScreen() {
                     Elastic Modulus (ksi) *
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="e.g., 28500"
                     value={formElasticModulus}
@@ -322,6 +326,7 @@ export default function StrandLibraryScreen() {
                     Minimum Breaking Strength (kips) *
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="e.g., 41.3"
                     value={formBreakingStrength}
@@ -339,6 +344,7 @@ export default function StrandLibraryScreen() {
                     Grade (optional)
                   </Text>
                   <TextInput
+                    cursorColor="#000000"
                     className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="e.g., 270"
                     value={formGrade}
