@@ -304,10 +304,20 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 For cut-width products, enter actual width in inches (decimal or fraction)
               </Text>
               <TextInput
-                className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 8,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  fontSize: 16,
+                  color: '#111827',
+                }}
                 placeholder="e.g., 28 or 28 1/2 or 28.5"
                 placeholderTextColor="#9CA3AF"
                 cursorColor="#000000"
+                selectionColor="#000000"
                 value={productWidth}
                 onChangeText={setProductWidth}
                 keyboardType="default"

@@ -1,6 +1,11 @@
 import { StatusBar } from "expo-status-bar";
-import { Pressable, View, Text } from "react-native";
+import { Pressable, View, Text, TextInput } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+// Set default cursor/selection color for all TextInputs globally (iOS uses selectionColor for cursor)
+TextInput.defaultProps = TextInput.defaultProps || {};
+TextInput.defaultProps.cursorColor = '#000000'; // Android
+TextInput.defaultProps.selectionColor = '#000000'; // iOS cursor + selection
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
