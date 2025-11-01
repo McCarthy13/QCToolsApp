@@ -28,6 +28,15 @@ export interface SubProduct {
   typicalDimensions?: string;
   weight?: string;
   loadCapacity?: string;
+
+  // Technical specifications
+  deadLoad?: string; // e.g., "65 psf", "80 psf"
+  fc28Day?: number; // f'c - 28-day concrete strength in psi (e.g., 5000, 6000)
+  fciRelease?: number; // f'ci - Initial/release strength in psi (e.g., 3500, 4000)
+
+  // Cross-section component (without strands, shows webs and cores)
+  crossSectionComponent?: string; // Component name like "CrossSection8048", "CrossSection1048"
+
   isActive: boolean;
   createdAt: number;
   updatedAt: number;

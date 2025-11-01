@@ -306,6 +306,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   id: 'hc-8048',
                   name: '8048',
                   description: '8" thick, 48" wide hollow core slab',
+                  deadLoad: '65 psf',
+                  fc28Day: 5000,
+                  fciRelease: 3500,
+                  crossSectionComponent: 'CrossSection8048',
                   tolerances: [
                     { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
                     { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
@@ -320,6 +324,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   id: 'hc-1048',
                   name: '1048',
                   description: '10" thick, 48" wide hollow core slab',
+                  deadLoad: '80 psf',
+                  fc28Day: 5000,
+                  fciRelease: 3500,
+                  crossSectionComponent: 'CrossSection1048',
                   tolerances: [
                     { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
                     { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
@@ -334,6 +342,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   id: 'hc-1248',
                   name: '1248',
                   description: '12" thick, 48" wide hollow core slab',
+                  deadLoad: '95 psf',
+                  fc28Day: 5000,
+                  fciRelease: 3500,
+                  crossSectionComponent: 'CrossSection1248',
                   tolerances: [
                     { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
                     { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },
@@ -348,6 +360,10 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   id: 'hc-1250',
                   name: '1250',
                   description: '12" thick, 48" wide hollow core slab (thicker webs)',
+                  deadLoad: '105 psf',
+                  fc28Day: 5000,
+                  fciRelease: 3500,
+                  crossSectionComponent: 'CrossSection1250',
                   tolerances: [
                     { dimension: 'Length', value: '±1/4 inch', notes: 'Overall length' },
                     { dimension: 'Width', value: '±1/8 inch', notes: '48" standard width' },

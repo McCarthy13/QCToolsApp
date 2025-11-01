@@ -39,6 +39,10 @@ export default function ProductLibraryScreen({ navigation }: Props) {
   const [subProductName, setSubProductName] = useState("");
   const [subProductDescription, setSubProductDescription] = useState("");
   const [subProductTolerances, setSubProductTolerances] = useState<ToleranceSpec[]>([]);
+  const [subProductDeadLoad, setSubProductDeadLoad] = useState("");
+  const [subProductFc28Day, setSubProductFc28Day] = useState("");
+  const [subProductFciRelease, setSubProductFciRelease] = useState("");
+  const [subProductCrossSectionComponent, setSubProductCrossSectionComponent] = useState("");
 
   // Form state
   const [productType, setProductType] = useState<ProductType>("Beams");
@@ -191,6 +195,10 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductName("");
     setSubProductDescription("");
     setSubProductTolerances([]);
+    setSubProductDeadLoad("");
+    setSubProductFc28Day("");
+    setSubProductFciRelease("");
+    setSubProductCrossSectionComponent("");
     setEditingSubProductId(null);
     setShowSubProductModal(true);
   };
@@ -205,6 +213,10 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductName(subProduct.name);
     setSubProductDescription(subProduct.description || "");
     setSubProductTolerances([...subProduct.tolerances]);
+    setSubProductDeadLoad(subProduct.deadLoad || "");
+    setSubProductFc28Day(subProduct.fc28Day?.toString() || "");
+    setSubProductFciRelease(subProduct.fciRelease?.toString() || "");
+    setSubProductCrossSectionComponent(subProduct.crossSectionComponent || "");
     setShowSubProductModal(true);
   };
 
@@ -214,17 +226,21 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       return;
     }
 
+    const updates: any = {
+      name: subProductName,
+      description: subProductDescription,
+      tolerances: subProductTolerances,
+      deadLoad: subProductDeadLoad || undefined,
+      fc28Day: subProductFc28Day ? parseInt(subProductFc28Day) : undefined,
+      fciRelease: subProductFciRelease ? parseInt(subProductFciRelease) : undefined,
+      crossSectionComponent: subProductCrossSectionComponent || undefined,
+    };
+
     if (editingSubProductId) {
-      updateSubProduct(currentProductId, editingSubProductId, {
-        name: subProductName,
-        description: subProductDescription,
-        tolerances: subProductTolerances,
-      });
+      updateSubProduct(currentProductId, editingSubProductId, updates);
     } else {
       addSubProduct(currentProductId, {
-        name: subProductName,
-        description: subProductDescription,
-        tolerances: subProductTolerances,
+        ...updates,
         isActive: true,
       });
     }
@@ -235,6 +251,10 @@ export default function ProductLibraryScreen({ navigation }: Props) {
     setSubProductName("");
     setSubProductDescription("");
     setSubProductTolerances([]);
+    setSubProductDeadLoad("");
+    setSubProductFc28Day("");
+    setSubProductFciRelease("");
+    setSubProductCrossSectionComponent("");
   };
 
   const handleDeleteSubProduct = (productId: string, subProductId: string) => {
@@ -431,11 +451,37 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                                 {subProduct.description}
                                               </Text>
                                             )}
-                                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, gap: 4 }}>
-                                              <Ionicons name="resize-outline" size={12} color="#10B981" />
-                                              <Text style={{ fontSize: 12, color: "#10B981", fontWeight: "500" }}>
-                                                {subProduct.tolerances.length} {subProduct.tolerances.length === 1 ? "tolerance" : "tolerances"}
-                                              </Text>
+                                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, gap: 8, flexWrap: "wrap" }}>
+                                              {subProduct.deadLoad && (
+                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                                                  <Ionicons name="scale-outline" size={12} color="#8B5CF6" />
+                                                  <Text style={{ fontSize: 11, color: "#8B5CF6", fontWeight: "500" }}>
+                                                    DL: {subProduct.deadLoad}
+                                                  </Text>
+                                                </View>
+                                              )}
+                                              {subProduct.fc28Day && (
+                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                                                  <Ionicons name="cube-outline" size={12} color="#F59E0B" />
+                                                  <Text style={{ fontSize: 11, color: "#F59E0B", fontWeight: "500" }}>
+                                                    f'c: {subProduct.fc28Day} psi
+                                                  </Text>
+                                                </View>
+                                              )}
+                                              {subProduct.fciRelease && (
+                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                                                  <Ionicons name="flash-outline" size={12} color="#EF4444" />
+                                                  <Text style={{ fontSize: 11, color: "#EF4444", fontWeight: "500" }}>
+                                                    f'ci: {subProduct.fciRelease} psi
+                                                  </Text>
+                                                </View>
+                                              )}
+                                              <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                                                <Ionicons name="resize-outline" size={12} color="#10B981" />
+                                                <Text style={{ fontSize: 11, color: "#10B981", fontWeight: "500" }}>
+                                                  {subProduct.tolerances.length} {subProduct.tolerances.length === 1 ? "tolerance" : "tolerances"}
+                                                </Text>
+                                              </View>
                                             </View>
                                           </View>
                                           <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
@@ -468,9 +514,52 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                         </View>
                                       </Pressable>
 
-                                      {/* Sub-Product Tolerances */}
+                                      {/* Sub-Product Details */}
                                       {isSubExpanded && (
                                         <View style={{ padding: 12, paddingTop: 0, borderTopWidth: 1, borderTopColor: "#D1D5DB" }}>
+                                          {/* Cross-section illustration */}
+                                          {subProduct.crossSectionComponent && (
+                                            <View style={{ marginBottom: 12, backgroundColor: "#F9FAFB", padding: 12, borderRadius: 6 }}>
+                                              <Text style={{ fontSize: 12, fontWeight: "600", color: "#4B5563", marginBottom: 8, textAlign: "center" }}>
+                                                Cross Section (Cores & Webs)
+                                              </Text>
+                                              {/* Cross-section component will be rendered here */}
+                                              <Text style={{ fontSize: 11, color: "#6B7280", textAlign: "center", fontStyle: "italic" }}>
+                                                {subProduct.crossSectionComponent}
+                                              </Text>
+                                            </View>
+                                          )}
+
+                                          {/* Technical Specifications */}
+                                          {(subProduct.deadLoad || subProduct.fc28Day || subProduct.fciRelease) && (
+                                            <View style={{ marginBottom: 12 }}>
+                                              <Text style={{ fontSize: 13, fontWeight: "600", color: "#4B5563", marginBottom: 8 }}>
+                                                Technical Specifications:
+                                              </Text>
+                                              <View style={{ gap: 6 }}>
+                                                {subProduct.deadLoad && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>Dead Load:</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#8B5CF6" }}>{subProduct.deadLoad}</Text>
+                                                  </View>
+                                                )}
+                                                {subProduct.fc28Day && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>f'c (28-day):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#F59E0B" }}>{subProduct.fc28Day} psi</Text>
+                                                  </View>
+                                                )}
+                                                {subProduct.fciRelease && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>f'ci (Release):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#EF4444" }}>{subProduct.fciRelease} psi</Text>
+                                                  </View>
+                                                )}
+                                              </View>
+                                            </View>
+                                          )}
+
+                                          {/* Tolerances */}
                                           <Text style={{ fontSize: 13, fontWeight: "600", color: "#4B5563", marginBottom: 8 }}>
                                             Tolerances:
                                           </Text>
@@ -993,6 +1082,106 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         minHeight: 60,
                       }}
                     />
+                  </View>
+
+                  {/* Technical Specifications */}
+                  <View style={{ backgroundColor: "#F0F9FF", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#BFDBFE" }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: "#1E40AF", marginBottom: 12 }}>
+                      Technical Specifications
+                    </Text>
+
+                    {/* Dead Load */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>
+                        Dead Load
+                      </Text>
+                      <TextInput
+                        value={subProductDeadLoad}
+                        onChangeText={setSubProductDeadLoad}
+                        placeholder="e.g., 65 psf, 80 psf"
+                        placeholderTextColor="#9CA3AF"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* f'c - 28 Day Strength */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>
+                        f'c - 28-Day Strength (psi)
+                      </Text>
+                      <TextInput
+                        value={subProductFc28Day}
+                        onChangeText={setSubProductFc28Day}
+                        placeholder="e.g., 5000, 6000"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="numeric"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* f'ci - Release Strength */}
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>
+                        f'ci - Release Strength (psi)
+                      </Text>
+                      <TextInput
+                        value={subProductFciRelease}
+                        onChangeText={setSubProductFciRelease}
+                        placeholder="e.g., 3500, 4000"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="numeric"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                    </View>
+
+                    {/* Cross-Section Component */}
+                    <View>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>
+                        Cross-Section Component
+                      </Text>
+                      <TextInput
+                        value={subProductCrossSectionComponent}
+                        onChangeText={setSubProductCrossSectionComponent}
+                        placeholder="e.g., CrossSection8048"
+                        placeholderTextColor="#9CA3AF"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: 8,
+                          padding: 10,
+                          fontSize: 14,
+                          color: "#111827",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      />
+                      <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
+                        Component name for cross-section illustration (cores & webs)
+                      </Text>
+                    </View>
                   </View>
 
                   {/* Tolerances */}
