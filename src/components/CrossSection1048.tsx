@@ -46,7 +46,7 @@ export default function CrossSection1048({
   const CORE_WIDTH = 7.25; // 7 1/4"
   const CORE_HEIGHT = 7.25; // 7 1/4"
   const EDGE_TO_FIRST_CORE = 2.75; // 2 3/4"
-  const CORE_SPACING = 1.9166; // Space between cores
+  const CORE_SPACING = 1.5625; // 1 9/16" between cores
   const NUM_CORES = 5;
 
   // Strand positions (x from left edge, y from bottom)
@@ -59,12 +59,12 @@ export default function CrossSection1048({
       id: index + 1
     })) :
     [
-      { x: 1.375, y: 2.46, id: 1 },      // Centered between left edge and Core 1
-      { x: 10.9583, y: 2.46, id: 2 },    // Centered between Core 1 and Core 2
-      { x: 20.1249, y: 2.46, id: 3 },    // Centered between Core 2 and Core 3
-      { x: 29.2915, y: 2.46, id: 4 },    // Centered between Core 3 and Core 4
-      { x: 38.4581, y: 2.46, id: 5 },    // Centered between Core 4 and Core 5
-      { x: 47.3332, y: 2.46, id: 6 },    // Centered between Core 5 and right edge
+      { x: 1.375, y: 2.46, id: 1 },       // Centered between left edge and Core 1
+      { x: 10.78125, y: 2.46, id: 2 },    // Centered between Core 1 and Core 2
+      { x: 19.59375, y: 2.46, id: 3 },    // Centered between Core 2 and Core 3
+      { x: 28.40625, y: 2.46, id: 4 },    // Centered between Core 3 and Core 4
+      { x: 37.21875, y: 2.46, id: 5 },    // Centered between Core 4 and Core 5
+      { x: 46.625, y: 2.46, id: 6 },      // Centered between Core 5 and right edge
     ];
 
   // Calculate display dimensions
