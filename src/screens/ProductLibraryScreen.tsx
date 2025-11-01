@@ -905,7 +905,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                   </Text>
                 </Pressable>
               </View>
-              </View>
+            </View>
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
