@@ -306,13 +306,13 @@ export default function CrossSection8048({
           );
         })}
         
-        {/* Strands */}
-        {visibleStrands.map((strand) => {
+        {/* Strands - Only show when actively highlighting or working with strands */}
+        {(highlightedStrand !== null || activeStrands !== undefined || showSlippageValues) && visibleStrands.map((strand) => {
           const strandRadius = strand.isActive ? 5 : 3.5;
           const strokeWidth = strand.isActive ? 2.5 : 1.5;
           const fillColor = strand.isActive ? '#EF4444' : '#D1D5DB';
           const strokeColor = strand.isHighlighted ? '#3B82F6' : (strand.isActive ? '#991B1B' : '#9CA3AF');
-          
+
           return (
             <Circle
               key={`strand-${strand.id}`}
@@ -325,13 +325,13 @@ export default function CrossSection8048({
             />
           );
         })}
-        
-        {/* Strand labels */}
-        {visibleStrands.map((strand) => {
+
+        {/* Strand labels - Only show when actively highlighting or working with strands */}
+        {(highlightedStrand !== null || activeStrands !== undefined || showSlippageValues) && visibleStrands.map((strand) => {
           const fontSize = strand.isActive ? 12 : 10;
           const fontWeight = strand.isActive ? "bold" : "normal";
           const fillColor = strand.isActive ? "#1F2937" : "#9CA3AF";
-          
+
           return (
             <SvgText
               key={`label-${strand.id}`}

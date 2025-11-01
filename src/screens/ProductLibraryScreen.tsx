@@ -697,11 +697,15 @@ export default function ProductLibraryScreen({ navigation }: Props) {
       {/* Add/Edit Product Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+            onPress={Keyboard.dismiss}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
               <View
                 style={{
                   backgroundColor: "#FFFFFF",
@@ -764,8 +768,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       onChangeText={setDescription}
                       placeholder="Brief description of this product type..."
                       placeholderTextColor="#9CA3AF"
-                     cursorColor="#3B82F6"
                       cursorColor="#3B82F6"
+                      selectionColor="#3B82F6"
                       multiline
                       numberOfLines={2}
                       textAlignVertical="top"
@@ -901,20 +905,24 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                   </Text>
                 </Pressable>
               </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
+              </View>
+            </Pressable>
+          </Pressable>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Add/Edit Tolerance Modal */}
       <Modal visible={showToleranceModal} animationType="slide" transparent>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+            onPress={Keyboard.dismiss}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
               <View
                 style={{
                 backgroundColor: "#FFFFFF",
@@ -944,6 +952,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     placeholder="e.g., Length, Width, Thickness"
                     placeholderTextColor="#9CA3AF"
                     cursorColor="#3B82F6"
+                    selectionColor="#3B82F6"
                     style={{
                       backgroundColor: "#F9FAFB",
                       borderRadius: 12,
@@ -966,6 +975,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     placeholder="e.g., ±1/8 inch, ±3mm"
                     placeholderTextColor="#9CA3AF"
                     cursorColor="#3B82F6"
+                    selectionColor="#3B82F6"
                     style={{
                       backgroundColor: "#F9FAFB",
                       borderRadius: 12,
@@ -988,6 +998,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     placeholder="Additional details..."
                     placeholderTextColor="#9CA3AF"
                     cursorColor="#3B82F6"
+                    selectionColor="#3B82F6"
                     multiline
                     numberOfLines={2}
                     textAlignVertical="top"
@@ -1033,20 +1044,24 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                   </Text>
                 </Pressable>
               </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
+              </View>
+            </Pressable>
+          </Pressable>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Add/Edit Sub-Product Modal */}
       <Modal visible={showSubProductModal} animationType="slide" transparent>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+            onPress={Keyboard.dismiss}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
               <View
                 style={{
                 backgroundColor: "#FFFFFF",
@@ -1079,6 +1094,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       placeholder="e.g., 8048, 1048, 1248, 1250"
                       placeholderTextColor="#9CA3AF"
                       cursorColor="#3B82F6"
+                      selectionColor="#3B82F6"
                       style={{
                         backgroundColor: "#F9FAFB",
                         borderRadius: 12,
@@ -1102,6 +1118,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                       placeholder="Brief description..."
                       placeholderTextColor="#9CA3AF"
                       cursorColor="#3B82F6"
+                      selectionColor="#3B82F6"
                       multiline
                       numberOfLines={2}
                       textAlignVertical="top"
@@ -1135,6 +1152,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         placeholder="e.g., 65 psf, 80 psf"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
                         style={{
                           backgroundColor: "#FFFFFF",
                           borderRadius: 8,
@@ -1158,6 +1176,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         placeholder="e.g., 5000, 6000"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
                         keyboardType="numeric"
                         style={{
                           backgroundColor: "#FFFFFF",
@@ -1182,6 +1201,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         placeholder="e.g., 3500, 4000"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
                         keyboardType="numeric"
                         style={{
                           backgroundColor: "#FFFFFF",
@@ -1206,6 +1226,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                         placeholder="e.g., CrossSection8048"
                         placeholderTextColor="#9CA3AF"
                         cursorColor="#3B82F6"
+                        selectionColor="#3B82F6"
                         style={{
                           backgroundColor: "#FFFFFF",
                           borderRadius: 8,
@@ -1348,8 +1369,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
+          </Pressable>
+        </Pressable>
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
