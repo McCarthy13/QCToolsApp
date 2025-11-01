@@ -6,6 +6,10 @@ import { RootStackParamList } from "../navigation/types";
 import { useProductLibraryStore } from "../state/productLibraryStore";
 import { useState, useEffect } from "react";
 import { ProductType, ToleranceSpec } from "../types/product-library";
+import CrossSection8048 from "../components/CrossSection8048";
+import CrossSection1048 from "../components/CrossSection1048";
+import CrossSection1248 from "../components/CrossSection1248";
+import CrossSection1250 from "../components/CrossSection1250";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ProductLibrary">;
 
@@ -519,14 +523,23 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                         <View style={{ padding: 12, paddingTop: 0, borderTopWidth: 1, borderTopColor: "#D1D5DB" }}>
                                           {/* Cross-section illustration */}
                                           {subProduct.crossSectionComponent && (
-                                            <View style={{ marginBottom: 12, backgroundColor: "#F9FAFB", padding: 12, borderRadius: 6 }}>
+                                            <View style={{ marginBottom: 12, backgroundColor: "#F9FAFB", padding: 12, borderRadius: 6, alignItems: "center" }}>
                                               <Text style={{ fontSize: 12, fontWeight: "600", color: "#4B5563", marginBottom: 8, textAlign: "center" }}>
                                                 Cross Section (Cores & Webs)
                                               </Text>
-                                              {/* Cross-section component will be rendered here */}
-                                              <Text style={{ fontSize: 11, color: "#6B7280", textAlign: "center", fontStyle: "italic" }}>
-                                                {subProduct.crossSectionComponent}
-                                              </Text>
+                                              {/* Render the appropriate cross-section component */}
+                                              {subProduct.name === '8048' && (
+                                                <CrossSection8048 scale={4} showDimensions={false} />
+                                              )}
+                                              {subProduct.name === '1048' && (
+                                                <CrossSection1048 scale={4} showDimensions={false} />
+                                              )}
+                                              {subProduct.name === '1248' && (
+                                                <CrossSection1248 scale={4} showDimensions={false} />
+                                              )}
+                                              {subProduct.name === '1250' && (
+                                                <CrossSection1250 scale={4} showDimensions={false} />
+                                              )}
                                             </View>
                                           )}
 
