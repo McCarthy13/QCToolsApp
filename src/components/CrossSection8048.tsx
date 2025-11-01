@@ -134,79 +134,103 @@ export default function CrossSection8048({
     const y = padding;
     const w = displayWidth;
     const h = displayHeight;
-    
+
     // Determine which edge gets the keyway (keeper edge) and which is straight (cut edge)
     const hasKeyway = offcutSide !== null;
     const leftHasKeyway = offcutSide === 'L2'; // L2 cut = left is keeper
     const rightHasKeyway = offcutSide === 'L1'; // L1 cut = right is keeper
-    
+
     if (!hasKeyway) {
-      // Full width product - simple rectangle for now
-      return `
-        M ${x} ${y}
-        L ${x + w} ${y}
-        L ${x + w} ${y + h}
-        L ${x} ${y + h}
-        Z
-      `;
+      // Full width product - show keyway on BOTH sides
+      // Start at bottom-left with radius
+      let path = `M ${x + keywayRadius} ${y + h}`;
+
+      // Left bottom radius curve
+      path += ` Q ${x} ${y + h} ${x} ${y + h - keywayRadius}`;
+
+      // Follow keyway profile points going up the left edge
+      for (let i = 0; i < keywayPoints.length; i++) {
+        const point = keywayPoints[i];
+        path += ` L ${x + point.x} ${y + h - point.y}`;
+      }
+
+      // Top edge, ending before the right keyway starts
+      const topKeywayPoint = keywayPoints[keywayPoints.length - 1];
+      path += ` L ${x + w - topKeywayPoint.x} ${y}`;
+
+      // Follow keyway profile points going down the right edge (reversed and mirrored)
+      for (let i = keywayPoints.length - 1; i >= 0; i--) {
+        const point = keywayPoints[i];
+        path += ` L ${x + w - point.x} ${y + h - point.y}`;
+      }
+
+      // Right bottom radius curve
+      path += ` Q ${x + w} ${y + h} ${x + w - keywayRadius} ${y + h}`;
+
+      // Bottom edge back to start
+      path += ` L ${x + keywayRadius} ${y + h}`;
+
+      path += ` Z`;
+
+      return path;
     }
-    
+
     // Build path with keyway on keeper edge using exact coordinates
     let path = '';
-    
+
     if (leftHasKeyway) {
       // Left edge has keyway, right edge is cut (straight)
       // Start at bottom-left with radius
       path = `M ${x + keywayRadius} ${y + h}`;
-      
+
       // Radius curve at bottom-left corner (going up and left)
       path += ` Q ${x} ${y + h} ${x} ${y + h - keywayRadius}`;
-      
+
       // Follow keyway profile points going up the left edge
       // Points are measured from bottom, so convert: (x_depth, y_height) to SVG coords
       for (let i = 0; i < keywayPoints.length; i++) {
         const point = keywayPoints[i];
         path += ` L ${x + point.x} ${y + h - point.y}`;
       }
-      
+
       // Top edge to top-right
       path += ` L ${x + w} ${y}`;
-      
+
       // Right edge (straight cut)
       path += ` L ${x + w} ${y + h}`;
-      
+
       // Bottom edge back to start
       path += ` L ${x + keywayRadius} ${y + h}`;
-      
+
       path += ` Z`;
     } else {
       // Right edge has keyway, left edge is cut (straight)
       // Mirror the keyway profile for the right edge
       // Start at top-left
       path = `M ${x} ${y}`;
-      
+
       // Top edge, ending before the keyway starts
       const topKeywayPoint = keywayPoints[keywayPoints.length - 1];
       path += ` L ${x + w - topKeywayPoint.x} ${y}`;
-      
+
       // Follow keyway profile points going down the right edge (reversed and mirrored)
       for (let i = keywayPoints.length - 1; i >= 0; i--) {
         const point = keywayPoints[i];
         path += ` L ${x + w - point.x} ${y + h - point.y}`;
       }
-      
+
       // Radius curve at bottom-right corner (going left and down)
       path += ` Q ${x + w} ${y + h} ${x + w - keywayRadius} ${y + h}`;
-      
+
       // Bottom edge
       path += ` L ${x} ${y + h}`;
-      
+
       // Left edge (straight cut)
       path += ` L ${x} ${y}`;
-      
+
       path += ` Z`;
     }
-    
+
     return path;
   };
   
