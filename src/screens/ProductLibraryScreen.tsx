@@ -594,17 +594,60 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                             </View>
                                           )}
 
-                                          {/* Technical Specifications */}
-                                          {(subProduct.deadLoad || subProduct.fc28Day || subProduct.fciRelease) && (
+                                          {/* Cross-Section Properties */}
+                                          {(subProduct.area || subProduct.effectiveWebWidth || subProduct.momentOfInertia || subProduct.distanceToBottomFiber) && (
                                             <View style={{ marginBottom: 12 }}>
                                               <Text style={{ fontSize: 13, fontWeight: "600", color: "#4B5563", marginBottom: 8 }}>
-                                                Technical Specifications:
+                                                Cross-Section Properties:
+                                              </Text>
+                                              <View style={{ gap: 6 }}>
+                                                {subProduct.area && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>A (Area):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#10B981" }}>{subProduct.area} in²</Text>
+                                                  </View>
+                                                )}
+                                                {subProduct.effectiveWebWidth && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>B<Text style={{ fontSize: 9 }}>w</Text> (Effective Web Width):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#10B981" }}>{subProduct.effectiveWebWidth} in</Text>
+                                                  </View>
+                                                )}
+                                                {subProduct.momentOfInertia && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>I<Text style={{ fontSize: 9 }}>g</Text> (Moment of Inertia):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#10B981" }}>{subProduct.momentOfInertia} in⁴</Text>
+                                                  </View>
+                                                )}
+                                                {subProduct.distanceToBottomFiber && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>Y<Text style={{ fontSize: 9 }}>b</Text> (Distance to Bottom):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#10B981" }}>{subProduct.distanceToBottomFiber} in</Text>
+                                                  </View>
+                                                )}
+                                              </View>
+                                            </View>
+                                          )}
+
+                                          {/* Technical Specifications */}
+                                          {(subProduct.deadLoad || subProduct.deadLoadPerLinearFoot || subProduct.fc28Day || subProduct.fciRelease || subProduct.fpu) && (
+                                            <View style={{ marginBottom: 12 }}>
+                                              <Text style={{ fontSize: 13, fontWeight: "600", color: "#4B5563", marginBottom: 8 }}>
+                                                Strength Characteristics:
                                               </Text>
                                               <View style={{ gap: 6 }}>
                                                 {subProduct.deadLoad && (
-                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
-                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>Dead Load:</Text>
-                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#8B5CF6" }}>{subProduct.deadLoad}</Text>
+                                                  <View style={{ backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                      <Text style={{ fontSize: 12, color: "#6B7280" }}>Dead Load:</Text>
+                                                      <Text style={{ fontSize: 12, fontWeight: "600", color: "#8B5CF6" }}>{subProduct.deadLoad} psf</Text>
+                                                    </View>
+                                                    {subProduct.deadLoadPerLinearFoot && (
+                                                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+                                                        <Text style={{ fontSize: 11, color: "#9CA3AF" }}>Per Linear Foot:</Text>
+                                                        <Text style={{ fontSize: 11, fontWeight: "600", color: "#A78BFA" }}>{subProduct.deadLoadPerLinearFoot.toFixed(1)} plf</Text>
+                                                      </View>
+                                                    )}
                                                   </View>
                                                 )}
                                                 {subProduct.fc28Day && (
@@ -617,6 +660,12 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                                   <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
                                                     <Text style={{ fontSize: 12, color: "#6B7280" }}>f'ci (Release):</Text>
                                                     <Text style={{ fontSize: 12, fontWeight: "600", color: "#EF4444" }}>{subProduct.fciRelease} psi</Text>
+                                                  </View>
+                                                )}
+                                                {subProduct.fpu && (
+                                                  <View style={{ flexDirection: "row", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 8, borderRadius: 6 }}>
+                                                    <Text style={{ fontSize: 12, color: "#6B7280" }}>f'<Text style={{ fontSize: 9 }}>pu</Text> (Strand Strength):</Text>
+                                                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#EC4899" }}>{subProduct.fpu} ksi</Text>
                                                   </View>
                                                 )}
                                               </View>
@@ -1425,33 +1474,6 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                           borderColor: "#E5E7EB",
                         }}
                       />
-                    </View>
-
-                    {/* Cross-Section Component */}
-                    <View>
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 }}>
-                        Cross-Section Component
-                      </Text>
-                      <TextInput
-                        value={subProductCrossSectionComponent}
-                        onChangeText={setSubProductCrossSectionComponent}
-                        placeholder="e.g., CrossSection8048"
-                        placeholderTextColor="#9CA3AF"
-                        cursorColor="#3B82F6"
-                        selectionColor="#3B82F6"
-                        style={{
-                          backgroundColor: "#FFFFFF",
-                          borderRadius: 8,
-                          padding: 10,
-                          fontSize: 14,
-                          color: "#111827",
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                        }}
-                      />
-                      <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>
-                        Component name for cross-section illustration (cores & webs)
-                      </Text>
                     </View>
                   </View>
 
