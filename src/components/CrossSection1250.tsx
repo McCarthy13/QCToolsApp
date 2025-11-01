@@ -45,7 +45,7 @@ export default function CrossSection1250({
   // Core dimensions - 5 cores total with different sizing than 1248
   const CORE_WIDTH = 6.4375; // 6 7/16"
   const CORE_HEIGHT = 8.875; // 8 7/8"
-  const EDGE_TO_FIRST_CORE = 3.125; // 3 1/8"
+  const EDGE_TO_FIRST_CORE = 3.15625; // 3 5/32" (corrected for exact 48" width)
   const CORE_SPACING = 2.375; // 2 3/8" between cores
   const NUM_CORES = 5;
 
@@ -58,12 +58,12 @@ export default function CrossSection1250({
       id: index + 1
     })) :
     [
-      { x: 1.5625, y: 2.79531, id: 1 },     // Centered between left edge and Core 1
-      { x: 10.75, y: 2.79531, id: 2 },      // Centered between Core 1 and Core 2
-      { x: 19.5625, y: 2.79531, id: 3 },    // Centered between Core 2 and Core 3
-      { x: 28.375, y: 2.79531, id: 4 },     // Centered between Core 3 and Core 4
-      { x: 37.1875, y: 2.79531, id: 5 },    // Centered between Core 4 and Core 5
-      { x: 46.40625, y: 2.79531, id: 6 },   // Centered between Core 5 and right edge
+      { x: 1.57812, y: 2.79531, id: 1 },    // Centered between left edge and Core 1
+      { x: 10.78125, y: 2.79531, id: 2 },   // Centered between Core 1 and Core 2
+      { x: 19.59375, y: 2.79531, id: 3 },   // Centered between Core 2 and Core 3
+      { x: 28.40625, y: 2.79531, id: 4 },   // Centered between Core 3 and Core 4
+      { x: 37.21875, y: 2.79531, id: 5 },   // Centered between Core 4 and Core 5
+      { x: 46.42188, y: 2.79531, id: 6 },   // Centered between Core 5 and right edge
     ];
 
   // Calculate display dimensions
