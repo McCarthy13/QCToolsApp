@@ -70,6 +70,12 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
         "Successfully signed in with Microsoft. You can now send emails."
       );
     } catch (error: any) {
+      // Don't show error if user cancelled authentication
+      if (error.name === "AuthCancelledError") {
+        // User cancelled - just silently return
+        return;
+      }
+
       console.error("Microsoft sign-in error:", error);
       Alert.alert(
         "Sign In Failed",
