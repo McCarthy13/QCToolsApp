@@ -6,7 +6,7 @@ node_modules/
 # Expo
 .expo/
 dist/
-web-build/
+# web-build/  # Temporarily allowing web-build to be committed for deployment
 expo-env.d.ts
 
 # Native
