@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isApproved() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
+    }
+
+    function isAdmin() {
+      return isApproved() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Anyone authenticated can create their own user document during registration
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+
+      // Users can read their own profile
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+
+      // Admins can read all users
+      allow read: if isAdmin();
+
+      // Only admins can update user status and roles
+      allow update: if isAdmin() ||
+                      (isAuthenticated() && request.auth.uid == userId &&
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']));
+
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+
+    // All other collections - only approved users can access
+    match /{document=**} {
+      allow read, write: if isApproved();
+    }
+  }
+}

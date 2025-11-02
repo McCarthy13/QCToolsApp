@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Precast Quality Tools",
+    "slug": "precast-quality-tools",
+    "scheme": "precastqc",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.precastqualitytools"
+    },
+    "android": {
+      "edgeToEdgeEnabled": true,
+      "package": "com.yourcompany.precastqualitytools"
+    },
+    "web": {
+      "bundler": "webpack"
+    }
+  }
+}
