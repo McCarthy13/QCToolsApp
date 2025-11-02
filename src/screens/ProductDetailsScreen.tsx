@@ -602,10 +602,20 @@ export default function ProductDetailsScreen({ navigation }: Props) {
               {bottomPatterns.length === 0 ? (
                 <View className="items-center py-8">
                   <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
-                  <Text className="text-gray-600 text-base mt-4 text-center">
-                    No bottom strand patterns available.{"\n"}Create one in
-                    Strand Patterns.
+                  <Text className="text-gray-600 text-base mt-4 mb-4 text-center">
+                    No bottom strand patterns available.
                   </Text>
+                  <Pressable
+                    onPress={() => {
+                      setShowStrandModal(false);
+                      navigation.navigate("StrandPatterns");
+                    }}
+                    className="bg-blue-500 rounded-xl py-3 px-6 items-center active:bg-blue-600"
+                  >
+                    <Text className="text-white text-sm font-semibold">
+                      Go to Strand Library
+                    </Text>
+                  </Pressable>
                 </View>
               ) : (
                 bottomPatterns.map((pattern) => (
