@@ -12,8 +12,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useStrandLibraryStore, StrandDefinition } from "../state/strandLibraryStore";
 import ConfirmModal from "../components/ConfirmModal";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/types";
 
 export default function StrandLibraryScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { strands, addStrand, updateStrand, removeStrand, seedDefaultStrands } = useStrandLibraryStore();
 
@@ -113,6 +117,22 @@ export default function StrandLibraryScreen() {
               Add Custom Strand
             </Text>
           </Pressable>
+        </View>
+
+        {/* Navigate to Strand Patterns Button */}
+        <View className="px-6 mt-3">
+          <Pressable
+            className="bg-purple-500 rounded-xl py-3 items-center active:bg-purple-600 flex-row justify-center"
+            onPress={() => navigation.navigate("StrandPatterns")}
+          >
+            <Ionicons name="albums-outline" size={20} color="white" />
+            <Text className="text-white text-base font-semibold ml-2">
+              Manage Strand Patterns
+            </Text>
+          </Pressable>
+          <Text className="text-gray-500 text-xs mt-2 text-center">
+            Strand patterns define configurations of multiple strands used in tools
+          </Text>
         </View>
 
         {/* Default Strands */}
