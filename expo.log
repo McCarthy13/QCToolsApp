@@ -6,9 +6,13 @@ Starting Metro Bundler
 Waiting on http://localhost:8081
 Logs for your project will appear below.
 iOS ./index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
-iOS Bundled 1577ms index.ts (1967 modules)
+iOS Bundled 1521ms index.ts (1954 modules)
+iOS Bundled 812ms index.ts (1951 modules)
+ WARN  The provided Linking scheme 'exp' does not appear in the list of possible URI schemes in your Expo config. Expected one of: 'vibecode', 'com.vibecodeapp.app'
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Please use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ LOG  [index] Project ID is:  0199bbde-61be-725f-8b7a-b6d873c51eff
 iOS ./index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
-iOS Bundled 1094ms index.ts (1954 modules)
+iOS Bundled 90ms index.ts (1 module)
  WARN  The provided Linking scheme 'exp' does not appear in the list of possible URI schemes in your Expo config. Expected one of: 'vibecode', 'com.vibecodeapp.app'
  WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Please use the `expo-audio` and `expo-video` packages to replace the required functionality.
  LOG  [index] Project ID is:  0199bbde-61be-725f-8b7a-b6d873c51eff
