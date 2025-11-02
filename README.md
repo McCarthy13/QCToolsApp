@@ -2,12 +2,13 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
-## Firebase Integration Status
+## Deployment Status
 
+✅ **Web App Deployed** - Live at https://precast-qc-tools-web-app.web.app
 ✅ **Firebase Authentication** - Fully integrated with email/password sign-in
 ✅ **Firestore Database** - Ready for real-time data sync
 ✅ **Cloud Storage** - Ready for file uploads
-✅ **Offline Support** - Configured with local caching
+✅ **Admin Approval System** - Working and tested
 
 ---
 
