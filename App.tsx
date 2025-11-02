@@ -291,6 +291,11 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable
+                      onPress={() => navigation.navigate("StrandPatterns")}
+                    >
+                      <Ionicons name="albums-outline" size={24} color="#111827" />
+                    </Pressable>
+                    <Pressable
                       onPress={() => navigation.navigate("SlippageHistory")}
                     >
                       <Ionicons name="time-outline" size={24} color="#111827" />

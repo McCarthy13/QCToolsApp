@@ -478,20 +478,9 @@ export default function CalculatorScreen() {
 
             {/* Strand Pattern */}
             <View className="mb-4">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-gray-700 text-sm font-medium">
-                  Strand Pattern <Text className="text-red-500">*</Text>
-                </Text>
-                <Pressable
-                  onPress={() => navigation.navigate('StrandPatterns')}
-                  className="flex-row items-center"
-                >
-                  <Ionicons name="add-circle-outline" size={16} color="#3B82F6" />
-                  <Text className="text-blue-500 text-xs ml-1">
-                    Manage Patterns
-                  </Text>
-                </Pressable>
-              </View>
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Strand Pattern <Text className="text-red-500">*</Text>
+              </Text>
               <Pressable
                 className={`bg-white border ${
                   errors.includes('Strand Pattern is required')
