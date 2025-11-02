@@ -8,6 +8,8 @@ import { RootStackParamList } from '../navigation/types';
 import { useAggregateLibraryStore } from '../state/aggregateLibraryStore';
 import { useAdmixLibraryStore } from '../state/admixLibraryStore';
 import { useContactsStore } from '../state/contactsStore';
+import { useAuthStore } from '../state/authStore';
+import DataImportScreen from './DataImportScreen';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Dashboard'>;
 
@@ -149,10 +151,14 @@ export default function DashboardScreen() {
   // Search functionality
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [showDataImport, setShowDataImport] = useState(false);
+
   const { getAllAggregates } = useAggregateLibraryStore();
   const { getAllAdmixes } = useAdmixLibraryStore();
   const { getAllContacts } = useContactsStore();
+  const currentUser = useAuthStore((state) => state.currentUser);
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const handleToolPress = (tool: Tool) => {
     if (tool.comingSoon) {
@@ -209,12 +215,22 @@ export default function DashboardScreen() {
               <Text className="text-4xl font-bold text-gray-900">
                 Quality Tools
               </Text>
-              <Pressable
-                onPress={() => setShowSearch(true)}
-                className="bg-blue-600 rounded-full p-3 active:bg-blue-700"
-              >
-                <Ionicons name="search" size={24} color="white" />
-              </Pressable>
+              <View className="flex-row gap-2">
+                {isAdmin && (
+                  <Pressable
+                    onPress={() => setShowDataImport(true)}
+                    className="bg-green-600 rounded-full p-3 active:bg-green-700"
+                  >
+                    <Ionicons name="cloud-upload" size={24} color="white" />
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={() => setShowSearch(true)}
+                  className="bg-blue-600 rounded-full p-3 active:bg-blue-700"
+                >
+                  <Ionicons name="search" size={24} color="white" />
+                </Pressable>
+              </View>
             </View>
             <Text className="text-base text-gray-600">
               Select a tool to get started
@@ -502,6 +518,16 @@ export default function DashboardScreen() {
             )}
           </ScrollView>
         </View>
+      </Modal>
+
+      {/* Data Import Modal (Admin Only) */}
+      <Modal
+        visible={showDataImport}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDataImport(false)}
+      >
+        <DataImportScreen onBack={() => setShowDataImport(false)} />
       </Modal>
     </View>
   );

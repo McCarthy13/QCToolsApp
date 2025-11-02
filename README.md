@@ -9,6 +9,7 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Firestore Database** - Ready for real-time data sync
 ✅ **Cloud Storage** - Ready for file uploads
 ✅ **Admin Approval System** - Working and tested
+✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ---
 
@@ -52,7 +53,29 @@ Follow the detailed guide in [`FIREBASE_SETUP.md`](./FIREBASE_SETUP.md) to:
 - Set up Security Rules
 - Create your first admin user
 
-### 3. Test the App
+### 3. Import Existing Data (Optional)
+
+If you have existing data from a previous version of the app, you can import it to Firebase:
+
+1. **Login as Admin** - You must have admin privileges to access the import tool
+2. **Open Data Import** - Tap the green cloud upload button in the top-right corner of the dashboard
+3. **Paste JSON Data** - Paste your exported JSON data into the text field
+4. **Import to Firebase** - Tap "Import to Firebase" button
+5. **Verify Import** - Check the success message showing how many items were imported
+
+The import tool supports:
+- Strand Patterns
+- Products (including hollow core sub-products)
+- Strand Library
+- Aggregate Library
+- Admixture Library
+- Projects
+- Contacts
+- Yard Locations
+
+**Note:** Data with matching IDs will be merged (not duplicated). This means you can safely re-import updated data.
+
+### 4. Test the App
 
 Once Firebase is configured, the app will automatically connect. You can:
 
@@ -86,6 +109,7 @@ User Login → Check Firestore approval status → Grant access
 - **Yard Maps** - Track piece locations in the yard
 - **Material Libraries** - Manage aggregates, admixtures, and products
 - **Project & Contact Management** - Organize projects and contacts
+- **Data Import Tool (Admin)** - Import existing data from JSON exports to Firebase
 
 ---
 
@@ -176,6 +200,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Real-time auth state listener
 - [x] Admin approval screen
 - [x] Password change screen
+- [x] Data import tool for migrating existing data to Firebase
 - [x] All UI screens and navigation
 - [x] Offline-first architecture
 - [x] TypeScript type safety
