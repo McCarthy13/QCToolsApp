@@ -1,0 +1,33 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper function to check if user is authenticated and approved
+    function isApproved() {
+      return request.auth != null;
+    }
+
+    // Quality log photos
+    match /qualityLogs/{logId}/{fileName} {
+      allow read: if isApproved();
+      allow write: if isApproved() &&
+                     request.resource.size < 10 * 1024 * 1024 && // 10MB max
+                     request.resource.contentType.matches('image/.*');
+    }
+
+    // Calibration reports
+    match /calibrations/{reportId}/{fileName} {
+      allow read: if isApproved();
+      allow write: if isApproved() &&
+                     request.resource.size < 20 * 1024 * 1024; // 20MB max
+    }
+
+    // General attachments
+    match /attachments/{userId}/{fileName} {
+      allow read: if isApproved();
+      allow write: if isApproved() &&
+                     request.auth.uid == userId &&
+                     request.resource.size < 10 * 1024 * 1024;
+    }
+  }
+}
