@@ -39,9 +39,9 @@ export default function AdminApprovalScreen({
     loadRequests();
   }, []);
 
-  const loadRequests = () => {
+  const loadRequests = async () => {
     setLoading(true);
-    const requests = getPendingRequests();
+    const requests = await getPendingRequests();
     setPendingRequests(requests);
     setLoading(false);
   };

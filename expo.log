@@ -6,9 +6,36 @@ Starting Metro Bundler
 Waiting on http://localhost:8081
 Logs for your project will appear below.
 iOS ./index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
-iOS Bundled 1327ms index.ts (1886 modules)
-iOS Bundled 837ms index.ts (1943 modules)
-iOS ./index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.9% (1932/1943)
+iOS Bundled 1363ms index.ts (1932 modules)
+iOS Bundled 854ms index.ts (1932 modules)
  WARN  The provided Linking scheme 'exp' does not appear in the list of possible URI schemes in your Expo config. Expected one of: 'vibecode', 'com.vibecodeapp.app'
  WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Please use the `expo-audio` and `expo-video` packages to replace the required functionality.
  LOG  [index] Project ID is:  0199bbde-61be-725f-8b7a-b6d873c51eff
+ WARN  [2025-11-02T13:29:27.631Z]  @firebase/auth: Auth (12.3.0): 
+You are initializing Firebase Auth for React Native without providing
+AsyncStorage. Auth state will default to memory persistence and will not
+persist between sessions. In order to persist auth state, install the package
+"@react-native-async-storage/async-storage" and provide it to
+initializeAuth:
+
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});
+ WARN  [2025-11-02T13:32:02.929Z]  @firebase/auth: Auth (12.3.0): 
+You are initializing Firebase Auth for React Native without providing
+AsyncStorage. Auth state will default to memory persistence and will not
+persist between sessions. In order to persist auth state, install the package
+"@react-native-async-storage/async-storage" and provide it to
+initializeAuth:
+
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+});
+ LOG  [ReferenceError: Property 'getReactNativePersistence' doesn't exist]
+ WARN  Attempted to import the module "/home/user/workspace/node_modules/@firebase/auth/dist/rn" which is not listed in the "exports" of "/home/user/workspace/node_modules/@firebase/auth" under the requested subpath "./dist/rn". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
+ WARN  Attempted to import the module "/home/user/workspace/node_modules/@firebase/auth/dist/rn" which is not listed in the "exports" of "/home/user/workspace/node_modules/@firebase/auth" under the requested subpath "./dist/rn". Falling back to file-based resolution. Consider updating the call site or asking the package maintainer(s) to expose this API.
+ WARN  Failed to initialize auth with persistence: Firebase: Error (auth/already-initialized).

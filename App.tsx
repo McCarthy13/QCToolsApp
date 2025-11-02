@@ -104,12 +104,17 @@ type AuthScreen =
 // App version: force reload
 export default function App() {
   const currentUser = useAuthStore((state) => state.currentUser);
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>("login");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check authentication state on mount
+  // Initialize Firebase auth and check authentication state on mount
   useEffect(() => {
-    setIsLoading(false);
+    const init = async () => {
+      await initializeAuth();
+      setIsLoading(false);
+    };
+    init();
   }, []);
 
   // Handle successful login

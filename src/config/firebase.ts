@@ -25,14 +25,24 @@ if (getApps().length === 0) {
 }
 
 // Initialize Auth
-// Note: For React Native with newer Firebase versions, we just use getAuth
-// AsyncStorage persistence is handled automatically
+// For React Native, we need to use initializeAuth with AsyncStorage for persistence
 let auth: Auth;
-try {
+if (Platform.OS !== 'web') {
+  try {
+    // Import getReactNativePersistence from the correct path
+    // This is available in firebase/auth for React Native
+    const { getReactNativePersistence }: any = require('firebase/auth');
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage)
+    });
+  } catch (error: any) {
+    // Fallback: if already initialized or import fails, just get the auth instance
+    console.warn('Failed to initialize auth with persistence:', error.message);
+    auth = getAuth(app);
+  }
+} else {
+  // For web, use getAuth (persistence is automatic via IndexedDB)
   auth = getAuth(app);
-} catch {
-  // Fallback if getAuth fails (shouldn't happen)
-  auth = initializeAuth(app, {});
 }
 
 // Initialize Firestore

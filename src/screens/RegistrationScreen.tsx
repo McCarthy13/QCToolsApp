@@ -81,7 +81,7 @@ export default function RegistrationScreen({
       if (result.success) {
         onSuccess();
       } else {
-        setError("Failed to submit request. Please try again.");
+        setError(result.error || "Failed to submit request. Please try again.");
       }
     } catch (err) {
       setError("An unexpected error occurred");

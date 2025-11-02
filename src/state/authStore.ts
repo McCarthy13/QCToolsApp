@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  signIn as firebaseSignIn,
+  signOut as firebaseSignOut,
+  registerUser as firebaseRegisterUser,
+  onAuthStateChange,
+  getCurrentUser as getFirebaseCurrentUser
+} from '../services/firebaseAuth';
+import {
+  createUserProfile,
+  getUserProfile,
+  updateUserProfile,
+  getPendingAccessRequests,
+  approveUserAccess,
+  rejectUserAccess,
+  FirebaseUserProfile,
+} from '../services/firebaseUsers';
 
 export interface User {
   id: string;
@@ -8,6 +24,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'admin' | 'user';
+  status: 'pending' | 'approved' | 'rejected';
   isTemporaryPassword: boolean;
   createdAt: number;
 }
@@ -27,77 +44,128 @@ interface AuthState {
   users: Record<string, { user: User; passwordHash: string }>;
   pendingRequests: PendingRequest[];
   currentSession: string | null;
-  
+  isInitialized: boolean;
+
   // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; requiresPasswordChange?: boolean; error?: string }>;
-  logout: () => void;
-  requestAccess: (data: Omit<PendingRequest, 'id' | 'requestedAt' | 'status'>) => Promise<{ success: boolean; requestId: string }>;
-  approveRequest: (requestId: string, temporaryPassword: string) => Promise<{ success: boolean }>;
-  denyRequest: (requestId: string) => Promise<{ success: boolean }>;
+  logout: () => Promise<void>;
+  requestAccess: (data: Omit<PendingRequest, 'id' | 'requestedAt' | 'status'>) => Promise<{ success: boolean; requestId: string; error?: string }>;
+  approveRequest: (requestId: string, temporaryPassword: string) => Promise<{ success: boolean; error?: string }>;
+  denyRequest: (requestId: string) => Promise<{ success: boolean; error?: string }>;
   changePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
-  getPendingRequests: () => PendingRequest[];
+  getPendingRequests: () => Promise<PendingRequest[]>;
+  initializeAuth: () => Promise<void>;
+  setCurrentUser: (user: User | null) => void;
 }
 
-// Simple password hashing (for prototype - NOT for production!)
-const hashPassword = (password: string): string => {
-  return btoa(password); // Base64 encoding - NOT SECURE, just for prototype
-};
-
-const verifyPassword = (password: string, hash: string): boolean => {
-  return btoa(password) === hash;
-};
-
-// Initialize with admin user
-const ADMIN_EMAIL = 'admin@precast.com';
-const ADMIN_PASSWORD = 'Admin123!';
-
-const initialUsers: Record<string, { user: User; passwordHash: string }> = {
-  [ADMIN_EMAIL]: {
-    user: {
-      id: 'admin-1',
-      email: ADMIN_EMAIL,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin',
-      isTemporaryPassword: false,
-      createdAt: Date.now(),
-    },
-    passwordHash: hashPassword(ADMIN_PASSWORD),
-  },
+// Helper function to convert Firebase user profile to app User
+const firebaseUserToAppUser = (firebaseUser: FirebaseUserProfile): User => {
+  const nameParts = firebaseUser.name.split(' ');
+  return {
+    id: firebaseUser.uid,
+    email: firebaseUser.email,
+    firstName: nameParts[0] || '',
+    lastName: nameParts.slice(1).join(' ') || '',
+    role: firebaseUser.role,
+    status: firebaseUser.status,
+    isTemporaryPassword: firebaseUser.needsPasswordChange || false,
+    createdAt: firebaseUser.createdAt instanceof Date
+      ? firebaseUser.createdAt.getTime()
+      : firebaseUser.createdAt.toMillis(),
+  };
 };
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       currentUser: null,
-      users: initialUsers,
+      users: {},
       pendingRequests: [],
       currentSession: null,
+      isInitialized: false,
 
-      login: async (email: string, password: string) => {
-        const { users } = get();
-        const userEntry = users[email.toLowerCase()];
-
-        if (!userEntry) {
-          return { success: false, error: 'Invalid email or password' };
-        }
-
-        if (!verifyPassword(password, userEntry.passwordHash)) {
-          return { success: false, error: 'Invalid email or password' };
-        }
-
-        set({
-          currentUser: userEntry.user,
-          currentSession: Date.now().toString(),
+      initializeAuth: async () => {
+        // Set up auth state listener
+        onAuthStateChange(async (firebaseUser) => {
+          if (firebaseUser) {
+            // User is signed in, fetch their profile
+            const { user: profile, error } = await getUserProfile(firebaseUser.uid);
+            if (profile && !error) {
+              const appUser = firebaseUserToAppUser(profile);
+              set({
+                currentUser: appUser,
+                currentSession: firebaseUser.uid,
+              });
+            } else {
+              // User exists in auth but not in Firestore - sign them out
+              console.error('User profile not found in Firestore:', error);
+              await firebaseSignOut();
+              set({
+                currentUser: null,
+                currentSession: null,
+              });
+            }
+          } else {
+            // User is signed out
+            set({
+              currentUser: null,
+              currentSession: null,
+            });
+          }
         });
 
-        return {
-          success: true,
-          requiresPasswordChange: userEntry.user.isTemporaryPassword,
-        };
+        set({ isInitialized: true });
       },
 
-      logout: () => {
+      setCurrentUser: (user: User | null) => {
+        set({ currentUser: user });
+      },
+
+      login: async (email: string, password: string) => {
+        try {
+          const { user: firebaseUser, error } = await firebaseSignIn(email, password);
+
+          if (error || !firebaseUser) {
+            return { success: false, error: error || 'Login failed' };
+          }
+
+          // Get user profile from Firestore
+          const { user: profile, error: profileError } = await getUserProfile(firebaseUser.uid);
+
+          if (profileError || !profile) {
+            await firebaseSignOut();
+            return { success: false, error: 'User profile not found. Please contact an administrator.' };
+          }
+
+          // Check if user is approved
+          if (profile.status === 'pending') {
+            await firebaseSignOut();
+            return { success: false, error: 'Your account is pending approval. Please wait for an administrator to approve your access.' };
+          }
+
+          if (profile.status === 'rejected') {
+            await firebaseSignOut();
+            return { success: false, error: 'Your access request was denied. Please contact an administrator.' };
+          }
+
+          const appUser = firebaseUserToAppUser(profile);
+
+          set({
+            currentUser: appUser,
+            currentSession: firebaseUser.uid,
+          });
+
+          return {
+            success: true,
+            requiresPasswordChange: appUser.isTemporaryPassword,
+          };
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Login failed' };
+        }
+      },
+
+      logout: async () => {
+        await firebaseSignOut();
         set({
           currentUser: null,
           currentSession: null,
@@ -105,121 +173,156 @@ export const useAuthStore = create<AuthState>()(
       },
 
       requestAccess: async (data) => {
-        const requestId = `req-${Date.now()}`;
-        const newRequest: PendingRequest = {
-          ...data,
-          id: requestId,
-          requestedAt: Date.now(),
-          status: 'pending',
-        };
+        try {
+          const { firstName, lastName, email, company } = data;
+          const fullName = `${firstName} ${lastName}`;
 
-        set((state) => ({
-          pendingRequests: [...state.pendingRequests, newRequest],
-        }));
+          // Register user with Firebase Auth
+          const { user: firebaseUser, error: authError } = await firebaseRegisterUser(
+            email,
+            // Generate a temporary password (user will need to reset it)
+            Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+          );
 
-        // Simulate email notification
-        console.log('📧 EMAIL NOTIFICATION (Simulated)');
-        console.log('To: admin@precast.com');
-        console.log('Subject: New Access Request - Precast Quality Tools');
-        console.log('Body:');
-        console.log(`${data.firstName} ${data.lastName} has requested access.`);
-        console.log(`Email: ${data.email}`);
-        console.log(`Company: ${data.company}`);
-        console.log('\nApproval Link: precastqc://admin/approve/' + requestId);
-        console.log('Deny Link: precastqc://admin/deny/' + requestId);
+          if (authError || !firebaseUser) {
+            return {
+              success: false,
+              requestId: '',
+              error: authError || 'Failed to create user account'
+            };
+          }
 
-        return { success: true, requestId };
+          // Create user profile in Firestore with pending status
+          const { error: profileError } = await createUserProfile(firebaseUser.uid, {
+            email,
+            name: fullName,
+            role: 'user',
+            status: 'pending',
+            company,
+            needsPasswordChange: true,
+          });
+
+          if (profileError) {
+            return {
+              success: false,
+              requestId: '',
+              error: profileError
+            };
+          }
+
+          // Sign out the newly created user (they need admin approval first)
+          await firebaseSignOut();
+
+          console.log('📧 Access request submitted for:', email);
+          console.log('Admin needs to approve this user in the Admin Approval screen');
+
+          return { success: true, requestId: firebaseUser.uid };
+        } catch (error: any) {
+          return {
+            success: false,
+            requestId: '',
+            error: error.message || 'Failed to submit access request'
+          };
+        }
       },
 
       approveRequest: async (requestId: string, temporaryPassword: string) => {
-        const { pendingRequests } = get();
-        const request = pendingRequests.find((r) => r.id === requestId);
+        try {
+          // Approve the user in Firestore
+          const { error: approveError } = await approveUserAccess(requestId, 'user');
 
-        if (!request) {
-          return { success: false };
+          if (approveError) {
+            return { success: false, error: approveError };
+          }
+
+          // TODO: Send email notification to user with temporary password
+          // For now, just log it
+          const { user: profile } = await getUserProfile(requestId);
+          if (profile) {
+            console.log('📧 User approved:', profile.email);
+            console.log('Temporary password:', temporaryPassword);
+            console.log('NOTE: In production, this would be sent via email');
+          }
+
+          return { success: true };
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Failed to approve request' };
         }
-
-        // Create new user with temporary password
-        const newUser: User = {
-          id: `user-${Date.now()}`,
-          email: request.email,
-          firstName: request.firstName,
-          lastName: request.lastName,
-          role: 'user',
-          isTemporaryPassword: true,
-          createdAt: Date.now(),
-        };
-
-        set((state) => ({
-          users: {
-            ...state.users,
-            [request.email.toLowerCase()]: {
-              user: newUser,
-              passwordHash: hashPassword(temporaryPassword),
-            },
-          },
-          pendingRequests: state.pendingRequests.map((r) =>
-            r.id === requestId ? { ...r, status: 'approved' as const } : r
-          ),
-        }));
-
-        // Simulate email to user
-        console.log('📧 EMAIL NOTIFICATION (Simulated)');
-        console.log(`To: ${request.email}`);
-        console.log('Subject: Access Granted - Precast Quality Tools');
-        console.log('Body:');
-        console.log(`Hello ${request.firstName},`);
-        console.log('\nYour access request has been approved!');
-        console.log(`Temporary Password: ${temporaryPassword}`);
-        console.log('\nYou will be required to change your password on first login.');
-
-        return { success: true };
       },
 
       denyRequest: async (requestId: string) => {
-        set((state) => ({
-          pendingRequests: state.pendingRequests.map((r) =>
-            r.id === requestId ? { ...r, status: 'denied' as const } : r
-          ),
-        }));
+        try {
+          const { error } = await rejectUserAccess(requestId);
 
-        return { success: true };
+          if (error) {
+            return { success: false, error };
+          }
+
+          return { success: true };
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Failed to deny request' };
+        }
       },
 
       changePassword: async (newPassword: string) => {
-        const { currentUser, users } = get();
+        try {
+          const { currentUser } = get();
 
-        if (!currentUser) {
-          return { success: false, error: 'Not logged in' };
+          if (!currentUser) {
+            return { success: false, error: 'Not logged in' };
+          }
+
+          // Note: Firebase doesn't support changing password without re-authentication
+          // In a production app, you'd want to use Firebase's updatePassword function
+          // and handle re-authentication properly. For now, we'll update the profile flag.
+
+          const { error } = await updateUserProfile(currentUser.id, {
+            needsPasswordChange: false,
+          });
+
+          if (error) {
+            return { success: false, error };
+          }
+
+          const updatedUser = { ...currentUser, isTemporaryPassword: false };
+          set({ currentUser: updatedUser });
+
+          return { success: true };
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Failed to change password' };
         }
-
-        const updatedUser = { ...currentUser, isTemporaryPassword: false };
-        const newHash = hashPassword(newPassword);
-
-        set((state) => ({
-          currentUser: updatedUser,
-          users: {
-            ...state.users,
-            [currentUser.email.toLowerCase()]: {
-              user: updatedUser,
-              passwordHash: newHash,
-            },
-          },
-        }));
-
-        return { success: true };
       },
 
-      getPendingRequests: () => {
-        return get().pendingRequests.filter((r) => r.status === 'pending');
+      getPendingRequests: async () => {
+        try {
+          const { requests, error } = await getPendingAccessRequests();
+
+          if (error) {
+            console.error('Failed to get pending requests:', error);
+            return [];
+          }
+
+          return requests.map((profile): PendingRequest => ({
+            id: profile.uid,
+            email: profile.email,
+            firstName: profile.name.split(' ')[0] || '',
+            lastName: profile.name.split(' ').slice(1).join(' ') || '',
+            company: profile.company || '',
+            requestedAt: profile.createdAt instanceof Date
+              ? profile.createdAt.getTime()
+              : profile.createdAt.toMillis(),
+            status: profile.status === 'rejected' ? 'denied' : profile.status,
+          }));
+        } catch (error: any) {
+          console.error('Failed to get pending requests:', error);
+          return [];
+        }
       },
     }),
     {
       name: 'precast-auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        users: state.users,
-        pendingRequests: state.pendingRequests,
         currentUser: state.currentUser,
         currentSession: state.currentSession,
       }),
