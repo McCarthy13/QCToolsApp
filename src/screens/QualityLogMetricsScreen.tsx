@@ -20,14 +20,14 @@ export default function QualityLogMetricsScreen({ navigation }: Props) {
 
   const overallStats = {
     totalLogs: logs.length,
-    totalIssues: logs.reduce((sum, log) => sum + log.issues.length, 0),
+    totalIssues: logs.reduce((sum, log) => sum + (log.issues?.length ?? 0), 0),
     criticalIssues: logs.reduce(
       (sum, log) =>
-        sum + log.issues.filter((i) => i.severity === "Critical").length,
+        sum + (log.issues?.filter((i) => i.severity === "Critical").length ?? 0),
       0
     ),
     openIssues: logs.reduce(
-      (sum, log) => sum + log.issues.filter((i) => i.status === "Open").length,
+      (sum, log) => sum + (log.issues?.filter((i) => i.status === "Open").length ?? 0),
       0
     ),
   };
@@ -106,10 +106,10 @@ export default function QualityLogMetricsScreen({ navigation }: Props) {
           <View style={{ gap: 12, marginBottom: 24 }}>
             {departments.filter((d) => d.isActive).map((dept) => {
               const deptLogs = logs.filter((log) => log.department === dept.name);
-              const deptIssues = deptLogs.reduce((sum, log) => sum + log.issues.length, 0);
+              const deptIssues = deptLogs.reduce((sum, log) => sum + (log.issues?.length ?? 0), 0);
               const deptCritical = deptLogs.reduce(
                 (sum, log) =>
-                  sum + log.issues.filter((i) => i.severity === "Critical").length,
+                  sum + (log.issues?.filter((i) => i.severity === "Critical").length ?? 0),
                 0
               );
 

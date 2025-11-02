@@ -159,7 +159,7 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
           </View>
 
           {/* Production Items */}
-          {log.productionItems.length > 0 && (
+          {log.productionItems && log.productionItems.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
@@ -233,7 +233,7 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
               </Text>
               <View
                 style={{
-                  backgroundColor: log.issues.length === 0 ? "#D1FAE5" : "#FED7AA",
+                  backgroundColor: (log.issues?.length ?? 0) === 0 ? "#D1FAE5" : "#FED7AA",
                   paddingHorizontal: 12,
                   paddingVertical: 4,
                   borderRadius: 12,
@@ -243,15 +243,15 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
                   style={{
                     fontSize: 12,
                     fontWeight: "600",
-                    color: log.issues.length === 0 ? "#065F46" : "#9A3412",
+                    color: (log.issues?.length ?? 0) === 0 ? "#065F46" : "#9A3412",
                   }}
                 >
-                  {log.issues.length}
+                  {log.issues?.length ?? 0}
                 </Text>
               </View>
             </View>
 
-            {log.issues.length === 0 ? (
+            {(log.issues?.length ?? 0) === 0 ? (
               <View
                 style={{
                   backgroundColor: "#FFFFFF",
@@ -272,7 +272,7 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
               </View>
             ) : (
               <View style={{ gap: 12 }}>
-                {log.issues.map((issue) => {
+                {log.issues?.map((issue) => {
                   const statusColor = getStatusColor(issue.status);
                   const severityColor = getSeverityColor(issue.severity);
 

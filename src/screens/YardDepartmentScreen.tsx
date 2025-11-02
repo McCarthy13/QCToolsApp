@@ -33,7 +33,7 @@ export default function YardDepartmentScreen({ navigation, route }: Props) {
     }
   };
 
-  const colors = getDepartmentColor(department);
+  const colors = getDepartmentColor(department as PourDepartment);
 
   const changeDate = (days: number) => {
     const newDate = new Date(selectedDate);
@@ -105,7 +105,7 @@ export default function YardDepartmentScreen({ navigation, route }: Props) {
   };
 
   // Get pour entries for the selected date and department
-  const allEntries = getPourEntriesByDate(selectedDate, department);
+  const allEntries = getPourEntriesByDate(selectedDate, department as PourDepartment);
 
   // Filter by search query
   const filteredEntries = searchQuery.trim()

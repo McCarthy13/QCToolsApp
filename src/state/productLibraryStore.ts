@@ -36,6 +36,7 @@ interface ProductLibraryState {
   // Utility
   clearAllProducts: () => void;
   migrateCrossSections: () => void;
+  migrateTolerances: () => void;
   initializeDefaultProducts: () => void;
 }
 
@@ -331,7 +332,7 @@ export const useProductLibraryStore = create<ProductLibraryState>()(
                   max = `+${amount}"`;
                 } else if (value.includes(',')) {
                   // Format: "+1/4, -0" -> min: "0", max: "+1/4""
-                  const parts = value.split(',').map(p => p.trim());
+                  const parts = value.split(',').map((p: string) => p.trim());
                   max = parts[0].includes('+') ? parts[0].replace(/\s*inch.*/, '') + '"' : parts[0] + '"';
                   min = parts[1].includes('-') ? parts[1].replace(/\s*inch.*/, '') + '"' : parts[1] + '"';
                   if (min === '-0"') min = '0';
