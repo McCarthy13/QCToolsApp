@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.css": "/static/css/main.8304f55d.css",
+    "main.js": "/static/js/main.d6f6076b.js",
+    "static/js/6.40367a48.js": "/static/js/6.40367a48.js",
+    "static/media/Ionicons.ttf": "/static/media/Ionicons.9b6b1954a5eb6efeaf11.ttf",
+    "index.html": "/index.html",
+    "manifest.json": "/manifest.json",
+    "serve.json": "/serve.json",
+    "main.8304f55d.css.map": "/static/css/main.8304f55d.css.map",
+    "main.d6f6076b.js.map": "/static/js/main.d6f6076b.js.map",
+    "6.40367a48.js.map": "/static/js/6.40367a48.js.map"
+  },
+  "entrypoints": [
+    "static/js/6.40367a48.js",
+    "static/css/main.8304f55d.css",
+    "static/js/main.d6f6076b.js"
+  ]
+}

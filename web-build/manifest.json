@@ -1,0 +1,20 @@
+{
+  "display": "standalone",
+  "lang": "en",
+  "name": "Precast Quality Tools",
+  "short_name": "Precast Quality Tools",
+  "start_url": "/?utm_source=web_app_manifest",
+  "orientation": "portrait",
+  "related_applications": [
+    {
+      "platform": "itunes",
+      "id": "com.yourcompany.precastqualitytools"
+    },
+    {
+      "platform": "play",
+      "url": "http://play.google.com/store/apps/details?id=com.yourcompany.precastqualitytools",
+      "id": "com.yourcompany.precastqualitytools"
+    }
+  ],
+  "prefer_related_applications": true
+}
