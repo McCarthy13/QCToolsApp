@@ -59,9 +59,16 @@ if (Platform.OS === 'web') {
   });
 } else {
   // For React Native, use custom settings for better offline support
-  firestore = initializeFirestore(app, {
-    cacheSizeBytes: 50 * 1024 * 1024, // 50 MB cache
-  });
+  try {
+    firestore = initializeFirestore(app, {
+      cacheSizeBytes: 50 * 1024 * 1024, // 50 MB cache
+      experimentalForceLongPolling: true, // Help with connection issues
+    });
+  } catch (error: any) {
+    // If already initialized, get the existing instance
+    console.warn('Firestore already initialized:', error.message);
+    firestore = getFirestore(app);
+  }
 }
 
 // Initialize Storage
