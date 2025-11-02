@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, initializeAuth, Auth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, initializeFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -48,15 +48,18 @@ if (Platform.OS !== 'web') {
 // Initialize Firestore
 let firestore: Firestore;
 if (Platform.OS === 'web') {
-  firestore = getFirestore(app);
-  // Enable offline persistence for web
-  enableIndexedDbPersistence(firestore).catch((err: any) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Firestore persistence failed: Multiple tabs open');
-    } else if (err.code === 'unimplemented') {
-      console.warn('Firestore persistence not available in this browser');
-    }
-  });
+  // For web, use the new cache API with persistent local cache
+  try {
+    firestore = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+  } catch (error: any) {
+    // If already initialized, get the existing instance
+    console.warn('Firestore already initialized:', error.message);
+    firestore = getFirestore(app);
+  }
 } else {
   // For React Native, use custom settings for better offline support
   try {
