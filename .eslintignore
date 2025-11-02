@@ -1,9 +1,0 @@
-node_modules/
-web-build/
-.expo/
-dist/
-build/
-*.log
-.firebase/
-**/*.map
-**/static/**

@@ -8,6 +8,20 @@ const compat = new FlatCompat({
 
 module.exports = [
   {
+    ignores: [
+      "node_modules/**",
+      "web-build/**",
+      ".expo/**",
+      "dist/**",
+      "build/**",
+      ".firebase/**",
+      "**/static/**",
+      "**/*.map",
+      "rootStore.example.ts",
+      "nativewind-env.d.ts"
+    ],
+  },
+  {
     languageOptions: {
       globals: {
         ...globals.node,
@@ -15,9 +29,6 @@ module.exports = [
     },
   },
   ...compat.extends("expo"),
-  {
-    ignores: ["dist/*", "rootStore.example.ts", "nativewind-env.d.ts"],
-  },
   {
     rules: {
       "import/first": "off",
