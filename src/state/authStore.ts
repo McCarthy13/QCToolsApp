@@ -88,18 +88,29 @@ export const useAuthStore = create<AuthState>()(
         // Set up auth state listener
         onAuthStateChange(async (firebaseUser) => {
           if (firebaseUser) {
-            // User is signed in, fetch their profile
-            const { user: profile, error } = await getUserProfile(firebaseUser.uid);
-            if (profile && !error) {
-              const appUser = firebaseUserToAppUser(profile);
-              set({
-                currentUser: appUser,
-                currentSession: firebaseUser.uid,
-              });
-            } else {
-              // User exists in auth but not in Firestore - sign them out
-              console.error('User profile not found in Firestore:', error);
-              await firebaseSignOut();
+            // User is signed in, try to fetch their profile
+            try {
+              const { user: profile, error } = await getUserProfile(firebaseUser.uid);
+              if (profile && !error) {
+                const appUser = firebaseUserToAppUser(profile);
+                set({
+                  currentUser: appUser,
+                  currentSession: firebaseUser.uid,
+                });
+              } else {
+                // If offline or profile not found, log warning but don't sign out
+                // This allows the app to work even if Firestore is having issues
+                console.warn('Could not fetch user profile from Firestore:', error);
+                console.warn('Firestore may be offline or inaccessible. User will remain signed in.');
+                // Keep the user signed in with basic info from Firebase Auth
+                set({
+                  currentUser: null, // Will trigger login flow
+                  currentSession: null,
+                });
+                await firebaseSignOut();
+              }
+            } catch (err) {
+              console.error('Error in auth state change:', err);
               set({
                 currentUser: null,
                 currentSession: null,
