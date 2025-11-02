@@ -6,24 +6,14 @@ Starting Metro Bundler
 Waiting on http://localhost:8081
 Logs for your project will appear below.
 iOS ./index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
-iOS Bundled 1418ms index.ts (1887 modules)
-iOS Bundled 926ms index.ts (1967 modules)
- WARN  The provided Linking scheme 'exp' does not appear in the list of possible URI schemes in your Expo config. Expected one of: 'vibecode', 'com.vibecodeapp.app'
- WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Please use the `expo-audio` and `expo-video` packages to replace the required functionality.
- LOG  [index] Project ID is:  0199bbde-61be-725f-8b7a-b6d873c51eff
- WARN  [2025-11-02T14:32:52.712Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb1c transport errored. Name: undefined Message: undefined
- WARN  [2025-11-02T14:32:52.863Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb1d transport errored. Name: undefined Message: undefined
- WARN  [2025-11-02T14:32:55.589Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb1f transport errored. Name: undefined Message: undefined
- WARN  [2025-11-02T14:32:56.993Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb20 transport errored. Name: undefined Message: undefined
- WARN  [2025-11-02T14:33:00.022Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb21 transport errored. Name: undefined Message: undefined
- WARN  [2025-11-02T14:33:07.082Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb22 transport errored. Name: undefined Message: undefined
- WARN  [2025-11-02T14:33:15.286Z]  @firebase/firestore: Firestore (12.3.0): WebChannelConnection RPC 'Listen' stream 0x683dcb23 transport errored. Name: undefined Message: undefined
- ERROR  User profile not found in Firestore: Failed to get document because the client is offline.
- LOG  [console.error: User profile not found in Firestore: Failed to get document because the client is offline.]
+iOS Bundled 1418ms index.ts (1881 modules)
 iOS ./index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
-iOS Bundled 90ms index.ts (1 module)
+iOS Bundled 904ms index.ts (1954 modules)
  WARN  The provided Linking scheme 'exp' does not appear in the list of possible URI schemes in your Expo config. Expected one of: 'vibecode', 'com.vibecodeapp.app'
  WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Please use the `expo-audio` and `expo-video` packages to replace the required functionality.
  LOG  [index] Project ID is:  0199bbde-61be-725f-8b7a-b6d873c51eff
- WARN  Failed to initialize auth with persistence: Firebase: Error (auth/already-initialized).
- WARN  Firestore already initialized: initializeFirestore() has already been called with different options. To avoid this error, call initializeFirestore() with the same options as when it was originally called, or call getFirestore() to return the already initialized instance.
+iOS ./index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS Bundled 93ms index.ts (1 module)
+ WARN  The provided Linking scheme 'exp' does not appear in the list of possible URI schemes in your Expo config. Expected one of: 'vibecode', 'com.vibecodeapp.app'
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Please use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ LOG  [index] Project ID is:  0199bbde-61be-725f-8b7a-b6d873c51eff
