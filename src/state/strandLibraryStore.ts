@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FirebaseSync } from '../services/firebaseSync';
 
 export interface StrandDefinition {
   id: string;
@@ -16,12 +15,15 @@ export interface StrandDefinition {
 
 interface StrandLibraryState {
   strands: StrandDefinition[];
-  addStrand: (strand: Omit<StrandDefinition, 'id' | 'createdAt'>) => void;
-  updateStrand: (id: string, strand: Omit<StrandDefinition, 'id' | 'createdAt'>) => void;
-  removeStrand: (id: string) => void;
+  loading: boolean;
+  initialized: boolean;
+  addStrand: (strand: Omit<StrandDefinition, 'id' | 'createdAt'>) => Promise<void>;
+  updateStrand: (id: string, strand: Omit<StrandDefinition, 'id' | 'createdAt'>) => Promise<void>;
+  removeStrand: (id: string) => Promise<void>;
   getStrandById: (id: string) => StrandDefinition | undefined;
   getStrandsByDiameter: (diameter: number) => StrandDefinition[];
-  seedDefaultStrands: () => void;
+  seedDefaultStrands: () => Promise<void>;
+  initialize: () => Promise<void>;
 }
 
 // Default strand definitions based on ASTM A416
@@ -102,72 +104,131 @@ const DEFAULT_STRANDS: Omit<StrandDefinition, 'id' | 'createdAt'>[] = [
   },
 ];
 
-export const useStrandLibraryStore = create<StrandLibraryState>()(
-  persist(
-    (set, get) => ({
-      strands: [],
+const firebaseSync = new FirebaseSync<StrandDefinition>('strandLibrary');
 
-      addStrand: (strand) =>
-        set((state) => ({
-          strands: [
-            ...state.strands,
-            {
-              ...strand,
-              id: `strand-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-              createdAt: Date.now(),
-            },
-          ],
-        })),
+export const useStrandLibraryStore = create<StrandLibraryState>()((set, get) => ({
+  strands: [],
+  loading: false,
+  initialized: false,
 
-      updateStrand: (id, strand) =>
-        set((state) => ({
-          strands: state.strands.map((s) =>
-            s.id === id ? { ...s, ...strand } : s
-          ),
-        })),
+  initialize: async () => {
+    if (get().initialized) return;
 
-      removeStrand: (id) =>
-        set((state) => ({
-          strands: state.strands.filter((s) => s.id !== id),
-        })),
+    set({ loading: true });
 
-      getStrandById: (id) => {
-        return get().strands.find((s) => s.id === id);
-      },
+    try {
+      // Fetch initial data
+      const strands = await firebaseSync.fetchAll();
+      set({ strands, loading: false, initialized: true });
 
-      getStrandsByDiameter: (diameter) => {
-        return get().strands.filter((s) => Math.abs(s.diameter - diameter) < 0.001);
-      },
+      // Subscribe to real-time updates
+      firebaseSync.subscribe((updatedStrands) => {
+        set({ strands: updatedStrands });
+      });
 
-      seedDefaultStrands: () => {
-        const state = get();
-        
-        // Check if we need to add Grade 250 strands (migration)
-        const hasGrade250 = state.strands.some(s => s.grade === "250");
-        
-        if (state.strands.length === 0) {
-          // Fresh install - add all default strands
-          DEFAULT_STRANDS.forEach((strand) => {
-            state.addStrand(strand);
-          });
-        } else if (!hasGrade250) {
-          // Existing installation without Grade 250 - add only Grade 250 strands
-          const grade250Strands = DEFAULT_STRANDS.filter(s => s.grade === "250");
-          grade250Strands.forEach((strand) => {
-            state.addStrand(strand);
-          });
-        }
-      },
-    }),
-    {
-      name: 'strand-library-storage',
-      storage: createJSONStorage(() => AsyncStorage),
-      onRehydrateStorage: () => (state) => {
-        // Always check and seed/migrate strands
-        if (state) {
-          state.seedDefaultStrands();
-        }
-      },
+      // Seed default strands if empty
+      if (strands.length === 0) {
+        await get().seedDefaultStrands();
+      }
+    } catch (error) {
+      console.error('Failed to initialize strand library:', error);
+      set({ loading: false, initialized: true });
     }
-  )
-);
+  },
+
+  addStrand: async (strand) => {
+    const id = `strand-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const newStrand: StrandDefinition = {
+      ...strand,
+      id,
+      createdAt: Date.now(),
+    };
+
+    // Optimistically update UI
+    set((state) => ({
+      strands: [...state.strands, newStrand],
+    }));
+
+    try {
+      await firebaseSync.set(id, newStrand);
+    } catch (error) {
+      // Revert on error
+      set((state) => ({
+        strands: state.strands.filter((s) => s.id !== id),
+      }));
+      throw error;
+    }
+  },
+
+  updateStrand: async (id, strand) => {
+    const oldStrand = get().strands.find((s) => s.id === id);
+
+    // Optimistically update UI
+    set((state) => ({
+      strands: state.strands.map((s) =>
+        s.id === id ? { ...s, ...strand } : s
+      ),
+    }));
+
+    try {
+      await firebaseSync.set(id, strand);
+    } catch (error) {
+      // Revert on error
+      if (oldStrand) {
+        set((state) => ({
+          strands: state.strands.map((s) => (s.id === id ? oldStrand : s)),
+        }));
+      }
+      throw error;
+    }
+  },
+
+  removeStrand: async (id) => {
+    const oldStrand = get().strands.find((s) => s.id === id);
+
+    // Optimistically update UI
+    set((state) => ({
+      strands: state.strands.filter((s) => s.id !== id),
+    }));
+
+    try {
+      await firebaseSync.delete(id);
+    } catch (error) {
+      // Revert on error
+      if (oldStrand) {
+        set((state) => ({
+          strands: [...state.strands, oldStrand],
+        }));
+      }
+      throw error;
+    }
+  },
+
+  getStrandById: (id) => {
+    return get().strands.find((s) => s.id === id);
+  },
+
+  getStrandsByDiameter: (diameter) => {
+    return get().strands.filter((s) => Math.abs(s.diameter - diameter) < 0.001);
+  },
+
+  seedDefaultStrands: async () => {
+    const state = get();
+
+    // Check if we need to add Grade 250 strands (migration)
+    const hasGrade250 = state.strands.some(s => s.grade === "250");
+
+    if (state.strands.length === 0) {
+      // Fresh install - add all default strands
+      for (const strand of DEFAULT_STRANDS) {
+        await state.addStrand(strand);
+      }
+    } else if (!hasGrade250) {
+      // Existing installation without Grade 250 - add only Grade 250 strands
+      const grade250Strands = DEFAULT_STRANDS.filter(s => s.grade === "250");
+      for (const strand of grade250Strands) {
+        await state.addStrand(strand);
+      }
+    }
+  },
+}));

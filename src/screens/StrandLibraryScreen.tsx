@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,12 @@ import { RootStackParamList } from "../navigation/types";
 export default function StrandLibraryScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { strands, addStrand, updateStrand, removeStrand, seedDefaultStrands } = useStrandLibraryStore();
+  const { strands, loading, initialize, addStrand, updateStrand, removeStrand } = useStrandLibraryStore();
+
+  // Initialize Firebase sync
+  useEffect(() => {
+    initialize();
+  }, []);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStrand, setEditingStrand] = useState<StrandDefinition | null>(null);

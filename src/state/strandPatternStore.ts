@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FirebaseSync } from '../services/firebaseSync';
 
 export interface StrandCoordinate {
   x: number; // Horizontal distance from left edge (inches)
@@ -27,65 +26,142 @@ export interface CustomStrandPattern {
 
 interface StrandPatternState {
   customPatterns: CustomStrandPattern[];
-  addPattern: (pattern: Omit<CustomStrandPattern, 'id'>) => void;
-  updatePattern: (id: string, pattern: Omit<CustomStrandPattern, 'id'>) => void;
-  removePattern: (id: string) => void;
-  clearAllPatterns: () => void;
+  loading: boolean;
+  initialized: boolean;
+  addPattern: (pattern: Omit<CustomStrandPattern, 'id'>) => Promise<void>;
+  updatePattern: (id: string, pattern: Omit<CustomStrandPattern, 'id'>) => Promise<void>;
+  removePattern: (id: string) => Promise<void>;
+  clearAllPatterns: () => Promise<void>;
   getPatternById: (id: string) => CustomStrandPattern | undefined;
   getPatternByPatternId: (patternId: string) => CustomStrandPattern | undefined;
   getPatternsByPosition: (position: 'Top' | 'Bottom' | 'Both') => CustomStrandPattern[];
+  initialize: () => Promise<void>;
 }
 
-export const useStrandPatternStore = create<StrandPatternState>()(
-  persist(
-    (set, get) => ({
-      customPatterns: [],
-      
-      addPattern: (pattern) =>
-        set((state) => ({
-          customPatterns: [
-            ...state.customPatterns,
-            {
-              ...pattern,
-              id: Date.now().toString(),
-            },
-          ],
-        })),
-      
-      updatePattern: (id, pattern) =>
-        set((state) => ({
-          customPatterns: state.customPatterns.map((p) =>
-            p.id === id ? { ...pattern, id } : p
-          ),
-        })),
-      
-      removePattern: (id) =>
-        set((state) => ({
-          customPatterns: state.customPatterns.filter((p) => p.id !== id),
-        })),
-      
-      clearAllPatterns: () =>
-        set(() => ({
-          customPatterns: [],
-        })),
-      
-      getPatternById: (id) => {
-        return get().customPatterns.find((p) => p.id === id);
-      },
-      
-      getPatternByPatternId: (patternId) => {
-        return get().customPatterns.find((p) => p.patternId === patternId);
-      },
-      
-      getPatternsByPosition: (position) => {
-        return get().customPatterns.filter((p) => 
-          p.position === position || p.position === 'Both'
-        );
-      },
-    }),
-    {
-      name: 'strand-pattern-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+const firebaseSync = new FirebaseSync<CustomStrandPattern>('strandPatterns');
+
+export const useStrandPatternStore = create<StrandPatternState>()((set, get) => ({
+  customPatterns: [],
+  loading: false,
+  initialized: false,
+
+  initialize: async () => {
+    if (get().initialized) return;
+
+    set({ loading: true });
+
+    try {
+      const patterns = await firebaseSync.fetchAll();
+      set({ customPatterns: patterns, loading: false, initialized: true });
+
+      // Subscribe to real-time updates
+      firebaseSync.subscribe((updatedPatterns) => {
+        set({ customPatterns: updatedPatterns });
+      });
+    } catch (error) {
+      console.error('Failed to initialize strand patterns:', error);
+      set({ loading: false, initialized: true });
     }
-  )
-);
+  },
+
+  addPattern: async (pattern) => {
+    const id = Date.now().toString();
+    const newPattern: CustomStrandPattern = {
+      ...pattern,
+      id,
+    };
+
+    // Optimistically update UI
+    set((state) => ({
+      customPatterns: [...state.customPatterns, newPattern],
+    }));
+
+    try {
+      await firebaseSync.set(id, newPattern);
+    } catch (error) {
+      // Revert on error
+      set((state) => ({
+        customPatterns: state.customPatterns.filter((p) => p.id !== id),
+      }));
+      throw error;
+    }
+  },
+
+  updatePattern: async (id, pattern) => {
+    const oldPattern = get().customPatterns.find((p) => p.id === id);
+
+    // Optimistically update UI
+    set((state) => ({
+      customPatterns: state.customPatterns.map((p) =>
+        p.id === id ? { ...pattern, id } : p
+      ),
+    }));
+
+    try {
+      await firebaseSync.set(id, { ...pattern, id });
+    } catch (error) {
+      // Revert on error
+      if (oldPattern) {
+        set((state) => ({
+          customPatterns: state.customPatterns.map((p) => (p.id === id ? oldPattern : p)),
+        }));
+      }
+      throw error;
+    }
+  },
+
+  removePattern: async (id) => {
+    const oldPattern = get().customPatterns.find((p) => p.id === id);
+
+    // Optimistically update UI
+    set((state) => ({
+      customPatterns: state.customPatterns.filter((p) => p.id !== id),
+    }));
+
+    try {
+      await firebaseSync.delete(id);
+    } catch (error) {
+      // Revert on error
+      if (oldPattern) {
+        set((state) => ({
+          customPatterns: [...state.customPatterns, oldPattern],
+        }));
+      }
+      throw error;
+    }
+  },
+
+  clearAllPatterns: async () => {
+    const oldPatterns = get().customPatterns;
+
+    // Optimistically update UI
+    set(() => ({
+      customPatterns: [],
+    }));
+
+    try {
+      // Delete all patterns from Firebase
+      await Promise.all(oldPatterns.map(p => firebaseSync.delete(p.id)));
+    } catch (error) {
+      // Revert on error
+      set(() => ({
+        customPatterns: oldPatterns,
+      }));
+      throw error;
+    }
+  },
+
+  getPatternById: (id) => {
+    return get().customPatterns.find((p) => p.id === id);
+  },
+
+  getPatternByPatternId: (patternId) => {
+    return get().customPatterns.find((p) => p.patternId === patternId);
+  },
+
+  getPatternsByPosition: (position) => {
+    return get().customPatterns.filter((p) =>
+      p.position === position || p.position === 'Both'
+    );
+  },
+}));
