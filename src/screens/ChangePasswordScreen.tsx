@@ -6,8 +6,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -34,8 +32,6 @@ export default function ChangePasswordScreen({
   const changePassword = useAuthStore((state) => state.changePassword);
 
   const handleChangePassword = async () => {
-    Keyboard.dismiss();
-
     // Validation
     if (!newPassword) {
       setError("Please enter a new password");
@@ -84,11 +80,10 @@ export default function ChangePasswordScreen({
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-white"
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          className="flex-1"
-          style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-        >
+      <View
+        className="flex-1"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
           <ScrollView
             className="flex-1 px-6"
             contentContainerStyle={{ paddingTop: 40, paddingBottom: 40 }}
@@ -295,7 +290,6 @@ export default function ChangePasswordScreen({
             </View>
           </ScrollView>
         </View>
-      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

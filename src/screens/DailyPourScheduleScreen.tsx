@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, TextInput, Modal, Keyboard, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, Modal, Alert } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -668,17 +668,16 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
       {/* Add/Edit Pour Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                padding: 24,
-                paddingBottom: insets.bottom + 24,
-                maxHeight: "90%",
-              }}
-            >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: 24,
+              paddingBottom: insets.bottom + 24,
+              maxHeight: "90%",
+            }}
+          >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                 <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
                   {editingPourId ? "Edit Piece" : "Add Piece"}
@@ -981,7 +980,6 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
                 </Pressable>
               </View>
             </View>
-          </TouchableWithoutFeedback>
         </View>
       </Modal>
 

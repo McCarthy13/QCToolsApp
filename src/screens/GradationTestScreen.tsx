@@ -7,8 +7,6 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -128,9 +126,8 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-gray-50"
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View className="flex-1">
-          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+      <View className="flex-1">
+        <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
             {/* Date and Production Status */}
             <View className="bg-white p-4 border-b border-gray-200">
               <Text className="text-sm font-medium text-gray-700 mb-2">Test Date</Text>
@@ -272,7 +269,6 @@ const GradationTestScreen: React.FC<Props> = ({ navigation, route }) => {
             </Pressable>
           </View>
         </View>
-      </TouchableWithoutFeedback>
 
       {/* Cancel Confirmation Modal */}
       <ConfirmModal

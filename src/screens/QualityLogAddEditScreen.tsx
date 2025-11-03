@@ -4,8 +4,6 @@ import {
   Pressable,
   ScrollView,
   TextInput,
-  Keyboard,
-  TouchableWithoutFeedback,
   Modal,
   Alert,
 } from "react-native";
@@ -186,13 +184,12 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          <ScrollView
-            style={{ flex: 1 }}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 100 }}
-          >
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 100 }}
+        >
             {/* Department & Date */}
             <View style={{ marginBottom: 24 }}>
               <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
@@ -466,16 +463,15 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
           {/* Production Item Modal */}
           <Modal visible={showProductionModal} animationType="slide" transparent>
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderTopLeftRadius: 24,
-                    borderTopRightRadius: 24,
-                    padding: 24,
-                    paddingBottom: insets.bottom + 24,
-                  }}
-                >
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  padding: 24,
+                  paddingBottom: insets.bottom + 24,
+                }}
+              >
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                     <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
                       Add Production Item
@@ -604,23 +600,21 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                     </Pressable>
                   </View>
                 </View>
-              </TouchableWithoutFeedback>
             </View>
           </Modal>
 
           {/* Issue Modal */}
           <Modal visible={showIssueModal} animationType="slide" transparent>
             <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderTopLeftRadius: 24,
-                    borderTopRightRadius: 24,
-                    padding: 24,
-                    paddingBottom: insets.bottom + 24,
-                  }}
-                >
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  padding: 24,
+                  paddingBottom: insets.bottom + 24,
+                }}
+              >
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
                     <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
                       Add Quality Issue
@@ -794,7 +788,6 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
                     </Pressable>
                   </View>
                 </View>
-              </TouchableWithoutFeedback>
             </View>
           </Modal>
 
@@ -880,7 +873,6 @@ export default function QualityLogAddEditScreen({ navigation, route }: Props) {
             </View>
           </Modal>
         </View>
-      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }

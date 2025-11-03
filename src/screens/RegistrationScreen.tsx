@@ -6,8 +6,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -39,8 +37,6 @@ export default function RegistrationScreen({
   };
 
   const handleSubmit = async () => {
-    Keyboard.dismiss();
-
     // Validation
     if (!firstName.trim()) {
       setError("Please enter your first name");
@@ -96,11 +92,10 @@ export default function RegistrationScreen({
       className="flex-1 bg-gradient-to-br from-blue-500 to-blue-600"
       style={{ backgroundColor: "#3B82F6" }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          className="flex-1"
-          style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-        >
+      <View
+        className="flex-1"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
           {/* Header */}
           <View className="px-6 py-4">
             <Pressable
@@ -251,7 +246,6 @@ export default function RegistrationScreen({
             </View>
           </ScrollView>
         </View>
-      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

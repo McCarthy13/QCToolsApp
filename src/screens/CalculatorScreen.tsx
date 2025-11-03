@@ -7,8 +7,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -170,12 +168,11 @@ export default function CalculatorScreen() {
       className="flex-1 bg-white"
       style={{ paddingTop: insets.top }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
-        >
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+      >
           {/* Header */}
           <View className="px-6 py-4 border-b border-gray-200">
             <Text className="text-gray-900 text-2xl font-bold">
@@ -542,7 +539,6 @@ export default function CalculatorScreen() {
             </Pressable>
           </View>
         </ScrollView>
-      </TouchableWithoutFeedback>
 
       {/* Product Selection Modal */}
       <Modal
