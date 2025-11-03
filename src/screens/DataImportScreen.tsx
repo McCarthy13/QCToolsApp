@@ -112,6 +112,8 @@ export default function DataImportScreen({ onBack }: DataImportScreenProps) {
             value={jsonInput}
             onChangeText={setJsonInput}
             placeholder='Paste your JSON export here...'
+            placeholderTextColor="#9CA3AF"
+            cursorColor="#000000"
             multiline
             numberOfLines={10}
             className="bg-white border border-gray-300 rounded-lg p-3 text-sm font-mono text-gray-900 mb-4"
