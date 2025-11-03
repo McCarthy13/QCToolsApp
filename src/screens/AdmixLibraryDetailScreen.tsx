@@ -84,8 +84,8 @@ const AdmixLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     Linking.openURL(`mailto:${email}`);
   };
 
-  const handleDuplicate = () => {
-    const duplicated = duplicateAdmix(admixId);
+  const handleDuplicate = async () => {
+    const duplicated = await duplicateAdmix(admixId);
     if (duplicated) {
       Alert.alert(
         'Duplicate Created',

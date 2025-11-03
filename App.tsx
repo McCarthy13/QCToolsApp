@@ -72,6 +72,11 @@ import YardSearchScreen from "./src/screens/YardSearchScreen";
 import { useAuthStore } from "./src/state/authStore";
 import { useStrandLibraryStore } from "./src/state/strandLibraryStore";
 import { useStrandPatternStore } from "./src/state/strandPatternStore";
+import { useProductLibraryStore } from "./src/state/productLibraryStore";
+import { useAggregateLibraryStore } from "./src/state/aggregateLibraryStore";
+import { useAdmixLibraryStore } from "./src/state/admixLibraryStore";
+import { useProjectLibraryStore } from "./src/state/projectLibraryStore";
+import { useContactsStore } from "./src/state/contactsStore";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -109,6 +114,11 @@ export default function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const initializeStrandLibrary = useStrandLibraryStore((state) => state.initialize);
   const initializeStrandPatterns = useStrandPatternStore((state) => state.initialize);
+  const initializeProducts = useProductLibraryStore((state) => state.initialize);
+  const initializeAggregates = useAggregateLibraryStore((state) => state.initialize);
+  const initializeAdmixes = useAdmixLibraryStore((state) => state.initialize);
+  const initializeProjects = useProjectLibraryStore((state) => state.initialize);
+  const initializeContacts = useContactsStore((state) => state.initialize);
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>("login");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -116,10 +126,15 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       await initializeAuth();
-      // Initialize Firebase-backed stores
+      // Initialize all Firebase-backed stores in parallel
       await Promise.all([
         initializeStrandLibrary(),
         initializeStrandPatterns(),
+        initializeProducts(),
+        initializeAggregates(),
+        initializeAdmixes(),
+        initializeProjects(),
+        initializeContacts(),
       ]);
       setIsLoading(false);
     };

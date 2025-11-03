@@ -65,8 +65,8 @@ const AggregateLibraryDetailScreen: React.FC<Props> = ({ navigation, route }) =>
     );
   };
 
-  const handleDuplicate = () => {
-    const duplicated = duplicateAggregate(aggregateId);
+  const handleDuplicate = async () => {
+    const duplicated = await duplicateAggregate(aggregateId);
     if (duplicated) {
       Alert.alert(
         'Duplicate Created',

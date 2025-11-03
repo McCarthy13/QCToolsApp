@@ -77,8 +77,8 @@ const ContactDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const handleDuplicate = () => {
-    const duplicated = duplicateContact(contactId);
+  const handleDuplicate = async () => {
+    const duplicated = await duplicateContact(contactId);
     if (duplicated) {
       Alert.alert(
         'Duplicate Created',

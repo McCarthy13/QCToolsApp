@@ -18,25 +18,17 @@ type Props = NativeStackScreenProps<RootStackParamList, "ProductLibrary">;
 export default function ProductLibraryScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const products = useProductLibraryStore((s) => s.products);
+  const initialize = useProductLibraryStore((s) => s.initialize);
   const addProduct = useProductLibraryStore((s) => s.addProduct);
   const updateProduct = useProductLibraryStore((s) => s.updateProduct);
   const deleteProduct = useProductLibraryStore((s) => s.deleteProduct);
   const addSubProduct = useProductLibraryStore((s) => s.addSubProduct);
   const updateSubProduct = useProductLibraryStore((s) => s.updateSubProduct);
   const deleteSubProduct = useProductLibraryStore((s) => s.deleteSubProduct);
-  const initializeDefaultProducts = useProductLibraryStore((s) => s.initializeDefaultProducts);
-  const migrateCrossSections = useProductLibraryStore((s) => s.migrateCrossSections);
-  const migrateTolerances = useProductLibraryStore((s) => s.migrateTolerances);
 
-  // Initialize default products on mount and run migrations
+  // Initialize Firebase on mount
   useEffect(() => {
-    if (products.length === 0) {
-      initializeDefaultProducts();
-    } else {
-      // Migrate existing products to add cross-section components and update tolerance format
-      migrateCrossSections();
-      migrateTolerances();
-    }
+    initialize();
   }, []);
 
   const [showAddModal, setShowAddModal] = useState(false);
