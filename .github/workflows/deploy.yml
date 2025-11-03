@@ -1,0 +1,38 @@
+name: Deploy to Vibecode Sandbox
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Sandbox
+        env:
+          DEPLOY_KEY: ${{ secrets.VIBECODE_DEPLOY_KEY }}
+          SANDBOX_HOST: ${{ secrets.SANDBOX_HOST }}
+          SANDBOX_USER: ${{ secrets.SANDBOX_USER }}
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SANDBOX_HOST >> ~/.ssh/known_hosts
+
+          # Deploy files
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '.expo' \
+            --exclude 'expo.log' \
+            ./ $SANDBOX_USER@$SANDBOX_HOST:/home/user/workspace/
+
+          # Restart app
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            $SANDBOX_USER@$SANDBOX_HOST \
+            "cd /home/user/workspace && bun install"
