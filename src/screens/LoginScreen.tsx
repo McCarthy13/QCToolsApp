@@ -6,8 +6,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,8 +30,6 @@ export default function LoginScreen({
   const login = useAuthStore((state) => state.login);
 
   const handleLogin = async () => {
-    Keyboard.dismiss();
-
     if (!email.trim()) {
       setError("Please enter your email address");
       return;
@@ -69,11 +65,10 @@ export default function LoginScreen({
       className="flex-1 bg-gradient-to-br from-blue-500 to-blue-600"
       style={{ backgroundColor: "#3B82F6" }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          className="flex-1 justify-center px-6"
-          style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-        >
+      <View
+        className="flex-1 justify-center px-6"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
           {/* Logo/Icon */}
           <View className="items-center mb-8">
             <View className="bg-white rounded-full p-6 shadow-lg">
@@ -187,7 +182,6 @@ export default function LoginScreen({
             For authorized use only
           </Text>
         </View>
-      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
