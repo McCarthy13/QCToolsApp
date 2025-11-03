@@ -8,8 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -155,12 +153,11 @@ export default function ProductDetailsScreen({ navigation }: Props) {
       className="flex-1 bg-white"
       style={{ paddingTop: insets.top }}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
-        >
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+      >
           {/* Header */}
           <View className="px-6 py-4 border-b border-gray-200">
             <Text className="text-gray-900 text-2xl font-bold">
@@ -527,8 +524,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
               </Text>
             </Pressable>
           </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
+      </ScrollView>
 
       {/* Product Type Modal */}
       <Modal
