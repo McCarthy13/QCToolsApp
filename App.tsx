@@ -70,6 +70,8 @@ import YardDepartmentScreen from "./src/screens/YardDepartmentScreen";
 import YardProductSelectionScreen from "./src/screens/YardProductSelectionScreen";
 import YardSearchScreen from "./src/screens/YardSearchScreen";
 import { useAuthStore } from "./src/state/authStore";
+import { useStrandLibraryStore } from "./src/state/strandLibraryStore";
+import { useStrandPatternStore } from "./src/state/strandPatternStore";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -105,6 +107,8 @@ type AuthScreen =
 export default function App() {
   const currentUser = useAuthStore((state) => state.currentUser);
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
+  const initializeStrandLibrary = useStrandLibraryStore((state) => state.initialize);
+  const initializeStrandPatterns = useStrandPatternStore((state) => state.initialize);
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>("login");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -112,6 +116,11 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       await initializeAuth();
+      // Initialize Firebase-backed stores
+      await Promise.all([
+        initializeStrandLibrary(),
+        initializeStrandPatterns(),
+      ]);
       setIsLoading(false);
     };
     init();
