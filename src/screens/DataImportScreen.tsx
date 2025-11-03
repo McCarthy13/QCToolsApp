@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,54 +26,45 @@ export default function DataImportScreen({ onBack }: DataImportScreenProps) {
 
   const handleImport = async () => {
     if (!jsonInput.trim()) {
-      Alert.alert('Error', 'Please paste your JSON data');
+      alert('Please paste your JSON data');
       return;
     }
 
     const firebaseUser = getCurrentUser();
     if (!firebaseUser || !currentUser) {
-      Alert.alert('Error', 'You must be logged in to import data');
+      alert('You must be logged in to import data');
       return;
     }
 
     // Validate JSON
     const validation = validateImportData(jsonInput);
     if (!validation.valid) {
-      Alert.alert('Invalid Data', validation.error || 'Invalid JSON structure');
+      alert('Invalid Data: ' + (validation.error || 'Invalid JSON structure'));
       return;
     }
 
     // Confirm import
-    Alert.alert(
-      'Confirm Import',
-      'This will import the data to Firebase. Existing data with the same IDs will be merged. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Import',
-          onPress: async () => {
-            setLoading(true);
-            setImportResult(null);
+    const confirmed = confirm('This will import the data to Firebase. Existing data with the same IDs will be merged. Continue?');
+    if (!confirmed) return;
 
-            try {
-              const result = await importDataToFirebase(validation.data!, firebaseUser.uid);
-              setImportResult(result);
+    setLoading(true);
+    setImportResult(null);
 
-              if (result.success) {
-                Alert.alert('Success', 'Data imported successfully!');
-                setJsonInput(''); // Clear input on success
-              } else {
-                Alert.alert('Import Failed', result.error || 'Unknown error');
-              }
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Import failed');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    try {
+      const result = await importDataToFirebase(validation.data!, firebaseUser.uid);
+      setImportResult(result);
+
+      if (result.success) {
+        alert('Data imported successfully!');
+        setJsonInput(''); // Clear input on success
+      } else {
+        alert('Import Failed: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      alert('Error: ' + (error.message || 'Import failed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
