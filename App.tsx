@@ -1,16 +1,6 @@
 import { StatusBar } from "expo-status-bar";
-import { Pressable, View, Text, TextInput } from "react-native";
+import { Pressable, View, Text, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
-// Set default cursor/selection color for all TextInputs globally (iOS uses selectionColor for cursor)
-// Note: defaultProps is deprecated in React 19, but this is a temporary workaround
-// @ts-ignore - defaultProps exists at runtime but not in types
-if (TextInput.defaultProps) {
-  // @ts-ignore
-  TextInput.defaultProps.cursorColor = '#000000'; // Android
-  // @ts-ignore
-  TextInput.defaultProps.selectionColor = '#000000'; // iOS cursor + selection
-}
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
