@@ -43,3 +43,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRECAST_QC_TOOLS_WEB_APP }}
           channelId: live
           projectId: precast-qc-tools-web-app
+          entryPoint: .
