@@ -14,6 +14,7 @@ import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1048 from "../components/CrossSection1048";
 import CrossSection1248 from "../components/CrossSection1248";
 import CrossSection1250 from "../components/CrossSection1250";
+import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -40,6 +41,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Get the selected strand pattern
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
@@ -80,82 +82,36 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     setTimeout(() => setPublishSuccess(false), 3000);
   };
 
-  const handleGenerateEmailReport = () => {
-    // Get user's email
-    const userEmail = currentUser?.email || 'unknown@example.com';
-    const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
-    
-    // Build email subject
-    const subject = `Slippage Report - ${config.projectName || 'Unnamed Project'}`;
-    
-    // Build product details section
-    let productDetails = "PRODUCT DETAILS:\n";
-    if (config.projectName) productDetails += `• Project Name: ${config.projectName}\n`;
-    if (config.projectNumber) productDetails += `• Project Number: ${config.projectNumber}\n`;
-    if (config.markNumber) productDetails += `• Mark Number: ${config.markNumber}\n`;
-    if (config.idNumber) productDetails += `• ID Number: ${config.idNumber}\n`;
-    if (config.span) productDetails += `• Span: ${config.span}"\n`;
-    productDetails += `• Product Type: ${config.productType}\n`;
-    
-    // Add product width for cut-width products
-    if (config.productWidth && config.offcutSide && selectedPattern?.strandCoordinates) {
-      const totalStrands = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
-      productDetails += `• Product Width (Cut): ${config.productWidth}"\n`;
-      productDetails += `• Offcut Side: ${config.offcutSide} (${config.offcutSide === 'L1' ? 'Left removed, keeping right' : 'Right removed, keeping left'})\n`;
-      productDetails += `• Active Strands: ${slippages.length} of ${totalStrands}\n`;
+  const handleGeneratePDFReport = async () => {
+    setIsGeneratingPDF(true);
+
+    try {
+      // Get user's email and name
+      const userEmail = currentUser?.email || 'unknown@example.com';
+      const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
+
+      // Generate the PDF
+      const filePath = await generateSlippagePDF({
+        slippages,
+        config,
+        slippageStats,
+        userEmail,
+        userName,
+        getStrandSize,
+      });
+
+      if (filePath) {
+        // Share the PDF
+        await sharePDF(filePath);
+      } else {
+        Alert.alert('Error', 'Failed to generate PDF report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating/sharing PDF:', error);
+      Alert.alert('Error', 'Failed to generate or share PDF report. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
     }
-    
-    // Add strand pattern info
-    if (selectedPattern) {
-      const totalStrands = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
-      productDetails += `• Strand Pattern: ${selectedPattern.name}\n`;
-      productDetails += `  - Total Strands: ${totalStrands}\n`;
-    }
-    
-    // Build slippage summary section
-    let slippageSummary = "\n\nSLIPPAGE SUMMARY:\n\n";
-    
-    // Overall statistics
-    slippageSummary += "Overall Statistics:\n";
-    slippageSummary += `• Total Slippage (All Values): ${slippageStats.anyValueExceeds ? ">" : ""}${slippageStats.totalSlippage.toFixed(3)}" (≈${slippageStats.anyValueExceeds ? ">" : ""}${decimalToFraction(slippageStats.totalSlippage)})\n`;
-    slippageSummary += `• Average Slippage (All Values): ${slippageStats.anyValueExceeds ? ">" : ""}${slippageStats.totalAvgSlippage.toFixed(3)}" (≈${slippageStats.anyValueExceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippage)})\n`;
-    slippageSummary += `• Total Slippage END 1: ${slippageStats.anyEnd1Exceeds ? ">" : ""}${slippageStats.totalSlippageEnd1.toFixed(3)}" (≈${slippageStats.anyEnd1Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalSlippageEnd1)})\n`;
-    slippageSummary += `• Average Slippage END 1: ${slippageStats.anyEnd1Exceeds ? ">" : ""}${slippageStats.totalAvgSlippageEnd1.toFixed(3)}" (≈${slippageStats.anyEnd1Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippageEnd1)})\n`;
-    slippageSummary += `• Total Slippage END 2: ${slippageStats.anyEnd2Exceeds ? ">" : ""}${slippageStats.totalSlippageEnd2.toFixed(3)}" (≈${slippageStats.anyEnd2Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalSlippageEnd2)})\n`;
-    slippageSummary += `• Average Slippage END 2: ${slippageStats.anyEnd2Exceeds ? ">" : ""}${slippageStats.totalAvgSlippageEnd2.toFixed(3)}" (≈${slippageStats.anyEnd2Exceeds ? ">" : ""}${decimalToFraction(slippageStats.totalAvgSlippageEnd2)})\n`;
-    
-    if (slippageStats.anyValueExceeds) {
-      slippageSummary += "\n⚠ WARNING: Contains values exceeding 1\"\n";
-    }
-    
-    // Individual strand data
-    slippageSummary += "\n\nSlippage by Strand:\n";
-    slippages.forEach((strand) => {
-      const end1Value = parseMeasurementInput(strand.leftSlippage);
-      const end2Value = parseMeasurementInput(strand.rightSlippage);
-      const e1 = end1Value ?? 0;
-      const e2 = end2Value ?? 0;
-      const strandTotal = e1 + e2;
-      const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-      const strandSize = getStrandSize(strand.strandId);
-      
-      slippageSummary += `\nStrand ${strand.strandId}${strandSize ? ` (${strandSize})` : ""}:\n`;
-      slippageSummary += `  • END 1: ${strand.leftExceedsOne ? ">" : ""}${end1Value !== null ? end1Value.toFixed(3) : "0.000"}" (≈${strand.leftExceedsOne ? ">" : ""}${end1Value !== null ? decimalToFraction(end1Value) : "0"})\n`;
-      slippageSummary += `  • END 2: ${strand.rightExceedsOne ? ">" : ""}${end2Value !== null ? end2Value.toFixed(3) : "0.000"}" (≈${strand.rightExceedsOne ? ">" : ""}${end2Value !== null ? decimalToFraction(end2Value) : "0"})\n`;
-      slippageSummary += `  • Strand Total: ${hasExceeds ? ">" : ""}${strandTotal.toFixed(3)}" (≈${hasExceeds ? ">" : ""}${decimalToFraction(strandTotal)})\n`;
-    });
-    
-    // Add footer with user info
-    slippageSummary += `\n\n---\nGenerated by Slippage Identifier Tool\nSubmitted by: ${userName} (${userEmail})\nDate: ${new Date().toLocaleString()}`;
-    
-    // Combine sections
-    const body = productDetails + slippageSummary;
-    
-    // Navigate to email composer screen
-    navigation.navigate("EmailComposer", {
-      subject,
-      body,
-    });
   };
 
   // Calculate all slippage statistics
@@ -505,12 +461,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
           <Pressable
             className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mb-3"
-            onPress={handleGenerateEmailReport}
+            onPress={handleGeneratePDFReport}
+            disabled={isGeneratingPDF}
           >
             <View className="flex-row items-center">
-              <Ionicons name="mail-outline" size={20} color="white" />
+              <Ionicons name={isGeneratingPDF ? "hourglass-outline" : "document-text-outline"} size={20} color="white" />
               <Text className="text-white text-base font-semibold ml-2">
-                Generate Email Report
+                {isGeneratingPDF ? 'Generating PDF...' : 'Generate Report'}
               </Text>
             </View>
           </Pressable>
