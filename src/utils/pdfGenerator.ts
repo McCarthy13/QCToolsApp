@@ -1,5 +1,4 @@
-import { generatePDF } from 'react-native-html-to-pdf';
-import * as FileSystem from 'expo-file-system';
+import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction } from './cn';
@@ -42,6 +41,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       <html>
         <head>
           <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
             * {
               margin: 0;
@@ -432,16 +432,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       </html>
     `;
 
-    // Generate PDF
-    const options = {
+    // Generate PDF using expo-print
+    const { uri } = await Print.printToFileAsync({
       html: htmlContent,
-      fileName: `Slippage_Report_${config.projectName || 'Unnamed'}_${Date.now()}`,
-      directory: 'Documents',
-    };
+    });
 
-    const file = await generatePDF(options);
-
-    return file.filePath || null;
+    return uri;
   } catch (error) {
     console.error('Error generating PDF:', error);
     return null;
