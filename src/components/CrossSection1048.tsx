@@ -74,10 +74,13 @@ export default function CrossSection1048({
   // Calculate which part to show based on offcut
   let xOffset = 0;
   if (offcutSide === 'L1' && productWidth) {
-    // L1 cut = show right side
+    // L1 = keep left side, show from x=0
+    xOffset = 0;
+  } else if (offcutSide === 'L2' && productWidth) {
+    // L2 = keep right side, show from right
     xOffset = (FULL_WIDTH - productWidth) * scale;
   }
-  // L2 cut or no cut = show from left (xOffset = 0)
+  // No offcut = show full width (xOffset = 0)
 
   // Calculate core positions (5 cores total for 1048)
   const coreY = BOTTOM_FLANGE * scale;
@@ -139,8 +142,8 @@ export default function CrossSection1048({
 
     // Determine which edge gets the keyway (keeper edge) and which is straight (cut edge)
     const hasKeyway = offcutSide !== null;
-    const leftHasKeyway = offcutSide === 'L2'; // L2 cut = left is keeper
-    const rightHasKeyway = offcutSide === 'L1'; // L1 cut = right is keeper
+    const leftHasKeyway = offcutSide === 'L1'; // L1 kept = left is keeper
+    const rightHasKeyway = offcutSide === 'L2'; // L2 kept = right is keeper
 
     if (!hasKeyway) {
       // Full width product - show keyway on BOTH sides
