@@ -214,3 +214,5 @@
 - Changes made by agent 2025-11-07T17:47:00Z
 - Renamed "Offcut Side" to "Product Side" terminology throughout Slippage Identifier and Camber Calculator for clarity (2025-11-07)
 - Changes made by agent 2025-11-07T18:11:30Z
+- Optimized PDF layout to fit on one page - reduced spacing, font sizes, and padding throughout the report (2025-11-07)
+- Changes made by agent 2025-11-07T18:20:06Z
