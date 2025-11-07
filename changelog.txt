@@ -197,3 +197,5 @@
 - Changes made by agent 2025-11-07T16:49:11Z
 - Changes made by agent 2025-11-07T16:50:39Z
 - Changes made by agent 2025-11-07T16:52:06Z
+- Fixed active strand calculation to account for full product width including 2" concrete cover on each side (2025-11-07)
+- Changes made by agent 2025-11-07T16:57:19Z

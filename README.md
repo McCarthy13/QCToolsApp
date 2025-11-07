@@ -211,7 +211,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] PDF generation error fix - resolved "non-std C++ exception" by adding image size limits, quality reduction, and fallback retry logic
 - [x] Slippage average calculation fix - averages now include all active strands (including those with 0 slippage) for accurate results
 - [x] Slippage per-strand total fix - per-strand totals now properly treat >1 inch values as 1.0 for accurate calculations
-- [x] Active strand calculation fix - corrected boundary logic to exclude strands at cut edges (changed >= to > and <= to <)
+- [x] Active strand calculation fix - now accounts for full product width (strand span + 2" concrete cover on each side) instead of just strand positions
 
 ### ⏳ Ready to Implement
 

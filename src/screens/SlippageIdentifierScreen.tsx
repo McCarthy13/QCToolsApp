@@ -62,12 +62,17 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     const { strandCoordinates } = selectedPattern;
     const { productWidth, offcutSide } = config;
 
-    // Calculate full width from max x coordinate
-    const fullWidth = Math.max(...strandCoordinates.map(c => c.x));
+    // Calculate full product width
+    // Strands span from min to max x coordinate, plus 2" concrete cover on each side
+    const minX = Math.min(...strandCoordinates.map(c => c.x));
+    const maxX = Math.max(...strandCoordinates.map(c => c.x));
+    const concreteCover = 2; // 2" on each side
+    const fullProductWidth = (maxX - minX) + (concreteCover * 2);
 
     console.log('[SlippageIdentifier] Calculating active strands:');
-    console.log('  Full width:', fullWidth);
-    console.log('  Product width:', productWidth);
+    console.log('  Strand span:', `${minX}" to ${maxX}"`);
+    console.log('  Full product width:', fullProductWidth);
+    console.log('  Cut product width:', productWidth);
     console.log('  Offcut side:', offcutSide);
     console.log('  Total strands:', strandCoordinates.length);
 
@@ -77,18 +82,20 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
       let isActive = false;
 
       if (offcutSide === 'L1') {
-        // L1 (Left) was cut off - keep right side (strands near L2)
-        // Keep strands where x > (fullWidth - productWidth)
-        // Use strict inequality to exclude strands right at the boundary
-        const cutoffPoint = fullWidth - productWidth;
-        isActive = coord.x > cutoffPoint;
-        console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${cutoffPoint})`);
+        // L1 (Left) was cut off - keep right side
+        // Calculate where the cut is made: fullProductWidth - productWidth
+        const cutPosition = fullProductWidth - productWidth;
+        // Keep strands that are to the right of the cut position
+        // Account for the left concrete cover (minX) when comparing
+        const strandPositionInProduct = coord.x - minX + concreteCover;
+        isActive = strandPositionInProduct >= cutPosition;
+        console.log(`  Strand ${index + 1} at x=${coord.x} (position in product: ${strandPositionInProduct.toFixed(2)}): ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${cutPosition})`);
       } else if (offcutSide === 'L2') {
-        // L2 (Right) was cut off - keep left side (strands near L1)
-        // Keep strands where x < productWidth
-        // Use strict inequality to exclude strands right at the boundary
-        isActive = coord.x < productWidth;
-        console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${productWidth})`);
+        // L2 (Right) was cut off - keep left side
+        // Keep strands that are within the productWidth from the left
+        const strandPositionInProduct = coord.x - minX + concreteCover;
+        isActive = strandPositionInProduct <= productWidth;
+        console.log(`  Strand ${index + 1} at x=${coord.x} (position in product: ${strandPositionInProduct.toFixed(2)}): ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${productWidth})`);
       }
 
       if (isActive) {
