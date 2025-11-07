@@ -54,6 +54,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               padding: 30px;
               color: #1f2937;
               line-height: 1.6;
+              background-color: #ffffff;
             }
 
             .header {
@@ -116,21 +117,25 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             .cross-section {
               text-align: center;
               margin: 20px 0;
-              padding: 15px;
-              background: #f9fafb;
+              padding: 20px;
+              background: #ffffff;
               border-radius: 8px;
+              border: 2px solid #e5e7eb;
             }
 
             .cross-section img {
               max-width: 100%;
               height: auto;
+              border-radius: 4px;
             }
 
             .cross-section-label {
-              font-size: 12px;
-              color: #6b7280;
-              margin-bottom: 10px;
-              font-weight: 600;
+              font-size: 14px;
+              color: #374151;
+              margin-bottom: 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
             }
             ` : ''}
 
@@ -142,30 +147,33 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .stat-card {
-              padding: 12px;
-              background: #f3f4f6;
-              border-radius: 6px;
-              border: 1px solid #d1d5db;
+              padding: 15px;
+              background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+              border-radius: 8px;
+              border: 2px solid #d1d5db;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
 
             .stat-label {
               font-size: 11px;
-              color: #6b7280;
+              color: #4b5563;
               text-transform: uppercase;
               letter-spacing: 0.5px;
+              font-weight: 600;
             }
 
             .stat-value {
-              font-size: 16px;
-              color: #111827;
+              font-size: 18px;
+              color: #1e40af;
               font-weight: 700;
-              margin-top: 4px;
+              margin-top: 6px;
             }
 
             .stat-value-small {
-              font-size: 12px;
+              font-size: 13px;
               color: #6b7280;
-              margin-top: 2px;
+              margin-top: 3px;
+              font-style: italic;
             }
 
             .strand-table {
@@ -175,48 +183,54 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .strand-table th {
-              background: #f3f4f6;
-              padding: 10px;
+              background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+              padding: 12px;
               text-align: left;
-              font-size: 11px;
-              color: #374151;
+              font-size: 12px;
+              color: #ffffff;
               text-transform: uppercase;
               letter-spacing: 0.5px;
-              border-bottom: 2px solid #d1d5db;
+              font-weight: 700;
+              border-bottom: 3px solid #1e3a8a;
             }
 
             .strand-table td {
-              padding: 10px;
+              padding: 12px;
               border-bottom: 1px solid #e5e7eb;
-              font-size: 12px;
+              font-size: 13px;
+            }
+
+            .strand-table tr:nth-child(even) {
+              background: #f9fafb;
             }
 
             .strand-table tr:hover {
-              background: #f9fafb;
+              background: #eff6ff;
             }
 
             .strand-id {
               font-weight: 700;
-              color: #111827;
-            }
-
-            .strand-total {
-              font-weight: 600;
               color: #1e40af;
             }
 
+            .strand-total {
+              font-weight: 700;
+              color: #059669;
+            }
+
             .warning-box {
-              background: #fef3c7;
-              border-left: 4px solid #f59e0b;
-              padding: 12px;
+              background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+              border-left: 5px solid #f59e0b;
+              padding: 15px;
               margin: 15px 0;
-              border-radius: 4px;
+              border-radius: 6px;
+              box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
             }
 
             .warning-text {
-              font-size: 12px;
+              font-size: 13px;
               color: #92400e;
-              font-weight: 600;
+              font-weight: 700;
             }
 
             .footer {
@@ -295,9 +309,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           ${crossSectionImageUri ? `
           <!-- Cross Section -->
           <div class="section">
-            <h2>Cross Section</h2>
+            <h2>Cross Section with Strand Pattern</h2>
             <div class="cross-section">
-              <div class="cross-section-label">Cross Section with Slippage Values</div>
+              <div class="cross-section-label">Strand Arrangement & Cut Width</div>
               <img src="${crossSectionImageUri}" alt="Cross Section Diagram" />
             </div>
           </div>
@@ -398,20 +412,24 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                         Strand ${strand.strandId}${strandSize ? ` (${strandSize})` : ''}
                       </td>
                       <td>
-                        ${strand.leftExceedsOne ? '>' : ''}${end1Value !== null ? end1Value.toFixed(3) : '0.000'}"
-                        <span style="color: #9ca3af; font-size: 10px;">
+                        <span style="color: #059669; font-weight: 600;">
+                          ${strand.leftExceedsOne ? '>' : ''}${end1Value !== null ? end1Value.toFixed(3) : '0.000'}"
+                        </span>
+                        <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
                           (≈${strand.leftExceedsOne ? '>' : ''}${end1Value !== null ? decimalToFraction(end1Value) : '0'})
                         </span>
                       </td>
                       <td>
-                        ${strand.rightExceedsOne ? '>' : ''}${end2Value !== null ? end2Value.toFixed(3) : '0.000'}"
-                        <span style="color: #9ca3af; font-size: 10px;">
+                        <span style="color: #7c3aed; font-weight: 600;">
+                          ${strand.rightExceedsOne ? '>' : ''}${end2Value !== null ? end2Value.toFixed(3) : '0.000'}"
+                        </span>
+                        <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
                           (≈${strand.rightExceedsOne ? '>' : ''}${end2Value !== null ? decimalToFraction(end2Value) : '0'})
                         </span>
                       </td>
                       <td class="strand-total">
                         ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
-                        <span style="color: #9ca3af; font-size: 10px;">
+                        <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
                           (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
                         </span>
                       </td>

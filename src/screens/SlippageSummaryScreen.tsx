@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,6 +15,7 @@ import CrossSection1048 from "../components/CrossSection1048";
 import CrossSection1248 from "../components/CrossSection1248";
 import CrossSection1250 from "../components/CrossSection1250";
 import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
+import { captureRef } from "react-native-view-shot";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -36,12 +37,15 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const { customPatterns } = useStrandPatternStore();
   const { addUserRecord, publishRecord } = useSlippageHistoryStore();
   const currentUser = useAuthStore((state) => state.currentUser);
-  
+
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  // Ref for capturing cross-section as image
+  const crossSectionRef = useRef<View>(null);
 
   // Get the selected strand pattern
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
@@ -86,6 +90,15 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     setIsGeneratingPDF(true);
 
     try {
+      // Capture the cross-section diagram as an image
+      let crossSectionImageUri: string | undefined;
+      if (crossSectionRef.current) {
+        crossSectionImageUri = await captureRef(crossSectionRef, {
+          format: 'png',
+          quality: 1.0,
+        });
+      }
+
       // Get user's email and name
       const userEmail = currentUser?.email || 'unknown@example.com';
       const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
@@ -97,6 +110,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         slippageStats,
         userEmail,
         userName,
+        crossSectionImageUri,
         getStrandSize,
       });
 
@@ -219,7 +233,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         </View>
 
         {/* Cross-section diagram - smaller */}
-        <View className="items-center my-3">
+        <View ref={crossSectionRef} className="items-center my-3" collapsable={false}>
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section with Slippage Values
           </Text>
