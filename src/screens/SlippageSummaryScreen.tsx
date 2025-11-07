@@ -141,10 +141,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     // Parse all values to decimals and track exceeds flags
     const parsedValues = slippages.map((s) => ({
       strandId: s.strandId,
-      end1: parseMeasurementInput(s.leftSlippage),
-      end2: parseMeasurementInput(s.rightSlippage),
+      end1Raw: parseMeasurementInput(s.leftSlippage),
+      end2Raw: parseMeasurementInput(s.rightSlippage),
       end1Exceeds: s.leftExceedsOne,
       end2Exceeds: s.rightExceedsOne,
+      // When exceeds is true, use 1.0 for calculations, otherwise use the parsed value
+      end1: s.leftExceedsOne ? 1.0 : (parseMeasurementInput(s.leftSlippage) ?? 0),
+      end2: s.rightExceedsOne ? 1.0 : (parseMeasurementInput(s.rightSlippage) ?? 0),
     }));
 
     // Check if any value exceeds 1"
@@ -152,34 +155,32 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const anyEnd2Exceeds = parsedValues.some((v) => v.end2Exceeds);
     const anyValueExceeds = anyEnd1Exceeds || anyEnd2Exceeds;
 
-    // Filter out invalid/empty values for calculations
+    // Get values for calculations (using the adjusted values that account for >1")
     const end1Values = parsedValues
       .map((v) => v.end1)
-      .filter((v): v is number => v !== null && !isNaN(v));
+      .filter((v): v is number => v !== null && !isNaN(v) && v > 0);
     const end2Values = parsedValues
       .map((v) => v.end2)
-      .filter((v): v is number => v !== null && !isNaN(v));
+      .filter((v): v is number => v !== null && !isNaN(v) && v > 0);
     const allValues = [...end1Values, ...end2Values];
 
-    // Total slippage (all values)
+    // Total slippage (all values) - now includes 1.0 for any >1" values
     const totalSlippage = allValues.reduce((sum, val) => sum + val, 0);
 
-    // Total slippage per end
+    // Total slippage per end - now includes 1.0 for any >1" values
     const totalSlippageEnd1 = end1Values.reduce((sum, val) => sum + val, 0);
     const totalSlippageEnd2 = end2Values.reduce((sum, val) => sum + val, 0);
 
     // Total slippage per strand with exceeds tracking
     const strandTotals = parsedValues.map((v) => {
-      const e1 = v.end1 ?? 0;
-      const e2 = v.end2 ?? 0;
       return {
         strandId: v.strandId,
-        total: e1 + e2,
+        total: v.end1 + v.end2, // Uses the adjusted values (1.0 if exceeds)
         exceeds: v.end1Exceeds || v.end2Exceeds,
       };
     });
 
-    // Average calculations
+    // Average calculations - now using totals that include 1.0 for >1" values
     const totalAvgSlippage =
       allValues.length > 0 ? totalSlippage / allValues.length : 0;
     const totalAvgSlippageEnd1 =
