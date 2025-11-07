@@ -209,6 +209,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Slippage Identifier PDF Report - colorful PDF with captured cross-section diagram showing strand pattern, cut width, and slippage values
 - [x] iOS PDF image loading fix - cross-section images now properly embedded as base64 data URIs for iOS compatibility
 - [x] PDF generation error fix - resolved "non-std C++ exception" by adding image size limits, quality reduction, and fallback retry logic
+- [x] Slippage average calculation fix - averages now include all active strands (including those with 0 slippage) for accurate results
 
 ### ⏳ Ready to Implement
 

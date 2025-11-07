@@ -188,3 +188,5 @@
 - Changes made by agent 2025-11-07T12:57:51Z
 - Fixed non-std C++ exception in PDF generation by adding better error handling and image size limits (2025-11-07)
 - Changes made by agent 2025-11-07T15:24:12Z
+- Fixed average slippage calculations to include all active strands, even those with 0 slippage values (2025-11-07)
+- Changes made by agent 2025-11-07T15:29:25Z

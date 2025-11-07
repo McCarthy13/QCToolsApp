@@ -157,12 +157,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const anyValueExceeds = anyEnd1Exceeds || anyEnd2Exceeds;
 
     // Get values for calculations (using the adjusted values that account for >1")
+    // Include ALL strands, even those with 0 slippage
     const end1Values = parsedValues
       .map((v) => v.end1)
-      .filter((v): v is number => v !== null && !isNaN(v) && v > 0);
+      .filter((v): v is number => v !== null && !isNaN(v));
     const end2Values = parsedValues
       .map((v) => v.end2)
-      .filter((v): v is number => v !== null && !isNaN(v) && v > 0);
+      .filter((v): v is number => v !== null && !isNaN(v));
     const allValues = [...end1Values, ...end2Values];
 
     // Total slippage (all values) - now includes 1.0 for any >1" values
@@ -181,7 +182,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       };
     });
 
-    // Average calculations - now using totals that include 1.0 for >1" values
+    // Average calculations - now includes all active strands (including those with 0 slippage)
     const totalAvgSlippage =
       allValues.length > 0 ? totalSlippage / allValues.length : 0;
     const totalAvgSlippageEnd1 =
