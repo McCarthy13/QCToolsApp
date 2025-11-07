@@ -250,7 +250,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .strand-total {
               font-weight: 700;
-              color: #059669;
+              color: #047857;
             }
 
             .warning-box {
@@ -448,24 +448,24 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                         Strand ${strand.strandId}${strandSize ? ` (${strandSize})` : ''}
                       </td>
                       <td>
-                        <span style="color: #059669; font-weight: 600;">
+                        <span style="color: #047857; font-weight: 600;">
                           ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
                         </span>
-                        <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
+                        <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
                           (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
                         </span>
                       </td>
                       <td>
-                        <span style="color: #7c3aed; font-weight: 600;">
+                        <span style="color: #6d28d9; font-weight: 600;">
                           ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
                         </span>
-                        <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
+                        <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
                           (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
                         </span>
                       </td>
                       <td class="strand-total">
                         ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
-                        <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
+                        <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
                           (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
                         </span>
                       </td>

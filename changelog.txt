@@ -207,3 +207,5 @@
 - Changes made by agent 2025-11-07T17:25:58Z
 - Fixed PDF report to display ">1.000" instead of ">0.000" for END values that exceed 1 inch (2025-11-07)
 - Changes made by agent 2025-11-07T17:36:39Z
+- Improved PDF report colors - changed neon green and purple to darker, more readable shades with better contrast (2025-11-07)
+- Changes made by agent 2025-11-07T17:39:51Z
