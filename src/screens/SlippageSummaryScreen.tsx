@@ -213,15 +213,14 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const { strandCoordinates } = selectedPattern;
     const { productWidth, offcutSide } = config;
 
-    // Calculate full product width
-    // Strands span from min to max x coordinate, plus 2" concrete cover on each side
+    // The x coordinates are already positions in the full product (0" to 48")
+    // Strands are at x=2" to x=46" within the 48" product
     const minX = Math.min(...strandCoordinates.map(c => c.x));
     const maxX = Math.max(...strandCoordinates.map(c => c.x));
-    const concreteCover = 2; // 2" on each side
-    const fullProductWidth = (maxX - minX) + (concreteCover * 2);
+    const fullProductWidth = maxX + 2; // Rightmost strand + 2" concrete cover
 
     console.log('[SlippageSummary] Calculating active strands:');
-    console.log('  Strand span:', `${minX}" to ${maxX}"`);
+    console.log('  Strand positions:', `x=${minX}" to x=${maxX}"`);
     console.log('  Full product width:', fullProductWidth);
     console.log('  Cut product width:', productWidth);
     console.log('  Offcut side:', offcutSide);
@@ -233,14 +232,12 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       if (offcutSide === 'L1') {
         // L1 (Left) was cut off - keep right side
         const cutPosition = fullProductWidth - productWidth;
-        const strandPositionInProduct = coord.x - minX + concreteCover;
-        isActive = strandPositionInProduct >= cutPosition;
-        console.log(`  Strand ${index + 1} at x=${coord.x} (position in product: ${strandPositionInProduct.toFixed(2)}): ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${cutPosition})`);
+        isActive = coord.x >= cutPosition;
+        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${cutPosition}")`);
       } else if (offcutSide === 'L2') {
         // L2 (Right) was cut off - keep left side
-        const strandPositionInProduct = coord.x - minX + concreteCover;
-        isActive = strandPositionInProduct <= productWidth;
-        console.log(`  Strand ${index + 1} at x=${coord.x} (position in product: ${strandPositionInProduct.toFixed(2)}): ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${productWidth})`);
+        isActive = coord.x <= productWidth;
+        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${productWidth}")`);
       }
       if (isActive) {
         activeIndices.push(index + 1); // Convert to 1-based

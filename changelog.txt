@@ -199,3 +199,5 @@
 - Changes made by agent 2025-11-07T16:52:06Z
 - Fixed active strand calculation to account for full product width including 2" concrete cover on each side (2025-11-07)
 - Changes made by agent 2025-11-07T16:57:19Z
+- Corrected active strand calculation - x coordinates are absolute positions in product, not relative to strand span (2025-11-07)
+- Changes made by agent 2025-11-07T17:01:59Z
