@@ -41,14 +41,30 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     if (crossSectionImageUri) {
       try {
         console.log('[PDF Generator] Converting image to base64:', crossSectionImageUri);
+        const fileInfo = await FileSystem.getInfoAsync(crossSectionImageUri);
+        console.log('[PDF Generator] Image file info:', fileInfo);
+
+        if (!fileInfo.exists) {
+          console.error('[PDF Generator] Image file does not exist');
+          throw new Error('Image file does not exist');
+        }
+
         const base64 = await FileSystem.readAsStringAsync(crossSectionImageUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        base64Image = `data:image/png;base64,${base64}`;
-        console.log('[PDF Generator] Image converted successfully, length:', base64.length);
+
+        // Check if base64 string is too large (> 5MB)
+        if (base64.length > 5 * 1024 * 1024) {
+          console.warn('[PDF Generator] Image too large, skipping');
+          base64Image = undefined;
+        } else {
+          base64Image = `data:image/png;base64,${base64}`;
+          console.log('[PDF Generator] Image converted successfully, length:', base64.length);
+        }
       } catch (error) {
         console.error('[PDF Generator] Error converting image to base64:', error);
         // Continue without the image if conversion fails
+        base64Image = undefined;
       }
     } else {
       console.log('[PDF Generator] No cross-section image provided');
@@ -471,14 +487,45 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
     // Generate PDF using expo-print
     console.log('[PDF Generator] Calling expo-print with HTML length:', htmlContent.length);
-    const { uri } = await Print.printToFileAsync({
-      html: htmlContent,
-    });
-    console.log('[PDF Generator] PDF created at:', uri);
+
+    let uri: string;
+    try {
+      const result = await Print.printToFileAsync({
+        html: htmlContent,
+        width: 612, // 8.5 inches in points
+        height: 792, // 11 inches in points
+      });
+      uri = result.uri;
+      console.log('[PDF Generator] PDF created at:', uri);
+    } catch (printError) {
+      console.error('[PDF Generator] Error in printToFileAsync:', printError);
+
+      // Try again without the image if it was included
+      if (base64Image) {
+        console.log('[PDF Generator] Retrying without image...');
+        base64Image = undefined;
+
+        // Regenerate HTML without image
+        const simpleHtml = htmlContent.replace(/<img[^>]*>/g, '').replace(/data:image[^"']*/g, '');
+
+        const result = await Print.printToFileAsync({
+          html: simpleHtml,
+          width: 612,
+          height: 792,
+        });
+        uri = result.uri;
+        console.log('[PDF Generator] PDF created without image at:', uri);
+      } else {
+        throw printError;
+      }
+    }
 
     return uri;
   } catch (error) {
     console.error('[PDF Generator] Error generating PDF:', error);
+    if (error instanceof Error) {
+      console.error('[PDF Generator] Error stack:', error.stack);
+    }
     return null;
   }
 }

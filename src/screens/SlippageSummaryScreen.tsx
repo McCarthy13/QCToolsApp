@@ -96,7 +96,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         console.log('[PDF] Capturing cross-section...');
         crossSectionImageUri = await captureRef(crossSectionRef, {
           format: 'png',
-          quality: 1.0,
+          quality: 0.7, // Reduce quality to prevent large file sizes
+          width: 800, // Limit width to prevent huge images
         });
         console.log('[PDF] Cross-section captured:', crossSectionImageUri);
       } else {
