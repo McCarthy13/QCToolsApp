@@ -22,6 +22,7 @@ interface PDFGenerationParams {
   userName: string;
   crossSectionImageUri?: string;
   getStrandSize?: (strandId: string) => string;
+  strandPatternName?: string;
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -33,6 +34,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     userName,
     crossSectionImageUri,
     getStrandSize,
+    strandPatternName,
   } = params;
 
   try {
@@ -343,7 +345,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               </div>
               <div class="info-item">
                 <div class="info-label">Strand Pattern</div>
-                <div class="info-value">${config.strandPattern}</div>
+                <div class="info-value">${strandPatternName || config.strandPattern}</div>
               </div>
               ${config.productWidth ? `
               <div class="info-item">

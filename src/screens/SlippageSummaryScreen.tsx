@@ -118,6 +118,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         userName,
         crossSectionImageUri,
         getStrandSize,
+        strandPatternName: selectedPattern?.name,
       });
 
       if (filePath) {
