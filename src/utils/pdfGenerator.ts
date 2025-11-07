@@ -123,26 +123,26 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .info-grid {
               display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 6px;
-              margin-bottom: 10px;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 5px;
+              margin-bottom: 8px;
             }
 
             .info-item {
-              padding: 6px;
+              padding: 5px;
               background: #f9fafb;
               border-left: 3px solid #2563eb;
             }
 
             .info-label {
-              font-size: 10px;
+              font-size: 9px;
               color: #6b7280;
               text-transform: uppercase;
               letter-spacing: 0.5px;
             }
 
             .info-value {
-              font-size: 13px;
+              font-size: 11px;
               color: #111827;
               font-weight: 600;
               margin-top: 2px;
@@ -177,13 +177,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .stats-grid {
               display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 8px;
-              margin-bottom: 12px;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 6px;
+              margin-bottom: 10px;
             }
 
             .stat-card {
-              padding: 10px;
+              padding: 8px;
               background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
               border-radius: 6px;
               border: 2px solid #d1d5db;
@@ -191,22 +191,23 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .stat-label {
-              font-size: 10px;
+              font-size: 9px;
               color: #4b5563;
               text-transform: uppercase;
               letter-spacing: 0.5px;
               font-weight: 600;
+              margin-bottom: 3px;
             }
 
             .stat-value {
-              font-size: 15px;
+              font-size: 14px;
               color: #1e40af;
               font-weight: 700;
-              margin-top: 4px;
+              margin-top: 3px;
             }
 
             .stat-value-small {
-              font-size: 11px;
+              font-size: 10px;
               color: #6b7280;
               margin-top: 2px;
               font-style: italic;
@@ -358,7 +359,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             <h2>Overall Statistics</h2>
             <div class="stats-grid">
               <div class="stat-card">
-                <div class="stat-label">Total Slippage (All Values)</div>
+                <div class="stat-label">Total Slippage (Both Ends)</div>
                 <div class="stat-value">
                   ${slippageStats.anyValueExceeds ? '>' : ''}${slippageStats.totalSlippage.toFixed(3)}"
                 </div>
@@ -367,16 +368,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 </div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Average Slippage (All Values)</div>
-                <div class="stat-value">
-                  ${slippageStats.anyValueExceeds ? '>' : ''}${slippageStats.totalAvgSlippage.toFixed(3)}"
-                </div>
-                <div class="stat-value-small">
-                  ≈${slippageStats.anyValueExceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippage)}
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Total Slippage END 1</div>
+                <div class="stat-label">Total E1 Slippage</div>
                 <div class="stat-value">
                   ${slippageStats.anyEnd1Exceeds ? '>' : ''}${slippageStats.totalSlippageEnd1.toFixed(3)}"
                 </div>
@@ -385,16 +377,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 </div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Average Slippage END 1</div>
-                <div class="stat-value">
-                  ${slippageStats.anyEnd1Exceeds ? '>' : ''}${slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
-                </div>
-                <div class="stat-value-small">
-                  ≈${slippageStats.anyEnd1Exceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
-                </div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Total Slippage END 2</div>
+                <div class="stat-label">Total E2 Slippage</div>
                 <div class="stat-value">
                   ${slippageStats.anyEnd2Exceeds ? '>' : ''}${slippageStats.totalSlippageEnd2.toFixed(3)}"
                 </div>
@@ -403,7 +386,25 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 </div>
               </div>
               <div class="stat-card">
-                <div class="stat-label">Average Slippage END 2</div>
+                <div class="stat-label">Average Slippage (Both Ends)</div>
+                <div class="stat-value">
+                  ${slippageStats.anyValueExceeds ? '>' : ''}${slippageStats.totalAvgSlippage.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${slippageStats.anyValueExceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippage)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Average E1 Slippage</div>
+                <div class="stat-value">
+                  ${slippageStats.anyEnd1Exceeds ? '>' : ''}${slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${slippageStats.anyEnd1Exceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Average E2 Slippage</div>
                 <div class="stat-value">
                   ${slippageStats.anyEnd2Exceeds ? '>' : ''}${slippageStats.totalAvgSlippageEnd2.toFixed(3)}"
                 </div>
