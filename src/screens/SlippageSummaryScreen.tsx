@@ -214,18 +214,30 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const { productWidth, offcutSide } = config;
     const fullWidth = Math.max(...strandCoordinates.map(c => c.x));
 
+    console.log('[SlippageSummary] Calculating active strands:');
+    console.log('  Full width:', fullWidth);
+    console.log('  Product width:', productWidth);
+    console.log('  Offcut side:', offcutSide);
+    console.log('  Total strands:', strandCoordinates.length);
+
     const activeIndices: number[] = [];
     strandCoordinates.forEach((coord, index) => {
       let isActive = false;
       if (offcutSide === 'L1') {
-        isActive = coord.x >= (fullWidth - productWidth);
+        const cutoffPoint = fullWidth - productWidth;
+        isActive = coord.x >= cutoffPoint;
+        console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${cutoffPoint})`);
       } else if (offcutSide === 'L2') {
         isActive = coord.x <= productWidth;
+        console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${productWidth})`);
       }
       if (isActive) {
         activeIndices.push(index + 1); // Convert to 1-based
       }
     });
+
+    console.log('[SlippageSummary] Active strand count:', activeIndices.length);
+    console.log('[SlippageSummary] Active strand indices:', activeIndices);
 
     return activeIndices;
   }, [selectedPattern, config.productWidth, config.offcutSide]);

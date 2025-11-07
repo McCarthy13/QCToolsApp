@@ -65,6 +65,12 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     // Calculate full width from max x coordinate
     const fullWidth = Math.max(...strandCoordinates.map(c => c.x));
 
+    console.log('[SlippageIdentifier] Calculating active strands:');
+    console.log('  Full width:', fullWidth);
+    console.log('  Product width:', productWidth);
+    console.log('  Offcut side:', offcutSide);
+    console.log('  Total strands:', strandCoordinates.length);
+
     // Filter strands based on which side was cut off
     const activeIndices: number[] = [];
     strandCoordinates.forEach((coord, index) => {
@@ -73,17 +79,23 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
       if (offcutSide === 'L1') {
         // L1 (Left) was cut off - keep right side (strands near L2)
         // Keep strands where x >= (fullWidth - productWidth)
-        isActive = coord.x >= (fullWidth - productWidth);
+        const cutoffPoint = fullWidth - productWidth;
+        isActive = coord.x >= cutoffPoint;
+        console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${cutoffPoint})`);
       } else if (offcutSide === 'L2') {
         // L2 (Right) was cut off - keep left side (strands near L1)
         // Keep strands where x <= productWidth
         isActive = coord.x <= productWidth;
+        console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${productWidth})`);
       }
 
       if (isActive) {
         activeIndices.push(index);
       }
     });
+
+    console.log('[SlippageIdentifier] Active strand count:', activeIndices.length);
+    console.log('[SlippageIdentifier] Active strand indices:', activeIndices);
 
     return activeIndices;
   }, [selectedPattern, config.productWidth, config.offcutSide]);
