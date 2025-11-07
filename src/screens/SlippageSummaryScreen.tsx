@@ -93,16 +93,21 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       // Capture the cross-section diagram as an image
       let crossSectionImageUri: string | undefined;
       if (crossSectionRef.current) {
+        console.log('[PDF] Capturing cross-section...');
         crossSectionImageUri = await captureRef(crossSectionRef, {
           format: 'png',
           quality: 1.0,
         });
+        console.log('[PDF] Cross-section captured:', crossSectionImageUri);
+      } else {
+        console.log('[PDF] No cross-section ref available');
       }
 
       // Get user's email and name
       const userEmail = currentUser?.email || 'unknown@example.com';
       const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
 
+      console.log('[PDF] Generating PDF...');
       // Generate the PDF
       const filePath = await generateSlippagePDF({
         slippages,
@@ -115,14 +120,17 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       });
 
       if (filePath) {
+        console.log('[PDF] PDF generated successfully:', filePath);
         // Share the PDF
         await sharePDF(filePath);
+        console.log('[PDF] PDF shared successfully');
       } else {
+        console.log('[PDF] Failed to generate PDF - no file path returned');
         Alert.alert('Error', 'Failed to generate PDF report. Please try again.');
       }
     } catch (error) {
-      console.error('Error generating/sharing PDF:', error);
-      Alert.alert('Error', 'Failed to generate or share PDF report. Please try again.');
+      console.error('[PDF] Error generating/sharing PDF:', error);
+      Alert.alert('Error', `Failed to generate or share PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGeneratingPDF(false);
     }

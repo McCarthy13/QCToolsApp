@@ -207,6 +207,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Web deployment text input fix - inputs are now fully interactive on web
 - [x] Slippage Identifier ">1 inch" calculation fix - properly handles ">1 inch" values in totals and averages
 - [x] Slippage Identifier PDF Report - colorful PDF with captured cross-section diagram showing strand pattern, cut width, and slippage values
+- [x] iOS PDF image loading fix - cross-section images now properly embedded as base64 data URIs for iOS compatibility
 
 ### ⏳ Ready to Implement
 

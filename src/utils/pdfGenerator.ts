@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction } from './cn';
 
@@ -35,6 +36,24 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
   } = params;
 
   try {
+    // Convert image URI to base64 data URI if provided
+    let base64Image: string | undefined;
+    if (crossSectionImageUri) {
+      try {
+        console.log('[PDF Generator] Converting image to base64:', crossSectionImageUri);
+        const base64 = await FileSystem.readAsStringAsync(crossSectionImageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        base64Image = `data:image/png;base64,${base64}`;
+        console.log('[PDF Generator] Image converted successfully, length:', base64.length);
+      } catch (error) {
+        console.error('[PDF Generator] Error converting image to base64:', error);
+        // Continue without the image if conversion fails
+      }
+    } else {
+      console.log('[PDF Generator] No cross-section image provided');
+    }
+
     // Build HTML content for the PDF
     const htmlContent = `
       <!DOCTYPE html>
@@ -306,13 +325,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             </div>
           </div>
 
-          ${crossSectionImageUri ? `
+          ${base64Image ? `
           <!-- Cross Section -->
           <div class="section">
             <h2>Cross Section with Strand Pattern</h2>
             <div class="cross-section">
               <div class="cross-section-label">Strand Arrangement & Cut Width</div>
-              <img src="${crossSectionImageUri}" alt="Cross Section Diagram" />
+              <img src="${base64Image}" alt="Cross Section Diagram" />
             </div>
           </div>
           ` : ''}
@@ -451,13 +470,15 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     `;
 
     // Generate PDF using expo-print
+    console.log('[PDF Generator] Calling expo-print with HTML length:', htmlContent.length);
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
     });
+    console.log('[PDF Generator] PDF created at:', uri);
 
     return uri;
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('[PDF Generator] Error generating PDF:', error);
     return null;
   }
 }
