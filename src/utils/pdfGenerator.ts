@@ -305,30 +305,22 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <div class="section">
             <h2>Product Details</h2>
             <div class="info-grid">
-              ${config.projectName ? `
               <div class="info-item">
                 <div class="info-label">Project Name</div>
-                <div class="info-value">${config.projectName}</div>
+                <div class="info-value">${config.projectName || ''}</div>
               </div>
-              ` : ''}
-              ${config.projectNumber ? `
               <div class="info-item">
                 <div class="info-label">Project Number</div>
-                <div class="info-value">${config.projectNumber}</div>
+                <div class="info-value">${config.projectNumber || ''}</div>
               </div>
-              ` : ''}
-              ${config.markNumber ? `
               <div class="info-item">
                 <div class="info-label">Mark Number</div>
-                <div class="info-value">${config.markNumber}</div>
+                <div class="info-value">${config.markNumber || ''}</div>
               </div>
-              ` : ''}
-              ${config.idNumber ? `
               <div class="info-item">
                 <div class="info-label">ID Number</div>
-                <div class="info-value">${config.idNumber}</div>
+                <div class="info-value">${config.idNumber || ''}</div>
               </div>
-              ` : ''}
               ${config.span ? (() => {
                 const spanFormatted = formatSpanForPDF(config.span);
                 return `
@@ -338,7 +330,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-value-sub">${spanFormatted.fraction}</div>
               </div>
                 `;
-              })() : ''}
+              })() : `
+              <div class="info-item">
+                <div class="info-label">Span</div>
+                <div class="info-value"></div>
+              </div>
+              `}
               <div class="info-item">
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
@@ -347,12 +344,10 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-label">Strand Pattern</div>
                 <div class="info-value">${strandPatternName || config.strandPattern}</div>
               </div>
-              ${config.productWidth ? `
               <div class="info-item">
                 <div class="info-label">Product Width (Cut)</div>
-                <div class="info-value">${config.productWidth}"</div>
+                <div class="info-value">${config.productWidth ? `${config.productWidth}"` : ''}</div>
               </div>
-              ` : ''}
             </div>
           </div>
 
