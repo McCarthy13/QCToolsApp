@@ -212,6 +212,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Slippage average calculation fix - averages now include all active strands (including those with 0 slippage) for accurate results
 - [x] Slippage per-strand total fix - per-strand totals now properly treat >1 inch values as 1.0 for accurate calculations
 - [x] Active strand calculation fix - now accounts for full product width (strand span + 2" concrete cover on each side) instead of just strand positions
+- [x] Terminology update - changed "Offcut Side" to "Product Side" in Slippage Identifier and Camber Calculator for clearer user experience
 
 ### ⏳ Ready to Implement
 

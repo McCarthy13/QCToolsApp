@@ -16,7 +16,7 @@ export type RootStackParamList = {
       strandPattern: string;
       topStrandPattern?: string;
       productWidth?: number;
-      offcutSide?: 'L1' | 'L2';
+      productSide?: 'L1' | 'L2';
     };
     // Quality log integration
     fromQualityLog?: boolean;
@@ -41,7 +41,7 @@ export type RootStackParamList = {
       strandPattern: string;
       topStrandPattern?: string;
       productWidth?: number;
-      offcutSide?: 'L1' | 'L2';
+      productSide?: 'L1' | 'L2';
     };
     // Quality log integration
     fromQualityLog?: boolean;

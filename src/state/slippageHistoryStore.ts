@@ -20,7 +20,7 @@ export interface SlippageConfig {
   strandPattern: string;
   topStrandPattern?: string;
   productWidth?: number;  // For cut-width products
-  offcutSide?: 'L1' | 'L2';  // Which side was cut
+  productSide?: 'L1' | 'L2';  // Which side is the product side (keeper side)
 }
 
 export interface SlippageRecord {

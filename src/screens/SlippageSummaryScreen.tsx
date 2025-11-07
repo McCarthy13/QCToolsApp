@@ -206,12 +206,12 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
   // Calculate active strand indices for the cross-section
   const activeStrandIndices = useMemo(() => {
-    if (!selectedPattern || !selectedPattern.strandCoordinates || !config.productWidth || !config.offcutSide) {
+    if (!selectedPattern || !selectedPattern.strandCoordinates || !config.productWidth || !config.productSide) {
       return null;
     }
 
     const { strandCoordinates } = selectedPattern;
-    const { productWidth, offcutSide } = config;
+    const { productWidth, productSide } = config;
 
     // The x coordinates are already positions in the full product (0" to 48")
     // Strands are at x=2" to x=46" within the 48" product
@@ -223,17 +223,17 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     console.log('  Strand positions:', `x=${minX}" to x=${maxX}"`);
     console.log('  Full product width:', fullProductWidth);
     console.log('  Cut product width:', productWidth);
-    console.log('  Offcut side:', offcutSide);
+    console.log('  Product side:', productSide);
     console.log('  Total strands:', strandCoordinates.length);
 
     const activeIndices: number[] = [];
     strandCoordinates.forEach((coord, index) => {
       let isActive = false;
-      if (offcutSide === 'L1') {
+      if (productSide === 'L1') {
         // L1 is kept (left side) - keep strands from 0 to productWidth
         isActive = coord.x <= productWidth;
         console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (keeping 0-${productWidth}")`);
-      } else if (offcutSide === 'L2') {
+      } else if (productSide === 'L2') {
         // L2 is kept (right side) - keep strands from (fullProductWidth - productWidth) to fullProductWidth
         const cutPosition = fullProductWidth - productWidth;
         isActive = coord.x >= cutPosition;
@@ -248,7 +248,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     console.log('[SlippageSummary] Active strand indices:', activeIndices);
 
     return activeIndices;
-  }, [selectedPattern, config.productWidth, config.offcutSide]);
+  }, [selectedPattern, config.productWidth, config.productSide]);
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -272,7 +272,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             <CrossSection1048
               scale={6}
               activeStrands={activeStrandIndices || undefined}
-              offcutSide={config.offcutSide || null}
+              productSide={config.productSide || null}
               productWidth={config.productWidth}
               slippages={slippages}
               showSlippageValues={true}
@@ -282,7 +282,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             <CrossSection1248
               scale={6}
               activeStrands={activeStrandIndices || undefined}
-              offcutSide={config.offcutSide || null}
+              productSide={config.productSide || null}
               productWidth={config.productWidth}
               slippages={slippages}
               showSlippageValues={true}
@@ -292,7 +292,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             <CrossSection1250
               scale={6}
               activeStrands={activeStrandIndices || undefined}
-              offcutSide={config.offcutSide || null}
+              productSide={config.productSide || null}
               productWidth={config.productWidth}
               slippages={slippages}
               showSlippageValues={true}
@@ -302,7 +302,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             <CrossSection8048
               scale={6}
               activeStrands={activeStrandIndices || undefined}
-              offcutSide={config.offcutSide || null}
+              productSide={config.productSide || null}
               productWidth={config.productWidth}
               slippages={slippages}
               showSlippageValues={true}
@@ -312,13 +312,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         </View>
 
         {/* Cut-width info banner - more compact */}
-        {config.productWidth && config.offcutSide && selectedPattern?.strandCoordinates && (
+        {config.productWidth && config.productSide && selectedPattern?.strandCoordinates && (
           <View className="px-6 mb-2">
             <View className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
               <View className="flex-row items-center">
                 <Ionicons name="cut" size={16} color="#F59E0B" />
                 <Text className="text-amber-900 text-xs ml-2">
-                  Cut: {config.productWidth}" • {config.offcutSide} • {slippages.length}/{selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6} strands
+                  Cut: {config.productWidth}" • {config.productSide} • {slippages.length}/{selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6} strands
                 </Text>
               </View>
             </View>

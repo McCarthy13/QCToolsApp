@@ -15,7 +15,7 @@ interface CrossSection1248Props {
   showDimensions?: boolean;
   highlightedStrand?: number | null;
   activeStrands?: number[];
-  offcutSide?: 'L1' | 'L2' | null;
+  productSide?: 'L1' | 'L2' | null;
   productWidth?: number;
   slippages?: StrandSlippage[]; // Optional slippage data to display
   showSlippageValues?: boolean; // Whether to show E1/E2 labels
@@ -27,7 +27,7 @@ export default function CrossSection1248({
   showDimensions = false,
   highlightedStrand = null,
   activeStrands, // No default - if undefined, all strands are active
-  offcutSide = null,
+  productSide = null,
   productWidth,
   slippages = [],
   showSlippageValues = false,
@@ -71,16 +71,16 @@ export default function CrossSection1248({
   const displayWidth = productWidth ? productWidth * scale : FULL_WIDTH * scale;
   const displayHeight = HEIGHT * scale;
 
-  // Calculate which part to show based on offcut
+  // Calculate which part to show based on product side
   let xOffset = 0;
-  if (offcutSide === 'L1' && productWidth) {
+  if (productSide === 'L1' && productWidth) {
     // L1 = keep left side, show from x=0
     xOffset = 0;
-  } else if (offcutSide === 'L2' && productWidth) {
+  } else if (productSide === 'L2' && productWidth) {
     // L2 = keep right side, show from right
     xOffset = (FULL_WIDTH - productWidth) * scale;
   }
-  // No offcut = show full width (xOffset = 0)
+  // No product side = show full width (xOffset = 0)
 
   // Calculate core positions (5 cores total for 1248)
   const coreY = BOTTOM_FLANGE * scale;
@@ -141,9 +141,9 @@ export default function CrossSection1248({
     const h = displayHeight;
 
     // Determine which edge gets the keyway (keeper edge) and which is straight (cut edge)
-    const hasKeyway = offcutSide !== null;
-    const leftHasKeyway = offcutSide === 'L1'; // L1 kept = left is keeper
-    const rightHasKeyway = offcutSide === 'L2'; // L2 kept = right is keeper
+    const hasKeyway = productSide !== null;
+    const leftHasKeyway = productSide === 'L1'; // L1 = left is product side (keeper)
+    const rightHasKeyway = productSide === 'L2'; // L2 = right is product side (keeper)
 
     if (!hasKeyway) {
       // Full width product - show keyway on BOTH sides
@@ -266,7 +266,7 @@ export default function CrossSection1248({
         />
 
         {/* Highlight cut edge with red line */}
-        {offcutSide === 'L1' && (
+        {productSide === 'L1' && (
           <Line
             x1={padding}
             y1={padding}
@@ -277,7 +277,7 @@ export default function CrossSection1248({
             strokeLinecap="round"
           />
         )}
-        {offcutSide === 'L2' && (
+        {productSide === 'L2' && (
           <Line
             x1={padding + displayWidth}
             y1={padding}

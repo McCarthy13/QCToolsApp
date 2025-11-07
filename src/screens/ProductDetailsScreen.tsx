@@ -55,7 +55,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
   // Optional field
   const [topStrandPattern, setTopStrandPattern] = useState("");
   const [productWidth, setProductWidth] = useState("");
-  const [offcutSide, setOffcutSide] = useState<'L1' | 'L2' | ''>('');
+  const [productSide, setProductSide] = useState<'L1' | 'L2' | ''>('');
 
   // Modals
   const [showProductModal, setShowProductModal] = useState(false);
@@ -117,9 +117,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
       validationErrors.push("Strand Pattern is required");
     }
 
-    // Validate offcut side if product is cut-width
-    if (isCutWidth && !offcutSide) {
-      validationErrors.push("Offcut side is required for cut-width products");
+    // Validate product side if product is cut-width
+    if (isCutWidth && !productSide) {
+      validationErrors.push("Product side is required for cut-width products");
     }
 
     if (validationErrors.length > 0) {
@@ -142,7 +142,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
         strandPattern: strandPattern,
         topStrandPattern: topStrandPattern || undefined,
         productWidth: parsedWidth !== null ? parsedWidth : undefined,
-        offcutSide: isCutWidth && offcutSide ? offcutSide : undefined,
+        productSide: isCutWidth && productSide ? productSide : undefined,
       },
     });
   };
@@ -321,7 +321,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
               />
             </View>
 
-            {/* Offcut Side Selector - Only show for cut-width products */}
+            {/* Product Side Selector - Only show for cut-width products */}
             {isCutWidth && (
               <View className="mb-6">
                 <View className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-3">
@@ -339,47 +339,47 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                 </View>
 
                 <Text className="text-gray-700 text-sm font-medium mb-2">
-                  Offcut Side <Text className="text-red-500">*</Text>
+                  Product Side <Text className="text-red-500">*</Text>
                 </Text>
                 <Text className="text-xs text-gray-500 mb-3">
-                  Which side was removed during cutting?
+                  Which side is the keeper side (product side)?
                 </Text>
 
-                {/* Offcut Side Buttons */}
+                {/* Product Side Buttons */}
                 <View className="flex-row gap-3 mb-3">
                   <Pressable
-                    onPress={() => setOffcutSide('L1')}
+                    onPress={() => setProductSide('L1')}
                     className={`flex-1 rounded-lg py-3 px-4 border-2 ${
-                      offcutSide === 'L1'
+                      productSide === 'L1'
                         ? 'bg-blue-50 border-blue-500'
                         : 'bg-white border-gray-300'
                     }`}
                   >
                     <Text className={`text-center font-semibold text-sm ${
-                      offcutSide === 'L1' ? 'text-blue-700' : 'text-gray-700'
+                      productSide === 'L1' ? 'text-blue-700' : 'text-gray-700'
                     }`}>
                       L1 (Left Side)
                     </Text>
                     <Text className="text-center text-xs text-gray-600 mt-1">
-                      Left removed, keep right
+                      Keep left side
                     </Text>
                   </Pressable>
 
                   <Pressable
-                    onPress={() => setOffcutSide('L2')}
+                    onPress={() => setProductSide('L2')}
                     className={`flex-1 rounded-lg py-3 px-4 border-2 ${
-                      offcutSide === 'L2'
+                      productSide === 'L2'
                         ? 'bg-blue-50 border-blue-500'
                         : 'bg-white border-gray-300'
                     }`}
                   >
                     <Text className={`text-center font-semibold text-sm ${
-                      offcutSide === 'L2' ? 'text-blue-700' : 'text-gray-700'
+                      productSide === 'L2' ? 'text-blue-700' : 'text-gray-700'
                     }`}>
                       L2 (Right Side)
                     </Text>
                     <Text className="text-center text-xs text-gray-600 mt-1">
-                      Right removed, keep left
+                      Keep right side
                     </Text>
                   </Pressable>
                 </View>
@@ -390,22 +390,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                     Visual Guide
                   </Text>
                   
-                  {/* L1 Cut Diagram */}
+                  {/* L1 Product Side Diagram */}
                   <View className="mb-4">
-                    <Text className="text-xs text-gray-600 mb-2">L1 Cut (Left removed):</Text>
-                    <View className="flex-row items-center">
-                      <View className="flex-1 h-12 bg-red-100 border-l-4 border-red-500 items-center justify-center">
-                        <Text className="text-xs text-red-700">Cut Edge</Text>
-                      </View>
-                      <View className="flex-1 h-12 bg-blue-100 border-2 border-blue-500 items-center justify-center">
-                        <Text className="text-xs text-blue-700">Keep (L2)</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* L2 Cut Diagram */}
-                  <View>
-                    <Text className="text-xs text-gray-600 mb-2">L2 Cut (Right removed):</Text>
+                    <Text className="text-xs text-gray-600 mb-2">L1 Product Side (Keep left):</Text>
                     <View className="flex-row items-center">
                       <View className="flex-1 h-12 bg-blue-100 border-2 border-blue-500 items-center justify-center">
                         <Text className="text-xs text-blue-700">Keep (L1)</Text>
@@ -415,11 +402,24 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                       </View>
                     </View>
                   </View>
+
+                  {/* L2 Product Side Diagram */}
+                  <View>
+                    <Text className="text-xs text-gray-600 mb-2">L2 Product Side (Keep right):</Text>
+                    <View className="flex-row items-center">
+                      <View className="flex-1 h-12 bg-red-100 border-l-4 border-red-500 items-center justify-center">
+                        <Text className="text-xs text-red-700">Cut Edge</Text>
+                      </View>
+                      <View className="flex-1 h-12 bg-blue-100 border-2 border-blue-500 items-center justify-center">
+                        <Text className="text-xs text-blue-700">Keep (L2)</Text>
+                      </View>
+                    </View>
+                  </View>
                 </View>
 
-                {errors.includes("Offcut side is required for cut-width products") && (
+                {errors.includes("Product side is required for cut-width products") && (
                   <Text className="text-red-600 text-xs mt-2">
-                    ⚠ Please select which side was cut off
+                    ⚠ Please select which side is the product side (keeper side)
                   </Text>
                 )}
               </View>
