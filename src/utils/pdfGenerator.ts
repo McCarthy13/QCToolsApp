@@ -330,14 +330,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
               </div>
-              ${config.productWidth && config.productSide ? `
+              <div class="info-item">
+                <div class="info-label">Strand Pattern</div>
+                <div class="info-value">${config.strandPattern}</div>
+              </div>
+              ${config.productWidth ? `
               <div class="info-item">
                 <div class="info-label">Product Width (Cut)</div>
                 <div class="info-value">${config.productWidth}"</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Product Side</div>
-                <div class="info-value">${config.productSide} (${config.productSide === 'L1' ? 'Left side' : 'Right side'})</div>
               </div>
               ` : ''}
             </div>
