@@ -205,6 +205,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Offline-first architecture
 - [x] TypeScript type safety
 - [x] Web deployment text input fix - inputs are now fully interactive on web
+- [x] Slippage Identifier ">1 inch" calculation fix - properly handles ">1 inch" values in totals and averages
 
 ### ⏳ Ready to Implement
 

@@ -297,7 +297,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 {slippageStats.totalSlippage.toFixed(3)}"
               </Text>
               <Text className="text-blue-600 text-xs">
-                ≈{decimalToFraction(slippageStats.totalSlippage)}
+                ≈{slippageStats.anyValueExceeds && ">"}{decimalToFraction(slippageStats.totalSlippage)}
               </Text>
             </View>
 
@@ -310,7 +310,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 {slippageStats.totalAvgSlippage.toFixed(3)}"
               </Text>
               <Text className="text-orange-600 text-xs">
-                ≈{decimalToFraction(slippageStats.totalAvgSlippage)}
+                ≈{slippageStats.anyValueExceeds && ">"}{decimalToFraction(slippageStats.totalAvgSlippage)}
               </Text>
             </View>
           </View>
