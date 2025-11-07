@@ -386,8 +386,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             {slippages.map((strand) => {
               const end1Value = parseMeasurementInput(strand.leftSlippage);
               const end2Value = parseMeasurementInput(strand.rightSlippage);
-              const e1 = end1Value ?? 0;
-              const e2 = end2Value ?? 0;
+              // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
+              const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
+              const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
               const strandTotal = e1 + e2;
               const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
               

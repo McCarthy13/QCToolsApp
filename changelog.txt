@@ -190,3 +190,5 @@
 - Changes made by agent 2025-11-07T15:24:12Z
 - Fixed average slippage calculations to include all active strands, even those with 0 slippage values (2025-11-07)
 - Changes made by agent 2025-11-07T15:29:25Z
+- Fixed per-strand total calculations to properly treat >1 inch values as 1.0 in both UI and PDF (2025-11-07)
+- Changes made by agent 2025-11-07T15:31:53Z
