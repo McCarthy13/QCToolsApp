@@ -265,30 +265,6 @@ export default function CrossSection1248({
           strokeWidth={2}
         />
 
-        {/* Highlight cut edge with red line */}
-        {productSide === 'L1' && (
-          <Line
-            x1={padding}
-            y1={padding}
-            x2={padding}
-            y2={padding + displayHeight}
-            stroke="#EF4444"
-            strokeWidth={4}
-            strokeLinecap="round"
-          />
-        )}
-        {productSide === 'L2' && (
-          <Line
-            x1={padding + displayWidth}
-            y1={padding}
-            x2={padding + displayWidth}
-            y2={padding + displayHeight}
-            stroke="#EF4444"
-            strokeWidth={4}
-            strokeLinecap="round"
-          />
-        )}
-
         {/* Cores (voids) - rendered at full size, clipped by plank boundary */}
         {visibleCores.map((core, index) => {
           // Only render cores that have any part visible
