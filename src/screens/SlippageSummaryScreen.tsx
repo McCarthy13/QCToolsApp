@@ -230,14 +230,14 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     strandCoordinates.forEach((coord, index) => {
       let isActive = false;
       if (offcutSide === 'L1') {
-        // L1 (Left) was cut off - keep right side
+        // L1 is kept (left side) - keep strands from 0 to productWidth
+        isActive = coord.x <= productWidth;
+        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (keeping 0-${productWidth}")`);
+      } else if (offcutSide === 'L2') {
+        // L2 is kept (right side) - keep strands from (fullProductWidth - productWidth) to fullProductWidth
         const cutPosition = fullProductWidth - productWidth;
         isActive = coord.x >= cutPosition;
-        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${cutPosition}")`);
-      } else if (offcutSide === 'L2') {
-        // L2 (Right) was cut off - keep left side
-        isActive = coord.x <= productWidth;
-        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${productWidth}")`);
+        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (keeping ${cutPosition}-${fullProductWidth}")`);
       }
       if (isActive) {
         activeIndices.push(index + 1); // Convert to 1-based

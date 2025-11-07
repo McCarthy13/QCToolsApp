@@ -201,3 +201,5 @@
 - Changes made by agent 2025-11-07T16:57:19Z
 - Corrected active strand calculation - x coordinates are absolute positions in product, not relative to strand span (2025-11-07)
 - Changes made by agent 2025-11-07T17:01:59Z
+- Fixed offcut side logic - L1/L2 parameters represent which side to KEEP, not which side to discard (2025-11-07)
+- Changes made by agent 2025-11-07T17:04:55Z

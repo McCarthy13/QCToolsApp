@@ -75,23 +75,21 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     console.log('  Offcut side:', offcutSide);
     console.log('  Total strands:', strandCoordinates.length);
 
-    // Filter strands based on which side was cut off
+    // Filter strands based on which side to keep
     const activeIndices: number[] = [];
     strandCoordinates.forEach((coord, index) => {
       let isActive = false;
 
       if (offcutSide === 'L1') {
-        // L1 (Left) was cut off - keep right side
-        // Cut at position: fullProductWidth - productWidth
-        const cutPosition = fullProductWidth - productWidth;
-        // Keep strands where x >= cutPosition
-        isActive = coord.x >= cutPosition;
-        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${cutPosition}")`);
-      } else if (offcutSide === 'L2') {
-        // L2 (Right) was cut off - keep left side
-        // Keep strands where x <= productWidth (measured from left edge at x=0)
+        // L1 is kept (left side) - keep strands from 0 to productWidth
+        // Keep strands where x <= productWidth
         isActive = coord.x <= productWidth;
-        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (cut at: ${productWidth}")`);
+        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (keeping 0-${productWidth}")`);
+      } else if (offcutSide === 'L2') {
+        // L2 is kept (right side) - keep strands from (fullProductWidth - productWidth) to fullProductWidth
+        const cutPosition = fullProductWidth - productWidth;
+        isActive = coord.x >= cutPosition;
+        console.log(`  Strand ${index + 1} at x=${coord.x}": ${isActive ? 'ACTIVE' : 'inactive'} (keeping ${cutPosition}-${fullProductWidth}")`);
       }
 
       if (isActive) {
