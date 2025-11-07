@@ -109,16 +109,16 @@ export function formatSpanDisplay(decimalFeet: number): string {
   const remainingInches = (decimalFeet - feet) * 12;
   let wholeInches = Math.floor(remainingInches);
   const fractionalInches = remainingInches - wholeInches;
-  
+
   // Round to nearest 1/16
   let sixteenths = Math.round(fractionalInches * 16);
-  
+
   // Handle rounding up to next inch
   if (sixteenths === 16) {
     wholeInches += 1;
     sixteenths = 0;
   }
-  
+
   let inchDisplay = '';
   if (wholeInches > 0 && sixteenths > 0) {
     inchDisplay = `${wholeInches} ${sixteenths}/16"`;
@@ -129,6 +129,50 @@ export function formatSpanDisplay(decimalFeet: number): string {
   } else {
     inchDisplay = `0"`;
   }
-  
+
   return `${feet}'-${inchDisplay} (${decimalFeet.toFixed(3)} ft)`;
+}
+
+/**
+ * Convert decimal feet to PDF span format with decimal inches and fractional equivalent
+ * @param decimalFeet - span in decimal feet (e.g., 27.5416)
+ * @returns object with main (27'-6.500") and fraction (≈27'-6 1/2") strings
+ */
+export function formatSpanForPDF(decimalFeet: number): { main: string; fraction: string } {
+  const feet = Math.floor(decimalFeet);
+  const remainingInches = (decimalFeet - feet) * 12;
+  const wholeInches = Math.floor(remainingInches);
+  const fractionalInches = remainingInches - wholeInches;
+
+  // Main line: feet and decimal inches to 3 places
+  const decimalInchStr = remainingInches.toFixed(3);
+  const main = `${feet}'-${decimalInchStr}"`;
+
+  // Fraction line: round to nearest 1/8"
+  let eighths = Math.round(fractionalInches * 8);
+  let adjustedWholeInches = wholeInches;
+
+  // Handle rounding up to next inch
+  if (eighths === 8) {
+    adjustedWholeInches += 1;
+    eighths = 0;
+  }
+
+  // Build fractional display
+  let fractionStr = '';
+  if (eighths === 0) {
+    // No fraction, just whole inches
+    fractionStr = `${feet}'-${adjustedWholeInches}"`;
+  } else {
+    // Reduce fraction to lowest terms
+    const divisor = gcd(eighths, 8);
+    const reducedNum = eighths / divisor;
+    const reducedDen = 8 / divisor;
+    fractionStr = `${feet}'-${adjustedWholeInches} ${reducedNum}/${reducedDen}"`;
+  }
+
+  return {
+    main,
+    fraction: `≈${fractionStr}`
+  };
 }

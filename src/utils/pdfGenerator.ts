@@ -2,7 +2,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
-import { parseMeasurementInput, decimalToFraction } from './cn';
+import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
 
 interface PDFGenerationParams {
   slippages: SlippageData[];
@@ -146,6 +146,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               color: #111827;
               font-weight: 600;
               margin-top: 2px;
+            }
+
+            .info-value-sub {
+              font-size: 9px;
+              color: #6b7280;
+              font-style: italic;
+              margin-top: 1px;
             }
 
             ${crossSectionImageUri ? `
@@ -320,12 +327,16 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-value">${config.idNumber}</div>
               </div>
               ` : ''}
-              ${config.span ? `
+              ${config.span ? (() => {
+                const spanFormatted = formatSpanForPDF(config.span);
+                return `
               <div class="info-item">
                 <div class="info-label">Span</div>
-                <div class="info-value">${config.span}"</div>
+                <div class="info-value">${spanFormatted.main}</div>
+                <div class="info-value-sub">${spanFormatted.fraction}</div>
               </div>
-              ` : ''}
+                `;
+              })() : ''}
               <div class="info-item">
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
