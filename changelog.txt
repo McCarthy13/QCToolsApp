@@ -205,3 +205,5 @@
 - Changes made by agent 2025-11-07T17:04:55Z
 - Fixed all CrossSection components (8048, 1048, 1248, 1250, 1648, 1650) to use corrected offcut side logic for proper strand highlighting and display (2025-11-07)
 - Changes made by agent 2025-11-07T17:25:58Z
+- Fixed PDF report to display ">1.000" instead of ">0.000" for END values that exceed 1 inch (2025-11-07)
+- Changes made by agent 2025-11-07T17:36:39Z

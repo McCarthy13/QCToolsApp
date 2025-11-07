@@ -449,18 +449,18 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                       </td>
                       <td>
                         <span style="color: #059669; font-weight: 600;">
-                          ${strand.leftExceedsOne ? '>' : ''}${end1Value !== null ? end1Value.toFixed(3) : '0.000'}"
+                          ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
                         </span>
                         <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
-                          (≈${strand.leftExceedsOne ? '>' : ''}${end1Value !== null ? decimalToFraction(end1Value) : '0'})
+                          (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
                         </span>
                       </td>
                       <td>
                         <span style="color: #7c3aed; font-weight: 600;">
-                          ${strand.rightExceedsOne ? '>' : ''}${end2Value !== null ? end2Value.toFixed(3) : '0.000'}"
+                          ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
                         </span>
                         <span style="color: #9ca3af; font-size: 11px; margin-left: 5px;">
-                          (≈${strand.rightExceedsOne ? '>' : ''}${end2Value !== null ? decimalToFraction(end2Value) : '0'})
+                          (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
                         </span>
                       </td>
                       <td class="strand-total">
