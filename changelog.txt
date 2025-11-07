@@ -193,3 +193,5 @@
 - Fixed per-strand total calculations to properly treat >1 inch values as 1.0 in both UI and PDF (2025-11-07)
 - Changes made by agent 2025-11-07T15:31:53Z
 - Changes made by agent 2025-11-07T16:03:16Z
+- Fixed active strand calculation boundary issue - changed from >= to > and <= to < to properly exclude strands at cut boundaries (2025-11-07)
+- Changes made by agent 2025-11-07T16:49:11Z

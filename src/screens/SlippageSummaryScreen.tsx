@@ -225,10 +225,12 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       let isActive = false;
       if (offcutSide === 'L1') {
         const cutoffPoint = fullWidth - productWidth;
-        isActive = coord.x >= cutoffPoint;
+        // Use strict inequality to exclude strands right at the boundary
+        isActive = coord.x > cutoffPoint;
         console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${cutoffPoint})`);
       } else if (offcutSide === 'L2') {
-        isActive = coord.x <= productWidth;
+        // Use strict inequality to exclude strands right at the boundary
+        isActive = coord.x < productWidth;
         console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${productWidth})`);
       }
       if (isActive) {

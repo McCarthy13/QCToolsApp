@@ -78,14 +78,16 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
 
       if (offcutSide === 'L1') {
         // L1 (Left) was cut off - keep right side (strands near L2)
-        // Keep strands where x >= (fullWidth - productWidth)
+        // Keep strands where x > (fullWidth - productWidth)
+        // Use strict inequality to exclude strands right at the boundary
         const cutoffPoint = fullWidth - productWidth;
-        isActive = coord.x >= cutoffPoint;
+        isActive = coord.x > cutoffPoint;
         console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${cutoffPoint})`);
       } else if (offcutSide === 'L2') {
         // L2 (Right) was cut off - keep left side (strands near L1)
-        // Keep strands where x <= productWidth
-        isActive = coord.x <= productWidth;
+        // Keep strands where x < productWidth
+        // Use strict inequality to exclude strands right at the boundary
+        isActive = coord.x < productWidth;
         console.log(`  Strand ${index + 1} at x=${coord.x}: ${isActive ? 'ACTIVE' : 'inactive'} (cutoff: ${productWidth})`);
       }
 
