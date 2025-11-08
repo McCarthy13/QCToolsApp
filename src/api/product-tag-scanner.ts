@@ -85,9 +85,11 @@ FIELD EXTRACTION RULES (CRITICAL - FOLLOW EXACTLY):
    - Example: if you see "107", return "107-70"
 
 7. POUR DATE:
-   - Format may be like "09.12.2025" (DD.MM.YYYY European format)
-   - Convert to MM/DD/YYYY format
-   - Example: "09.12.2025" → "12/09/2025"
+   - Format on tag is MM.DD.YYYY (e.g., "09.12.2025" means September 12th, 2025)
+   - Simply convert dots to forward slashes
+   - Example: "09.12.2025" → "09/12/2025" (September 12th, 2025)
+   - Example: "12.09.2025" → "12/09/2025" (December 9th, 2025)
+   - IMPORTANT: First number is MONTH, second is DAY, third is YEAR - just replace dots with slashes
 
 8. IGNORE THESE:
    - Any "E" or "D" letter standing alone (skip it)
@@ -104,7 +106,7 @@ The tag typically shows:
 - ID Number: 7 digits (1350951)
 - Size: "8 x 48" pattern (extract only 48)
 - Strand number: 2-3 digits (126) → convert to "126-70"
-- Pour Date: DD.MM.YYYY (09.12.2025) → convert to MM/DD/YYYY
+- Pour Date: MM.DD.YYYY (09.12.2025) → convert to MM/DD/YYYY (09/12/2025)
 
 Return ONLY a valid JSON object with this structure:
 {
@@ -115,7 +117,7 @@ Return ONLY a valid JSON object with this structure:
     "feet": 28,
     "inches": 5.0
   },
-  "pourDate": "12/09/2025",
+  "pourDate": "09/12/2025",
   "strandPattern": "126-70",
   "productWidth": 48
 }
@@ -124,7 +126,7 @@ IMPORTANT:
 - Return null for any field you cannot find
 - Be precise with numbers - don't guess
 - Always append "-70" to the strand pattern number
-- Convert pour date from DD.MM.YYYY to MM/DD/YYYY
+- Pour date format: MM.DD.YYYY on tag → MM/DD/YYYY in output (just replace dots with slashes)
 - For span inches: if you see "5\"", that means 5.0 inches (decimal)
 - Extract ONLY the width (second number) from "8 x 48" pattern
 
