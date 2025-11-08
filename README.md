@@ -223,6 +223,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Schedule scanner authentication fix - converted OpenAI API calls from SDK to fetch API for proper authentication with Vibecode proxy
 - [x] Schedule scanner UX improvements - removed instruction banner from camera view to prevent obstruction, added helpful prompt on button press to guide column framing ("include only columns Job through Cutback")
 - [x] Enhanced OCR accuracy - improved AI prompt with detailed verification checklist, common value examples, and digit-by-digit reading instructions; reduced temperature to 0 for deterministic results; increased max_tokens to 6000 for comprehensive analysis
+- [x] Camera quality optimization - enabled high picture size setting, zero zoom, and optimized capture parameters (quality=1, skipProcessing=false) for maximum sharpness in both schedule and product tag scanners
 
 ### ⏳ Ready to Implement
 

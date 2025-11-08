@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,7 +74,9 @@ export default function ScheduleScannerScreen() {
             text: 'Got it',
             onPress: async () => {
               const photo = await cameraRef.current?.takePictureAsync({
-                quality: 1.0,
+                quality: 1,
+                base64: false,
+                exif: false,
                 skipProcessing: false,
               });
 
@@ -146,6 +148,8 @@ export default function ScheduleScannerScreen() {
           enableTorch={flash}
           autofocus="on"
           mode="picture"
+          zoom={0}
+          pictureSize="high"
         >
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
