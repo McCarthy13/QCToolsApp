@@ -4,8 +4,6 @@
  * Uses camera to capture product tags and AI to parse specific fields
  */
 
-import { getOpenAIClient } from './openai';
-
 export interface ProductTagData {
   projectName?: string;
   projectNumber?: string;
@@ -132,45 +130,61 @@ IMPORTANT:
 
 Return ONLY the JSON, no other text.`;
 
-    // Call AI with vision
-    const client = getOpenAIClient();
-
     console.log('[Product Tag Scanner] Calling OpenAI API...');
-    console.log('[Product Tag Scanner] Base URL:', client.baseURL);
-    console.log('[Product Tag Scanner] Using proxy username for auth');
+    console.log('[Product Tag Scanner] Using GPT-4o vision model');
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
+    // Call OpenAI API using fetch (required for Vibecode)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: 'high',
+                },
               },
-            },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 1000,
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 1000,
+      }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Product Tag Scanner] API Error:', response.status, errorText);
+      throw new Error(`API request failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+
     // Parse the response
-    const content = response.choices[0]?.message?.content;
+    const content = result.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error('No response from AI');
     }
+
+    console.log('[Product Tag Scanner] Raw AI response:', content);
 
     // Extract JSON from response (in case there's extra text)
     let jsonMatch = content.match(/\{[\s\S]*\}/);
     const jsonStr = jsonMatch ? jsonMatch[0] : content;
 
     const parsed = JSON.parse(jsonStr);
+
+    console.log('[Product Tag Scanner] Parsed data:', parsed);
 
     return {
       success: true,
@@ -184,7 +198,7 @@ Return ONLY the JSON, no other text.`;
     if (error instanceof Error && error.message.includes('401')) {
       return {
         success: false,
-        error: 'OpenAI API authentication failed. Please add your OpenAI API key using the API tab in the Vibecode app.',
+        error: 'OpenAI API authentication failed. Please check your API key configuration.',
       };
     }
 
