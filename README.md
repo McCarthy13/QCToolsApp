@@ -225,6 +225,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Simplified extraction logic - removed complex verification steps that were causing AI to "correct" values it read correctly; AI now extracts EXACTLY what it sees without trying to find patterns, verify consistency, or infer sequential ID numbers; each row treated as completely independent
 - [x] **Native camera integration** - replaced expo-camera with expo-image-picker to use device's native camera app for 100% sharp, clear images (quality=1); users now get full native camera controls and quality matching their phone's camera app for reliable OCR accuracy
 - [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
+- [x] Enhanced date navigation for daily pour schedule - added three methods to select dates: (1) left/right arrow toggles for adjacent days, (2) interactive calendar picker for visual date selection with month navigation, (3) manual date input with MM/DD/YYYY format; quick access buttons for Yesterday/Today/Tomorrow
 
 ### ⏳ Ready to Implement
 

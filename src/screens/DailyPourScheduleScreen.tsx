@@ -9,6 +9,7 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { PourDepartment, PourEntry, PourStatus } from "../types/pour-schedule";
 import { isEliPlanConfigured } from "../api/eliplan";
 import JobAutocompleteInput from "../components/JobAutocompleteInput";
+import { Calendar, DateData } from 'react-native-calendars';
 
 type Props = NativeStackScreenProps<RootStackParamList, "DailyPourSchedule">;
 
@@ -271,6 +272,13 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     today.setHours(0, 0, 0, 0);
     today.setDate(today.getDate() + daysOffset);
     setSelectedDate(today.getTime());
+    setShowDatePickerModal(false);
+  };
+
+  const handleCalendarDayPress = (day: DateData) => {
+    // Convert selected date to timestamp
+    const newDate = new Date(day.year, day.month - 1, day.day);
+    setSelectedDate(newDate.getTime());
     setShowDatePickerModal(false);
   };
 
@@ -1044,9 +1052,42 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
               </Pressable>
             </View>
 
+            {/* Calendar Picker */}
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
+              Or select from calendar:
+            </Text>
+            <Calendar
+              current={new Date(selectedDate).toISOString().split('T')[0]}
+              onDayPress={handleCalendarDayPress}
+              markedDates={{
+                [new Date(selectedDate).toISOString().split('T')[0]]: {
+                  selected: true,
+                  selectedColor: '#3B82F6',
+                },
+              }}
+              theme={{
+                backgroundColor: '#ffffff',
+                calendarBackground: '#ffffff',
+                textSectionTitleColor: '#6B7280',
+                selectedDayBackgroundColor: '#3B82F6',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#3B82F6',
+                dayTextColor: '#111827',
+                textDisabledColor: '#D1D5DB',
+                monthTextColor: '#111827',
+                textMonthFontWeight: '600',
+                textDayFontSize: 15,
+                textMonthFontSize: 17,
+              }}
+              style={{
+                borderRadius: 12,
+                marginBottom: 20,
+              }}
+            />
+
             {/* Manual Date Input */}
             <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 8 }}>
-              Or enter a date:
+              Or type a date:
             </Text>
             <TextInput
               value={dateInputText}
