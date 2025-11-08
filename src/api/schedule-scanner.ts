@@ -1,10 +1,9 @@
 /**
  * Schedule Scanner using AI Vision
- * 
+ *
  * Uses camera to capture paper schedules and AI to parse them into structured data
  */
 
-import { getOpenAIClient } from './openai';
 import { extractJobNumber } from '../utils/jobNumberValidation';
 
 export interface ParsedScheduleEntry {
@@ -173,34 +172,53 @@ CRITICAL RULES:
 - Extract ONLY the original printed/typed schedule data
 - Be precise with fractions in length measurements`;
 
-    // Call AI with vision
-    const client = getOpenAIClient();
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
+    // Call AI with vision using fetch API
+    console.log('[Schedule Scanner] Calling OpenAI API...');
+    console.log('[Schedule Scanner] Using GPT-4o vision model');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: 'high',
+                },
               },
-            },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 4000,
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 4000,
+      }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Schedule Scanner] API Error:', response.status, errorText);
+      throw new Error(`API request failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+
     // Parse the response
-    const content = response.choices[0]?.message?.content;
+    const content = result.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error('No response from AI');
     }
+
+    console.log('[Schedule Scanner] Successfully parsed schedule image');
 
     // Extract JSON from response (in case there's extra text)
     let jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -274,32 +292,46 @@ export async function parseScheduleWithTextExtraction(
       }));
 
     // Step 1: Extract text
-    const extractPrompt = `Extract all text from this production schedule image. 
+    const extractPrompt = `Extract all text from this production schedule image.
 Maintain the layout and structure as much as possible. Return plain text.`;
 
-    const client = getOpenAIClient();
-    const extractResponse = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: extractPrompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
+    console.log('[Schedule Scanner] Step 1: Extracting text...');
+    const extractResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: extractPrompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: 'high',
+                },
               },
-            },
-          ],
-        },
-      ],
-      temperature: 0,
-      max_tokens: 4000,
+            ],
+          },
+        ],
+        temperature: 0,
+        max_tokens: 4000,
+      }),
     });
 
-    const extractedText = extractResponse.choices[0]?.message?.content || '';
+    if (!extractResponse.ok) {
+      const errorText = await extractResponse.text();
+      console.error('[Schedule Scanner] Extract API Error:', extractResponse.status, errorText);
+      throw new Error(`API request failed: ${extractResponse.status} ${errorText}`);
+    }
+
+    const extractResult = await extractResponse.json();
+    const extractedText = extractResult.choices?.[0]?.message?.content || '';
 
     // Step 2: Structure the text
     const structurePrompt = `Parse this production schedule text into structured JSON. Create ONE entry per individual piece.
@@ -322,14 +354,29 @@ Return JSON with this structure:
 
 IMPORTANT: Create separate entries for each piece, extract ID numbers from ID column. DO NOT include formBed field.`;
 
-    const structureResponse = await client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: structurePrompt }],
-      temperature: 0.1,
-      max_tokens: 2000,
+    console.log('[Schedule Scanner] Step 2: Structuring data...');
+    const structureResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: structurePrompt }],
+        temperature: 0.1,
+        max_tokens: 2000,
+      }),
     });
 
-    const content = structureResponse.choices[0]?.message?.content || '{}';
+    if (!structureResponse.ok) {
+      const errorText = await structureResponse.text();
+      console.error('[Schedule Scanner] Structure API Error:', structureResponse.status, errorText);
+      throw new Error(`API request failed: ${structureResponse.status} ${errorText}`);
+    }
+
+    const structureResult = await structureResponse.json();
+    const content = structureResult.choices?.[0]?.message?.content || '{}';
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const jsonStr = jsonMatch ? jsonMatch[0] : content;
     const parsed = JSON.parse(jsonStr);

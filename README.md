@@ -220,6 +220,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Span display enhancement - span now properly displayed in feet and decimal inches format (e.g., 33'-2.5") in PDF reports
 - [x] Single-scan workflow - "Scan Product Tag" button at top of Product Details and Camber Calculator screens captures all information from the tag in one photo
 - [x] Daily pour schedule enhanced OCR - added extraction of Length 1, Length 2, Width, Angle, and Cutback fields from schedule images with detailed formatting (feet-inch-fraction format for lengths and cutback, numeric values with units for width and angle)
+- [x] Schedule scanner authentication fix - converted OpenAI API calls from SDK to fetch API for proper authentication with Vibecode proxy
 
 ### ⏳ Ready to Implement
 
