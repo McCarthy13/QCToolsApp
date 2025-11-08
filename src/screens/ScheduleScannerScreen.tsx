@@ -41,7 +41,7 @@ export default function ScheduleScannerScreen() {
     if (permission?.granted && showTipPrompt) {
       Alert.alert(
         'Tips for Best Results',
-        'Use the zoom controls to frame ONLY the columns from Position (Pos) through Cutback. The entire camera view will be captured. The Position column helps verify all pieces are extracted.',
+        'Use zoom to frame ONLY Position (Pos) through Cutback columns. Hold phone steady and wait a moment for camera to focus before capturing. Use flash in low light. The entire camera view will be captured.',
         [
           {
             text: 'Got it',
@@ -83,11 +83,15 @@ export default function ScheduleScannerScreen() {
     if (!cameraRef.current) return;
 
     try {
+      // Brief delay to allow autofocus to stabilize
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const photo = await cameraRef.current.takePictureAsync({
         quality: 1,
         base64: false,
         exif: false,
         skipProcessing: false,
+        isImageMirror: false,
       });
 
       if (photo?.uri) {
@@ -166,7 +170,6 @@ export default function ScheduleScannerScreen() {
           autofocus="on"
           mode="picture"
           zoom={zoom}
-          pictureSize="high"
         >
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
