@@ -10,11 +10,16 @@ gpt-4o-2024-11-20
 import OpenAI from "openai";
 
 export const getOpenAIClient = () => {
-  const apiKey = process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY;
-  if (!apiKey) {
-    console.warn("OpenAI API key not found in environment variables");
+  // In Vibecode environment, use the proxy URL which handles authentication
+  const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com.proxy.vibecodeapp.com/v1';
+  const apiKey = process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY || 'vibecode-proxy-key';
+
+  if (!process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY) {
+    console.log("Using Vibecode proxy for OpenAI API");
   }
+
   return new OpenAI({
     apiKey: apiKey,
+    baseURL: baseURL,
   });
 };
