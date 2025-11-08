@@ -30,6 +30,7 @@ export default function ScheduleScannerScreen() {
   const [parsedEntries, setParsedEntries] = useState<ParsedScheduleEntry[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showTipPrompt, setShowTipPrompt] = useState(true);
+  const [zoom, setZoom] = useState(0);
 
   const cameraRef = useRef<CameraView>(null);
   const selectedDate = route.params?.date ? new Date(route.params.date) : new Date();
@@ -40,7 +41,7 @@ export default function ScheduleScannerScreen() {
     if (permission?.granted && showTipPrompt) {
       Alert.alert(
         'Tips for Best Results',
-        'To the best of your ability, include only columns Job through Cutback in the frame.',
+        'Use the zoom controls to frame ONLY the columns from Job through Cutback. The entire camera view will be captured, not just the blue frame.',
         [
           {
             text: 'Got it',
@@ -135,6 +136,18 @@ export default function ScheduleScannerScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
+  const handleZoomIn = () => {
+    setZoom((current) => Math.min(current + 0.1, 1));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((current) => Math.max(current - 0.1, 0));
+  };
+
+  const resetZoom = () => {
+    setZoom(0);
+  };
+
   const handleRetake = () => {
     setCapturedImage(null);
     setShowResults(false);
@@ -152,7 +165,7 @@ export default function ScheduleScannerScreen() {
           enableTorch={flash}
           autofocus="on"
           mode="picture"
-          zoom={0}
+          zoom={zoom}
           pictureSize="high"
         >
           {/* Top Bar */}
@@ -178,9 +191,40 @@ export default function ScheduleScannerScreen() {
             </View>
           </View>
 
-          {/* Frame Guide */}
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 5, pointerEvents: 'none' }}>
-            <View style={{ width: '85%', height: '60%', borderWidth: 3, borderColor: '#3b82f6', borderRadius: 12, backgroundColor: 'transparent' }} />
+          {/* Zoom Controls */}
+          <View style={{ position: 'absolute', right: 16, top: '50%', transform: [{ translateY: -80 }], zIndex: 10, gap: 12 }}>
+            <Pressable
+              onPress={handleZoomIn}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: zoom > 0 ? '#3b82f6' : 'rgba(255,255,255,0.3)' }}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+            </Pressable>
+
+            {/* Zoom Level Indicator */}
+            {zoom > 0 && (
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>
+                  {(zoom * 10).toFixed(0)}x
+                </Text>
+              </View>
+            )}
+
+            <Pressable
+              onPress={handleZoomOut}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: zoom > 0 ? '#3b82f6' : 'rgba(255,255,255,0.3)' }}
+            >
+              <Ionicons name="remove" size={28} color="#fff" />
+            </Pressable>
+
+            {/* Reset Zoom */}
+            {zoom > 0 && (
+              <Pressable
+                onPress={resetZoom}
+                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#f59e0b' }}
+              >
+                <Ionicons name="refresh" size={24} color="#f59e0b" />
+              </Pressable>
+            )}
           </View>
 
           {/* Bottom Controls */}

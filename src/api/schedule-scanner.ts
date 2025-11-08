@@ -73,11 +73,19 @@ CRITICAL INSTRUCTIONS:
 - Focus ONLY on the table columns from "Job" through "Cutback"
 - ACCURACY IS CRITICAL - Read numbers carefully and double-check each value
 - If a value is unclear or hard to read, mark confidence as lower
+- EXTRACT EVERY SINGLE ROW - Do not skip any rows, even if they seem similar
+
+VERY IMPORTANT - COMPLETENESS:
+- Count the total number of rows/pieces visible in the schedule
+- Create ONE entry for EACH row - do not skip or combine rows
+- After extraction, verify you have extracted ALL rows
+- If you see 15 rows, you MUST create 15 separate entries
+- Each Mark number (H1, H2, M1, M2, etc.) is a SEPARATE piece
 
 - Create ONE entry per piece (if there are 5 pieces with marks M1-M5, create 5 separate entries)
 - Extract the ID number from the "ID" column for each piece
 - Extract the Mark number (M1, M2, M3, etc) individually for each piece
-- Do NOT group pieces together
+- Do NOT group pieces together - EVERY ROW is a separate entry
 - Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
 
 COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
@@ -133,12 +141,22 @@ COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
    - Be precise with fractions
 
 ACCURACY VERIFICATION CHECKLIST:
+✓ Did I count the total number of rows in the schedule?
+✓ Did I create one entry for EACH row (no skipping)?
 ✓ Did I read each number digit-by-digit?
 ✓ Did I verify the fraction values (1/2, 1/4, 3/4)?
 ✓ Do the length values make sense (typically 20-60 feet)?
 ✓ Did I extract only printed values (no handwriting)?
 ✓ Are the ID numbers complete (6-7 digits)?
 ✓ Did I read the mark numbers correctly (letter + number)?
+✓ Does my entry count match the row count?
+
+COMPLETENESS CHECK:
+Before returning your response, verify:
+1. Count visible rows in schedule = [X] rows
+2. Number of entries in my JSON = [Y] entries
+3. If X ≠ Y, re-examine the image and extract missing rows
+4. Ensure sequential mark numbers are all included (H1, H2, H3... or M1, M2, M3...)
 
 For each INDIVIDUAL piece in the schedule, extract:
 - Job Number (ONLY numeric digits from Job column - verify accuracy)
