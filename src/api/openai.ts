@@ -12,10 +12,13 @@ import OpenAI from "openai";
 export const getOpenAIClient = () => {
   // In Vibecode environment, use the proxy URL which handles authentication
   const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com.proxy.vibecodeapp.com/v1';
-  const apiKey = process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY || 'vibecode-proxy-key';
+  const proxyUsername = process.env.VIBECODE_PROXY_USERNAME;
 
-  if (!process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY) {
-    console.log("Using Vibecode proxy for OpenAI API");
+  // Use proxy username as the API key for Vibecode proxy authentication
+  const apiKey = proxyUsername || process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY || 'vibecode-proxy-key';
+
+  if (!process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY && proxyUsername) {
+    console.log("Using Vibecode proxy for OpenAI API with project authentication");
   }
 
   return new OpenAI({
