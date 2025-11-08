@@ -4,7 +4,7 @@
  * Uses camera to capture paper schedules and AI to parse them
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
@@ -21,7 +21,7 @@ export default function ScheduleScannerScreen() {
   const navigation = useNavigation<ScannerNavigationProp>();
   const route = useRoute<ScannerRouteProp>();
   const insets = useSafeAreaInsets();
-  
+
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState(false);
@@ -29,10 +29,27 @@ export default function ScheduleScannerScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedEntries, setParsedEntries] = useState<ParsedScheduleEntry[]>([]);
   const [showResults, setShowResults] = useState(false);
-  
+  const [showTipPrompt, setShowTipPrompt] = useState(true);
+
   const cameraRef = useRef<CameraView>(null);
   const selectedDate = route.params?.date ? new Date(route.params.date) : new Date();
   const selectedDepartment = route.params?.department;
+
+  // Show tip prompt when screen loads
+  useEffect(() => {
+    if (permission?.granted && showTipPrompt) {
+      Alert.alert(
+        'Tips for Best Results',
+        'To the best of your ability, include only columns Job through Cutback in the frame.',
+        [
+          {
+            text: 'Got it',
+            onPress: () => setShowTipPrompt(false),
+          },
+        ]
+      );
+    }
+  }, [permission?.granted, showTipPrompt]);
 
   // Request permission if not granted
   if (!permission) {
@@ -65,51 +82,38 @@ export default function ScheduleScannerScreen() {
     if (!cameraRef.current) return;
 
     try {
-      // Show helpful prompt before taking picture
-      Alert.alert(
-        'Tips for Best Results',
-        'To the best of your ability, include only columns Job through Cutback in the frame.',
-        [
-          {
-            text: 'Got it',
-            onPress: async () => {
-              const photo = await cameraRef.current?.takePictureAsync({
-                quality: 1,
-                base64: false,
-                exif: false,
-                skipProcessing: false,
-              });
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 1,
+        base64: false,
+        exif: false,
+        skipProcessing: false,
+      });
 
-              if (photo?.uri) {
-                setCapturedImage(photo.uri);
-                setIsProcessing(true);
+      if (photo?.uri) {
+        setCapturedImage(photo.uri);
+        setIsProcessing(true);
 
-                // Parse the image with AI
-                const result = await parseScheduleImage(photo.uri, {
-                  date: selectedDate,
-                });
+        // Parse the image with AI
+        const result = await parseScheduleImage(photo.uri, {
+          date: selectedDate,
+        });
 
-                setIsProcessing(false);
+        setIsProcessing(false);
 
-                if (result.success && result.entries.length > 0) {
-                  setParsedEntries(result.entries);
-                  setShowResults(true);
-                } else {
-                  Alert.alert(
-                    'No Data Found',
-                    'Could not extract schedule entries from the image. Please try again with better lighting or a clearer photo.',
-                    [
-                      { text: 'Retry', onPress: () => setCapturedImage(null) },
-                      { text: 'Cancel', onPress: () => navigation.goBack() },
-                    ]
-                  );
-                }
-              }
-            },
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+        if (result.success && result.entries.length > 0) {
+          setParsedEntries(result.entries);
+          setShowResults(true);
+        } else {
+          Alert.alert(
+            'No Data Found',
+            'Could not extract schedule entries from the image. Please try again with better lighting or a clearer photo.',
+            [
+              { text: 'Retry', onPress: () => setCapturedImage(null) },
+              { text: 'Cancel', onPress: () => navigation.goBack() },
+            ]
+          );
+        }
+      }
     } catch (error) {
       setIsProcessing(false);
       Alert.alert('Error', 'Failed to capture or process image. Please try again.');
