@@ -181,7 +181,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                         setSpanFraction("0"); // Decimal inches, no fraction
                       }
                       if (data.pourDate) setPourDate(data.pourDate);
-                      if (data.productType) setProductType(data.productType);
+                      if (data.productWidth) {
+                        setProductWidth(data.productWidth.toString());
+                      }
                       if (data.strandPattern) {
                         // Find matching strand pattern by ID or name
                         const matchingPattern = customPatterns.find(

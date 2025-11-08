@@ -17,7 +17,7 @@ export interface ProductTagData {
   };
   pourDate?: string;
   strandPattern?: string;
-  productType?: string;
+  productWidth?: number; // Width extracted from "8 x 48" pattern
   slippageIdentifier?: string;
   camberCalculator?: string;
 }
@@ -53,50 +53,84 @@ export async function parseProductTag(
       }));
 
     // Create prompt for AI to parse the product tag - extract ALL fields
-    const prompt = `You are analyzing a product tag from a precast concrete hollow-core plank. Extract ALL the following information from the tag:
+    const prompt = `You are analyzing a product tag from a precast concrete hollow-core plank. Extract ALL the following information from the tag.
 
-REQUIRED FIELDS:
-- PROJECT NAME: Look for any project or job name
-- PROJECT NUMBER: Look for job number or project number (numeric only, strip any prefixes)
-- MARK NUMBER: Look for mark identifier (e.g., M1, M2, etc.)
-- ID NUMBER: Look for ID or piece identifier
-- SPAN: The span measurement in format like "33'-2.5\"" where:
-  * 33 is the feet
-  * 2.5 is the whole and decimal inch value (NOT a fraction)
-  * Example formats: "33'-2.5\"", "27'-6.5\"", "30'-0\"", etc.
-- POUR DATE: Date in any format (extract and convert to MM/DD/YYYY)
-- STRAND PATTERN: Look for strand pattern notation (e.g., "107-70", "77-70", "148-70")
+FIELD EXTRACTION RULES (CRITICAL - FOLLOW EXACTLY):
 
-OPTIONAL FIELDS:
-- SLIPPAGE IDENTIFIER: Any value labeled as "Slippage Identifier" or similar
-- CAMBER CALCULATOR: Any value labeled as "Camber Calculator" or similar
-- PRODUCT TYPE: Type/size of product (e.g., 8048, 1048, 1248, etc.)
+1. JOB NUMBER (Project Number):
+   - Usually a 6-digit number like "255096"
+   - Extract as-is, numeric only
 
-IMPORTANT EXTRACTION RULES:
-- Span inches value is DECIMAL, not a fraction (e.g., 2.5 means 2.5 inches, NOT 2 and 1/2)
-- For Project Number: Extract ONLY the numeric portion, remove any letters or prefixes (e.g., "J12345" → "12345")
-- Strand patterns are typically in format like "107-70" or similar numeric patterns
-- Be precise with all measurements and identifiers
-- Return null for any field you cannot find or are not confident about
+2. MARK NUMBER:
+   - Format like "H105", "M1", "M2", etc.
+   - Include the letter prefix (H, M, etc.)
+
+3. SPAN:
+   - Format like "28'-5\"" or "33'-2.5\""
+   - First number is FEET
+   - Second number (after apostrophe) is INCHES as DECIMAL (e.g., 5" means 5.0 inches, 2.5" means 2.5 inches)
+   - Return as separate feet and inches values
+
+4. ID NUMBER:
+   - Usually a 7-digit number like "1350951"
+   - Extract as-is
+
+5. WIDTH (from "8 x 48" pattern):
+   - Look for pattern like "8 x 48" or "8 X 48"
+   - Extract ONLY the second number (48) - this is the width
+   - The first number (8) should be IGNORED for now
+
+6. STRAND PATTERN:
+   - Look for a 2-3 digit number like "126" or "107" or "77" or "148"
+   - ALWAYS append "-70" to this number
+   - Example: if you see "126", return "126-70"
+   - Example: if you see "107", return "107-70"
+
+7. POUR DATE:
+   - Format may be like "09.12.2025" (DD.MM.YYYY European format)
+   - Convert to MM/DD/YYYY format
+   - Example: "09.12.2025" → "12/09/2025"
+
+8. IGNORE THESE:
+   - Any "E" or "D" letter standing alone (skip it)
+   - Any "#" followed by numbers at the top (internal tracking)
+   - The first number in the "8 x 48" pattern (the height)
+
+LAYOUT EXAMPLE:
+The tag typically shows:
+- Top: tracking number (ignore)
+- Job Number: 6 digits (255096)
+- Letter E or D (ignore)
+- Mark Number: letter+digits (H105)
+- Span: feet'inches" format (28'-5")
+- ID Number: 7 digits (1350951)
+- Size: "8 x 48" pattern (extract only 48)
+- Strand number: 2-3 digits (126) → convert to "126-70"
+- Pour Date: DD.MM.YYYY (09.12.2025) → convert to MM/DD/YYYY
 
 Return ONLY a valid JSON object with this structure:
 {
-  "projectName": "Project Name Here",
-  "projectNumber": "12345",
-  "markNumber": "M1",
-  "idNumber": "ID123",
+  "projectNumber": "255096",
+  "markNumber": "H105",
+  "idNumber": "1350951",
   "span": {
-    "feet": 33,
-    "inches": 2.5
+    "feet": 28,
+    "inches": 5.0
   },
-  "pourDate": "12/15/2024",
-  "strandPattern": "107-70",
-  "slippageIdentifier": "value if present",
-  "camberCalculator": "value if present",
-  "productType": "1248"
+  "pourDate": "12/09/2025",
+  "strandPattern": "126-70",
+  "productWidth": 48
 }
 
-Return ONLY the JSON, no other text. Use null for any missing fields.`;
+IMPORTANT:
+- Return null for any field you cannot find
+- Be precise with numbers - don't guess
+- Always append "-70" to the strand pattern number
+- Convert pour date from DD.MM.YYYY to MM/DD/YYYY
+- For span inches: if you see "5\"", that means 5.0 inches (decimal)
+- Extract ONLY the width (second number) from "8 x 48" pattern
+
+Return ONLY the JSON, no other text.`;
 
     // Call AI with vision
     const client = getOpenAIClient();

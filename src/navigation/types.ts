@@ -14,7 +14,7 @@ export type RootStackParamList = {
       span?: { feet: number; inches: number };
       pourDate?: string;
       strandPattern?: string;
-      productType?: string;
+      productWidth?: number;
       slippageIdentifier?: string;
       camberCalculator?: string;
     }) => void;
