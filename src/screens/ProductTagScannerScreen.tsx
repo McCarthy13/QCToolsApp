@@ -63,9 +63,7 @@ export default function ProductTagScannerScreen() {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1,
-        base64: false,
-        exif: false,
+        quality: 1.0,
         skipProcessing: false,
       });
 
@@ -117,8 +115,6 @@ export default function ProductTagScannerScreen() {
           enableTorch={flash}
           autofocus="on"
           mode="picture"
-          zoom={0}
-          pictureSize="high"
         >
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
