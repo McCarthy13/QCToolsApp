@@ -40,8 +40,8 @@ export default function ScheduleScannerScreen() {
   useEffect(() => {
     if (permission?.granted && showTipPrompt) {
       Alert.alert(
-        'Tips for Best Results',
-        'Use zoom to frame ONLY Position (Pos) through Cutback columns. Hold phone VERY steady and wait 1-2 seconds for sharp focus before pressing capture. Use flash in low light. Avoid zooming too much as it reduces quality.',
+        'Camera Tips',
+        'Get as CLOSE to the schedule as possible (avoid digital zoom). Hold phone VERY steady and wait 2 seconds for sharp focus. Use flash in low light. Frame Position through Cutback columns.',
         [
           {
             text: 'Got it',
@@ -84,13 +84,13 @@ export default function ScheduleScannerScreen() {
 
     try {
       // Longer delay to ensure autofocus is fully locked and stabilized
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const photo = await cameraRef.current.takePictureAsync({
         quality: 1, // Maximum quality (0-1, where 1 is highest)
         base64: false,
         exif: true, // Keep EXIF data for proper orientation
-        skipProcessing: false, // Allow camera to apply its processing
+        skipProcessing: true, // Skip any compression - we want raw quality
         isImageMirror: false,
         // Request maximum possible resolution
         imageType: 'jpg',

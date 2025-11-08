@@ -224,7 +224,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Schedule scanner UX improvements - removed confusing blue frame guide; added zoom controls (+/-/reset) for precise framing; tips prompt encourages holding steady and waiting for focus before capture
 - [x] Position column verification system - AI uses Position column to determine total row count; extracts that many entries without attempting pattern validation or sequential verification
 - [x] Simplified extraction logic - removed complex verification steps that were causing AI to "correct" values it read correctly; AI now extracts EXACTLY what it sees without trying to find patterns, verify consistency, or infer sequential ID numbers; each row treated as completely independent
-- [x] Schedule scanner camera optimization - using device's maximum native resolution with quality=1; increased stabilization delay to 500ms for full autofocus lock; enabled EXIF data preservation for proper orientation; added imageType specification for maximum quality JPG capture; user guidance emphasizes holding VERY steady and waiting 1-2 seconds before capture; warning about excessive zoom reducing quality
+- [x] Schedule scanner camera optimization - using device's maximum native resolution with quality=1 and skipProcessing=true to prevent compression; increased stabilization delay to 800ms for full autofocus lock; enabled EXIF data preservation; user guidance emphasizes getting CLOSE to schedule (avoiding digital zoom degradation) and waiting 2 seconds for focus
 - [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
 
 ### ⏳ Ready to Implement
