@@ -7,16 +7,17 @@
 import { getOpenAIClient } from './openai';
 
 export interface ProductTagData {
+  projectName?: string;
+  projectNumber?: string;
+  markNumber?: string;
+  idNumber?: string;
   span?: {
     feet: number;
     inches: number;
   };
   pourDate?: string;
-  projectName?: string;
-  projectNumber?: string;
-  markNumber?: string;
-  idNumber?: string;
   strandPattern?: string;
+  productType?: string;
   slippageIdentifier?: string;
   camberCalculator?: string;
 }
@@ -30,11 +31,10 @@ export interface ProductTagParseResult {
 
 /**
  * Parse a product tag image using AI vision
- * Extracts span (in feet and decimal inches) and pour date
+ * Extracts ALL product details from the tag
  */
 export async function parseProductTag(
-  imageUri: string,
-  targetFields?: Array<'span' | 'pourDate' | 'projectInfo' | 'slippageIdentifier' | 'camberCalculator'>
+  imageUri: string
 ): Promise<ProductTagParseResult> {
   try {
     // Convert image to base64
@@ -52,55 +52,48 @@ export async function parseProductTag(
         reader.readAsDataURL(blob);
       }));
 
-    // Determine what fields to extract
-    const fields = targetFields || ['span', 'pourDate', 'projectInfo', 'slippageIdentifier', 'camberCalculator'];
+    // Create prompt for AI to parse the product tag - extract ALL fields
+    const prompt = `You are analyzing a product tag from a precast concrete hollow-core plank. Extract ALL the following information from the tag:
 
-    // Create prompt for AI to parse the product tag
-    const prompt = `You are analyzing a product tag from a precast concrete hollow-core plank. Extract the following information from the tag:
-
-${fields.includes('span') ? `
-- SPAN: Look for the span measurement. It should be in format like "33'-2.5\"" where:
+REQUIRED FIELDS:
+- PROJECT NAME: Look for any project or job name
+- PROJECT NUMBER: Look for job number or project number (numeric only, strip any prefixes)
+- MARK NUMBER: Look for mark identifier (e.g., M1, M2, etc.)
+- ID NUMBER: Look for ID or piece identifier
+- SPAN: The span measurement in format like "33'-2.5\"" where:
   * 33 is the feet
   * 2.5 is the whole and decimal inch value (NOT a fraction)
   * Example formats: "33'-2.5\"", "27'-6.5\"", "30'-0\"", etc.
-` : ''}
+- POUR DATE: Date in any format (extract and convert to MM/DD/YYYY)
+- STRAND PATTERN: Look for strand pattern notation (e.g., "107-70", "77-70", "148-70")
 
-${fields.includes('pourDate') ? `
-- POUR DATE: Look for a date field labeled as "Pour Date" or similar
-  * Extract in MM/DD/YYYY format
-` : ''}
+OPTIONAL FIELDS:
+- SLIPPAGE IDENTIFIER: Any value labeled as "Slippage Identifier" or similar
+- CAMBER CALCULATOR: Any value labeled as "Camber Calculator" or similar
+- PRODUCT TYPE: Type/size of product (e.g., 8048, 1048, 1248, etc.)
 
-${fields.includes('projectInfo') ? `
-- PROJECT INFO: Look for project name, project number, mark number, ID number
-` : ''}
-
-${fields.includes('slippageIdentifier') ? `
-- SLIPPAGE IDENTIFIER: Look for any field labeled "Slippage Identifier" or similar
-` : ''}
-
-${fields.includes('camberCalculator') ? `
-- CAMBER CALCULATOR: Look for any field labeled "Camber Calculator" or similar
-` : ''}
-
-IMPORTANT:
-- The span inches value is a DECIMAL, not a fraction (e.g., 2.5 means 2.5 inches, NOT 2 and 1/2)
-- Be precise with measurements
+IMPORTANT EXTRACTION RULES:
+- Span inches value is DECIMAL, not a fraction (e.g., 2.5 means 2.5 inches, NOT 2 and 1/2)
+- For Project Number: Extract ONLY the numeric portion, remove any letters or prefixes (e.g., "J12345" → "12345")
+- Strand patterns are typically in format like "107-70" or similar numeric patterns
+- Be precise with all measurements and identifiers
 - Return null for any field you cannot find or are not confident about
 
 Return ONLY a valid JSON object with this structure:
 {
+  "projectName": "Project Name Here",
+  "projectNumber": "12345",
+  "markNumber": "M1",
+  "idNumber": "ID123",
   "span": {
     "feet": 33,
     "inches": 2.5
   },
   "pourDate": "12/15/2024",
-  "projectName": "Project Name",
-  "projectNumber": "12345",
-  "markNumber": "M1",
-  "idNumber": "ID123",
   "strandPattern": "107-70",
   "slippageIdentifier": "value if present",
-  "camberCalculator": "value if present"
+  "camberCalculator": "value if present",
+  "productType": "1248"
 }
 
 Return ONLY the JSON, no other text. Use null for any missing fields.`;

@@ -29,7 +29,7 @@ export default function ProductTagScannerScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
-  const { targetFields, onDataScanned } = route.params;
+  const { onDataScanned } = route.params;
 
   // Request permission if not granted
   if (!permission) {
@@ -72,7 +72,7 @@ export default function ProductTagScannerScreen() {
         setIsProcessing(true);
 
         // Parse the image with AI
-        const result = await parseProductTag(photo.uri, targetFields);
+        const result = await parseProductTag(photo.uri);
 
         setIsProcessing(false);
 

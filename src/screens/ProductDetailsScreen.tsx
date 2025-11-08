@@ -162,9 +162,46 @@ export default function ProductDetailsScreen({ navigation }: Props) {
       >
           {/* Header */}
           <View className="px-6 py-4 border-b border-gray-200">
-            <Text className="text-gray-900 text-2xl font-bold">
-              Product Details
-            </Text>
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className="text-gray-900 text-2xl font-bold">
+                Product Details
+              </Text>
+              <Pressable
+                onPress={() => {
+                  navigation.navigate("ProductTagScanner", {
+                    onDataScanned: (data) => {
+                      // Fill all fields from the scanned tag
+                      if (data.projectName) setProjectName(data.projectName);
+                      if (data.projectNumber) setProjectNumber(data.projectNumber);
+                      if (data.markNumber) setMarkNumber(data.markNumber);
+                      if (data.idNumber) setIdNumber(data.idNumber);
+                      if (data.span) {
+                        setSpanFeet(data.span.feet.toString());
+                        setSpanInches(data.span.inches.toString());
+                        setSpanFraction("0"); // Decimal inches, no fraction
+                      }
+                      if (data.pourDate) setPourDate(data.pourDate);
+                      if (data.productType) setProductType(data.productType);
+                      if (data.strandPattern) {
+                        // Find matching strand pattern by ID or name
+                        const matchingPattern = customPatterns.find(
+                          p => p.patternId === data.strandPattern || p.name.includes(data.strandPattern || '')
+                        );
+                        if (matchingPattern) {
+                          setStrandPattern(matchingPattern.id);
+                        }
+                      }
+                    },
+                  });
+                }}
+                className="bg-blue-500 rounded-lg px-4 py-2 flex-row items-center"
+              >
+                <Ionicons name="camera" size={20} color="#fff" />
+                <Text className="text-white text-sm font-semibold ml-2">
+                  Scan Product Tag
+                </Text>
+              </Pressable>
+            </View>
             <Text className="text-gray-600 text-sm mt-1">
               Configure project details and select strand pattern
             </Text>
@@ -255,31 +292,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
 
             {/* Span Entry */}
             <View className="mb-6">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-gray-700 text-sm font-medium">
-                  Span (Optional)
-                </Text>
-                <Pressable
-                  onPress={() => {
-                    navigation.navigate("ProductTagScanner", {
-                      targetFields: ['span'],
-                      onDataScanned: (data) => {
-                        if (data.span) {
-                          setSpanFeet(data.span.feet.toString());
-                          setSpanInches(data.span.inches.toString());
-                          setSpanFraction("0"); // Decimal inches, no fraction
-                        }
-                      },
-                    });
-                  }}
-                  className="bg-blue-50 border border-blue-300 rounded-lg px-3 py-2 flex-row items-center"
-                >
-                  <Ionicons name="camera" size={16} color="#2563eb" />
-                  <Text className="text-blue-600 text-xs font-semibold ml-1">
-                    Scan Tag
-                  </Text>
-                </Pressable>
-              </View>
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Span (Optional)
+              </Text>
               <View className="flex-row items-center gap-2">
                 <TextInput
                   className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
@@ -318,29 +333,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
 
             {/* Pour Date Entry */}
             <View className="mb-6">
-              <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-gray-700 text-sm font-medium">
-                  Pour Date (Optional)
-                </Text>
-                <Pressable
-                  onPress={() => {
-                    navigation.navigate("ProductTagScanner", {
-                      targetFields: ['pourDate'],
-                      onDataScanned: (data) => {
-                        if (data.pourDate) {
-                          setPourDate(data.pourDate);
-                        }
-                      },
-                    });
-                  }}
-                  className="bg-blue-50 border border-blue-300 rounded-lg px-3 py-2 flex-row items-center"
-                >
-                  <Ionicons name="camera" size={16} color="#2563eb" />
-                  <Text className="text-blue-600 text-xs font-semibold ml-1">
-                    Scan Tag
-                  </Text>
-                </Pressable>
-              </View>
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Pour Date (Optional)
+              </Text>
               <TextInput
                 className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                 placeholder="MM/DD/YYYY"

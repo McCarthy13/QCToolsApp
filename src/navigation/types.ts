@@ -6,10 +6,15 @@ export type RootStackParamList = {
   StrandPatterns: undefined;
   ProductDetails: undefined;
   ProductTagScanner: {
-    targetFields: Array<'span' | 'pourDate' | 'slippageIdentifier' | 'camberCalculator'>;
     onDataScanned: (data: {
+      projectName?: string;
+      projectNumber?: string;
+      markNumber?: string;
+      idNumber?: string;
       span?: { feet: number; inches: number };
       pourDate?: string;
+      strandPattern?: string;
+      productType?: string;
       slippageIdentifier?: string;
       camberCalculator?: string;
     }) => void;
