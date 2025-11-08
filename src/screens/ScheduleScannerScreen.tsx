@@ -90,7 +90,7 @@ export default function ScheduleScannerScreen() {
         quality: 1, // Maximum quality (0-1, where 1 is highest)
         base64: false,
         exif: true, // Keep EXIF data for proper orientation
-        skipProcessing: true, // Skip any compression - we want raw quality
+        skipProcessing: false, // Let camera do its native processing
         isImageMirror: false,
         // Request maximum possible resolution
         imageType: 'jpg',
@@ -172,6 +172,8 @@ export default function ScheduleScannerScreen() {
           autofocus="on"
           mode="picture"
           zoom={zoom}
+          ratio="16:9"
+          pictureSize="high"
         >
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
