@@ -8,6 +8,7 @@ import { extractJobNumber } from '../utils/jobNumberValidation';
 
 export interface ParsedScheduleEntry {
   formBed?: string; // User-assigned only, not from AI
+  position?: number; // Position number from Pos column (sequential: 1, 2, 3...)
   jobNumber: string;
   jobName?: string;
   idNumber?: string; // ID column from schedule
@@ -70,25 +71,35 @@ CRITICAL INSTRUCTIONS:
 - IGNORE all highlighter marks, pen markups, handwritten notes, or any annotations on the paper
 - ONLY extract the PRINTED/TYPED text from the original schedule
 - Do NOT try to interpret what the markups mean
-- Focus ONLY on the table columns from "Job" through "Cutback"
+- Focus ONLY on the table columns from "Position" (Pos) through "Cutback"
 - ACCURACY IS CRITICAL - Read numbers carefully and double-check each value
 - If a value is unclear or hard to read, mark confidence as lower
 - EXTRACT EVERY SINGLE ROW - Do not skip any rows, even if they seem similar
 
-VERY IMPORTANT - COMPLETENESS:
-- Count the total number of rows/pieces visible in the schedule
-- Create ONE entry for EACH row - do not skip or combine rows
-- After extraction, verify you have extracted ALL rows
-- If you see 15 rows, you MUST create 15 separate entries
-- Each Mark number (H1, H2, M1, M2, etc.) is a SEPARATE piece
+VERY IMPORTANT - POSITION COLUMN VERIFICATION:
+- The FIRST column is "Position" (Pos) - it contains sequential numbers (1, 2, 3, 4... 15)
+- The HIGHEST number in the Position column tells you the TOTAL number of pieces
+- Example: If the last Position number is 15, you MUST extract exactly 15 entries
+- Use this as your verification: if Position column shows 1-15, you need 15 entries
+- This is THE MOST IMPORTANT verification - Position column = total piece count
 
-- Create ONE entry per piece (if there are 5 pieces with marks M1-M5, create 5 separate entries)
-- Extract the ID number from the "ID" column for each piece
-- Extract the Mark number (M1, M2, M3, etc) individually for each piece
+COMPLETENESS REQUIREMENT:
+- Look at the Position column and find the highest number
+- Create ONE entry for EACH position number (1, 2, 3... up to the maximum)
+- After extraction, verify: number of entries = highest position number
+- If Position shows 15 rows but you only extracted 12, GO BACK and find the missing 3
+- Each Mark number (H1, H2, M1, M2, etc.) is a SEPARATE piece
 - Do NOT group pieces together - EVERY ROW is a separate entry
 - Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
 
 COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
+
+0. POSITION COLUMN (Pos):
+   - This is the FIRST column before Job
+   - Sequential numbers: 1, 2, 3, 4, 5... etc.
+   - The HIGHEST number = total pieces you must extract
+   - Extract this value for verification purposes
+   - DO NOT skip any position numbers in sequence
 
 1. JOB COLUMN:
    - Extract ONLY the numeric digits
@@ -141,24 +152,34 @@ COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
    - Be precise with fractions
 
 ACCURACY VERIFICATION CHECKLIST:
-✓ Did I count the total number of rows in the schedule?
-✓ Did I create one entry for EACH row (no skipping)?
+✓ Did I look at the Position column first?
+✓ Did I identify the HIGHEST position number (this is my target count)?
+✓ Did I create one entry for EACH position number (1, 2, 3... up to max)?
 ✓ Did I read each number digit-by-digit?
 ✓ Did I verify the fraction values (1/2, 1/4, 3/4)?
 ✓ Do the length values make sense (typically 20-60 feet)?
 ✓ Did I extract only printed values (no handwriting)?
 ✓ Are the ID numbers complete (6-7 digits)?
 ✓ Did I read the mark numbers correctly (letter + number)?
-✓ Does my entry count match the row count?
+✓ Does my entry count match the highest position number?
 
-COMPLETENESS CHECK:
-Before returning your response, verify:
-1. Count visible rows in schedule = [X] rows
-2. Number of entries in my JSON = [Y] entries
-3. If X ≠ Y, re-examine the image and extract missing rows
-4. Ensure sequential mark numbers are all included (H1, H2, H3... or M1, M2, M3...)
+MANDATORY COMPLETENESS CHECK:
+Before returning your response, YOU MUST verify:
+1. Find highest Position number in schedule = [MAX_POS]
+2. Count entries in my JSON = [ENTRY_COUNT]
+3. CRITICAL: MAX_POS MUST EQUAL ENTRY_COUNT
+4. If MAX_POS ≠ ENTRY_COUNT, you FAILED - re-examine and extract ALL missing rows
+5. Check for gaps in Position sequence (1,2,3,4,5... no skipping)
+6. Ensure sequential mark numbers are all included (H1, H2, H3... or M1, M2, M3...)
+
+Example verification:
+- Position column shows: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+- Highest Position = 15
+- My JSON must have exactly 15 entries
+- If I only have 12 entries, I must find the 3 missing pieces
 
 For each INDIVIDUAL piece in the schedule, extract:
+- Position Number (from Position/Pos column - sequential number)
 - Job Number (ONLY numeric digits from Job column - verify accuracy)
 - Mark Number (from Mark column: H1, M1, etc. - exact match)
 - ID Number (from ID column - complete number)
@@ -173,6 +194,7 @@ Return ONLY a valid JSON object with this structure:
   "date": "date from schedule if visible",
   "entries": [
     {
+      "position": 1,
       "jobNumber": "255096",
       "markNumber": "H1",
       "idNumber": "1234567",
@@ -184,6 +206,7 @@ Return ONLY a valid JSON object with this structure:
       "confidence": 0.95
     },
     {
+      "position": 2,
       "jobNumber": "255096",
       "markNumber": "H2",
       "idNumber": "1234568",
@@ -194,8 +217,11 @@ Return ONLY a valid JSON object with this structure:
       "cutback": "0'-6\"",
       "confidence": 0.95
     }
+    ... continue for ALL positions up to the highest position number
   ]
 }
+
+REMEMBER: If highest Position = 15, you MUST have 15 entries in the array!
 
 CRITICAL RULES:
 - Return ONLY the JSON, no other text

@@ -41,7 +41,7 @@ export default function ScheduleScannerScreen() {
     if (permission?.granted && showTipPrompt) {
       Alert.alert(
         'Tips for Best Results',
-        'Use the zoom controls to frame ONLY the columns from Job through Cutback. The entire camera view will be captured, not just the blue frame.',
+        'Use the zoom controls to frame ONLY the columns from Position (Pos) through Cutback. The entire camera view will be captured. The Position column helps verify all pieces are extracted.',
         [
           {
             text: 'Got it',

@@ -219,10 +219,11 @@ User Login → Check Firestore approval status → Grant access
 - [x] Pour date field - added pour date field to product details and PDF reports
 - [x] Span display enhancement - span now properly displayed in feet and decimal inches format (e.g., 33'-2.5") in PDF reports
 - [x] Single-scan workflow - "Scan Product Tag" button at top of Product Details and Camber Calculator screens captures all information from the tag in one photo
-- [x] Daily pour schedule enhanced OCR - added extraction of Length 1, Length 2, Width, Angle, and Cutback fields from schedule images with detailed formatting (feet-inch-fraction format for lengths and cutback, numeric values with units for width and angle)
+- [x] Daily pour schedule enhanced OCR - added extraction of Position, Length 1, Length 2, Width, Angle, and Cutback fields from schedule images with detailed formatting (feet-inch-fraction format for lengths and cutback, numeric values with units for width and angle)
 - [x] Schedule scanner authentication fix - converted OpenAI API calls from SDK to fetch API for proper authentication with Vibecode proxy
-- [x] Schedule scanner UX improvements - removed confusing blue frame guide; added zoom controls (+/-/reset) for precise framing; tips prompt clarifies entire camera view is captured and encourages using zoom to frame only Job through Cutback columns
-- [x] Enhanced OCR accuracy and completeness - improved AI prompt with row counting verification, completeness checks to ensure ALL pieces are extracted (not just 10 of 15), sequential mark number verification, and explicit instructions to create one entry per row
+- [x] Schedule scanner UX improvements - removed confusing blue frame guide; added zoom controls (+/-/reset) for precise framing; tips prompt clarifies entire camera view is captured and encourages using zoom to frame Position (Pos) through Cutback columns
+- [x] Position column verification system - AI now uses the Position column (sequential 1,2,3...15) as definitive piece count; highest position number determines total entries that must be extracted, eliminating missing pieces issue (e.g., if Pos shows 15, exactly 15 entries required)
+- [x] Enhanced OCR accuracy and completeness - improved AI prompt with mandatory Position-based verification, explicit failure conditions if count mismatches, gap detection in position sequences, and step-by-step completeness validation
 - [x] Schedule scanner camera optimization - enabled high picture size setting and optimized capture parameters (quality=1, base64=false, exif=false, skipProcessing=false) for maximum sharpness
 - [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
 
