@@ -221,10 +221,9 @@ User Login → Check Firestore approval status → Grant access
 - [x] Single-scan workflow - "Scan Product Tag" button at top of Product Details and Camber Calculator screens captures all information from the tag in one photo
 - [x] Daily pour schedule enhanced OCR - added extraction of Position, Length 1, Length 2, Width, Angle, and Cutback fields from schedule images with detailed formatting (feet-inch-fraction format for lengths and cutback, numeric values with units for width and angle)
 - [x] Schedule scanner authentication fix - converted OpenAI API calls from SDK to fetch API for proper authentication with Vibecode proxy
-- [x] Schedule scanner UX improvements - removed confusing blue frame guide; added zoom controls (+/-/reset) for precise framing; tips prompt encourages holding steady and waiting for focus before capture
 - [x] Position column verification system - AI uses Position column to determine total row count; extracts that many entries without attempting pattern validation or sequential verification
 - [x] Simplified extraction logic - removed complex verification steps that were causing AI to "correct" values it read correctly; AI now extracts EXACTLY what it sees without trying to find patterns, verify consistency, or infer sequential ID numbers; each row treated as completely independent
-- [x] Schedule scanner camera optimization - added ratio="16:9" and pictureSize="high" to force higher resolution capture; reverted to skipProcessing=false to allow native camera processing; quality=1 with 800ms stabilization delay; user guidance emphasizes getting CLOSE to schedule and waiting 2 seconds for focus
+- [x] **Native camera integration** - replaced expo-camera with expo-image-picker to use device's native camera app for 100% sharp, clear images (quality=1); users now get full native camera controls and quality matching their phone's camera app for reliable OCR accuracy
 - [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
 
 ### ⏳ Ready to Implement

@@ -1,13 +1,13 @@
 /**
  * Schedule Scanner Screen
- * 
- * Uses camera to capture paper schedules and AI to parse them
+ *
+ * Uses native camera to capture paper schedules and AI to parse them
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,93 +22,54 @@ export default function ScheduleScannerScreen() {
   const route = useRoute<ScannerRouteProp>();
   const insets = useSafeAreaInsets();
 
-  const [permission, requestPermission] = useCameraPermissions();
-  const [facing, setFacing] = useState<CameraType>('back');
-  const [flash, setFlash] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedEntries, setParsedEntries] = useState<ParsedScheduleEntry[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [showTipPrompt, setShowTipPrompt] = useState(true);
-  const [zoom, setZoom] = useState(0);
 
-  const cameraRef = useRef<CameraView>(null);
   const selectedDate = route.params?.date ? new Date(route.params.date) : new Date();
   const selectedDepartment = route.params?.department;
 
-  // Show tip prompt when screen loads
-  useEffect(() => {
-    if (permission?.granted && showTipPrompt) {
-      Alert.alert(
-        'Camera Tips',
-        'Get as CLOSE to the schedule as possible (avoid digital zoom). Hold phone VERY steady and wait 2 seconds for sharp focus. Use flash in low light. Frame Position through Cutback columns.',
-        [
-          {
-            text: 'Got it',
-            onPress: () => setShowTipPrompt(false),
-          },
-        ]
-      );
-    }
-  }, [permission?.granted, showTipPrompt]);
-
-  // Request permission if not granted
-  if (!permission) {
-    return <View style={{ flex: 1, backgroundColor: '#000' }} />;
-  }
-
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#1f2937' }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Ionicons name="camera-outline" size={64} color="#9ca3af" style={{ marginBottom: 16 }} />
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#fff', marginBottom: 8, textAlign: 'center' }}>
-            Camera Permission Required
-          </Text>
-          <Text style={{ fontSize: 14, color: '#9ca3af', marginBottom: 24, textAlign: 'center' }}>
-            We need camera access to scan paper schedules
-          </Text>
-          <Pressable
-            onPress={requestPermission}
-            style={{ backgroundColor: '#3b82f6', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 }}
-          >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Grant Permission</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const handleCapture = async () => {
-    if (!cameraRef.current) return;
-
     try {
-      // Longer delay to ensure autofocus is fully locked and stabilized
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Request camera permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 1, // Maximum quality (0-1, where 1 is highest)
-        base64: false,
-        exif: true, // Keep EXIF data for proper orientation
-        skipProcessing: false, // Let camera do its native processing
-        isImageMirror: false,
-        // Request maximum possible resolution
-        imageType: 'jpg',
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please grant camera permission to scan schedules.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch native camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1, // Maximum quality
+        exif: true,
       });
 
+      if (result.canceled) {
+        return;
+      }
+
+      const photo = result.assets[0];
       if (photo?.uri) {
         setCapturedImage(photo.uri);
         setIsProcessing(true);
 
         // Parse the image with AI
-        const result = await parseScheduleImage(photo.uri, {
+        const parseResult = await parseScheduleImage(photo.uri, {
           date: selectedDate,
         });
 
         setIsProcessing(false);
 
-        if (result.success && result.entries.length > 0) {
-          setParsedEntries(result.entries);
+        if (parseResult.success && parseResult.entries.length > 0) {
+          setParsedEntries(parseResult.entries);
           setShowResults(true);
         } else {
           Alert.alert(
@@ -136,126 +97,74 @@ export default function ScheduleScannerScreen() {
     });
   };
 
-  const toggleFlash = () => setFlash(!flash);
-
-  const toggleCameraFacing = () => {
-    setFacing((current) => (current === 'back' ? 'front' : 'back'));
-  };
-
-  const handleZoomIn = () => {
-    setZoom((current) => Math.min(current + 0.1, 1));
-  };
-
-  const handleZoomOut = () => {
-    setZoom((current) => Math.max(current - 0.1, 0));
-  };
-
-  const resetZoom = () => {
-    setZoom(0);
-  };
-
   const handleRetake = () => {
     setCapturedImage(null);
     setShowResults(false);
     setParsedEntries([]);
   };
 
-  // Camera View
+  // Initial screen - prompt to take photo
   if (!capturedImage && !showResults) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <CameraView
-          ref={cameraRef}
-          style={{ flex: 1 }}
-          facing={facing}
-          enableTorch={flash}
-          autofocus="on"
-          mode="picture"
-          zoom={zoom}
-          ratio="16:9"
-          pictureSize="high"
-        >
-          {/* Top Bar */}
-          <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
-              <Pressable
-                onPress={() => navigation.goBack()}
-                style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
-              >
-                <Ionicons name="close" size={24} color="#fff" />
-              </Pressable>
-
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-                Scan Schedule
-              </Text>
-
-              <Pressable
-                onPress={toggleFlash}
-                style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
-              >
-                <Ionicons name={flash ? 'flash' : 'flash-off'} size={24} color="#fff" />
-              </Pressable>
-            </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
+        <View style={{ flex: 1 }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1f2937' }}>
+            <Pressable onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Scan Schedule</Text>
+            <View style={{ width: 24 }} />
           </View>
 
-          {/* Zoom Controls */}
-          <View style={{ position: 'absolute', right: 16, top: '50%', transform: [{ translateY: -80 }], zIndex: 10, gap: 12 }}>
-            <Pressable
-              onPress={handleZoomIn}
-              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: zoom > 0 ? '#3b82f6' : 'rgba(255,255,255,0.3)' }}
-            >
-              <Ionicons name="add" size={28} color="#fff" />
-            </Pressable>
+          {/* Instructions */}
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+            <Ionicons name="camera-outline" size={96} color="#3b82f6" style={{ marginBottom: 24 }} />
 
-            {/* Zoom Level Indicator */}
-            {zoom > 0 && (
-              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>
-                  {(zoom * 10).toFixed(0)}x
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 16 }}>
+              Take a Photo of Your Schedule
+            </Text>
+
+            <Text style={{ color: '#9ca3af', fontSize: 16, textAlign: 'center', marginBottom: 32, lineHeight: 24 }}>
+              Use your phone's native camera for the sharpest results. Frame the Position through Cutback columns.
+            </Text>
+
+            {/* Tips */}
+            <View style={{ backgroundColor: '#1f2937', borderRadius: 12, padding: 20, marginBottom: 32, width: '100%' }}>
+              <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600', marginBottom: 12 }}>
+                Tips for Best Results:
+              </Text>
+              <View style={{ gap: 8 }}>
+                <Text style={{ color: '#d1d5db', fontSize: 14 }}>
+                  • Get as close as possible to the schedule
+                </Text>
+                <Text style={{ color: '#d1d5db', fontSize: 14 }}>
+                  • Hold phone steady and wait for focus
+                </Text>
+                <Text style={{ color: '#d1d5db', fontSize: 14 }}>
+                  • Use flash in low light conditions
+                </Text>
+                <Text style={{ color: '#d1d5db', fontSize: 14 }}>
+                  • Frame Position through Cutback columns
                 </Text>
               </View>
-            )}
-
-            <Pressable
-              onPress={handleZoomOut}
-              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: zoom > 0 ? '#3b82f6' : 'rgba(255,255,255,0.3)' }}
-            >
-              <Ionicons name="remove" size={28} color="#fff" />
-            </Pressable>
-
-            {/* Reset Zoom */}
-            {zoom > 0 && (
-              <Pressable
-                onPress={resetZoom}
-                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#f59e0b' }}
-              >
-                <Ionicons name="refresh" size={24} color="#f59e0b" />
-              </Pressable>
-            )}
-          </View>
-
-          {/* Bottom Controls */}
-          <View style={{ position: 'absolute', bottom: insets.bottom, left: 0, right: 0, zIndex: 10, paddingBottom: 40 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 32 }}>
-              <View style={{ width: 64 }} />
-              
-              <Pressable
-                onPress={handleCapture}
-                style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#3b82f6' }}
-              >
-                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#3b82f6' }} />
-              </Pressable>
-              
-              <Pressable
-                onPress={toggleCameraFacing}
-                style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Ionicons name="camera-reverse" size={32} color="#fff" />
-              </Pressable>
             </View>
+
+            {/* Capture Button */}
+            <Pressable
+              onPress={handleCapture}
+              style={{ backgroundColor: '#3b82f6', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12, width: '100%', alignItems: 'center' }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="camera" size={24} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
+                  Open Camera
+                </Text>
+              </View>
+            </Pressable>
           </View>
-        </CameraView>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -267,147 +176,136 @@ export default function ScheduleScannerScreen() {
           {capturedImage && (
             <Image
               source={{ uri: capturedImage }}
-              style={{ width: '100%', height: '50%', borderRadius: 12, marginBottom: 32, opacity: 0.5 }}
+              style={{ width: '100%', height: 300, borderRadius: 12, marginBottom: 32 }}
               resizeMode="contain"
             />
           )}
-          <ActivityIndicator size="large" color="#3b82f6" style={{ marginBottom: 16 }} />
-          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8 }}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginTop: 16, textAlign: 'center' }}>
             Analyzing Schedule...
           </Text>
-          <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center' }}>
-            AI is extracting pour entries from the image
+          <Text style={{ color: '#9ca3af', fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+            Extracting entries from image
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Results Preview
-  if (showResults) {
+  // Results View
+  if (showResults && parsedEntries.length > 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }} edges={['top', 'left', 'right']}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#374151' }}>
-          <Pressable onPress={() => navigation.goBack()}>
-            <Ionicons name="close" size={24} color="#fff" />
-          </Pressable>
-          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
-            Scanned Entries
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
+        <View style={{ flex: 1 }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1f2937' }}>
+            <Pressable onPress={handleRetake}>
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </Pressable>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Scan Results</Text>
+            <View style={{ width: 24 }} />
+          </View>
 
-        <ScrollView style={{ flex: 1 }}>
-          {/* Preview Image */}
-          {capturedImage && (
-            <View style={{ padding: 16 }}>
-              <Image
-                source={{ uri: capturedImage }}
-                style={{ width: '100%', height: 200, borderRadius: 12 }}
-                resizeMode="contain"
-              />
-            </View>
-          )}
-
-          {/* Results Summary */}
-          <View style={{ padding: 16, paddingTop: 0 }}>
-            <View style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 16 }}>
-              <Text style={{ color: '#10b981', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
-                ✓ Found {parsedEntries.length} {parsedEntries.length === 1 ? 'Piece' : 'Pieces'}
-              </Text>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>
-                Each piece extracted as individual entry
-              </Text>
-              <View style={{ backgroundColor: '#374151', padding: 12, borderRadius: 8, flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="information-circle" size={20} color="#60a5fa" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#60a5fa', fontSize: 13, flex: 1 }}>
-                  Next: Assign Form/Bed to each piece based on current production plan
-                </Text>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+            {/* Preview Image */}
+            {capturedImage && (
+              <View style={{ marginBottom: 16 }}>
+                <Image
+                  source={{ uri: capturedImage }}
+                  style={{ width: '100%', height: 200, borderRadius: 12 }}
+                  resizeMode="contain"
+                />
               </View>
+            )}
+
+            {/* Results Summary */}
+            <View style={{ backgroundColor: '#1f2937', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+              <Text style={{ color: '#3b82f6', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>
+                Found {parsedEntries.length} {parsedEntries.length === 1 ? 'Entry' : 'Entries'}
+              </Text>
+              <Text style={{ color: '#9ca3af', fontSize: 14 }}>
+                Review the entries below and import to your schedule
+              </Text>
             </View>
 
-            {/* Entry Cards */}
+            {/* Entries List */}
             {parsedEntries.map((entry, index) => (
-              <View key={index} style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: '#3b82f6', fontSize: 16, fontWeight: '600', marginBottom: 4 }}>
-                      Job {entry.jobNumber}{entry.markNumber ? ` • ${entry.markNumber}` : ''}
-                    </Text>
-                    <Text style={{ color: '#9ca3af', fontSize: 14 }}>
-                      {entry.idNumber ? `ID: ${entry.idNumber}` : `Piece ${index + 1}`}
-                    </Text>
-                  </View>
-                  {entry.confidence && (
-                    <Text style={{ color: entry.confidence > 0.7 ? '#10b981' : '#f59e0b', fontSize: 12 }}>
-                      {Math.round(entry.confidence * 100)}%
+              <View key={index} style={{ backgroundColor: '#1f2937', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+                    Entry {index + 1}
+                  </Text>
+                  {entry.position && (
+                    <Text style={{ color: '#3b82f6', fontSize: 14, fontWeight: '600' }}>
+                      Position {entry.position}
                     </Text>
                   )}
                 </View>
 
-                <View style={{ gap: 8 }}>
-                  {entry.jobName && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Project:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.jobName}</Text>
-                    </View>
-                  )}
-                  {entry.productType && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Type:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.productType}</Text>
-                    </View>
-                  )}
-                  {entry.concreteYards && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Yards:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.concreteYards} yd³</Text>
-                    </View>
-                  )}
-                  {entry.mixDesign && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Mix:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.mixDesign}</Text>
-                    </View>
-                  )}
-                  {entry.scheduledTime && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Time:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.scheduledTime}</Text>
-                    </View>
-                  )}
-                  {entry.notes && (
-                    <View style={{ flexDirection: 'row' }}>
-                      <Text style={{ color: '#9ca3af', width: 100 }}>Notes:</Text>
-                      <Text style={{ color: '#fff', flex: 1 }}>{entry.notes}</Text>
-                    </View>
-                  )}
-                </View>
+                {entry.jobNumber && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    📋 Job: {entry.jobNumber}
+                  </Text>
+                )}
+                {entry.markNumber && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    🏷️ Mark: {entry.markNumber}
+                  </Text>
+                )}
+                {entry.idNumber && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    🔢 ID: {entry.idNumber}
+                  </Text>
+                )}
+                {entry.length1 && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    📏 Length 1: {entry.length1}
+                  </Text>
+                )}
+                {entry.length2 && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    📏 Length 2: {entry.length2}
+                  </Text>
+                )}
+                {entry.width !== undefined && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    ↔️ Width: {entry.width}"
+                  </Text>
+                )}
+                {entry.angle !== undefined && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14, marginBottom: 4 }}>
+                    📐 Angle: {entry.angle}°
+                  </Text>
+                )}
+                {entry.cutback && (
+                  <Text style={{ color: '#d1d5db', fontSize: 14 }}>
+                    ✂️ Cutback: {entry.cutback}
+                  </Text>
+                )}
               </View>
             ))}
-          </View>
-        </ScrollView>
+          </ScrollView>
 
-        {/* Action Buttons */}
-        <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#374151', gap: 12 }}>
-          <Pressable
-            onPress={handleImportEntries}
-            style={{ backgroundColor: '#3b82f6', padding: 16, borderRadius: 12, alignItems: 'center' }}
-          >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
-              Review & Import Entries
-            </Text>
-          </Pressable>
-          
-          <Pressable
-            onPress={handleRetake}
-            style={{ backgroundColor: '#374151', padding: 16, borderRadius: 12, alignItems: 'center' }}
-          >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
-              Retake Photo
-            </Text>
-          </Pressable>
+          {/* Action Buttons */}
+          <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: '#1f2937', gap: 12 }}>
+            <Pressable
+              onPress={handleImportEntries}
+              style={{ backgroundColor: '#3b82f6', paddingVertical: 16, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+                Import {parsedEntries.length} {parsedEntries.length === 1 ? 'Entry' : 'Entries'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleRetake}
+              style={{ backgroundColor: '#374151', paddingVertical: 16, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+                Retake Photo
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
     );

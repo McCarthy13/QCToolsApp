@@ -62,7 +62,7 @@
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.1.6",
     "expo-image-manipulator": "~13.1.5",
-    "expo-image-picker": "~16.1.4",
+    "expo-image-picker": "^17.0.8",
     "expo-insights": "~0.9.3",
     "expo-keep-awake": "~14.1.4",
     "expo-linear-gradient": "~14.1.4",
