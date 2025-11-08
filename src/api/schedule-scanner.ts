@@ -62,144 +62,49 @@ export async function parseScheduleImage(
       }));
 
     // Create prompt for AI to parse the schedule
-    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. YOUR PRIMARY TASK IS TO EXTRACT EVERY SINGLE ROW WITHOUT EXCEPTION.
+    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Read each row independently and extract EXACTLY what you see.
 
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
 
-⚠️ CRITICAL STEP 1 - COUNT POSITION NUMBERS FIRST ⚠️
-BEFORE EXTRACTING ANY DATA:
-1. Look at the "Position" (Pos) column - it's the FIRST column
-2. Find the HIGHEST position number (scroll down to find the last row)
-3. Write this down: MAX_POSITION = [the highest number you see]
-4. This is your TARGET - you MUST extract exactly MAX_POSITION entries
-5. If Position column shows numbers 1 through 15, then MAX_POSITION = 15
+EXTRACTION APPROACH:
+- Read the image from TOP to BOTTOM
+- Extract EVERY row you can see
+- Treat each row as completely independent (do NOT try to find patterns or verify consistency)
+- Extract EXACTLY what is printed - do NOT guess, correct, or infer values
+- IGNORE all highlighter marks, pen markups, handwritten notes
 
-⚠️ EXTRACTION RULES ⚠️
-- IGNORE all highlighter marks, pen markups, handwritten notes, or annotations
-- ONLY extract the PRINTED/TYPED text from the original schedule
-- Focus ONLY on columns from "Position" (Pos) through "Cutback"
-- EXTRACT EVERY SINGLE ROW - even if values seem identical or repetitive
-- Do NOT skip rows that look similar - EACH ROW IS UNIQUE
-- Do NOT skip rows at the bottom of the page - scan the ENTIRE image
-- Do NOT stop early - keep extracting until you reach MAX_POSITION
+COLUMNS TO EXTRACT (Position through Cutback):
 
-⚠️ POSITION COLUMN IS MANDATORY ⚠️
-- Position column contains sequential numbers: 1, 2, 3, 4, 5... up to MAX
-- YOU MUST extract an entry for EVERY position number (no gaps)
-- Position 1 = first entry, Position 2 = second entry... Position 15 = fifteenth entry
-- If you see Position 13 in the image, there MUST be a Position 13 in your JSON
-- Missing even ONE position number = FAILURE
+1. POSITION (Pos): Number in first column (1, 2, 3, etc.) - this tells you how many total rows to extract
 
-⚠️ COMMON MISTAKES TO AVOID ⚠️
-1. ❌ Stopping at row 10 when there are 15 rows - KEEP GOING until MAX_POSITION
-2. ❌ Skipping rows at the bottom - SCROLL DOWN mentally and check the entire image
-3. ❌ Grouping similar entries - EVERY position is separate even if data looks same
-4. ❌ Assuming you're done - ALWAYS verify count matches MAX_POSITION
-5. ❌ Extracting only 13 of 15 - GO BACK and find the 2 missing rows
-- Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
+2. JOB: Extract ONLY numeric digits, ignore letters (E255096 → 255096)
 
-COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
+3. MARK: Letter + number exactly as shown (H1, M2, etc.)
 
-0. POSITION COLUMN (Pos):
-   - This is the FIRST column before Job
-   - Sequential numbers: 1, 2, 3, 4, 5... etc.
-   - The HIGHEST number = total pieces you must extract
-   - Extract this value for verification purposes
-   - DO NOT skip any position numbers in sequence
+4. ID: 6-7 digit number - read carefully, each digit matters
 
-1. JOB COLUMN:
-   - Extract ONLY the numeric digits
-   - IGNORE any letters like "E" or "D"
-   - Example: "E255096" → extract "255096"
-   - Double-check: ensure all digits are captured correctly
+5. LENGTH 1: Format as feet'-inch fraction" (28'-6 1/2")
 
-2. MARK COLUMN:
-   - Extract mark identifier exactly as shown (H1, H2, M1, M2, etc.)
-   - Be precise with the letter and number combination
+6. LENGTH 2: Format as feet'-inch fraction" (28'-6 1/2")
 
-3. ID COLUMN:
-   - Extract the ID number for each piece accurately
-   - IGNORE any handwritten IDs
-   - Verify: Check if the ID is 6-7 digits and matches the printed value
+7. WIDTH: Numeric value in inches (48, 24, etc.)
 
-4. LENGTH 1 COLUMN:
-   - Extract in feet'-whole_inch fraction_inch" format
-   - Example: 28'-6 1/2" or 30'-0"
-   - Be VERY precise with fractions (1/2, 1/4, 3/4, 1/8, 3/8, 5/8, 7/8, etc.)
-   - Common fractions: 1/2, 1/4, 3/4 - read carefully
-   - Verify: Does the value make sense for a concrete product length?
+8. ANGLE: Numeric value in degrees (0, 2, etc.)
 
-5. LENGTH 2 COLUMN:
-   - Extract in feet'-whole_inch fraction_inch" format
-   - Same format as Length 1
-   - Often similar or identical to Length 1
-   - Be precise with all digits and fractions
+9. CUTBACK: Format as feet'-inch fraction" (0'-6", 1'-3 1/2")
 
-6. CUMULATIVE LENGTH COLUMN:
-   - IGNORE this column completely - do not extract
+CRITICAL RULES:
+- Look at Position column FIRST - the highest position number = total rows to extract
+- If you see Position 15, you MUST extract 15 entries
+- Do NOT try to "correct" ID numbers or other values - extract EXACTLY what you see
+- Do NOT assume sequential patterns in ID numbers, marks, or other fields
+- Each row is independent - read what's printed for THAT specific row
+- If text is blurry or unclear, do your best but mark confidence lower
 
-7. WIDTH COLUMN:
-   - Extract width value in INCHES (numeric value only)
-   - Example: "48" → 48, "24" → 24
-   - Common values: 24, 32, 48 inches
-   - Verify: Is this a reasonable width for a concrete product?
-
-8. ANGLE COLUMN:
-   - Extract angle value in DEGREES (numeric value only)
-   - Example: "0" → 0, "2" → 2
-   - Most pieces are 0 degrees
-   - Verify: Angle should typically be 0-5 degrees
-
-9. CUTBACK COLUMN:
-   - Extract in feet'-whole_inch fraction_inch" format
-   - Same format as Length 1 and Length 2
-   - Example: 0'-6" or 1'-3 1/2"
-   - Often "0" or small values
-   - Be precise with fractions
-
-⚠️⚠️⚠️ MANDATORY FINAL VERIFICATION - DO NOT SKIP ⚠️⚠️⚠️
-
-STEP 1: Count position numbers in the image
-- Look at the Position column from top to bottom
-- Find the HIGHEST position number
-- Record it: MAX_POSITION = ____
-
-STEP 2: Count your entries
-- Count how many objects are in your "entries" array
-- Record it: ENTRY_COUNT = ____
-
-STEP 3: Verify they match
-- Does MAX_POSITION = ENTRY_COUNT?
-- If YES: Proceed to return JSON
-- If NO: ❌ YOU HAVE FAILED ❌
-  * Do NOT return the JSON yet
-  * Look at the image again
-  * Find the missing position numbers
-  * Extract the missing rows
-  * Repeat this verification
-
-STEP 4: Check for gaps
-- List all position numbers you extracted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-- Are there any gaps? (e.g., missing 8 and 12)
-- If gaps exist: ❌ FAILED ❌ - go back and extract missing positions
-
-EXAMPLES OF WHAT YOU MUST CHECK:
-✅ CORRECT: Position shows 1-15, I have 15 entries with positions 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
-❌ WRONG: Position shows 1-15, I have 13 entries - MISSING 2 ROWS - GO BACK
-❌ WRONG: Position shows 1-15, I have entries 1,2,3,4,5,6,8,9,10,11,12,13,14,15 - MISSING position 7
-❌ WRONG: I stopped extracting at position 10 because I was tired - UNACCEPTABLE
-
-For each INDIVIDUAL piece in the schedule, extract:
-- Position Number (from Position/Pos column - sequential number)
-- Job Number (ONLY numeric digits from Job column - verify accuracy)
-- Mark Number (from Mark column: H1, M1, etc. - exact match)
-- ID Number (from ID column - complete number)
-- Length 1 (in feet'-inch fraction" format - precise fractions)
-- Length 2 (in feet'-inch fraction" format - precise fractions)
-- Width (numeric value in inches - verify reasonableness)
-- Angle (numeric value in degrees - typically 0)
-- Cutback (in feet'-inch fraction" format - precise fractions)
+FINAL CHECK:
+Count the highest Position number you see. That's how many entries you need.
+If Position goes up to 15, your JSON must have 15 entries.
 
 Return ONLY a valid JSON object with this structure:
 {
@@ -233,23 +138,11 @@ Return ONLY a valid JSON object with this structure:
   ]
 }
 
-REMEMBER: If highest Position = 15, you MUST have 15 entries in the array!
-
-CRITICAL RULES:
+IMPORTANT:
 - Return ONLY the JSON, no other text
 - Use null for missing fields
-- ONE entry per individual piece, not grouped
-- Extract ID numbers carefully from the ID column
-- For Job Number: extract ONLY numeric digits, ignore letters
-- For Length fields: preserve exact format with feet, inches, and fractions (e.g., "28'-6 1/2\"")
-- For Width and Angle: return numeric values only (no units in the value)
-- IGNORE the Cumulative Length column
-- If 5 pieces share the same job but have different marks, create 5 entries
-- Confidence should be 0-1 (how certain you are about the data)
-- IGNORE any form/bed/line information - do not include formBed field
-- IGNORE ALL HIGHLIGHTER, PEN MARKS, AND HANDWRITTEN ANNOTATIONS
-- Extract ONLY the original printed/typed schedule data
-- Be precise with fractions in length measurements`;
+- Extract EXACTLY what you see - do NOT try to fix or correct values
+- Confidence should be 0-1 (how certain you are about each value)`;
 
     // Call AI with vision using fetch API
     console.log('[Schedule Scanner] Calling OpenAI API...');
