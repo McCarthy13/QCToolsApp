@@ -65,36 +65,49 @@ export default function ScheduleScannerScreen() {
     if (!cameraRef.current) return;
 
     try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 1.0,
-        skipProcessing: false,
-      });
+      // Show helpful prompt before taking picture
+      Alert.alert(
+        'Tips for Best Results',
+        'To the best of your ability, include only columns Job through Cutback in the frame.',
+        [
+          {
+            text: 'Got it',
+            onPress: async () => {
+              const photo = await cameraRef.current?.takePictureAsync({
+                quality: 1.0,
+                skipProcessing: false,
+              });
 
-      if (photo?.uri) {
-        setCapturedImage(photo.uri);
-        setIsProcessing(true);
+              if (photo?.uri) {
+                setCapturedImage(photo.uri);
+                setIsProcessing(true);
 
-        // Parse the image with AI
-        const result = await parseScheduleImage(photo.uri, {
-          date: selectedDate,
-        });
+                // Parse the image with AI
+                const result = await parseScheduleImage(photo.uri, {
+                  date: selectedDate,
+                });
 
-        setIsProcessing(false);
+                setIsProcessing(false);
 
-        if (result.success && result.entries.length > 0) {
-          setParsedEntries(result.entries);
-          setShowResults(true);
-        } else {
-          Alert.alert(
-            'No Data Found',
-            'Could not extract schedule entries from the image. Please try again with better lighting or a clearer photo.',
-            [
-              { text: 'Retry', onPress: () => setCapturedImage(null) },
-              { text: 'Cancel', onPress: () => navigation.goBack() },
-            ]
-          );
-        }
-      }
+                if (result.success && result.entries.length > 0) {
+                  setParsedEntries(result.entries);
+                  setShowResults(true);
+                } else {
+                  Alert.alert(
+                    'No Data Found',
+                    'Could not extract schedule entries from the image. Please try again with better lighting or a clearer photo.',
+                    [
+                      { text: 'Retry', onPress: () => setCapturedImage(null) },
+                      { text: 'Cancel', onPress: () => navigation.goBack() },
+                    ]
+                  );
+                }
+              }
+            },
+          },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
     } catch (error) {
       setIsProcessing(false);
       Alert.alert('Error', 'Failed to capture or process image. Please try again.');
@@ -143,29 +156,17 @@ export default function ScheduleScannerScreen() {
               >
                 <Ionicons name="close" size={24} color="#fff" />
               </Pressable>
-              
+
               <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
                 Scan Schedule
               </Text>
-              
+
               <Pressable
                 onPress={toggleFlash}
                 style={{ padding: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20 }}
               >
                 <Ionicons name={flash ? 'flash' : 'flash-off'} size={24} color="#fff" />
               </Pressable>
-            </View>
-          </View>
-
-          {/* Instructions */}
-          <View style={{ position: 'absolute', top: insets.top + 80, left: 0, right: 0, zIndex: 10, paddingHorizontal: 32 }} pointerEvents="none">
-            <View style={{ backgroundColor: 'rgba(0,0,0,0.85)', padding: 16, borderRadius: 12 }}>
-              <Text style={{ color: '#FFD700', fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
-                📏 Hold 8-12 inches away
-              </Text>
-              <Text style={{ color: '#fff', fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
-                Keep steady • Use flash if blurry • Ensure good lighting for best focus
-              </Text>
             </View>
           </View>
 

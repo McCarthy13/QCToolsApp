@@ -221,6 +221,8 @@ User Login → Check Firestore approval status → Grant access
 - [x] Single-scan workflow - "Scan Product Tag" button at top of Product Details and Camber Calculator screens captures all information from the tag in one photo
 - [x] Daily pour schedule enhanced OCR - added extraction of Length 1, Length 2, Width, Angle, and Cutback fields from schedule images with detailed formatting (feet-inch-fraction format for lengths and cutback, numeric values with units for width and angle)
 - [x] Schedule scanner authentication fix - converted OpenAI API calls from SDK to fetch API for proper authentication with Vibecode proxy
+- [x] Schedule scanner UX improvements - removed instruction banner from camera view to prevent obstruction, added helpful prompt on button press to guide column framing ("include only columns Job through Cutback")
+- [x] Enhanced OCR accuracy - improved AI prompt with detailed verification checklist, common value examples, and digit-by-digit reading instructions; reduced temperature to 0 for deterministic results; increased max_tokens to 6000 for comprehensive analysis
 
 ### ⏳ Ready to Implement
 

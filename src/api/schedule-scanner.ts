@@ -61,7 +61,7 @@ export async function parseScheduleImage(
       }));
 
     // Create prompt for AI to parse the schedule
-    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Extract ALL individual pieces from this image as SEPARATE entries.
+    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Your goal is to extract ALL individual pieces from this image as SEPARATE entries with MAXIMUM ACCURACY.
 
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
@@ -70,7 +70,9 @@ CRITICAL INSTRUCTIONS:
 - IGNORE all highlighter marks, pen markups, handwritten notes, or any annotations on the paper
 - ONLY extract the PRINTED/TYPED text from the original schedule
 - Do NOT try to interpret what the markups mean
-- Focus on extracting data from the table columns
+- Focus ONLY on the table columns from "Job" through "Cutback"
+- ACCURACY IS CRITICAL - Read numbers carefully and double-check each value
+- If a value is unclear or hard to read, mark confidence as lower
 
 - Create ONE entry per piece (if there are 5 pieces with marks M1-M5, create 5 separate entries)
 - Extract the ID number from the "ID" column for each piece
@@ -78,54 +80,75 @@ CRITICAL INSTRUCTIONS:
 - Do NOT group pieces together
 - Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
 
-COLUMN EXTRACTION RULES:
+COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
 
 1. JOB COLUMN:
    - Extract ONLY the numeric digits
    - IGNORE any letters like "E" or "D"
    - Example: "E255096" → extract "255096"
+   - Double-check: ensure all digits are captured correctly
 
 2. MARK COLUMN:
-   - Extract mark identifier (H1, H2, M1, M2, etc.)
+   - Extract mark identifier exactly as shown (H1, H2, M1, M2, etc.)
+   - Be precise with the letter and number combination
 
 3. ID COLUMN:
-   - Extract the ID number for each piece
+   - Extract the ID number for each piece accurately
    - IGNORE any handwritten IDs
+   - Verify: Check if the ID is 6-7 digits and matches the printed value
 
 4. LENGTH 1 COLUMN:
    - Extract in feet'-whole_inch fraction_inch" format
    - Example: 28'-6 1/2" or 30'-0"
-   - Be precise with fractions (1/2, 1/4, 3/4, 1/8, etc.)
+   - Be VERY precise with fractions (1/2, 1/4, 3/4, 1/8, 3/8, 5/8, 7/8, etc.)
+   - Common fractions: 1/2, 1/4, 3/4 - read carefully
+   - Verify: Does the value make sense for a concrete product length?
 
 5. LENGTH 2 COLUMN:
    - Extract in feet'-whole_inch fraction_inch" format
    - Same format as Length 1
+   - Often similar or identical to Length 1
+   - Be precise with all digits and fractions
 
 6. CUMULATIVE LENGTH COLUMN:
-   - IGNORE this column completely
+   - IGNORE this column completely - do not extract
 
 7. WIDTH COLUMN:
    - Extract width value in INCHES (numeric value only)
-   - Example: "48" → 48
+   - Example: "48" → 48, "24" → 24
+   - Common values: 24, 32, 48 inches
+   - Verify: Is this a reasonable width for a concrete product?
 
 8. ANGLE COLUMN:
    - Extract angle value in DEGREES (numeric value only)
-   - Example: "0" → 0
+   - Example: "0" → 0, "2" → 2
+   - Most pieces are 0 degrees
+   - Verify: Angle should typically be 0-5 degrees
 
 9. CUTBACK COLUMN:
    - Extract in feet'-whole_inch fraction_inch" format
    - Same format as Length 1 and Length 2
    - Example: 0'-6" or 1'-3 1/2"
+   - Often "0" or small values
+   - Be precise with fractions
+
+ACCURACY VERIFICATION CHECKLIST:
+✓ Did I read each number digit-by-digit?
+✓ Did I verify the fraction values (1/2, 1/4, 3/4)?
+✓ Do the length values make sense (typically 20-60 feet)?
+✓ Did I extract only printed values (no handwriting)?
+✓ Are the ID numbers complete (6-7 digits)?
+✓ Did I read the mark numbers correctly (letter + number)?
 
 For each INDIVIDUAL piece in the schedule, extract:
-- Job Number (ONLY numeric digits from Job column)
-- Mark Number (from Mark column: H1, M1, etc.)
-- ID Number (from ID column)
-- Length 1 (in feet'-inch fraction" format)
-- Length 2 (in feet'-inch fraction" format)
-- Width (numeric value in inches)
-- Angle (numeric value in degrees)
-- Cutback (in feet'-inch fraction" format)
+- Job Number (ONLY numeric digits from Job column - verify accuracy)
+- Mark Number (from Mark column: H1, M1, etc. - exact match)
+- ID Number (from ID column - complete number)
+- Length 1 (in feet'-inch fraction" format - precise fractions)
+- Length 2 (in feet'-inch fraction" format - precise fractions)
+- Width (numeric value in inches - verify reasonableness)
+- Angle (numeric value in degrees - typically 0)
+- Cutback (in feet'-inch fraction" format - precise fractions)
 
 Return ONLY a valid JSON object with this structure:
 {
@@ -199,8 +222,8 @@ CRITICAL RULES:
             ],
           },
         ],
-        temperature: 0.1,
-        max_tokens: 4000,
+        temperature: 0,
+        max_tokens: 6000,
       }),
     });
 
