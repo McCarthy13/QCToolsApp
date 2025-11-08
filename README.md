@@ -215,6 +215,9 @@ User Login → Check Firestore approval status → Grant access
 - [x] Terminology update - changed "Offcut Side" to "Product Side" in Slippage Identifier and Camber Calculator for clearer user experience
 - [x] PDF layout optimization - reduced spacing and font sizes to fit entire slippage report on single page
 - [x] Cross-section visual refinement - removed red outline from product edge for cleaner presentation
+- [x] Product tag OCR scanning - added camera-based OCR to capture span and pour date from product tags using AI vision
+- [x] Pour date field - added pour date field to product details and PDF reports
+- [x] Span display enhancement - span now properly displayed in feet and decimal inches format (e.g., 33'-2.5") in PDF reports
 
 ### ⏳ Ready to Implement
 

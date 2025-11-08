@@ -51,6 +51,7 @@ import DailyPourScheduleScreen from "./src/screens/DailyPourScheduleScreen";
 import ScheduleSearchScreen from "./src/screens/ScheduleSearchScreen";
 import ScheduleScannerScreen from "./src/screens/ScheduleScannerScreen";
 import ScheduleReviewScreen from "./src/screens/ScheduleReviewScreen";
+import ProductTagScannerScreen from "./src/screens/ProductTagScannerScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegistrationScreen from "./src/screens/RegistrationScreen";
 import AdminApprovalScreen from "./src/screens/AdminApprovalScreen";
@@ -752,6 +753,14 @@ export default function App() {
               component={ScheduleReviewScreen}
               options={{
                 presentation: "modal",
+              }}
+            />
+            <Stack.Screen
+              name="ProductTagScanner"
+              component={ProductTagScannerScreen}
+              options={{
+                headerShown: false,
+                presentation: "fullScreenModal",
               }}
             />
             <Stack.Screen

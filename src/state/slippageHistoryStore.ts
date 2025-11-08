@@ -16,6 +16,7 @@ export interface SlippageConfig {
   markNumber?: string;
   idNumber?: string;
   span?: number;
+  pourDate?: string;
   productType: string;
   strandPattern: string;
   topStrandPattern?: string;

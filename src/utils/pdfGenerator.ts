@@ -337,6 +337,10 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               </div>
               `}
               <div class="info-item">
+                <div class="info-label">Pour Date</div>
+                <div class="info-value">${config.pourDate || ''}</div>
+              </div>
+              <div class="info-item">
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
               </div>

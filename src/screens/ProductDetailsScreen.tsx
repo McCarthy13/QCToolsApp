@@ -47,6 +47,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
   const [spanFeet, setSpanFeet] = useState("");
   const [spanInches, setSpanInches] = useState("");
   const [spanFraction, setSpanFraction] = useState("0");
+  const [pourDate, setPourDate] = useState("");
 
   // Required fields
   const [productType, setProductType] = useState("");
@@ -138,6 +139,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
         markNumber: markNumber || undefined,
         idNumber: idNumber || undefined,
         span: spanFeet || spanInches || spanFraction !== "0" ? getSpanInFeet() : undefined,
+        pourDate: pourDate || undefined,
         productType: productType,
         strandPattern: strandPattern,
         topStrandPattern: topStrandPattern || undefined,
@@ -253,9 +255,31 @@ export default function ProductDetailsScreen({ navigation }: Props) {
 
             {/* Span Entry */}
             <View className="mb-6">
-              <Text className="text-gray-700 text-sm font-medium mb-2">
-                Span (Optional)
-              </Text>
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-gray-700 text-sm font-medium">
+                  Span (Optional)
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate("ProductTagScanner", {
+                      targetFields: ['span'],
+                      onDataScanned: (data) => {
+                        if (data.span) {
+                          setSpanFeet(data.span.feet.toString());
+                          setSpanInches(data.span.inches.toString());
+                          setSpanFraction("0"); // Decimal inches, no fraction
+                        }
+                      },
+                    });
+                  }}
+                  className="bg-blue-50 border border-blue-300 rounded-lg px-3 py-2 flex-row items-center"
+                >
+                  <Ionicons name="camera" size={16} color="#2563eb" />
+                  <Text className="text-blue-600 text-xs font-semibold ml-1">
+                    Scan Tag
+                  </Text>
+                </Pressable>
+              </View>
               <View className="flex-row items-center gap-2">
                 <TextInput
                   className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
@@ -290,6 +314,42 @@ export default function ProductDetailsScreen({ navigation }: Props) {
                   </Text>
                 </Pressable>
               </View>
+            </View>
+
+            {/* Pour Date Entry */}
+            <View className="mb-6">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-gray-700 text-sm font-medium">
+                  Pour Date (Optional)
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate("ProductTagScanner", {
+                      targetFields: ['pourDate'],
+                      onDataScanned: (data) => {
+                        if (data.pourDate) {
+                          setPourDate(data.pourDate);
+                        }
+                      },
+                    });
+                  }}
+                  className="bg-blue-50 border border-blue-300 rounded-lg px-3 py-2 flex-row items-center"
+                >
+                  <Ionicons name="camera" size={16} color="#2563eb" />
+                  <Text className="text-blue-600 text-xs font-semibold ml-1">
+                    Scan Tag
+                  </Text>
+                </Pressable>
+              </View>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                placeholder="MM/DD/YYYY"
+                placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
+                value={pourDate}
+                onChangeText={setPourDate}
+                keyboardType="default"
+              />
             </View>
 
             {/* Product Width Entry */}

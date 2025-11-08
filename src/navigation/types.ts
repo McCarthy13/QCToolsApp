@@ -5,13 +5,23 @@ export type RootStackParamList = {
   History: undefined;
   StrandPatterns: undefined;
   ProductDetails: undefined;
-  SlippageIdentifier: { 
+  ProductTagScanner: {
+    targetFields: Array<'span' | 'pourDate' | 'slippageIdentifier' | 'camberCalculator'>;
+    onDataScanned: (data: {
+      span?: { feet: number; inches: number };
+      pourDate?: string;
+      slippageIdentifier?: string;
+      camberCalculator?: string;
+    }) => void;
+  };
+  SlippageIdentifier: {
     config: {
       projectName?: string;
       projectNumber?: string;
       markNumber?: string;
       idNumber?: string;
       span?: number;
+      pourDate?: string;
       productType: string;
       strandPattern: string;
       topStrandPattern?: string;
@@ -23,10 +33,10 @@ export type RootStackParamList = {
     qualityLogId?: string;
     qualityEntryId?: string;
   };
-  SlippageSummary: { 
-    slippages: Array<{ 
-      strandId: string; 
-      leftSlippage: string; 
+  SlippageSummary: {
+    slippages: Array<{
+      strandId: string;
+      leftSlippage: string;
       rightSlippage: string;
       leftExceedsOne: boolean;
       rightExceedsOne: boolean;
@@ -37,6 +47,7 @@ export type RootStackParamList = {
       markNumber?: string;
       idNumber?: string;
       span?: number;
+      pourDate?: string;
       productType: string;
       strandPattern: string;
       topStrandPattern?: string;
