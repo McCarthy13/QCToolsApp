@@ -134,6 +134,11 @@ Return ONLY the JSON, no other text.`;
 
     // Call AI with vision
     const client = getOpenAIClient();
+
+    console.log('[Product Tag Scanner] Calling OpenAI API...');
+    console.log('[Product Tag Scanner] Base URL:', client.baseURL);
+    console.log('[Product Tag Scanner] Using proxy username for auth');
+
     const response = await client.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -174,6 +179,15 @@ Return ONLY the JSON, no other text.`;
     };
   } catch (error) {
     console.error('Product tag parsing error:', error);
+
+    // Provide helpful error message for 401 errors
+    if (error instanceof Error && error.message.includes('401')) {
+      return {
+        success: false,
+        error: 'OpenAI API authentication failed. Please add your OpenAI API key using the API tab in the Vibecode app.',
+      };
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to parse product tag',
