@@ -223,7 +223,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Schedule scanner authentication fix - converted OpenAI API calls from SDK to fetch API for proper authentication with Vibecode proxy
 - [x] Schedule scanner UX improvements - removed confusing blue frame guide; added zoom controls (+/-/reset) for precise framing; tips prompt clarifies entire camera view is captured and encourages using zoom to frame Position (Pos) through Cutback columns
 - [x] Position column verification system - AI now uses the Position column (sequential 1,2,3...15) as definitive piece count; highest position number determines total entries that must be extracted, eliminating missing pieces issue (e.g., if Pos shows 15, exactly 15 entries required)
-- [x] Enhanced OCR accuracy and completeness - improved AI prompt with mandatory Position-based verification, explicit failure conditions if count mismatches, gap detection in position sequences, and step-by-step completeness validation
+- [x] Aggressive completeness enforcement - restructured AI prompt with step-by-step verification protocol, explicit "YOU HAVE FAILED" messaging if counts don't match, visual warnings (⚠️), common mistake examples, and mandatory re-extraction if entries missing; increased max_tokens to 8000 to ensure capacity for all entries
 - [x] Schedule scanner camera optimization - enabled high picture size setting and optimized capture parameters (quality=1, base64=false, exif=false, skipProcessing=false) for maximum sharpness
 - [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
 

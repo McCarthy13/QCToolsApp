@@ -62,34 +62,41 @@ export async function parseScheduleImage(
       }));
 
     // Create prompt for AI to parse the schedule
-    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Your goal is to extract ALL individual pieces from this image as SEPARATE entries with MAXIMUM ACCURACY.
+    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. YOUR PRIMARY TASK IS TO EXTRACT EVERY SINGLE ROW WITHOUT EXCEPTION.
 
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
 
-CRITICAL INSTRUCTIONS:
-- IGNORE all highlighter marks, pen markups, handwritten notes, or any annotations on the paper
+⚠️ CRITICAL STEP 1 - COUNT POSITION NUMBERS FIRST ⚠️
+BEFORE EXTRACTING ANY DATA:
+1. Look at the "Position" (Pos) column - it's the FIRST column
+2. Find the HIGHEST position number (scroll down to find the last row)
+3. Write this down: MAX_POSITION = [the highest number you see]
+4. This is your TARGET - you MUST extract exactly MAX_POSITION entries
+5. If Position column shows numbers 1 through 15, then MAX_POSITION = 15
+
+⚠️ EXTRACTION RULES ⚠️
+- IGNORE all highlighter marks, pen markups, handwritten notes, or annotations
 - ONLY extract the PRINTED/TYPED text from the original schedule
-- Do NOT try to interpret what the markups mean
-- Focus ONLY on the table columns from "Position" (Pos) through "Cutback"
-- ACCURACY IS CRITICAL - Read numbers carefully and double-check each value
-- If a value is unclear or hard to read, mark confidence as lower
-- EXTRACT EVERY SINGLE ROW - Do not skip any rows, even if they seem similar
+- Focus ONLY on columns from "Position" (Pos) through "Cutback"
+- EXTRACT EVERY SINGLE ROW - even if values seem identical or repetitive
+- Do NOT skip rows that look similar - EACH ROW IS UNIQUE
+- Do NOT skip rows at the bottom of the page - scan the ENTIRE image
+- Do NOT stop early - keep extracting until you reach MAX_POSITION
 
-VERY IMPORTANT - POSITION COLUMN VERIFICATION:
-- The FIRST column is "Position" (Pos) - it contains sequential numbers (1, 2, 3, 4... 15)
-- The HIGHEST number in the Position column tells you the TOTAL number of pieces
-- Example: If the last Position number is 15, you MUST extract exactly 15 entries
-- Use this as your verification: if Position column shows 1-15, you need 15 entries
-- This is THE MOST IMPORTANT verification - Position column = total piece count
+⚠️ POSITION COLUMN IS MANDATORY ⚠️
+- Position column contains sequential numbers: 1, 2, 3, 4, 5... up to MAX
+- YOU MUST extract an entry for EVERY position number (no gaps)
+- Position 1 = first entry, Position 2 = second entry... Position 15 = fifteenth entry
+- If you see Position 13 in the image, there MUST be a Position 13 in your JSON
+- Missing even ONE position number = FAILURE
 
-COMPLETENESS REQUIREMENT:
-- Look at the Position column and find the highest number
-- Create ONE entry for EACH position number (1, 2, 3... up to the maximum)
-- After extraction, verify: number of entries = highest position number
-- If Position shows 15 rows but you only extracted 12, GO BACK and find the missing 3
-- Each Mark number (H1, H2, M1, M2, etc.) is a SEPARATE piece
-- Do NOT group pieces together - EVERY ROW is a separate entry
+⚠️ COMMON MISTAKES TO AVOID ⚠️
+1. ❌ Stopping at row 10 when there are 15 rows - KEEP GOING until MAX_POSITION
+2. ❌ Skipping rows at the bottom - SCROLL DOWN mentally and check the entire image
+3. ❌ Grouping similar entries - EVERY position is separate even if data looks same
+4. ❌ Assuming you're done - ALWAYS verify count matches MAX_POSITION
+5. ❌ Extracting only 13 of 15 - GO BACK and find the 2 missing rows
 - Do NOT extract form/bed names - ignore any bed/form columns (user will assign these manually)
 
 COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
@@ -151,32 +158,37 @@ COLUMN EXTRACTION RULES (READ CAREFULLY AND VERIFY EACH VALUE):
    - Often "0" or small values
    - Be precise with fractions
 
-ACCURACY VERIFICATION CHECKLIST:
-✓ Did I look at the Position column first?
-✓ Did I identify the HIGHEST position number (this is my target count)?
-✓ Did I create one entry for EACH position number (1, 2, 3... up to max)?
-✓ Did I read each number digit-by-digit?
-✓ Did I verify the fraction values (1/2, 1/4, 3/4)?
-✓ Do the length values make sense (typically 20-60 feet)?
-✓ Did I extract only printed values (no handwriting)?
-✓ Are the ID numbers complete (6-7 digits)?
-✓ Did I read the mark numbers correctly (letter + number)?
-✓ Does my entry count match the highest position number?
+⚠️⚠️⚠️ MANDATORY FINAL VERIFICATION - DO NOT SKIP ⚠️⚠️⚠️
 
-MANDATORY COMPLETENESS CHECK:
-Before returning your response, YOU MUST verify:
-1. Find highest Position number in schedule = [MAX_POS]
-2. Count entries in my JSON = [ENTRY_COUNT]
-3. CRITICAL: MAX_POS MUST EQUAL ENTRY_COUNT
-4. If MAX_POS ≠ ENTRY_COUNT, you FAILED - re-examine and extract ALL missing rows
-5. Check for gaps in Position sequence (1,2,3,4,5... no skipping)
-6. Ensure sequential mark numbers are all included (H1, H2, H3... or M1, M2, M3...)
+STEP 1: Count position numbers in the image
+- Look at the Position column from top to bottom
+- Find the HIGHEST position number
+- Record it: MAX_POSITION = ____
 
-Example verification:
-- Position column shows: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-- Highest Position = 15
-- My JSON must have exactly 15 entries
-- If I only have 12 entries, I must find the 3 missing pieces
+STEP 2: Count your entries
+- Count how many objects are in your "entries" array
+- Record it: ENTRY_COUNT = ____
+
+STEP 3: Verify they match
+- Does MAX_POSITION = ENTRY_COUNT?
+- If YES: Proceed to return JSON
+- If NO: ❌ YOU HAVE FAILED ❌
+  * Do NOT return the JSON yet
+  * Look at the image again
+  * Find the missing position numbers
+  * Extract the missing rows
+  * Repeat this verification
+
+STEP 4: Check for gaps
+- List all position numbers you extracted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+- Are there any gaps? (e.g., missing 8 and 12)
+- If gaps exist: ❌ FAILED ❌ - go back and extract missing positions
+
+EXAMPLES OF WHAT YOU MUST CHECK:
+✅ CORRECT: Position shows 1-15, I have 15 entries with positions 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+❌ WRONG: Position shows 1-15, I have 13 entries - MISSING 2 ROWS - GO BACK
+❌ WRONG: Position shows 1-15, I have entries 1,2,3,4,5,6,8,9,10,11,12,13,14,15 - MISSING position 7
+❌ WRONG: I stopped extracting at position 10 because I was tired - UNACCEPTABLE
 
 For each INDIVIDUAL piece in the schedule, extract:
 - Position Number (from Position/Pos column - sequential number)
@@ -267,7 +279,7 @@ CRITICAL RULES:
           },
         ],
         temperature: 0,
-        max_tokens: 6000,
+        max_tokens: 8000,
       }),
     });
 
