@@ -41,7 +41,7 @@ export default function ScheduleScannerScreen() {
     if (permission?.granted && showTipPrompt) {
       Alert.alert(
         'Tips for Best Results',
-        'Use zoom to frame ONLY Position (Pos) through Cutback columns. Hold phone steady and wait a moment for camera to focus before capturing. Use flash in low light. The entire camera view will be captured.',
+        'Use zoom to frame ONLY Position (Pos) through Cutback columns. Hold phone VERY steady and wait 1-2 seconds for sharp focus before pressing capture. Use flash in low light. Avoid zooming too much as it reduces quality.',
         [
           {
             text: 'Got it',
@@ -83,15 +83,17 @@ export default function ScheduleScannerScreen() {
     if (!cameraRef.current) return;
 
     try {
-      // Brief delay to allow autofocus to stabilize
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Longer delay to ensure autofocus is fully locked and stabilized
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1,
+        quality: 1, // Maximum quality (0-1, where 1 is highest)
         base64: false,
-        exif: false,
-        skipProcessing: false,
+        exif: true, // Keep EXIF data for proper orientation
+        skipProcessing: false, // Allow camera to apply its processing
         isImageMirror: false,
+        // Request maximum possible resolution
+        imageType: 'jpg',
       });
 
       if (photo?.uri) {
