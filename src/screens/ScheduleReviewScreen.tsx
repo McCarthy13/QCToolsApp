@@ -369,6 +369,73 @@ export default function ScheduleReviewScreen() {
               />
             </View>
 
+            {/* Length 1 */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Length 1</Text>
+              <TextInput
+                value={entry.length1 || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'length1', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 28'-6 1/2 inches"
+                placeholderTextColor="#6b7280"
+                cursorColor="#000000"
+              />
+            </View>
+
+            {/* Length 2 */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Length 2</Text>
+              <TextInput
+                value={entry.length2 || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'length2', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 28'-6 1/2 inches"
+                placeholderTextColor="#6b7280"
+                cursorColor="#000000"
+              />
+            </View>
+
+            {/* Width */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Width (inches)</Text>
+              <TextInput
+                value={entry.width?.toString() || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'width', parseFloat(text) || undefined)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 48"
+                placeholderTextColor="#6b7280"
+                cursorColor="#000000"
+                keyboardType="decimal-pad"
+              />
+            </View>
+
+            {/* Angle */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Angle (degrees)</Text>
+              <TextInput
+                value={entry.angle?.toString() || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'angle', parseFloat(text) || undefined)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 0"
+                placeholderTextColor="#6b7280"
+                cursorColor="#000000"
+                keyboardType="decimal-pad"
+              />
+            </View>
+
+            {/* Cutback */}
+            <View>
+              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Cutback</Text>
+              <TextInput
+                value={entry.cutback || ''}
+                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'cutback', text)}
+                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
+                placeholder="e.g., 0 ft 6 in"
+                placeholderTextColor="#6b7280"
+                cursorColor="#000000"
+              />
+            </View>
+
             {/* Product Type */}
             <View>
               <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Product Type</Text>
@@ -637,6 +704,31 @@ export default function ScheduleReviewScreen() {
               {entry.jobName && (
                 <Text style={{ color: '#9ca3af', fontSize: 13 }}>
                   📋 {entry.jobName}
+                </Text>
+              )}
+              {entry.length1 && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  📏 Length 1: {entry.length1}
+                </Text>
+              )}
+              {entry.length2 && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  📏 Length 2: {entry.length2}
+                </Text>
+              )}
+              {entry.width !== undefined && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  ↔️ Width: {entry.width}"
+                </Text>
+              )}
+              {entry.angle !== undefined && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  📐 Angle: {entry.angle}°
+                </Text>
+              )}
+              {entry.cutback && (
+                <Text style={{ color: '#9ca3af', fontSize: 13 }}>
+                  ✂️ Cutback: {entry.cutback}
                 </Text>
               )}
               {entry.concreteYards && (
