@@ -433,17 +433,8 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <ScrollView style={{ flex: 1 }}>
         <View style={{ padding: 10 }}>
-          {/* Compact Header with Back Button */}
+          {/* Compact Header */}
           <View style={{ marginBottom: 8 }}>
-            <Pressable
-              onPress={() => setViewingDepartment(null)}
-              style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}
-            >
-              <Ionicons name="arrow-back" size={18} color={deptColors.accent} />
-              <Text style={{ fontSize: 12, fontWeight: "600", color: deptColors.accent, marginLeft: 4 }}>
-                Change Department
-              </Text>
-            </Pressable>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.color }}>
                 {viewingDepartment}
