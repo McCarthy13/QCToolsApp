@@ -27,6 +27,7 @@ export default function ProductTagScannerScreen() {
   const [flash, setFlash] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [zoom, setZoom] = useState(0);
 
   const cameraRef = useRef<CameraView>(null);
   const { onDataScanned } = route.params;
@@ -104,6 +105,18 @@ export default function ProductTagScannerScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
+  const handleZoomIn = () => {
+    setZoom((current) => Math.min(current + 0.1, 1));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((current) => Math.max(current - 0.1, 0));
+  };
+
+  const resetZoom = () => {
+    setZoom(0);
+  };
+
   // Camera View
   if (!capturedImage && !isProcessing) {
     return (
@@ -115,6 +128,7 @@ export default function ProductTagScannerScreen() {
           enableTorch={flash}
           autofocus="on"
           mode="picture"
+          zoom={zoom}
         >
           {/* Top Bar */}
           <View style={{ position: 'absolute', top: insets.top, left: 0, right: 0, zIndex: 10 }}>
@@ -154,6 +168,42 @@ export default function ProductTagScannerScreen() {
           {/* Frame Guide */}
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 5, pointerEvents: 'none' }}>
             <View style={{ width: '85%', height: '60%', borderWidth: 3, borderColor: '#3b82f6', borderRadius: 12, backgroundColor: 'transparent' }} />
+          </View>
+
+          {/* Zoom Controls */}
+          <View style={{ position: 'absolute', right: 16, top: '50%', transform: [{ translateY: -80 }], zIndex: 10, gap: 12 }}>
+            <Pressable
+              onPress={handleZoomIn}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: zoom > 0 ? '#3b82f6' : 'rgba(255,255,255,0.3)' }}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
+            </Pressable>
+
+            {/* Zoom Level Indicator */}
+            {zoom > 0 && (
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: '700' }}>
+                  {(zoom * 10).toFixed(0)}x
+                </Text>
+              </View>
+            )}
+
+            <Pressable
+              onPress={handleZoomOut}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: zoom > 0 ? '#3b82f6' : 'rgba(255,255,255,0.3)' }}
+            >
+              <Ionicons name="remove" size={28} color="#fff" />
+            </Pressable>
+
+            {/* Reset Zoom */}
+            {zoom > 0 && (
+              <Pressable
+                onPress={resetZoom}
+                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#f59e0b' }}
+              >
+                <Ionicons name="refresh" size={24} color="#f59e0b" />
+              </Pressable>
+            )}
           </View>
 
           {/* Bottom Controls */}

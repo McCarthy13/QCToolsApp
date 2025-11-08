@@ -224,6 +224,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Schedule scanner UX improvements - removed instruction banner from camera view to prevent obstruction, added helpful prompt on button press to guide column framing ("include only columns Job through Cutback")
 - [x] Enhanced OCR accuracy - improved AI prompt with detailed verification checklist, common value examples, and digit-by-digit reading instructions; reduced temperature to 0 for deterministic results; increased max_tokens to 6000 for comprehensive analysis
 - [x] Schedule scanner camera optimization - enabled high picture size setting, zero zoom, and optimized capture parameters (quality=1, base64=false, exif=false, skipProcessing=false) for maximum sharpness
+- [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
 
 ### ⏳ Ready to Implement
 
