@@ -132,7 +132,8 @@ IMPORTANT:
 
 Return ONLY the JSON, no other text.`;
 
-    console.log('[Product Tag Scanner] Calling OpenAI API...');
+    console.log('[Product Tag Scanner] Starting API call...');
+    console.log('[Product Tag Scanner] OPENAI_BASE_URL:', process.env.OPENAI_BASE_URL);
     console.log('[Product Tag Scanner] Using GPT-4o vision model');
 
     // Use Vibecode proxy endpoint for better performance
@@ -140,7 +141,12 @@ Return ONLY the JSON, no other text.`;
       ? `${process.env.OPENAI_BASE_URL}/chat/completions`
       : 'https://api.openai.com/v1/chat/completions';
 
-    console.log('[Product Tag Scanner] API URL:', apiUrl);
+    console.log('[Product Tag Scanner] Final API URL:', apiUrl);
+    console.log('[Product Tag Scanner] Making fetch request...');
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     // Call OpenAI API using fetch (required for Vibecode)
     const response = await fetch(apiUrl, {
@@ -169,7 +175,11 @@ Return ONLY the JSON, no other text.`;
         temperature: 0.1,
         max_tokens: 1000,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
+    console.log('[Product Tag Scanner] Fetch completed, status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -202,6 +212,14 @@ Return ONLY the JSON, no other text.`;
     };
   } catch (error) {
     console.error('Product tag parsing error:', error);
+
+    // Handle timeout errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        success: false,
+        error: 'Request timed out after 30 seconds. Please try again.',
+      };
+    }
 
     // Provide helpful error message for 401 errors
     if (error instanceof Error && error.message.includes('401')) {
