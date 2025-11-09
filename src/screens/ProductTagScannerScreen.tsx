@@ -29,12 +29,21 @@ export default function ProductTagScannerScreen() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [zoom, setZoom] = useState(0);
+  const [webCameraLaunched, setWebCameraLaunched] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
   const { onDataScanned } = route.params;
 
   // Web-specific camera picker
   const handleWebCapture = async () => {
+    // Prevent multiple launches
+    if (webCameraLaunched) {
+      console.log('[Scanner] Camera already launched, skipping');
+      return;
+    }
+
+    setWebCameraLaunched(true);
+
     try {
       // On web, use the image picker which will trigger the browser's file/camera picker
       const result = await ImagePicker.launchCameraAsync({
@@ -45,39 +54,46 @@ export default function ProductTagScannerScreen() {
       });
 
       if (result.canceled) {
+        console.log('[Scanner] User canceled camera');
         navigation.goBack();
         return;
       }
 
       const photo = result.assets[0];
       if (photo?.uri) {
+        console.log('[Scanner] Photo captured:', photo.uri);
         setCapturedImage(photo.uri);
         setIsProcessing(true);
 
         // Parse the image with AI
+        console.log('[Scanner] Parsing product tag...');
         const parseResult = await parseProductTag(photo.uri);
 
         setIsProcessing(false);
 
         if (parseResult.success && parseResult.data) {
+          console.log('[Scanner] Successfully parsed data:', parseResult.data);
           // Call the callback with the parsed data
           onDataScanned(parseResult.data);
           navigation.goBack();
         } else {
+          console.log('[Scanner] Failed to parse data');
+          setWebCameraLaunched(false); // Allow retry
           Alert.alert(
             'No Data Found',
             'Could not extract information from the product tag. Please try again with better lighting or a clearer photo.',
             [
-              { text: 'Retry', onPress: handleWebCapture },
+              { text: 'Retry', onPress: () => { setWebCameraLaunched(false); handleWebCapture(); } },
               { text: 'Cancel', onPress: () => navigation.goBack() },
             ]
           );
         }
       }
     } catch (error) {
+      console.error('[Scanner] Capture error:', error);
       setIsProcessing(false);
+      setWebCameraLaunched(false);
       Alert.alert('Error', 'Failed to capture or process image. Please try again.');
-      console.error('Capture error:', error);
       navigation.goBack();
     }
   };
