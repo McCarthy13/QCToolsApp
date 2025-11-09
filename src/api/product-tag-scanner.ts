@@ -134,20 +134,16 @@ Return ONLY the JSON, no other text.`;
 
     console.log('[Product Tag Scanner] Starting API call...');
 
-    // Use Vibecode proxy - same pattern as openai.ts
-    const baseURL = (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
-      || 'https://api.openai.com.proxy.vibecodeapp.com/v1';
-    const proxyUsername = (typeof process !== 'undefined' && process.env?.VIBECODE_PROXY_USERNAME) || undefined;
+    // Use Vibecode proxy - always use proxy URL for web builds
+    const baseURL = 'https://api.openai.com.proxy.vibecodeapp.com/v1';
 
-    // Use proxy username as the API key for Vibecode proxy authentication
-    const apiKey = proxyUsername
-      || (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY)
-      || 'vibecode-proxy-key';
+    // For Vibecode proxy, the API key should be 'vibecode-proxy-key'
+    const apiKey = 'vibecode-proxy-key';
 
     const apiUrl = `${baseURL}/chat/completions`;
 
     console.log('[Product Tag Scanner] Base URL:', baseURL);
-    console.log('[Product Tag Scanner] Using proxy auth:', !!proxyUsername);
+    console.log('[Product Tag Scanner] API Key:', apiKey);
     console.log('[Product Tag Scanner] Final API URL:', apiUrl);
     console.log('[Product Tag Scanner] Making fetch request...');
 
