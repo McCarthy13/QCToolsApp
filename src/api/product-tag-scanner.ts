@@ -133,14 +133,21 @@ IMPORTANT:
 Return ONLY the JSON, no other text.`;
 
     console.log('[Product Tag Scanner] Starting API call...');
-    console.log('[Product Tag Scanner] OPENAI_BASE_URL:', process.env.OPENAI_BASE_URL);
-    console.log('[Product Tag Scanner] Using GPT-4o vision model');
 
-    // Use Vibecode proxy endpoint for better performance
-    const apiUrl = process.env.OPENAI_BASE_URL
-      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-      : 'https://api.openai.com/v1/chat/completions';
+    // Use Vibecode proxy - same pattern as openai.ts
+    const baseURL = (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
+      || 'https://api.openai.com.proxy.vibecodeapp.com/v1';
+    const proxyUsername = (typeof process !== 'undefined' && process.env?.VIBECODE_PROXY_USERNAME) || undefined;
 
+    // Use proxy username as the API key for Vibecode proxy authentication
+    const apiKey = proxyUsername
+      || (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY)
+      || 'vibecode-proxy-key';
+
+    const apiUrl = `${baseURL}/chat/completions`;
+
+    console.log('[Product Tag Scanner] Base URL:', baseURL);
+    console.log('[Product Tag Scanner] Using proxy auth:', !!proxyUsername);
     console.log('[Product Tag Scanner] Final API URL:', apiUrl);
     console.log('[Product Tag Scanner] Making fetch request...');
 
@@ -152,7 +159,7 @@ Return ONLY the JSON, no other text.`;
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
