@@ -31,11 +31,22 @@ exports.openaiVisionProxy = onRequest({
       return res.status(400).json({error: "Missing or invalid messages"});
     }
 
-    // Use the Vibecode proxy URL from the server side where SSL works properly
-    const OPENAI_API_URL = process.env.OPENAI_BASE_URL ||
-      "https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions";
+    // For production, use direct OpenAI API
+    // The Vibecode proxy only works from within Vibecode sandbox
+    const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
-    const OPENAI_API_KEY = process.env.VIBECODE_PROXY_USERNAME || "vibecode-proxy-key";
+    // You need to set this as an environment variable when deploying:
+    // firebase functions:config:set openai.key="your-api-key"
+    // Or use Firebase environment secrets
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY;
+
+    if (!OPENAI_API_KEY) {
+      console.error("[OpenAI Vision Proxy] Missing API key");
+      return res.status(500).json({
+        error: "OpenAI API key not configured",
+        details: "Please set OPENAI_API_KEY environment variable"
+      });
+    }
 
     console.log("[OpenAI Vision Proxy] Making request to:", OPENAI_API_URL);
 
