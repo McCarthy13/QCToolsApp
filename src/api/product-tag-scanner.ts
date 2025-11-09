@@ -35,20 +35,51 @@ export async function parseProductTag(
   imageUri: string
 ): Promise<ProductTagParseResult> {
   try {
+    console.log('[Product Tag Scanner] Starting image conversion, URI:', imageUri);
+
     // Convert image to base64
-    const base64Image = await fetch(imageUri)
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve, reject) => {
+    let base64Image: string;
+
+    try {
+      // Try fetching the image first
+      const response = await fetch(imageUri);
+      console.log('[Product Tag Scanner] Fetch response status:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      console.log('[Product Tag Scanner] Blob size:', blob.size, 'type:', blob.type);
+
+      base64Image = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
+          console.log('[Product Tag Scanner] FileReader complete, data length:', base64.length);
           // Remove data URL prefix
           const base64Data = base64.split(',')[1] || base64;
           resolve(base64Data);
         };
-        reader.onerror = reject;
+        reader.onerror = (error) => {
+          console.error('[Product Tag Scanner] FileReader error:', error);
+          reject(error);
+        };
         reader.readAsDataURL(blob);
-      }));
+      });
+    } catch (fetchError) {
+      console.error('[Product Tag Scanner] Fetch/conversion error:', fetchError);
+
+      // If imageUri is already a data URL, extract the base64 part
+      if (imageUri.startsWith('data:')) {
+        console.log('[Product Tag Scanner] Image is already a data URL, extracting base64...');
+        base64Image = imageUri.split(',')[1] || imageUri;
+      } else {
+        throw new Error(`Failed to load image: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+      }
+    }
+
+    console.log('[Product Tag Scanner] Base64 conversion complete, length:', base64Image.length);
 
     // Create prompt for AI to parse the product tag - extract ALL fields
     const prompt = `You are analyzing a product tag from a precast concrete hollow-core plank. Extract ALL the following information from the tag.
