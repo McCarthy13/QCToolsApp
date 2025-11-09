@@ -255,6 +255,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Web camera manual trigger - removed auto-launch of camera on web; users now see the "Take Photo" screen and manually click the button to launch the camera picker
 - [x] Enhanced C++ exception handling - improved PDF generation robustness with stricter image size limits (2MB), better retry logic, comprehensive error detection, and graceful fallback to PDF without images when exceptions occur
 - [x] Firebase network error suppression - added console.error override to suppress transient NSURLErrorDomain -1013 SSL errors that appear harmlessly on app startup; errors still logged for debugging but don't show alarming toasts to users
+- [x] Product tag scanner API optimization - fixed slow scanning performance (2-3 minutes) by using Vibecode proxy endpoint instead of direct OpenAI API; now uses OPENAI_BASE_URL environment variable for faster response times (~5 seconds)
 
 ### ⏳ Ready to Implement
 

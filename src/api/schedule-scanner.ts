@@ -148,7 +148,12 @@ IMPORTANT:
     console.log('[Schedule Scanner] Calling OpenAI API...');
     console.log('[Schedule Scanner] Using GPT-4o vision model');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use Vibecode proxy endpoint for better performance
+    const apiUrl = process.env.OPENAI_BASE_URL
+      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+      : 'https://api.openai.com/v1/chat/completions';
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
@@ -268,7 +273,13 @@ export async function parseScheduleWithTextExtraction(
 Maintain the layout and structure as much as possible. Return plain text.`;
 
     console.log('[Schedule Scanner] Step 1: Extracting text...');
-    const extractResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+
+    // Use Vibecode proxy endpoint for better performance
+    const apiUrl = process.env.OPENAI_BASE_URL
+      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+      : 'https://api.openai.com/v1/chat/completions';
+
+    const extractResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
@@ -327,7 +338,7 @@ Return JSON with this structure:
 IMPORTANT: Create separate entries for each piece, extract ID numbers from ID column. DO NOT include formBed field.`;
 
     console.log('[Schedule Scanner] Step 2: Structuring data...');
-    const structureResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const structureResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,

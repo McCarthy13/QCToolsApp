@@ -135,8 +135,15 @@ Return ONLY the JSON, no other text.`;
     console.log('[Product Tag Scanner] Calling OpenAI API...');
     console.log('[Product Tag Scanner] Using GPT-4o vision model');
 
+    // Use Vibecode proxy endpoint for better performance
+    const apiUrl = process.env.OPENAI_BASE_URL
+      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+      : 'https://api.openai.com/v1/chat/completions';
+
+    console.log('[Product Tag Scanner] API URL:', apiUrl);
+
     // Call OpenAI API using fetch (required for Vibecode)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,

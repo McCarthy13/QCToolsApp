@@ -26,8 +26,13 @@ export const transcribeAudio = async (localAudioUri: string) => {
       throw new Error("OPENAI_API_KEY is not set");
     }
 
+    // Use Vibecode proxy endpoint for better performance
+    const apiUrl = process.env.OPENAI_BASE_URL
+      ? `${process.env.OPENAI_BASE_URL}/audio/transcriptions`
+      : "https://api.openai.com/v1/audio/transcriptions";
+
     // API call to OpenAI's gpt-4o-transcribe
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
