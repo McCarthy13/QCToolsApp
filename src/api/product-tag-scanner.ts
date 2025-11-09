@@ -187,14 +187,22 @@ Return ONLY the JSON, no other text.`;
 
     clearTimeout(timeoutId);
     console.log('[Product Tag Scanner] Fetch completed, status:', response.status);
+    console.log('[Product Tag Scanner] Response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[Product Tag Scanner] API Error:', response.status, errorText);
+
+      // Show alert to user on web
+      if (typeof window !== 'undefined') {
+        alert(`API Error (${response.status}): ${errorText.substring(0, 200)}`);
+      }
+
       throw new Error(`API request failed: ${response.status} ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('[Product Tag Scanner] Full API response:', JSON.stringify(result, null, 2));
 
     // Parse the response
     const content = result.choices?.[0]?.message?.content;
@@ -219,6 +227,12 @@ Return ONLY the JSON, no other text.`;
     };
   } catch (error) {
     console.error('Product tag parsing error:', error);
+
+    // Show detailed error to user on web for debugging
+    if (typeof window !== 'undefined') {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert(`Scanner Error: ${errorMsg}`);
+    }
 
     // Handle timeout errors
     if (error instanceof Error && error.name === 'AbortError') {
