@@ -165,28 +165,24 @@ Return ONLY the JSON, no other text.`;
 
     console.log('[Product Tag Scanner] Starting API call...');
 
-    // Match the schedule scanner pattern - use env var or fallback to direct OpenAI
-    // In sandbox: process.env.OPENAI_BASE_URL is set to Vibecode proxy
-    // In deployed web: falls back to direct OpenAI API (requires CORS but no SSL issues)
-    const apiUrl = (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
-      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-      : 'https://api.openai.com/v1/chat/completions';
+    // For deployed web builds, we MUST use the proxy URL with proper authentication
+    // The proxy URL works from the Vibecode sandbox environment
+    const baseURL = 'https://api.openai.com.proxy.vibecodeapp.com/v1';
+    const apiUrl = `${baseURL}/chat/completions`;
 
-    const apiKey = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY)
-      || 'vibecode-proxy-key';
+    // Use vibecode-proxy-key which is authenticated by the Vibecode infrastructure
+    const apiKey = 'vibecode-proxy-key';
 
     console.log('[Product Tag Scanner] API URL:', apiUrl);
-    console.log('[Product Tag Scanner] Using API key type:', apiKey === 'vibecode-proxy-key' ? 'proxy' : 'configured');
     console.log('[Product Tag Scanner] Making fetch request...');
 
     // Create abort controller for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    // Call OpenAI API using fetch (required for Vibecode)
+    // Call OpenAI API using fetch
     const response = await fetch(apiUrl, {
       method: 'POST',
-      mode: 'cors', // Explicitly set CORS mode
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
