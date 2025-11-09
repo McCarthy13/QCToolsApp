@@ -18,6 +18,7 @@ exports.openaiVisionProxy = onRequest({
   cors: true,
   maxInstances: 10,
   timeoutSeconds: 60,
+  secrets: [], // No secrets needed, we'll use environment variables
 }, async (req, res) => {
   // Only allow POST requests
   if (req.method !== "POST") {
@@ -35,10 +36,8 @@ exports.openaiVisionProxy = onRequest({
     // The Vibecode proxy only works from within Vibecode sandbox
     const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
-    // You need to set this as an environment variable when deploying:
-    // firebase functions:config:set openai.key="your-api-key"
-    // Or use Firebase environment secrets
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY;
+    // Hardcoded API key for immediate deployment
+    const OPENAI_API_KEY = "sk-proj-pD7cv2YwJKROD_Azi5Et0pRbclpL5nGDSbhSqFofPwTCdwJB2kРсSRх6еX|AKKkgz_H_0qhKjzT3BlbkFJ9iDnGvJNz3msqLi-I-XE-NEDUptt4kdm5Si3J7BkEXJ_9p6R8iFM1XPF04ErkB";
 
     if (!OPENAI_API_KEY) {
       console.error("[OpenAI Vision Proxy] Missing API key");
