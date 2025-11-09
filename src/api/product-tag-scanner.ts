@@ -165,21 +165,11 @@ Return ONLY the JSON, no other text.`;
 
     console.log('[Product Tag Scanner] Starting API call...');
 
-    // Check if we're on web/mobile browser - use direct OpenAI API
-    // The Vibecode proxy has SSL issues on iOS Chrome
-    const isWeb = typeof window !== 'undefined';
-
-    // For deployed web app, we need to use a CORS proxy or direct API
-    // Try using the Vibecode API endpoint that's configured for this project
-    const baseURL = isWeb
-      ? 'https://api.vibecodeapp.com/openai/v1'  // Vibecode's API endpoint with proper CORS
-      : 'https://api.openai.com.proxy.vibecodeapp.com/v1';
-
+    // Use the Vibecode proxy URL - this is the standard pattern that works across all Vibecode APIs
+    const baseURL = 'https://api.openai.com.proxy.vibecodeapp.com/v1';
     const apiKey = 'vibecode-proxy-key';
-
     const apiUrl = `${baseURL}/chat/completions`;
 
-    console.log('[Product Tag Scanner] Platform:', isWeb ? 'web' : 'native');
     console.log('[Product Tag Scanner] Base URL:', baseURL);
     console.log('[Product Tag Scanner] Final API URL:', apiUrl);
     console.log('[Product Tag Scanner] Making fetch request...');
@@ -191,6 +181,7 @@ Return ONLY the JSON, no other text.`;
     // Call OpenAI API using fetch (required for Vibecode)
     const response = await fetch(apiUrl, {
       method: 'POST',
+      mode: 'cors', // Explicitly set CORS mode
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
