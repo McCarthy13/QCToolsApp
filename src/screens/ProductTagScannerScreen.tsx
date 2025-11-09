@@ -5,9 +5,10 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert, Image, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -31,6 +32,115 @@ export default function ProductTagScannerScreen() {
 
   const cameraRef = useRef<CameraView>(null);
   const { onDataScanned } = route.params;
+
+  // Web-specific camera picker
+  const handleWebCapture = async () => {
+    try {
+      // On web, use the image picker which will trigger the browser's file/camera picker
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
+        exif: true,
+      });
+
+      if (result.canceled) {
+        navigation.goBack();
+        return;
+      }
+
+      const photo = result.assets[0];
+      if (photo?.uri) {
+        setCapturedImage(photo.uri);
+        setIsProcessing(true);
+
+        // Parse the image with AI
+        const parseResult = await parseProductTag(photo.uri);
+
+        setIsProcessing(false);
+
+        if (parseResult.success && parseResult.data) {
+          // Call the callback with the parsed data
+          onDataScanned(parseResult.data);
+          navigation.goBack();
+        } else {
+          Alert.alert(
+            'No Data Found',
+            'Could not extract information from the product tag. Please try again with better lighting or a clearer photo.',
+            [
+              { text: 'Retry', onPress: handleWebCapture },
+              { text: 'Cancel', onPress: () => navigation.goBack() },
+            ]
+          );
+        }
+      }
+    } catch (error) {
+      setIsProcessing(false);
+      Alert.alert('Error', 'Failed to capture or process image. Please try again.');
+      console.error('Capture error:', error);
+      navigation.goBack();
+    }
+  };
+
+  // If on web, immediately trigger the web capture flow
+  React.useEffect(() => {
+    if (Platform.OS === 'web') {
+      handleWebCapture();
+    }
+  }, []);
+
+  // On web, show the processing state
+  if (Platform.OS === 'web') {
+    if (isProcessing) {
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+            {capturedImage && (
+              <Image
+                source={{ uri: capturedImage }}
+                style={{ width: '100%', height: '50%', borderRadius: 12, marginBottom: 32, opacity: 0.5 }}
+                resizeMode="contain"
+              />
+            )}
+            <ActivityIndicator size="large" color="#3b82f6" style={{ marginBottom: 16 }} />
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8 }}>
+              Reading Product Tag...
+            </Text>
+            <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center' }}>
+              AI is extracting information from the tag
+            </Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
+    // Show a simple UI prompting to take photo
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+          <Ionicons name="camera-outline" size={80} color="#3b82f6" style={{ marginBottom: 24 }} />
+          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 12, textAlign: 'center' }}>
+            Scan Product Tag
+          </Text>
+          <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 32, textAlign: 'center' }}>
+            Take a photo of the product tag to extract information
+          </Text>
+          <Pressable
+            onPress={handleWebCapture}
+            style={{ backgroundColor: '#3b82f6', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12, marginBottom: 16 }}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Take Photo</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{ paddingVertical: 12 }}
+          >
+            <Text style={{ color: '#9ca3af', fontSize: 14 }}>Cancel</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Request permission if not granted
   if (!permission) {

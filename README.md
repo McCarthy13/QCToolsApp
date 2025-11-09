@@ -251,6 +251,7 @@ User Login → Check Firestore approval status → Grant access
 - [x] Product tag scanner zoom controls - added zoom in/out buttons with level indicator and reset button to capture product tags that are high up or out of reach (supports up to 10x digital zoom)
 - [x] Enhanced date navigation for daily pour schedule - added three methods to select dates: (1) left/right arrow toggles for adjacent days, (2) interactive calendar picker for visual date selection with month navigation, (3) manual date input with MM/DD/YYYY format; quick access buttons for Yesterday/Today/Tomorrow
 - [x] Daily pour schedule navigation cleanup - removed redundant back buttons ("Change Department" button and duplicate back arrow) to rely solely on consistent header back button, reducing visual clutter and confusion
+- [x] Web camera compatibility fix - product tag scanner now uses browser's native file/camera picker on web instead of attempting to use expo-camera's CameraView, preventing blank screen issues
 
 ### ⏳ Ready to Implement
 
