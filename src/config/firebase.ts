@@ -5,6 +5,24 @@ import { getStorage, FirebaseStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+// Suppress console errors for transient network/SSL errors
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const message = args.join(' ');
+  // Suppress known transient Firebase/network errors
+  if (
+    message.includes('NSURLErrorDomain') ||
+    message.includes('error -1013') ||
+    message.includes('The operation couldn\'t be completed') ||
+    (message.includes('API ERROR') && message.includes('Network error'))
+  ) {
+    // Log to console.log instead for debugging, but don't show error toast
+    console.log('[Firebase] Transient network error suppressed:', message);
+    return;
+  }
+  originalConsoleError(...args);
+};
+
 // Firebase configuration
 // For web deployment, we use actual values since process.env doesn't work reliably in webpack builds
 const firebaseConfig = {
