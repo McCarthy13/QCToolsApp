@@ -29,12 +29,13 @@ export default function ProductTagScannerScreen() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [zoom, setZoom] = useState(0);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
   const { onDataScanned } = route.params;
 
   // Web-specific camera picker
-  const handleWebCapture = async () => {
+  const handleWebCapture = React.useCallback(async () => {
     try {
       // On web, use the image picker which will trigger the browser's file/camera picker
       const result = await ImagePicker.launchCameraAsync({
@@ -80,14 +81,18 @@ export default function ProductTagScannerScreen() {
       console.error('Capture error:', error);
       navigation.goBack();
     }
-  };
+  }, [navigation, onDataScanned]);
 
-  // If on web, immediately trigger the web capture flow
+  // If on web, immediately trigger the web capture flow (only once)
   React.useEffect(() => {
-    if (Platform.OS === 'web') {
-      handleWebCapture();
+    if (Platform.OS === 'web' && !hasInitialized) {
+      setHasInitialized(true);
+      // Small delay to allow component to mount
+      setTimeout(() => {
+        handleWebCapture();
+      }, 100);
     }
-  }, []);
+  }, [hasInitialized, handleWebCapture]);
 
   // On web, show the processing state
   if (Platform.OS === 'web') {
