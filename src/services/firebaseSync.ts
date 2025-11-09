@@ -68,15 +68,46 @@ export class FirebaseSync<T extends { id: string }> {
    */
   async set(id: string, data: Partial<T>): Promise<void> {
     try {
+      // Remove undefined values to prevent Firebase errors
+      const cleanData = this.removeUndefinedFields(data);
+
       const docRef = doc(firestore, this.collectionName, id);
       await setDoc(docRef, {
-        ...data,
+        ...cleanData,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } catch (error) {
       console.error(`Error setting document in ${this.collectionName}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Recursively remove undefined fields from an object
+   */
+  private removeUndefinedFields<T>(obj: T): T {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.removeUndefinedFields(item)) as T;
+    }
+
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = obj[key];
+          if (value !== undefined) {
+            cleaned[key] = this.removeUndefinedFields(value);
+          }
+        }
+      }
+      return cleaned as T;
+    }
+
+    return obj;
   }
 
   /**
