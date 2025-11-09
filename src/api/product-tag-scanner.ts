@@ -165,13 +165,18 @@ Return ONLY the JSON, no other text.`;
 
     console.log('[Product Tag Scanner] Starting API call...');
 
-    // Use the Vibecode proxy URL - this is the standard pattern that works across all Vibecode APIs
-    const baseURL = 'https://api.openai.com.proxy.vibecodeapp.com/v1';
-    const apiKey = 'vibecode-proxy-key';
-    const apiUrl = `${baseURL}/chat/completions`;
+    // Match the schedule scanner pattern - use env var or fallback to direct OpenAI
+    // In sandbox: process.env.OPENAI_BASE_URL is set to Vibecode proxy
+    // In deployed web: falls back to direct OpenAI API (requires CORS but no SSL issues)
+    const apiUrl = (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
+      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+      : 'https://api.openai.com/v1/chat/completions';
 
-    console.log('[Product Tag Scanner] Base URL:', baseURL);
-    console.log('[Product Tag Scanner] Final API URL:', apiUrl);
+    const apiKey = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY)
+      || 'vibecode-proxy-key';
+
+    console.log('[Product Tag Scanner] API URL:', apiUrl);
+    console.log('[Product Tag Scanner] Using API key type:', apiKey === 'vibecode-proxy-key' ? 'proxy' : 'configured');
     console.log('[Product Tag Scanner] Making fetch request...');
 
     // Create abort controller for timeout
