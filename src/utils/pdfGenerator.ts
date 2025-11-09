@@ -51,17 +51,25 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           throw new Error('Image file does not exist');
         }
 
+        // Read the image as base64
         const base64 = await FileSystem.readAsStringAsync(crossSectionImageUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
 
-        // Check if base64 string is too large (> 5MB)
-        if (base64.length > 5 * 1024 * 1024) {
-          console.warn('[PDF Generator] Image too large, skipping');
+        // More aggressive size limits to prevent C++ exceptions
+        const maxSizeBytes = 2 * 1024 * 1024; // 2MB limit (reduced from 5MB)
+        if (base64.length > maxSizeBytes) {
+          console.warn('[PDF Generator] Image too large (>2MB), skipping to prevent errors');
           base64Image = undefined;
         } else {
-          base64Image = `data:image/png;base64,${base64}`;
-          console.log('[PDF Generator] Image converted successfully, length:', base64.length);
+          // Validate base64 string
+          if (!base64 || base64.length === 0) {
+            console.warn('[PDF Generator] Invalid base64 data, skipping image');
+            base64Image = undefined;
+          } else {
+            base64Image = `data:image/png;base64,${base64}`;
+            console.log('[PDF Generator] Image converted successfully, size:', Math.round(base64.length / 1024), 'KB');
+          }
         }
       } catch (error) {
         console.error('[PDF Generator] Error converting image to base64:', error);
@@ -505,32 +513,49 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
     let uri: string;
     try {
+      // First attempt: try with image if available
       const result = await Print.printToFileAsync({
         html: htmlContent,
         width: 612, // 8.5 inches in points
         height: 792, // 11 inches in points
       });
       uri = result.uri;
-      console.log('[PDF Generator] PDF created at:', uri);
-    } catch (printError) {
-      console.error('[PDF Generator] Error in printToFileAsync:', printError);
+      console.log('[PDF Generator] PDF created successfully at:', uri);
+    } catch (printError: any) {
+      console.error('[PDF Generator] First attempt failed:', printError);
+      console.error('[PDF Generator] Error message:', printError?.message);
+      console.error('[PDF Generator] Error name:', printError?.name);
 
-      // Try again without the image if it was included
-      if (base64Image) {
-        console.log('[PDF Generator] Retrying without image...');
+      // If the error is a C++ exception or related to image processing, try without image
+      if (base64Image && (
+        printError?.message?.includes('C++') ||
+        printError?.message?.includes('exception') ||
+        printError?.message?.includes('image') ||
+        printError?.message?.includes('memory')
+      )) {
+        console.log('[PDF Generator] Detected image-related error, retrying without image...');
         base64Image = undefined;
 
-        // Regenerate HTML without image
-        const simpleHtml = htmlContent.replace(/<img[^>]*>/g, '').replace(/data:image[^"']*/g, '');
+        // Regenerate HTML without image sections
+        const htmlWithoutImage = htmlContent
+          .replace(/<img[^>]*>/gi, '')
+          .replace(/data:image\/[^"'\s]*/gi, '')
+          .replace(/<!-- Cross Section -->[\s\S]*?<\/div>\s*<\/div>/i, '');
 
-        const result = await Print.printToFileAsync({
-          html: simpleHtml,
-          width: 612,
-          height: 792,
-        });
-        uri = result.uri;
-        console.log('[PDF Generator] PDF created without image at:', uri);
+        try {
+          const retryResult = await Print.printToFileAsync({
+            html: htmlWithoutImage,
+            width: 612,
+            height: 792,
+          });
+          uri = retryResult.uri;
+          console.log('[PDF Generator] PDF created successfully without image at:', uri);
+        } catch (retryError) {
+          console.error('[PDF Generator] Retry failed:', retryError);
+          throw new Error('Failed to generate PDF even without images');
+        }
       } else {
+        // If it's not an image-related error, throw the original error
         throw printError;
       }
     }

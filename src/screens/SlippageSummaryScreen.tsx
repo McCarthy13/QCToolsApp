@@ -93,13 +93,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       // Capture the cross-section diagram as an image
       let crossSectionImageUri: string | undefined;
       if (crossSectionRef.current) {
-        console.log('[PDF] Capturing cross-section...');
-        crossSectionImageUri = await captureRef(crossSectionRef, {
-          format: 'png',
-          quality: 0.7, // Reduce quality to prevent large file sizes
-          width: 800, // Limit width to prevent huge images
-        });
-        console.log('[PDF] Cross-section captured:', crossSectionImageUri);
+        try {
+          console.log('[PDF] Capturing cross-section...');
+          crossSectionImageUri = await captureRef(crossSectionRef, {
+            format: 'png',
+            quality: 0.6, // Reduced quality to prevent memory issues
+            width: 700, // Reduced size to prevent C++ exceptions
+          });
+          console.log('[PDF] Cross-section captured:', crossSectionImageUri);
+        } catch (captureError) {
+          console.error('[PDF] Error capturing cross-section:', captureError);
+          console.log('[PDF] Continuing without cross-section image');
+          // Continue without the image if capture fails
+          crossSectionImageUri = undefined;
+        }
       } else {
         console.log('[PDF] No cross-section ref available');
       }
@@ -132,7 +139,18 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       }
     } catch (error) {
       console.error('[PDF] Error generating/sharing PDF:', error);
-      Alert.alert('Error', `Failed to generate or share PDF report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[PDF] Error details:', errorMessage);
+
+      // Provide more helpful error message
+      if (errorMessage.includes('C++') || errorMessage.includes('exception')) {
+        Alert.alert(
+          'PDF Generation Error',
+          'There was an issue processing the image. The PDF may have been generated without the cross-section diagram. Please try again.'
+        );
+      } else {
+        Alert.alert('Error', `Failed to generate or share PDF report: ${errorMessage}`);
+      }
     } finally {
       setIsGeneratingPDF(false);
     }
