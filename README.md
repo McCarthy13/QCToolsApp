@@ -10,6 +10,30 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Cloud Storage** - Ready for file uploads
 ✅ **Admin Approval System** - Working and tested
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
+✅ **Automated Deployment** - Deploy with a single command using Firebase service account
+
+### Deploy to Firebase Hosting
+
+The app is configured for automated deployment to Firebase Hosting. To deploy:
+
+```bash
+bun run deploy
+```
+
+Or directly:
+
+```bash
+node deploy.js
+```
+
+This will:
+1. Build the Expo web app for production
+2. Deploy to Firebase Hosting using the service account credentials in `.env`
+3. Your app will be live at https://precast-qc-tools-web-app.web.app
+
+**Requirements:**
+- `FIREBASE_PROJECT_ID` must be set in `.env` file
+- `FIREBASE_SERVICE_ACCOUNT` (full JSON) must be set in `.env` file
 
 ---
 

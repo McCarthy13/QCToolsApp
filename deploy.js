@@ -37,19 +37,46 @@ function info(message) {
   log(`ℹ️  ${message}`, 'cyan');
 }
 
+// Load .env file
+function loadEnvFile() {
+  const envPath = path.join(process.cwd(), '.env');
+  if (!fs.existsSync(envPath)) {
+    error('.env file not found');
+  }
+
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const lines = envContent.split('\n');
+
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#')) return;
+
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      const value = match[2].trim();
+      process.env[key] = value;
+    }
+  });
+}
+
 async function main() {
   log('\n🚀 Starting Firebase deployment process...', 'magenta');
+
+  // Load environment variables from .env
+  info('Loading credentials from .env file...');
+  loadEnvFile();
 
   // Check for required environment variables
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
   const projectId = process.env.FIREBASE_PROJECT_ID;
 
   if (!serviceAccount) {
-    error('FIREBASE_SERVICE_ACCOUNT environment variable not found.\nPlease add your Firebase service account JSON to the ENV tab in Vibecode.');
+    error('FIREBASE_SERVICE_ACCOUNT not found in .env file');
   }
 
   if (!projectId) {
-    error('FIREBASE_PROJECT_ID environment variable not found.\nPlease add your Firebase project ID to the ENV tab in Vibecode.');
+    error('FIREBASE_PROJECT_ID not found in .env file');
   }
 
   // Validate service account JSON
