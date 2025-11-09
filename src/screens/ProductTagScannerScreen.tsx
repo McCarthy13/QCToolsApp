@@ -42,6 +42,10 @@ export default function ProductTagScannerScreen() {
       return;
     }
 
+    // Set flags IMMEDIATELY before launching to prevent multiple launches
+    setCameraCompleted(true);
+    setIsProcessing(true);
+
     try {
       console.log('[Scanner] Launching camera...');
       // On web, use the image picker which will trigger the browser's file/camera picker
@@ -54,6 +58,8 @@ export default function ProductTagScannerScreen() {
 
       if (result.canceled) {
         console.log('[Scanner] User canceled camera');
+        setCameraCompleted(false);
+        setIsProcessing(false);
         navigation.goBack();
         return;
       }
@@ -62,8 +68,6 @@ export default function ProductTagScannerScreen() {
       if (photo?.uri) {
         console.log('[Scanner] Photo captured:', photo.uri);
         setCapturedImage(photo.uri);
-        setIsProcessing(true);
-        setCameraCompleted(true); // Mark as completed to prevent re-launch
 
         // Parse the image with AI
         console.log('[Scanner] Parsing product tag...');
