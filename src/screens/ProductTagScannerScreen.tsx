@@ -29,22 +29,24 @@ export default function ProductTagScannerScreen() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [zoom, setZoom] = useState(0);
-  const [webCameraLaunched, setWebCameraLaunched] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
+  const webCameraLaunchedRef = useRef(false);
   const { onDataScanned } = route.params;
 
   // Web-specific camera picker
   const handleWebCapture = async () => {
-    // Prevent multiple launches
-    if (webCameraLaunched) {
-      console.log('[Scanner] Camera already launched, skipping');
+    // Prevent multiple launches using ref (persists across renders)
+    if (webCameraLaunchedRef.current) {
+      console.log('[Scanner] Camera already launched, skipping (ref check)');
       return;
     }
 
-    setWebCameraLaunched(true);
+    console.log('[Scanner] Setting camera launched flag');
+    webCameraLaunchedRef.current = true;
 
     try {
+      console.log('[Scanner] Launching camera...');
       // On web, use the image picker which will trigger the browser's file/camera picker
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -78,12 +80,18 @@ export default function ProductTagScannerScreen() {
           navigation.goBack();
         } else {
           console.log('[Scanner] Failed to parse data');
-          setWebCameraLaunched(false); // Allow retry
+          webCameraLaunchedRef.current = false; // Allow retry
           Alert.alert(
             'No Data Found',
             'Could not extract information from the product tag. Please try again with better lighting or a clearer photo.',
             [
-              { text: 'Retry', onPress: () => { setWebCameraLaunched(false); handleWebCapture(); } },
+              {
+                text: 'Retry',
+                onPress: () => {
+                  webCameraLaunchedRef.current = false;
+                  handleWebCapture();
+                }
+              },
               { text: 'Cancel', onPress: () => navigation.goBack() },
             ]
           );
@@ -92,7 +100,7 @@ export default function ProductTagScannerScreen() {
     } catch (error) {
       console.error('[Scanner] Capture error:', error);
       setIsProcessing(false);
-      setWebCameraLaunched(false);
+      webCameraLaunchedRef.current = false;
       Alert.alert('Error', 'Failed to capture or process image. Please try again.');
       navigation.goBack();
     }
