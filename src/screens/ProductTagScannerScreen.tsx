@@ -4,7 +4,7 @@
  * Uses camera to capture product tags and AI to parse fields like span and pour date
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Alert, Image, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
@@ -32,17 +32,31 @@ export default function ProductTagScannerScreen() {
   const [cameraCompleted, setCameraCompleted] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
+  const processingRef = useRef(false); // Persistent flag across re-renders
   const { onDataScanned } = route.params;
+
+  // On web, auto-launch camera picker once when component mounts
+  useEffect(() => {
+    if (Platform.OS === 'web' && !processingRef.current) {
+      handleWebCapture();
+    }
+  }, []);
 
   // Web-specific camera picker
   const handleWebCapture = async () => {
-    // Prevent multiple launches - check if already processing or completed
+    // Prevent multiple launches - check ref first (persists across re-renders)
+    if (processingRef.current) {
+      console.log('[Scanner] Already processing (ref check), skipping camera launch');
+      return;
+    }
+
     if (isProcessing || cameraCompleted) {
       console.log('[Scanner] Already processing or completed, skipping camera launch');
       return;
     }
 
     // Set flags IMMEDIATELY before launching to prevent multiple launches
+    processingRef.current = true; // Set ref flag first
     setCameraCompleted(true);
     setIsProcessing(true);
 
@@ -58,6 +72,7 @@ export default function ProductTagScannerScreen() {
 
       if (result.canceled) {
         console.log('[Scanner] User canceled camera');
+        processingRef.current = false;
         setCameraCompleted(false);
         setIsProcessing(false);
         navigation.goBack();
@@ -79,9 +94,11 @@ export default function ProductTagScannerScreen() {
           console.log('[Scanner] Successfully parsed data:', parseResult.data);
           // Call the callback with the parsed data
           onDataScanned(parseResult.data);
+          processingRef.current = false;
           navigation.goBack();
         } else {
           console.log('[Scanner] Failed to parse data');
+          processingRef.current = false;
           setCameraCompleted(false); // Allow retry
           Alert.alert(
             'No Data Found',
@@ -102,6 +119,7 @@ export default function ProductTagScannerScreen() {
       }
     } catch (error) {
       console.error('[Scanner] Capture error:', error);
+      processingRef.current = false;
       setIsProcessing(false);
       setCameraCompleted(false);
       Alert.alert('Error', 'Failed to capture or process image. Please try again.');
@@ -111,60 +129,24 @@ export default function ProductTagScannerScreen() {
 
   // On web, show the processing state
   if (Platform.OS === 'web') {
-    // If processing or completed, show loading state (prevent showing "Take Photo" button again)
-    if (isProcessing || cameraCompleted) {
-      return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-            {capturedImage && (
-              <Image
-                source={{ uri: capturedImage }}
-                style={{ width: '100%', height: '50%', borderRadius: 12, marginBottom: 32, opacity: 0.5 }}
-                resizeMode="contain"
-              />
-            )}
-            <ActivityIndicator size="large" color="#3b82f6" style={{ marginBottom: 16 }} />
-            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8 }}>
-              Reading Product Tag...
-            </Text>
-            <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center' }}>
-              AI is extracting information from the tag
-            </Text>
-          </View>
-        </SafeAreaView>
-      );
-    }
-
-    // Show a simple UI prompting to take photo
+    // Always show loading state on web (camera launches automatically)
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <Ionicons name="camera-outline" size={80} color="#3b82f6" style={{ marginBottom: 24 }} />
-          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 12, textAlign: 'center' }}>
-            Scan Product Tag
+          {capturedImage && (
+            <Image
+              source={{ uri: capturedImage }}
+              style={{ width: '100%', height: '50%', borderRadius: 12, marginBottom: 32, opacity: 0.5 }}
+              resizeMode="contain"
+            />
+          )}
+          <ActivityIndicator size="large" color="#3b82f6" style={{ marginBottom: 16 }} />
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8 }}>
+            {capturedImage ? 'Reading Product Tag...' : 'Opening Camera...'}
           </Text>
-          <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 32, textAlign: 'center' }}>
-            Take a photo of the product tag to extract information
+          <Text style={{ color: '#9ca3af', fontSize: 14, textAlign: 'center' }}>
+            {capturedImage ? 'AI is extracting information from the tag' : 'Please allow camera access when prompted'}
           </Text>
-          <Pressable
-            onPress={handleWebCapture}
-            disabled={isProcessing || cameraCompleted}
-            style={{
-              backgroundColor: (isProcessing || cameraCompleted) ? '#6b7280' : '#3b82f6',
-              paddingHorizontal: 32,
-              paddingVertical: 16,
-              borderRadius: 12,
-              marginBottom: 16
-            }}
-          >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Take Photo</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={{ paddingVertical: 12 }}
-          >
-            <Text style={{ color: '#9ca3af', fontSize: 14 }}>Cancel</Text>
-          </Pressable>
         </View>
       </SafeAreaView>
     );
