@@ -29,21 +29,18 @@ export default function ProductTagScannerScreen() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [zoom, setZoom] = useState(0);
+  const [cameraCompleted, setCameraCompleted] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
-  const webCameraLaunchedRef = useRef(false);
   const { onDataScanned } = route.params;
 
   // Web-specific camera picker
   const handleWebCapture = async () => {
-    // Prevent multiple launches using ref (persists across renders)
-    if (webCameraLaunchedRef.current) {
-      console.log('[Scanner] Camera already launched, skipping (ref check)');
+    // Prevent multiple launches - check if already processing or completed
+    if (isProcessing || cameraCompleted) {
+      console.log('[Scanner] Already processing or completed, skipping camera launch');
       return;
     }
-
-    console.log('[Scanner] Setting camera launched flag');
-    webCameraLaunchedRef.current = true;
 
     try {
       console.log('[Scanner] Launching camera...');
@@ -66,6 +63,7 @@ export default function ProductTagScannerScreen() {
         console.log('[Scanner] Photo captured:', photo.uri);
         setCapturedImage(photo.uri);
         setIsProcessing(true);
+        setCameraCompleted(true); // Mark as completed to prevent re-launch
 
         // Parse the image with AI
         console.log('[Scanner] Parsing product tag...');
@@ -80,7 +78,7 @@ export default function ProductTagScannerScreen() {
           navigation.goBack();
         } else {
           console.log('[Scanner] Failed to parse data');
-          webCameraLaunchedRef.current = false; // Allow retry
+          setCameraCompleted(false); // Allow retry
           Alert.alert(
             'No Data Found',
             'Could not extract information from the product tag. Please try again with better lighting or a clearer photo.',
@@ -88,7 +86,8 @@ export default function ProductTagScannerScreen() {
               {
                 text: 'Retry',
                 onPress: () => {
-                  webCameraLaunchedRef.current = false;
+                  setCameraCompleted(false);
+                  setCapturedImage(null);
                   handleWebCapture();
                 }
               },
@@ -100,7 +99,7 @@ export default function ProductTagScannerScreen() {
     } catch (error) {
       console.error('[Scanner] Capture error:', error);
       setIsProcessing(false);
-      webCameraLaunchedRef.current = false;
+      setCameraCompleted(false);
       Alert.alert('Error', 'Failed to capture or process image. Please try again.');
       navigation.goBack();
     }
