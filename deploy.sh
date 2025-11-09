@@ -7,16 +7,23 @@ set -e  # Exit on any error
 
 echo "🚀 Starting Firebase deployment..."
 
+# Load environment variables from .env file
+if [ -f ".env" ]; then
+  echo "📝 Loading credentials from .env file..."
+  export $(grep -v '^#' .env | xargs)
+else
+  echo "❌ Error: .env file not found"
+  exit 1
+fi
+
 # Check if service account credentials exist
 if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-  echo "❌ Error: FIREBASE_SERVICE_ACCOUNT environment variable not found"
-  echo "Please add your Firebase service account JSON to the ENV tab in Vibecode"
+  echo "❌ Error: FIREBASE_SERVICE_ACCOUNT not found in .env file"
   exit 1
 fi
 
 if [ -z "$FIREBASE_PROJECT_ID" ]; then
-  echo "❌ Error: FIREBASE_PROJECT_ID environment variable not found"
-  echo "Please add your Firebase project ID to the ENV tab in Vibecode"
+  echo "❌ Error: FIREBASE_PROJECT_ID not found in .env file"
   exit 1
 fi
 
