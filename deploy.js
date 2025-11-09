@@ -134,6 +134,10 @@ async function main() {
     log(`\n🌐 Your app is live at: https://${projectId}.web.app`, 'green');
     log(`🌐 Or at: https://${projectId}.firebaseapp.com\n`, 'green');
 
+    // Note about Cloud Functions
+    info('Note: Cloud Functions deployment requires additional permissions.');
+    info('To deploy functions, enable Cloud Functions API and grant permissions in Google Cloud Console.');
+
   } catch (e) {
     error(`Deployment failed: ${e.message}`);
   } finally {

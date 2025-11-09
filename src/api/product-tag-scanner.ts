@@ -165,14 +165,19 @@ Return ONLY the JSON, no other text.`;
 
     console.log('[Product Tag Scanner] Starting API call...');
 
-    // For deployed web builds, we MUST use the proxy URL with proper authentication
-    // The proxy URL works from the Vibecode sandbox environment
-    const baseURL = 'https://api.openai.com.proxy.vibecodeapp.com/v1';
-    const apiUrl = `${baseURL}/chat/completions`;
+    // For deployed web builds, use our Firebase Cloud Function proxy
+    // This avoids SSL certificate issues with the direct proxy URL
+    const isWeb = typeof window !== 'undefined';
 
-    // Use vibecode-proxy-key which is authenticated by the Vibecode infrastructure
-    const apiKey = 'vibecode-proxy-key';
+    const apiUrl = isWeb
+      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/openaiVisionProxy'
+      : (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
+        ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+        : 'https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions';
 
+    const apiKey = isWeb ? 'not-needed-for-cloud-function' : 'vibecode-proxy-key';
+
+    console.log('[Product Tag Scanner] Platform:', isWeb ? 'web' : 'native');
     console.log('[Product Tag Scanner] API URL:', apiUrl);
     console.log('[Product Tag Scanner] Making fetch request...');
 
@@ -181,34 +186,43 @@ Return ONLY the JSON, no other text.`;
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     // Call OpenAI API using fetch
-    const response = await fetch(apiUrl, {
+    // For web, the Cloud Function handles the Authorization header
+    const requestBody = {
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`,
+                detail: 'high',
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 1000,
+    };
+
+    const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high',
-                },
-              },
-            ],
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 1000,
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
-    });
+    };
+
+    // Add Authorization header only for non-web platforms
+    if (!isWeb) {
+      (fetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(apiUrl, fetchOptions);
 
     clearTimeout(timeoutId);
     console.log('[Product Tag Scanner] Fetch completed, status:', response.status);
