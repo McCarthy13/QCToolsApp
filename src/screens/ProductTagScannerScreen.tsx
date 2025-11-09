@@ -107,7 +107,8 @@ export default function ProductTagScannerScreen() {
 
   // On web, show the processing state
   if (Platform.OS === 'web') {
-    if (isProcessing) {
+    // If processing or completed, show loading state (prevent showing "Take Photo" button again)
+    if (isProcessing || cameraCompleted) {
       return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#111827' }}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
@@ -143,7 +144,14 @@ export default function ProductTagScannerScreen() {
           </Text>
           <Pressable
             onPress={handleWebCapture}
-            style={{ backgroundColor: '#3b82f6', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12, marginBottom: 16 }}
+            disabled={isProcessing || cameraCompleted}
+            style={{
+              backgroundColor: (isProcessing || cameraCompleted) ? '#6b7280' : '#3b82f6',
+              paddingHorizontal: 32,
+              paddingVertical: 16,
+              borderRadius: 12,
+              marginBottom: 16
+            }}
           >
             <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Take Photo</Text>
           </Pressable>
