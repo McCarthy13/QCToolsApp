@@ -8,8 +8,8 @@ set -e  # Exit on any error
 echo "🚀 Starting Firebase deployment..."
 
 # Check if service account credentials exist
-if [ -z "$FIREBASE_SERVICE_ACOUNT" ]; then
-  echo "❌ Error: FIREBASE_SERVICE_ACOUNT environment variable not found"
+if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+  echo "❌ Error: FIREBASE_SERVICE_ACCOUNT environment variable not found"
   echo "Please add your Firebase service account JSON to the ENV tab in Vibecode"
   exit 1
 fi
@@ -22,7 +22,7 @@ fi
 
 # Create temporary service account file
 echo "📝 Creating temporary service account credentials..."
-echo "$FIREBASE_SERVICE_ACOUNT" > /tmp/firebase-service-account.json
+echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-service-account.json
 
 # Set the Google Application Credentials environment variable
 export GOOGLE_APPLICATION_CREDENTIALS="/tmp/firebase-service-account.json"
