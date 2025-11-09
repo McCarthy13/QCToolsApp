@@ -63,11 +63,13 @@ export default function ProductTagScannerScreen() {
     try {
       console.log('[Scanner] Launching camera...');
       // On web, use the image picker which will trigger the browser's file/camera picker
+      // Request base64 data to avoid blob URL fetch issues on iOS Safari
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
         quality: 1,
         exif: true,
+        base64: true, // Get base64 data directly
       });
 
       if (result.canceled) {
@@ -82,11 +84,17 @@ export default function ProductTagScannerScreen() {
       const photo = result.assets[0];
       if (photo?.uri) {
         console.log('[Scanner] Photo captured:', photo.uri);
+        console.log('[Scanner] Has base64:', !!photo.base64);
         setCapturedImage(photo.uri);
 
         // Parse the image with AI
         console.log('[Scanner] Parsing product tag...');
-        const parseResult = await parseProductTag(photo.uri);
+        // If base64 is available, pass it directly, otherwise use URI
+        const imageData = photo.base64
+          ? `data:image/jpeg;base64,${photo.base64}`
+          : photo.uri;
+        console.log('[Scanner] Using image data type:', photo.base64 ? 'base64' : 'uri');
+        const parseResult = await parseProductTag(imageData);
 
         setIsProcessing(false);
 
