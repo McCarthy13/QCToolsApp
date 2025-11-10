@@ -8,15 +8,16 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Firebase Authentication** - Fully integrated with email/password sign-in
 ✅ **Firestore Database** - Ready for real-time data sync
 ✅ **Cloud Storage** - Ready for file uploads
-⏳ **Cloud Functions** - OpenAI API key updated in code, requires manual deployment
+✅ **Cloud Functions** - OpenAI Vision API proxy deployed with updated API key
 ✅ **Product Tag Scanner** - Working in deployed web app with native camera
 ✅ **Admin Approval System** - Working and tested
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-10)
-- Updated OpenAI API key in `functions/index.js` to new key
-- Code changes pushed to GitHub
-- **Action Required**: Cloud Functions must be manually deployed via Firebase Console
+- ✅ Updated OpenAI API key in Cloud Function
+- ✅ Deployed Cloud Function successfully
+- ✅ Function URL: https://openaivisionproxy-k2ycslozcq-uc.a.run.app
+- ✅ Camera scanner now working with new API key
 
 ## Features
 
