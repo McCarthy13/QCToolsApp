@@ -207,9 +207,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               box-sizing: border-box;
             }
 
-            body {
+            body, .pdf-container {
               font-family: 'Helvetica Neue', Arial, sans-serif;
-              padding: 20px 30px;
+              padding: 30px 40px;
               color: #1f2937;
               line-height: 1.2;
               background-color: #ffffff;
@@ -400,6 +400,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           </style>
         </head>
         <body>
+          <div class="pdf-container">
           <!-- Header -->
           <div class="header">
             <h1>Slippage Report</h1>
@@ -729,6 +730,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             <div class="footer-item"><strong>Date:</strong> ${new Date().toLocaleString()}</div>
             <div class="footer-item"><strong>Tool:</strong> Slippage Identifier Tool</div>
           </div>
+          </div>
         </body>
       </html>
     `;
@@ -758,6 +760,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
       try {
         console.log('[PDF Generator] Creating temporary element for rendering...');
+        console.log('[PDF Generator] Has base64Image:', !!base64Image);
+        if (base64Image) {
+          console.log('[PDF Generator] Image data length:', base64Image.length);
+          console.log('[PDF Generator] Image prefix:', base64Image.substring(0, 50));
+        }
 
         // Create a temporary div to render the HTML
         const tempDiv = document.createElement('div');
@@ -765,12 +772,42 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         tempDiv.style.position = 'absolute';
         tempDiv.style.left = '-9999px';
         tempDiv.style.top = '0';
-        tempDiv.style.width = '816px'; // Letter width at 96dpi
+        tempDiv.style.width = '612px'; // Letter width in points (8.5" at 72dpi)
         tempDiv.style.backgroundColor = 'white';
         document.body.appendChild(tempDiv);
 
+        // Wait for images to load if there's a base64 image
+        if (base64Image) {
+          console.log('[PDF Generator] Waiting for image to load...');
+          const images = tempDiv.querySelectorAll('img');
+          if (images.length > 0) {
+            console.log('[PDF Generator] Found', images.length, 'images in HTML');
+            await Promise.all(
+              Array.from(images).map(img => {
+                return new Promise((resolve) => {
+                  if (img.complete) {
+                    console.log('[PDF Generator] Image already loaded');
+                    resolve(true);
+                  } else {
+                    img.onload = () => {
+                      console.log('[PDF Generator] Image loaded successfully');
+                      resolve(true);
+                    };
+                    img.onerror = () => {
+                      console.error('[PDF Generator] Image failed to load');
+                      resolve(false);
+                    };
+                    // Timeout after 5 seconds
+                    setTimeout(() => resolve(false), 5000);
+                  }
+                });
+              })
+            );
+          }
+        }
+
         // Wait a moment for styles to apply
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         console.log('[PDF Generator] Rendering HTML to canvas...');
 
@@ -778,7 +815,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         const canvas = await html2canvas(tempDiv, {
           scale: 2, // Higher quality
           useCORS: true,
-          logging: false,
+          allowTaint: true,
+          logging: true, // Enable logging to debug
           backgroundColor: '#ffffff',
         });
 
