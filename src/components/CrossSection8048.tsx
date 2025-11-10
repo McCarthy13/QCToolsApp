@@ -313,8 +313,8 @@ export default function CrossSection8048({
           );
         })}
         
-        {/* Strands - Only show when actively highlighting or working with strands */}
-        {(highlightedStrand !== null || activeStrands !== undefined || showSlippageValues) && visibleStrands.map((strand) => {
+        {/* Strands - Show when there are strand coordinates provided */}
+        {(strandCoordinates || bottomStrandSizes || topStrandCoordinates) && visibleStrands.map((strand) => {
           const strandRadius = strand.isActive ? 5 : 3.5;
           const strokeWidth = strand.isActive ? 2.5 : 1.5;
 
@@ -382,8 +382,8 @@ export default function CrossSection8048({
           }
         })}
 
-        {/* Strand labels - Only show when actively highlighting or working with strands */}
-        {(highlightedStrand !== null || activeStrands !== undefined || showSlippageValues) && visibleStrands.map((strand) => {
+        {/* Strand labels - Show when there are strand coordinates provided */}
+        {(strandCoordinates || bottomStrandSizes || topStrandCoordinates) && visibleStrands.map((strand) => {
           const fontSize = strand.isActive ? 12 : 10;
           const fontWeight = strand.isActive ? "bold" : "normal";
           const fillColor = strand.isActive ? "#1F2937" : "#9CA3AF";

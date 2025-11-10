@@ -38,6 +38,11 @@ A comprehensive mobile app for precast concrete quality management, built with R
   - Updated all 6 CrossSection components (8048, 1048, 1248, 1250, 1648, 1650)
   - Cross-sections now show both bottom and top strands simultaneously
   - Labels show B1, B2... for bottom strands and T1, T2... for top strands
+- ✅ **Fixed strand indicator visibility issue**:
+  - Strand indicators now display correctly in all cross-section diagrams
+  - Fixed condition logic to show strands when `strandCoordinates`, `bottomStrandSizes`, or `topStrandCoordinates` are provided
+  - Applied fix to all 6 CrossSection components
+  - Strands now visible in Slippage Identifier screen, Slippage Summary screen, and PDF reports
 
 ## Features
 

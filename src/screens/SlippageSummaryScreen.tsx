@@ -310,6 +310,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               slippages={slippages}
               showSlippageValues={true}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : config.productType === '1248' ? (
             <CrossSection1248
@@ -320,6 +323,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               slippages={slippages}
               showSlippageValues={true}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : config.productType === '1250' ? (
             <CrossSection1250
@@ -330,6 +336,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               slippages={slippages}
               showSlippageValues={true}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : (
             <CrossSection8048
@@ -340,6 +349,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               slippages={slippages}
               showSlippageValues={true}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           )}
         </View>
