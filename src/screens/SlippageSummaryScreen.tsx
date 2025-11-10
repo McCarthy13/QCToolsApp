@@ -106,21 +106,55 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     try {
       // Capture the cross-section diagram as an image
       let crossSectionImageUri: string | undefined;
+      const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+
       if (crossSectionRef.current) {
         try {
           console.log('[PDF] Capturing cross-section...');
+          console.log('[PDF] Platform:', isWeb ? 'web' : 'native');
           console.log('[PDF] crossSectionRef.current exists:', !!crossSectionRef.current);
 
-          crossSectionImageUri = await captureRef(crossSectionRef, {
-            format: 'png',
-            quality: 0.8, // Increased quality
-            result: 'data-uri', // Request data URI directly for web
-          });
-          console.log('[PDF] Cross-section captured successfully');
-          console.log('[PDF] Image URI type:', crossSectionImageUri?.startsWith('data:') ? 'data-uri' : crossSectionImageUri?.startsWith('blob:') ? 'blob' : 'file');
-          console.log('[PDF] Image URI length:', crossSectionImageUri?.length);
-          if (crossSectionImageUri) {
-            console.log('[PDF] Image URI prefix:', crossSectionImageUri.substring(0, 100));
+          if (isWeb) {
+            // On web, we need to use html2canvas directly since captureRef doesn't work
+            console.log('[PDF] Using html2canvas for web...');
+
+            // Dynamically import html2canvas
+            const html2canvas = await import('html2canvas');
+
+            // Find the actual DOM element - the ref.current might be a React Native component wrapper
+            // We need to find the actual div element
+            let element = crossSectionRef.current as any;
+
+            // If it's a React Native component, try to get the underlying DOM element
+            if (element._nativeTag || element._internalFiberInstanceHandleDEV) {
+              // Try to find the rendered DOM element
+              const container = document.querySelector('[data-testid="cross-section-container"]');
+              if (container) {
+                element = container;
+                console.log('[PDF] Found cross-section container via selector');
+              }
+            }
+
+            console.log('[PDF] Capturing element:', element);
+
+            const canvas = await html2canvas.default(element, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+            });
+
+            crossSectionImageUri = canvas.toDataURL('image/png');
+            console.log('[PDF] Cross-section captured successfully via html2canvas');
+            console.log('[PDF] Image URI length:', crossSectionImageUri?.length);
+          } else {
+            // On native, use captureRef
+            crossSectionImageUri = await captureRef(crossSectionRef, {
+              format: 'png',
+              quality: 0.8,
+            });
+            console.log('[PDF] Cross-section captured successfully via captureRef');
           }
         } catch (captureError) {
           console.error('[PDF] Error capturing cross-section:', captureError);
@@ -320,7 +354,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         </View>
 
         {/* Cross-section diagram - smaller */}
-        <View ref={crossSectionRef} className="items-center my-3" collapsable={false}>
+        <View
+          ref={crossSectionRef}
+          className="items-center my-3"
+          collapsable={false}
+          // @ts-ignore - data-testid is not in React Native types but works on web
+          data-testid="cross-section-container"
+        >
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section with Slippage Values
           </Text>
