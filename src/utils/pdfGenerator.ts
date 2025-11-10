@@ -5,6 +5,16 @@ import { Platform } from 'react-native';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
 
+// Web-only PDF generation using jsPDF
+let jsPDF: any = null;
+let html2canvas: any = null;
+
+// Dynamically import jsPDF and html2canvas only on web
+if (typeof window !== 'undefined') {
+  import('jspdf').then(module => { jsPDF = module.jsPDF; });
+  import('html2canvas').then(module => { html2canvas = module.default; });
+}
+
 interface PDFGenerationParams {
   slippages: SlippageData[];
   config: SlippageConfig;
@@ -571,26 +581,61 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       </html>
     `;
 
-    // Generate PDF using expo-print
-    console.log('[PDF Generator] Calling expo-print with HTML length:', htmlContent.length);
+    // Generate PDF
+    console.log('[PDF Generator] Generating PDF...');
     console.log('[PDF Generator] Platform:', Platform.OS);
 
-    // On web, printToFileAsync doesn't work - it opens print dialog
-    // Check if we're on web by testing if printToFileAsync exists
+    // Check if we're on web
     const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
 
     if (isWeb) {
-      console.log('[PDF Generator] Web platform detected - using printAsync...');
-      try {
-        await Print.printAsync({
-          html: htmlContent,
-        });
-        console.log('[PDF Generator] Print dialog opened successfully');
-        // On web, we don't get a file URI, so return a success indicator
+      console.log('[PDF Generator] Web platform detected - using jsPDF for direct PDF download...');
+
+      // Wait for jsPDF to load if not ready
+      let attempts = 0;
+      while (!jsPDF && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+
+      if (!jsPDF) {
+        console.error('[PDF Generator] jsPDF not loaded, falling back to print dialog');
+        await Print.printAsync({ html: htmlContent });
         return 'web-print-dialog-opened';
-      } catch (printError: any) {
-        console.error('[PDF Generator] Web print failed:', printError);
-        throw printError;
+      }
+
+      try {
+        // Create a temporary div to render the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.width = '8.5in';
+        document.body.appendChild(tempDiv);
+
+        // Use html2canvas if available, otherwise use jsPDF's html method
+        const pdf = new jsPDF('p', 'pt', 'letter');
+
+        await pdf.html(tempDiv, {
+          callback: function(doc: any) {
+            doc.save(`Slippage-Report-${Date.now()}.pdf`);
+          },
+          x: 0,
+          y: 0,
+          width: 612, // 8.5 inches in points
+          windowWidth: 816, // Scaled for better rendering
+        });
+
+        // Cleanup
+        document.body.removeChild(tempDiv);
+
+        console.log('[PDF Generator] PDF downloaded successfully');
+        return 'web-pdf-downloaded';
+      } catch (error: any) {
+        console.error('[PDF Generator] jsPDF failed:', error);
+        console.log('[PDF Generator] Falling back to print dialog');
+        await Print.printAsync({ html: htmlContent });
+        return 'web-print-dialog-opened';
       }
     }
 

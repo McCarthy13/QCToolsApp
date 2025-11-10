@@ -92,6 +92,8 @@
     "expo-web-browser": "~14.1.6",
     "firebase": "^12.3.0",
     "firebase-admin": "^13.6.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.3",
     "lottie-react-native": "7.2.2",
     "nativewind": "^4.1.23",
     "openai": "^4.89.0",

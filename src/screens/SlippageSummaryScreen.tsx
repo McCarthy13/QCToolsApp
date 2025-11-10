@@ -145,10 +145,15 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       if (filePath) {
         console.log('[PDF] PDF generated successfully:', filePath);
 
-        // On web, the print dialog is already shown, so we don't need to share
-        if (filePath === 'web-print-dialog-opened') {
+        // Handle different web responses
+        if (filePath === 'web-pdf-downloaded') {
+          console.log('[PDF] PDF downloaded successfully on web');
+          Alert.alert(
+            'PDF Downloaded',
+            'The slippage report has been downloaded to your Downloads folder.'
+          );
+        } else if (filePath === 'web-print-dialog-opened') {
           console.log('[PDF] Web print dialog opened - user can save as PDF from browser');
-          // Optionally show a success message
           Alert.alert(
             'Print Dialog Opened',
             'Use your browser\'s print dialog to save the report as PDF. Select "Save as PDF" as the printer destination.'
