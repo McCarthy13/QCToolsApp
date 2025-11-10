@@ -126,35 +126,62 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     })();
     // Convert image URI to base64 data URI if provided
     let base64Image: string | undefined;
+    const isWebEnv = typeof window !== 'undefined' && typeof document !== 'undefined';
+
     if (crossSectionImageUri) {
       try {
         console.log('[PDF Generator] Converting image to base64:', crossSectionImageUri);
-        const fileInfo = await FileSystem.getInfoAsync(crossSectionImageUri);
-        console.log('[PDF Generator] Image file info:', fileInfo);
 
-        if (!fileInfo.exists) {
-          console.error('[PDF Generator] Image file does not exist');
-          throw new Error('Image file does not exist');
-        }
-
-        // Read the image as base64
-        const base64 = await FileSystem.readAsStringAsync(crossSectionImageUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        // More aggressive size limits to prevent C++ exceptions
-        const maxSizeBytes = 2 * 1024 * 1024; // 2MB limit (reduced from 5MB)
-        if (base64.length > maxSizeBytes) {
-          console.warn('[PDF Generator] Image too large (>2MB), skipping to prevent errors');
-          base64Image = undefined;
+        if (isWebEnv) {
+          // On web, the URI is already a data URI or blob URL from captureRef
+          // Check if it's already a data URI
+          if (crossSectionImageUri.startsWith('data:')) {
+            base64Image = crossSectionImageUri;
+            console.log('[PDF Generator] Using data URI directly for web');
+          } else if (crossSectionImageUri.startsWith('blob:')) {
+            // Convert blob URL to data URI
+            console.log('[PDF Generator] Converting blob URL to data URI...');
+            const response = await fetch(crossSectionImageUri);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            base64Image = await new Promise((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            console.log('[PDF Generator] Blob converted to data URI');
+          } else {
+            console.warn('[PDF Generator] Unknown URI format on web:', crossSectionImageUri);
+            base64Image = crossSectionImageUri; // Try to use it anyway
+          }
         } else {
-          // Validate base64 string
-          if (!base64 || base64.length === 0) {
-            console.warn('[PDF Generator] Invalid base64 data, skipping image');
+          // Native platform - use FileSystem
+          const fileInfo = await FileSystem.getInfoAsync(crossSectionImageUri);
+          console.log('[PDF Generator] Image file info:', fileInfo);
+
+          if (!fileInfo.exists) {
+            console.error('[PDF Generator] Image file does not exist');
+            throw new Error('Image file does not exist');
+          }
+
+          // Read the image as base64
+          const base64 = await FileSystem.readAsStringAsync(crossSectionImageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          // More aggressive size limits to prevent C++ exceptions
+          const maxSizeBytes = 2 * 1024 * 1024; // 2MB limit (reduced from 5MB)
+          if (base64.length > maxSizeBytes) {
+            console.warn('[PDF Generator] Image too large (>2MB), skipping to prevent errors');
             base64Image = undefined;
           } else {
-            base64Image = `data:image/png;base64,${base64}`;
-            console.log('[PDF Generator] Image converted successfully, size:', Math.round(base64.length / 1024), 'KB');
+            // Validate base64 string
+            if (!base64 || base64.length === 0) {
+              console.warn('[PDF Generator] Invalid base64 data, skipping image');
+              base64Image = undefined;
+            } else {
+              base64Image = `data:image/png;base64,${base64}`;
+              console.log('[PDF Generator] Image converted successfully, size:', Math.round(base64.length / 1024), 'KB');
+            }
           }
         }
       } catch (error) {
@@ -182,70 +209,71 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             body {
               font-family: 'Helvetica Neue', Arial, sans-serif;
-              padding: 30px 40px;
+              padding: 20px 30px;
               color: #1f2937;
-              line-height: 1.4;
+              line-height: 1.2;
               background-color: #ffffff;
+              font-size: 10px;
             }
 
             .header {
-              border-bottom: 3px solid #2563eb;
-              padding-bottom: 8px;
-              margin-bottom: 12px;
+              border-bottom: 2px solid #2563eb;
+              padding-bottom: 4px;
+              margin-bottom: 8px;
             }
 
             h1 {
-              font-size: 22px;
+              font-size: 18px;
               color: #1e40af;
-              margin-bottom: 3px;
+              margin-bottom: 2px;
             }
 
             .subtitle {
               color: #6b7280;
-              font-size: 11px;
+              font-size: 9px;
             }
 
             .section {
-              margin-bottom: 12px;
+              margin-bottom: 8px;
             }
 
             h2 {
-              font-size: 15px;
+              font-size: 12px;
               color: #374151;
-              margin-bottom: 6px;
-              padding-bottom: 3px;
-              border-bottom: 2px solid #e5e7eb;
+              margin-bottom: 4px;
+              padding-bottom: 2px;
+              border-bottom: 1px solid #e5e7eb;
             }
 
             .info-grid {
               display: grid;
               grid-template-columns: repeat(4, 1fr);
-              gap: 5px;
-              margin-bottom: 8px;
+              gap: 4px;
+              margin-bottom: 4px;
             }
 
             .info-item {
-              padding: 5px;
+              padding: 3px 4px;
               background: #f9fafb;
-              border-left: 3px solid #2563eb;
+              border-left: 2px solid #2563eb;
             }
 
             .info-label {
-              font-size: 9px;
+              font-size: 7px;
               color: #6b7280;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.3px;
             }
 
             .info-value {
-              font-size: 11px;
+              font-size: 9px;
               color: #111827;
               font-weight: 600;
-              margin-top: 2px;
+              margin-top: 1px;
             }
 
             .info-value-sub {
-              font-size: 9px;
+              font-size: 7px;
               color: #6b7280;
               font-style: italic;
               margin-top: 1px;
@@ -254,98 +282,84 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 10px 0;
-              padding: 10px;
+              margin: 6px 0;
+              padding: 6px;
               background: #ffffff;
-              border-radius: 8px;
-              border: 2px solid #e5e7eb;
+              border-radius: 4px;
+              border: 1px solid #e5e7eb;
             }
 
             .cross-section img {
               max-width: 100%;
-              max-height: 180px;
+              max-height: 120px;
               height: auto;
-              border-radius: 4px;
-            }
-
-            .cross-section-label {
-              font-size: 12px;
-              color: #374151;
-              margin-bottom: 8px;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
+              border-radius: 2px;
             }
             ` : ''}
 
             .stats-grid {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
-              gap: 6px;
-              margin-bottom: 10px;
+              gap: 4px;
+              margin-bottom: 6px;
             }
 
             .stat-card {
-              padding: 8px;
+              padding: 4px 6px;
               background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-              border-radius: 6px;
-              border: 2px solid #d1d5db;
-              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+              border-radius: 4px;
+              border: 1px solid #d1d5db;
             }
 
             .stat-label {
-              font-size: 9px;
+              font-size: 7px;
               color: #4b5563;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.3px;
               font-weight: 600;
-              margin-bottom: 3px;
+              margin-bottom: 2px;
             }
 
             .stat-value {
-              font-size: 14px;
+              font-size: 11px;
               color: #1e40af;
               font-weight: 700;
-              margin-top: 3px;
+              margin-top: 2px;
             }
 
             .stat-value-small {
-              font-size: 10px;
+              font-size: 8px;
               color: #6b7280;
-              margin-top: 2px;
+              margin-top: 1px;
               font-style: italic;
             }
 
             .strand-table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 8px;
+              margin-top: 4px;
             }
 
             .strand-table th {
               background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-              padding: 8px;
+              padding: 3px 4px;
               text-align: left;
-              font-size: 11px;
+              font-size: 8px;
               color: #ffffff;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.3px;
               font-weight: 700;
-              border-bottom: 2px solid #1e3a8a;
+              border-bottom: 1px solid #1e3a8a;
             }
 
             .strand-table td {
-              padding: 8px;
+              padding: 3px 4px;
               border-bottom: 1px solid #e5e7eb;
-              font-size: 11px;
+              font-size: 8px;
             }
 
             .strand-table tr:nth-child(even) {
               background: #f9fafb;
-            }
-
-            .strand-table tr:hover {
-              background: #eff6ff;
             }
 
             .strand-id {
@@ -360,29 +374,28 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .warning-box {
               background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-              border-left: 4px solid #f59e0b;
-              padding: 8px;
-              margin: 10px 0;
-              border-radius: 4px;
-              box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+              border-left: 3px solid #f59e0b;
+              padding: 4px 6px;
+              margin: 6px 0;
+              border-radius: 3px;
             }
 
             .warning-text {
-              font-size: 11px;
+              font-size: 8px;
               color: #92400e;
               font-weight: 700;
             }
 
             .footer {
-              margin-top: 15px;
-              padding-top: 10px;
-              border-top: 2px solid #e5e7eb;
-              font-size: 10px;
+              margin-top: 8px;
+              padding-top: 6px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 7px;
               color: #6b7280;
             }
 
             .footer-item {
-              margin-bottom: 3px;
+              margin-bottom: 2px;
             }
           </style>
         </head>
