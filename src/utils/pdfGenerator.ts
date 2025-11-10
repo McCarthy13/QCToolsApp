@@ -209,81 +209,89 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             body, .pdf-container {
               font-family: 'Helvetica Neue', Arial, sans-serif;
-              padding: 20px 25px;
+              padding: 18px 22px;
               color: #1f2937;
-              line-height: 1.1;
+              line-height: 1.3;
               background-color: #ffffff;
               font-size: 9px;
+              word-spacing: 0.05em;
             }
 
             .header {
               border-bottom: 2px solid #2563eb;
-              padding-bottom: 3px;
-              margin-bottom: 5px;
+              padding-bottom: 4px;
+              margin-bottom: 6px;
             }
 
             h1 {
-              font-size: 16px;
+              font-size: 15px;
               color: #1e40af;
-              margin-bottom: 1px;
+              margin-bottom: 2px;
+              line-height: 1.2;
             }
 
             .subtitle {
               color: #6b7280;
               font-size: 8px;
+              line-height: 1.3;
             }
 
             .section {
-              margin-bottom: 5px;
+              margin-bottom: 6px;
             }
 
             h2 {
               font-size: 10px;
               color: #374151;
-              margin-bottom: 3px;
-              padding-bottom: 1px;
+              margin-bottom: 4px;
+              padding-bottom: 2px;
               border-bottom: 1px solid #e5e7eb;
+              line-height: 1.3;
             }
 
             .info-grid {
               display: grid;
               grid-template-columns: repeat(4, 1fr);
-              gap: 3px;
-              margin-bottom: 3px;
+              gap: 4px;
+              margin-bottom: 4px;
             }
 
             .info-item {
-              padding: 2px 3px;
+              padding: 3px 4px;
               background: #f9fafb;
               border-left: 2px solid #2563eb;
             }
 
             .info-label {
-              font-size: 6px;
+              font-size: 6.5px;
               color: #6b7280;
               text-transform: uppercase;
-              letter-spacing: 0.2px;
+              letter-spacing: 0.3px;
+              line-height: 1.3;
+              margin-bottom: 1px;
             }
 
             .info-value {
               font-size: 8px;
               color: #111827;
               font-weight: 600;
-              margin-top: 0px;
+              margin-top: 1px;
+              line-height: 1.3;
             }
 
             .info-value-sub {
-              font-size: 6px;
+              font-size: 6.5px;
               color: #6b7280;
               font-style: italic;
-              margin-top: 0px;
+              margin-top: 1px;
+              line-height: 1.3;
             }
 
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 4px 0;
-              padding: 4px;
+              margin: 5px 0;
+              padding: 5px;
               background: #ffffff;
               border-radius: 3px;
               border: 1px solid #e5e7eb;
@@ -291,7 +299,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .cross-section img {
               max-width: 100%;
-              max-height: 100px;
+              max-height: 95px;
               height: auto;
               border-radius: 2px;
             }
@@ -300,62 +308,71 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             .stats-grid {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
-              gap: 3px;
-              margin-bottom: 4px;
+              gap: 4px;
+              margin-bottom: 5px;
             }
 
             .stat-card {
-              padding: 3px 4px;
+              padding: 4px 5px;
               background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
               border-radius: 4px;
               border: 1px solid #d1d5db;
             }
 
             .stat-label {
-              font-size: 6px;
+              font-size: 6.5px;
               color: #4b5563;
               text-transform: uppercase;
-              letter-spacing: 0.2px;
+              letter-spacing: 0.3px;
               font-weight: 600;
-              margin-bottom: 1px;
+              margin-bottom: 2px;
+              line-height: 1.3;
             }
 
             .stat-value {
               font-size: 9px;
               color: #1e40af;
               font-weight: 700;
-              margin-top: 1px;
+              margin-top: 2px;
+              line-height: 1.2;
             }
 
             .stat-value-small {
               font-size: 7px;
               color: #6b7280;
-              margin-top: 0px;
+              margin-top: 1px;
               font-style: italic;
+              line-height: 1.3;
             }
 
             .strand-table {
               width: 100%;
-              border-collapse: collapse;
-              margin-top: 3px;
+              border-collapse: separate;
+              border-spacing: 0;
+              margin-top: 4px;
             }
 
             .strand-table th {
               background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-              padding: 2px 3px;
+              padding: 4px 5px;
               text-align: left;
               font-size: 7px;
               color: #ffffff;
               text-transform: uppercase;
-              letter-spacing: 0.2px;
+              letter-spacing: 0.3px;
               font-weight: 700;
-              border-bottom: 1px solid #1e3a8a;
+              border-bottom: 2px solid #1e3a8a;
+              line-height: 1.4;
+              vertical-align: middle;
+              white-space: nowrap;
             }
 
             .strand-table td {
-              padding: 2px 3px;
+              padding: 4px 5px;
               border-bottom: 1px solid #e5e7eb;
-              font-size: 7px;
+              font-size: 7.5px;
+              line-height: 1.4;
+              vertical-align: middle;
             }
 
             .strand-table tr:nth-child(even) {
@@ -375,8 +392,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             .warning-box {
               background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
               border-left: 3px solid #f59e0b;
-              padding: 4px 6px;
-              margin: 6px 0;
+              padding: 5px 7px;
+              margin: 7px 0;
               border-radius: 3px;
             }
 
@@ -384,18 +401,21 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               font-size: 8px;
               color: #92400e;
               font-weight: 700;
+              line-height: 1.4;
             }
 
             .footer {
-              margin-top: 5px;
-              padding-top: 3px;
+              margin-top: 6px;
+              padding-top: 4px;
               border-top: 1px solid #e5e7eb;
-              font-size: 6px;
+              font-size: 6.5px;
               color: #6b7280;
+              line-height: 1.4;
             }
 
             .footer-item {
-              margin-bottom: 1px;
+              margin-bottom: 2px;
+              line-height: 1.4;
             }
           </style>
         </head>
