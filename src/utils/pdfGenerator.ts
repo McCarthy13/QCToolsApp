@@ -209,51 +209,58 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             body, .pdf-container {
               font-family: 'Helvetica Neue', Arial, sans-serif;
-              padding: 18px 22px;
+              padding: 16px 20px;
               color: #1f2937;
               line-height: 1.3;
               background-color: #ffffff;
               font-size: 9px;
-              word-spacing: 0.05em;
+              word-spacing: 0.2em;
+              letter-spacing: 0.02em;
             }
 
             .header {
               border-bottom: 2px solid #2563eb;
-              padding-bottom: 4px;
-              margin-bottom: 6px;
+              padding-bottom: 3px;
+              margin-bottom: 5px;
             }
 
             h1 {
-              font-size: 15px;
+              font-size: 14px;
               color: #1e40af;
               margin-bottom: 2px;
-              line-height: 1.2;
+              line-height: 1.3;
+              letter-spacing: 0.05em;
+              word-spacing: 0.2em;
             }
 
             .subtitle {
               color: #6b7280;
-              font-size: 8px;
+              font-size: 7.5px;
               line-height: 1.3;
+              word-spacing: 0.15em;
+              letter-spacing: 0.02em;
             }
 
             .section {
-              margin-bottom: 6px;
+              margin-bottom: 5px;
             }
 
             h2 {
-              font-size: 10px;
+              font-size: 9px;
               color: #374151;
-              margin-bottom: 4px;
+              margin-bottom: 3px;
               padding-bottom: 2px;
               border-bottom: 1px solid #e5e7eb;
               line-height: 1.3;
+              letter-spacing: 0.05em;
+              word-spacing: 0.2em;
             }
 
             .info-grid {
               display: grid;
               grid-template-columns: repeat(4, 1fr);
-              gap: 4px;
-              margin-bottom: 4px;
+              gap: 3px;
+              margin-bottom: 3px;
             }
 
             .info-item {
@@ -266,7 +273,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               font-size: 6.5px;
               color: #6b7280;
               text-transform: uppercase;
-              letter-spacing: 0.3px;
+              letter-spacing: 0.08em;
+              word-spacing: 0.2em;
               line-height: 1.3;
               margin-bottom: 1px;
             }
@@ -277,6 +285,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               font-weight: 600;
               margin-top: 1px;
               line-height: 1.3;
+              letter-spacing: 0.03em;
+              word-spacing: 0.15em;
             }
 
             .info-value-sub {
@@ -285,13 +295,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               font-style: italic;
               margin-top: 1px;
               line-height: 1.3;
+              letter-spacing: 0.02em;
             }
 
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 5px 0;
-              padding: 5px;
+              margin: 4px 0;
+              padding: 4px;
               background: #ffffff;
               border-radius: 3px;
               border: 1px solid #e5e7eb;
@@ -299,7 +310,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .cross-section img {
               max-width: 100%;
-              max-height: 95px;
+              max-height: 85px;
               height: auto;
               border-radius: 2px;
             }
@@ -308,58 +319,62 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             .stats-grid {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
-              gap: 4px;
-              margin-bottom: 5px;
+              gap: 3px;
+              margin-bottom: 4px;
             }
 
             .stat-card {
-              padding: 4px 5px;
+              padding: 3px 4px;
               background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
               border-radius: 4px;
               border: 1px solid #d1d5db;
             }
 
             .stat-label {
-              font-size: 6.5px;
+              font-size: 6px;
               color: #4b5563;
               text-transform: uppercase;
-              letter-spacing: 0.3px;
+              letter-spacing: 0.08em;
+              word-spacing: 0.2em;
               font-weight: 600;
-              margin-bottom: 2px;
+              margin-bottom: 1px;
               line-height: 1.3;
             }
 
             .stat-value {
-              font-size: 9px;
+              font-size: 8.5px;
               color: #1e40af;
               font-weight: 700;
-              margin-top: 2px;
+              margin-top: 1px;
               line-height: 1.2;
+              letter-spacing: 0.02em;
             }
 
             .stat-value-small {
-              font-size: 7px;
+              font-size: 6.5px;
               color: #6b7280;
               margin-top: 1px;
               font-style: italic;
               line-height: 1.3;
+              letter-spacing: 0.01em;
             }
 
             .strand-table {
               width: 100%;
               border-collapse: separate;
               border-spacing: 0;
-              margin-top: 4px;
+              margin-top: 3px;
             }
 
             .strand-table th {
               background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-              padding: 4px 5px;
+              padding: 3px 4px;
               text-align: left;
-              font-size: 7px;
+              font-size: 6.5px;
               color: #ffffff;
               text-transform: uppercase;
-              letter-spacing: 0.3px;
+              letter-spacing: 0.08em;
+              word-spacing: 0.2em;
               font-weight: 700;
               border-bottom: 2px solid #1e3a8a;
               line-height: 1.4;
@@ -368,11 +383,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .strand-table td {
-              padding: 4px 5px;
+              padding: 3px 4px;
               border-bottom: 1px solid #e5e7eb;
-              font-size: 7.5px;
+              font-size: 7px;
               line-height: 1.4;
               vertical-align: middle;
+              letter-spacing: 0.02em;
+              word-spacing: 0.1em;
             }
 
             .strand-table tr:nth-child(even) {
@@ -392,29 +409,33 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             .warning-box {
               background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
               border-left: 3px solid #f59e0b;
-              padding: 5px 7px;
-              margin: 7px 0;
+              padding: 4px 6px;
+              margin: 5px 0;
               border-radius: 3px;
             }
 
             .warning-text {
-              font-size: 8px;
+              font-size: 7.5px;
               color: #92400e;
               font-weight: 700;
               line-height: 1.4;
+              letter-spacing: 0.02em;
+              word-spacing: 0.15em;
             }
 
             .footer {
-              margin-top: 6px;
-              padding-top: 4px;
+              margin-top: 5px;
+              padding-top: 3px;
               border-top: 1px solid #e5e7eb;
-              font-size: 6.5px;
+              font-size: 6px;
               color: #6b7280;
               line-height: 1.4;
+              letter-spacing: 0.02em;
+              word-spacing: 0.15em;
             }
 
             .footer-item {
-              margin-bottom: 2px;
+              margin-bottom: 1px;
               line-height: 1.4;
             }
           </style>
