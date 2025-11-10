@@ -31,10 +31,10 @@ A comprehensive mobile app for precast concrete quality management, built with R
 - ✅ **Enhanced cross-section visualization with shape-based strand identification**:
   - Bottom strands now displayed in GREEN (instead of red)
   - Top strands displayed in BLUE
-  - **Shape coding by strand size:**
-    - 0.6" strands = Circles ⭕
+  - **Shape coding by strand size (applies to both top and bottom strands):**
+    - 3/8" strands = Diamonds 🔷
     - 1/2" strands = X marks ✖️
-    - 3/8" strands (top only) = Diamonds 🔷
+    - 0.6" strands = Circles ⭕
   - Updated all 6 CrossSection components (8048, 1048, 1248, 1250, 1648, 1650)
   - Cross-sections now show both bottom and top strands simultaneously
   - Labels show B1, B2... for bottom strands and T1, T2... for top strands

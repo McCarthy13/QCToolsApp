@@ -323,11 +323,10 @@ export default function CrossSection1650({
           const cy = padding + strand.displayY;
 
           // Render different shapes based on strand size
-          // Bottom strands (green): 0.6" = circles, 1/2" = X marks
-          // Top strands (blue): 3/8" = diamonds
+          // 3/8" = diamonds, 1/2" = X marks, 0.6" = circles (regardless of top/bottom)
 
-          if (strand.isTop && strand.size === '3/8') {
-            // Diamond shape for top 3/8" strands
+          if (strand.size === '3/8') {
+            // Diamond shape for 3/8" strands
             const diamondSize = strand.isActive ? 7 : 5;
             const points = `${cx},${cy - diamondSize} ${cx + diamondSize},${cy} ${cx},${cy + diamondSize} ${cx - diamondSize},${cy}`;
             return (
@@ -339,8 +338,8 @@ export default function CrossSection1650({
                 strokeWidth={strokeWidth}
               />
             );
-          } else if (!strand.isTop && strand.size === '1/2') {
-            // X mark for bottom 1/2" strands
+          } else if (strand.size === '1/2') {
+            // X mark for 1/2" strands
             const xSize = strand.isActive ? 6 : 4;
             return (
               <React.Fragment key={`strand-${strand.id}-${strand.isTop ? 'top' : 'bottom'}`}>
@@ -363,7 +362,7 @@ export default function CrossSection1650({
               </React.Fragment>
             );
           } else {
-            // Circle for bottom 0.6" strands (or default)
+            // Circle for 0.6" strands (or default)
             return (
               <Circle
                 key={`strand-${strand.id}-${strand.isTop ? 'top' : 'bottom'}`}
