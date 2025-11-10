@@ -17,16 +17,81 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useStrandPatternStore, CustomStrandPattern, StrandCoordinate } from '../state/strandPatternStore';
 import ConfirmModal from '../components/ConfirmModal';
 
+type Department = 'Wall Panels' | 'Extruded' | 'Flexicore' | 'Precast';
+
+type ProductTypesByDepartment = {
+  'Extruded': string[];
+  'Wall Panels': string[];
+  'Flexicore': string[];
+  'Precast': string[];
+};
+
+const PRODUCT_TYPES: ProductTypesByDepartment = {
+  'Extruded': ['8048', '1048', '1248', '1250', '1648'],
+  'Wall Panels': [],
+  'Flexicore': [],
+  'Precast': [],
+};
+
 export default function StrandPatternsScreen() {
   const insets = useSafeAreaInsets();
   const { customPatterns, addPattern, removePattern, updatePattern, clearAllPatterns } = useStrandPatternStore();
-  
+
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [selectedProductType, setSelectedProductType] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPattern, setEditingPattern] = useState<CustomStrandPattern | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  // Auto-assign department and productType to existing patterns without them
+  React.useEffect(() => {
+    customPatterns.forEach(pattern => {
+      if (!pattern.department || !pattern.productType) {
+        // Try to detect product type from pattern name
+        const name = pattern.name.toLowerCase();
+        let detectedProductType = '';
+        let detectedDepartment: Department = 'Extruded';
+
+        if (name.includes('8048')) {
+          detectedProductType = '8048';
+          detectedDepartment = 'Extruded';
+        } else if (name.includes('1048')) {
+          detectedProductType = '1048';
+          detectedDepartment = 'Extruded';
+        } else if (name.includes('1248')) {
+          detectedProductType = '1248';
+          detectedDepartment = 'Extruded';
+        } else if (name.includes('1250')) {
+          detectedProductType = '1250';
+          detectedDepartment = 'Extruded';
+        } else if (name.includes('1648')) {
+          detectedProductType = '1648';
+          detectedDepartment = 'Extruded';
+        }
+
+        if (detectedProductType) {
+          updatePattern(pattern.id, {
+            ...pattern,
+            department: detectedDepartment,
+            productType: detectedProductType,
+          });
+        }
+      }
+    });
+  }, []);
+
+  const filteredPatterns = customPatterns.filter(pattern => {
+    if (!selectedDepartment) return false;
+    if (!selectedProductType) return pattern.department === selectedDepartment;
+    return pattern.department === selectedDepartment && pattern.productType === selectedProductType;
+  });
+
   const handleAddPattern = () => {
+    if (!selectedDepartment || !selectedProductType) {
+      Alert.alert('Error', 'Please select a department and product type first');
+      return;
+    }
     setEditingPattern(null);
     setShowAddModal(true);
   };
@@ -41,12 +106,31 @@ export default function StrandPatternsScreen() {
     setDeleteConfirmId(null);
   };
 
+  const handleSavePattern = async (patternData: Omit<CustomStrandPattern, 'id'>) => {
+    if (!selectedDepartment || !selectedProductType) {
+      Alert.alert('Error', 'Please select a department and product type');
+      return;
+    }
+
+    const fullPatternData = {
+      ...patternData,
+      department: selectedDepartment,
+      productType: selectedProductType,
+    };
+
+    if (editingPattern) {
+      await updatePattern(editingPattern.id, fullPatternData);
+    } else {
+      await addPattern(fullPatternData);
+    }
+    setShowAddModal(false);
+  };
+
   const handleExportPatterns = async () => {
     try {
       const jsonData = JSON.stringify(customPatterns, null, 2);
-      
+
       if (Platform.OS === 'web') {
-        // Web: Download as file
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -57,11 +141,10 @@ export default function StrandPatternsScreen() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // Mobile: Share file
         const fileName = `strand-patterns-${new Date().toISOString().split('T')[0]}.json`;
         const fileUri = `${FileSystem.documentDirectory}${fileName}`;
         await FileSystem.writeAsStringAsync(fileUri, jsonData);
-        
+
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri);
         }
@@ -74,7 +157,6 @@ export default function StrandPatternsScreen() {
   const handleImportPatterns = async () => {
     try {
       if (Platform.OS === 'web') {
-        // Web: File input
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'application/json';
@@ -87,7 +169,6 @@ export default function StrandPatternsScreen() {
                 const patterns = JSON.parse(event.target.result);
                 if (Array.isArray(patterns)) {
                   patterns.forEach((pattern: CustomStrandPattern) => {
-                    // Check if pattern already exists
                     const exists = customPatterns.find(p => p.id === pattern.id);
                     if (!exists) {
                       addPattern(pattern);
@@ -103,16 +184,15 @@ export default function StrandPatternsScreen() {
         };
         input.click();
       } else {
-        // Mobile: Document picker
         const result = await DocumentPicker.getDocumentAsync({
           type: 'application/json',
           copyToCacheDirectory: true,
         });
-        
+
         if (result.canceled === false && result.assets && result.assets.length > 0) {
           const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
           const patterns = JSON.parse(fileContent);
-          
+
           if (Array.isArray(patterns)) {
             patterns.forEach((pattern: CustomStrandPattern) => {
               const exists = customPatterns.find(p => p.id === pattern.id);
@@ -132,7 +212,7 @@ export default function StrandPatternsScreen() {
     try {
       const jsonData = JSON.stringify(customPatterns, null, 2);
       await Clipboard.setStringAsync(jsonData);
-      Alert.alert('Success', 'Patterns copied to clipboard! You can now paste this text on your computer.');
+      Alert.alert('Success', 'Patterns copied to clipboard!');
     } catch (error) {
       console.error('Copy error:', error);
       Alert.alert('Error', 'Failed to copy to clipboard');
@@ -142,16 +222,16 @@ export default function StrandPatternsScreen() {
   const handlePasteFromClipboard = async () => {
     try {
       const clipboardText = await Clipboard.getStringAsync();
-      
+
       if (!clipboardText) {
         Alert.alert('Error', 'Clipboard is empty');
         return;
       }
 
       const patterns = JSON.parse(clipboardText);
-      
+
       if (!Array.isArray(patterns)) {
-        Alert.alert('Error', 'Invalid data format. Please paste valid JSON array.');
+        Alert.alert('Error', 'Invalid data format');
         return;
       }
 
@@ -164,13 +244,209 @@ export default function StrandPatternsScreen() {
         }
       });
 
-      Alert.alert('Success', `Imported ${importedCount} pattern(s). Duplicates were skipped.`);
+      Alert.alert('Success', `Imported ${importedCount} pattern(s)`);
     } catch (error) {
       console.error('Paste error:', error);
-      Alert.alert('Error', 'Failed to parse clipboard data. Make sure you copied valid JSON.');
+      Alert.alert('Error', 'Failed to parse clipboard data');
     }
   };
 
+  const handleBackToDepartments = () => {
+    setSelectedProductType(null);
+    setSelectedDepartment(null);
+  };
+
+  const handleBackToProductTypes = () => {
+    setSelectedProductType(null);
+  };
+
+  // Department Selection View
+  if (!selectedDepartment) {
+    return (
+      <View className="flex-1 bg-gray-50">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        >
+          <View className="p-5">
+            <View className="mb-6">
+              <Text className="text-3xl font-bold text-gray-900 mb-2">
+                Strand Pattern Manager
+              </Text>
+              <Text className="text-base text-gray-600">
+                Select a department to manage strand patterns
+              </Text>
+            </View>
+
+            <View className="space-y-3">
+              {(['Extruded', 'Wall Panels', 'Flexicore', 'Precast'] as Department[]).map((dept) => (
+                <Pressable
+                  key={dept}
+                  onPress={() => setSelectedDepartment(dept)}
+                  className="bg-white rounded-xl p-5 shadow-sm active:bg-gray-50"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className="text-xl font-bold text-gray-900 mb-1">
+                        {dept}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        {customPatterns.filter(p => p.department === dept).length} patterns
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Action Buttons at Bottom */}
+            <View className="mt-8 space-y-3">
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={handleImportPatterns}
+                  className="flex-1 bg-green-500 rounded-xl py-3 items-center active:bg-green-600"
+                >
+                  <Ionicons name="cloud-upload-outline" size={20} color="white" />
+                  <Text className="text-white text-sm font-semibold mt-1">
+                    Import JSON
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleExportPatterns}
+                  className="flex-1 bg-purple-500 rounded-xl py-3 items-center active:bg-purple-600"
+                  disabled={customPatterns.length === 0}
+                  style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
+                >
+                  <Ionicons name="cloud-download-outline" size={20} color="white" />
+                  <Text className="text-white text-sm font-semibold mt-1">
+                    Export JSON
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={handleCopyToClipboard}
+                  className="flex-1 bg-orange-500 rounded-xl py-3 items-center active:bg-orange-600"
+                  disabled={customPatterns.length === 0}
+                  style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
+                >
+                  <Ionicons name="copy-outline" size={20} color="white" />
+                  <Text className="text-white text-sm font-semibold mt-1">
+                    Copy Text
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handlePasteFromClipboard}
+                  className="flex-1 bg-teal-500 rounded-xl py-3 items-center active:bg-teal-600"
+                >
+                  <Ionicons name="clipboard-outline" size={20} color="white" />
+                  <Text className="text-white text-sm font-semibold mt-1">
+                    Paste Text
+                  </Text>
+                </Pressable>
+              </View>
+
+              {customPatterns.length > 0 && (
+                <Pressable
+                  onPress={() => setShowClearConfirm(true)}
+                  className="bg-red-500 rounded-xl py-3 items-center active:bg-red-600"
+                >
+                  <Ionicons name="trash-outline" size={20} color="white" />
+                  <Text className="text-white text-sm font-semibold mt-1">
+                    Clear All Patterns
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        <ConfirmModal
+          visible={showClearConfirm}
+          title="Clear All Patterns?"
+          message="This will permanently delete all custom strand patterns. This action cannot be undone."
+          onConfirm={() => {
+            clearAllPatterns();
+            setShowClearConfirm(false);
+          }}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      </View>
+    );
+  }
+
+  // Product Type Selection View
+  if (!selectedProductType) {
+    const productTypes = PRODUCT_TYPES[selectedDepartment];
+
+    return (
+      <View className="flex-1 bg-gray-50">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        >
+          <View className="p-5">
+            <Pressable
+              onPress={handleBackToDepartments}
+              className="flex-row items-center mb-4"
+            >
+              <Ionicons name="chevron-back" size={24} color="#3B82F6" />
+              <Text className="text-blue-500 text-base font-semibold ml-1">
+                Back to Departments
+              </Text>
+            </Pressable>
+
+            <View className="mb-6">
+              <Text className="text-3xl font-bold text-gray-900 mb-2">
+                {selectedDepartment}
+              </Text>
+              <Text className="text-base text-gray-600">
+                Select a product type
+              </Text>
+            </View>
+
+            {productTypes.length > 0 ? (
+              <View className="space-y-3">
+                {productTypes.map((type) => (
+                  <Pressable
+                    key={type}
+                    onPress={() => setSelectedProductType(type)}
+                    className="bg-white rounded-xl p-5 shadow-sm active:bg-gray-50"
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-xl font-bold text-gray-900 mb-1">
+                          {type}
+                        </Text>
+                        <Text className="text-sm text-gray-600">
+                          {customPatterns.filter(p => p.department === selectedDepartment && p.productType === type).length} patterns
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <View className="bg-white rounded-xl p-8 items-center">
+                <Ionicons name="construct-outline" size={48} color="#9CA3AF" />
+                <Text className="text-lg font-semibold text-gray-900 mt-4 mb-2">
+                  No Product Types Yet
+                </Text>
+                <Text className="text-sm text-gray-600 text-center">
+                  Product types for this department will be added soon
+                </Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Strand Patterns List View
   return (
     <View className="flex-1 bg-gray-50">
       <ScrollView
@@ -178,127 +454,44 @@ export default function StrandPatternsScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
         <View className="p-5">
-          {/* Header */}
+          <Pressable
+            onPress={handleBackToProductTypes}
+            className="flex-row items-center mb-4"
+          >
+            <Ionicons name="chevron-back" size={24} color="#3B82F6" />
+            <Text className="text-blue-500 text-base font-semibold ml-1">
+              Back to Product Types
+            </Text>
+          </Pressable>
+
           <View className="mb-6">
+            <Text className="text-sm text-gray-500 mb-1">
+              {selectedDepartment} / {selectedProductType}
+            </Text>
             <Text className="text-3xl font-bold text-gray-900 mb-2">
               Strand Patterns
             </Text>
             <Text className="text-base text-gray-600">
-              Manage custom prestressing strand configurations
+              {filteredPatterns.length} pattern(s) for {selectedProductType}
             </Text>
           </View>
 
-          {/* Add New Button */}
-          <Pressable
-            onPress={handleAddPattern}
-            className="bg-blue-500 rounded-xl py-4 items-center mb-3 active:bg-blue-600 flex-row justify-center"
-          >
-            <Ionicons name="add-circle-outline" size={24} color="white" />
-            <Text className="text-white text-base font-semibold ml-2">
-              Add New Pattern
-            </Text>
-          </Pressable>
-
-          {/* Import/Export Buttons */}
-          <View className="flex-row gap-3 mb-3">
-            <Pressable
-              onPress={handleImportPatterns}
-              className="flex-1 bg-green-500 rounded-xl py-3 items-center active:bg-green-600 flex-row justify-center"
-            >
-              <Ionicons name="cloud-upload-outline" size={20} color="white" />
-              <Text className="text-white text-sm font-semibold ml-2">
-                Import JSON
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleExportPatterns}
-              className="flex-1 bg-purple-500 rounded-xl py-3 items-center active:bg-purple-600 flex-row justify-center"
-              disabled={customPatterns.length === 0}
-              style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
-            >
-              <Ionicons name="cloud-download-outline" size={20} color="white" />
-              <Text className="text-white text-sm font-semibold ml-2">
-                Export JSON
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Clear All Button - Temporary for cleanup */}
-          {customPatterns.length > 0 && (
-            <Pressable
-              onPress={() => setShowClearConfirm(true)}
-              className="bg-red-500 rounded-xl py-3 items-center active:bg-red-600 flex-row justify-center mb-3"
-            >
-              <Ionicons name="trash-outline" size={20} color="white" />
-              <Text className="text-white text-sm font-semibold ml-2">
-                Clear All Patterns (Reset)
-              </Text>
-            </Pressable>
-          )}
-
-          {/* Copy/Paste Buttons - Better for Desktop Transfer */}
-          <View className="flex-row gap-3 mb-5">
-            <Pressable
-              onPress={handleCopyToClipboard}
-              className="flex-1 bg-orange-500 rounded-xl py-3 items-center active:bg-orange-600 flex-row justify-center"
-              disabled={customPatterns.length === 0}
-              style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
-            >
-              <Ionicons name="copy-outline" size={20} color="white" />
-              <Text className="text-white text-sm font-semibold ml-2">
-                Copy Text
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handlePasteFromClipboard}
-              className="flex-1 bg-teal-500 rounded-xl py-3 items-center active:bg-teal-600 flex-row justify-center"
-            >
-              <Ionicons name="clipboard-outline" size={20} color="white" />
-              <Text className="text-white text-sm font-semibold ml-2">
-                Paste Text
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Info Box */}
-          <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
-            <View className="flex-row items-start">
-              <Ionicons name="information-circle" size={20} color="#3B82F6" />
-              <View className="flex-1 ml-2">
-                <Text className="text-sm text-blue-900 font-semibold mb-1">
-                  Pattern Format & e Value
-                </Text>
-                <Text className="text-sm text-blue-800">
-                  Pattern ID: [2-3 digit number]-[2 digit pulling force %]{'\n'}
-                  Example: 101-75 (Pattern 101, 75% pulling force){'\n\n'}
-                  e Value = Section centroid - Strand height from bottom{'\n'}
-                  Example: 6" centroid - 2.125" strand height = 3.875" e value{'\n\n'}
-                  Desktop Transfer: Use Copy Text on phone, paste into text editor on PC, edit, copy from PC, then use Paste Text on phone
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Custom Patterns List */}
-          <Text className="text-lg font-semibold text-gray-900 mb-3">
-            Custom Patterns ({customPatterns.length})
-          </Text>
-
-          {customPatterns.length === 0 ? (
-            <View className="bg-white rounded-xl p-8 items-center">
+          {/* Patterns List */}
+          {filteredPatterns.length === 0 ? (
+            <View className="bg-white rounded-xl p-8 items-center mb-5">
               <View className="bg-gray-100 rounded-full p-6 mb-4">
                 <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
               </View>
               <Text className="text-lg font-semibold text-gray-900 mb-2">
-                No Custom Patterns
+                No Patterns Yet
               </Text>
               <Text className="text-sm text-gray-600 text-center">
-                Create your first custom strand pattern to get started
+                Add your first strand pattern for {selectedProductType}
               </Text>
             </View>
           ) : (
-            <View className="space-y-3">
-              {customPatterns.map((pattern) => (
+            <View className="space-y-3 mb-5">
+              {filteredPatterns.map((pattern) => (
                 <View
                   key={pattern.id}
                   className="bg-white rounded-xl p-4 shadow-sm"
@@ -310,13 +503,13 @@ export default function StrandPatternsScreen() {
                           {pattern.patternId}
                         </Text>
                         <View className={`px-2 py-1 rounded ${
-                          pattern.position === 'Top' ? 'bg-blue-100' : 
-                          pattern.position === 'Bottom' ? 'bg-green-100' : 
+                          pattern.position === 'Top' ? 'bg-blue-100' :
+                          pattern.position === 'Bottom' ? 'bg-green-100' :
                           'bg-purple-100'
                         }`}>
                           <Text className={`text-xs font-semibold ${
-                            pattern.position === 'Top' ? 'text-blue-700' : 
-                            pattern.position === 'Bottom' ? 'text-green-700' : 
+                            pattern.position === 'Top' ? 'text-blue-700' :
+                            pattern.position === 'Bottom' ? 'text-green-700' :
                             'text-purple-700'
                           }`}>
                             {pattern.position}
@@ -344,99 +537,109 @@ export default function StrandPatternsScreen() {
                   </View>
 
                   <View className="border-t border-gray-100 pt-3">
-                    <View className="mb-2">
-                      <Text className="text-xs font-semibold text-gray-700 mb-1">
-                        Strand Configuration:
-                      </Text>
-                      {pattern.strand_3_8 > 0 && (
-                        <Text className="text-sm text-gray-600">
-                          • {pattern.strand_3_8}× 3/8" strands
-                        </Text>
-                      )}
-                      {pattern.strand_1_2 > 0 && (
-                        <Text className="text-sm text-gray-600">
-                          • {pattern.strand_1_2}× 1/2" strands
-                        </Text>
-                      )}
-                      {pattern.strand_0_6 > 0 && (
-                        <Text className="text-sm text-gray-600">
-                          • {pattern.strand_0_6}× 0.6" strands
-                        </Text>
-                      )}
-                      {pattern.strandCoordinates && pattern.strandCoordinates.length > 0 && (
-                        <View className="flex-row items-center mt-1">
-                          <Ionicons name="location" size={14} color="#10B981" />
-                          <Text className="text-sm text-green-600 font-semibold ml-1">
-                            Has coordinates for cut-width calculation
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View className="flex-row flex-wrap gap-3 mt-2">
-                      <View className="bg-gray-50 rounded-lg px-3 py-2">
-                        <Text className="text-xs text-gray-600">e value</Text>
-                        <Text className="text-sm font-semibold text-gray-900">
-                          {pattern.eValue}"
-                        </Text>
-                      </View>
-                      <View className="bg-gray-50 rounded-lg px-3 py-2">
-                        <Text className="text-xs text-gray-600">Pulling Force</Text>
-                        <Text className="text-sm font-semibold text-gray-900">
-                          {pattern.pullingForce}%
-                        </Text>
-                      </View>
-                      <View className="bg-gray-50 rounded-lg px-3 py-2">
-                        <Text className="text-xs text-gray-600">Total Area</Text>
-                        <Text className="text-sm font-semibold text-gray-900">
-                          {pattern.totalArea.toFixed(3)} in²
-                        </Text>
-                      </View>
-                    </View>
+                    <Text className="text-xs text-gray-600">
+                      {pattern.strand_3_8 > 0 && `${pattern.strand_3_8} × 3/8" `}
+                      {pattern.strand_1_2 > 0 && `${pattern.strand_1_2} × 1/2" `}
+                      {pattern.strand_0_6 > 0 && `${pattern.strand_0_6} × 0.6" `}
+                      • e = {pattern.eValue}" • Force = {pattern.pullingForce}%
+                    </Text>
                   </View>
                 </View>
               ))}
             </View>
           )}
+
+          {/* Action Buttons */}
+          <Pressable
+            onPress={handleAddPattern}
+            className="bg-blue-500 rounded-xl py-4 items-center mb-3 active:bg-blue-600 flex-row justify-center"
+          >
+            <Ionicons name="add-circle-outline" size={24} color="white" />
+            <Text className="text-white text-base font-semibold ml-2">
+              Add New Pattern
+            </Text>
+          </Pressable>
+
+          <View className="flex-row gap-3 mb-3">
+            <Pressable
+              onPress={handleImportPatterns}
+              className="flex-1 bg-green-500 rounded-xl py-3 items-center active:bg-green-600"
+            >
+              <Ionicons name="cloud-upload-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold mt-1">
+                Import JSON
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleExportPatterns}
+              className="flex-1 bg-purple-500 rounded-xl py-3 items-center active:bg-purple-600"
+              disabled={customPatterns.length === 0}
+              style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
+            >
+              <Ionicons name="cloud-download-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold mt-1">
+                Export JSON
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="flex-row gap-3 mb-3">
+            <Pressable
+              onPress={handleCopyToClipboard}
+              className="flex-1 bg-orange-500 rounded-xl py-3 items-center active:bg-orange-600"
+              disabled={customPatterns.length === 0}
+              style={{ opacity: customPatterns.length === 0 ? 0.5 : 1 }}
+            >
+              <Ionicons name="copy-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold mt-1">
+                Copy Text
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handlePasteFromClipboard}
+              className="flex-1 bg-teal-500 rounded-xl py-3 items-center active:bg-teal-600"
+            >
+              <Ionicons name="clipboard-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold mt-1">
+                Paste Text
+              </Text>
+            </Pressable>
+          </View>
+
+          {customPatterns.length > 0 && (
+            <Pressable
+              onPress={() => setShowClearConfirm(true)}
+              className="bg-red-500 rounded-xl py-3 items-center active:bg-red-600"
+            >
+              <Ionicons name="trash-outline" size={20} color="white" />
+              <Text className="text-white text-sm font-semibold mt-1">
+                Clear All Patterns
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
 
-      {/* Add/Edit Pattern Modal */}
       {showAddModal && (
         <PatternEditorModal
           pattern={editingPattern}
           onClose={() => setShowAddModal(false)}
-          onSave={(pattern) => {
-            if (editingPattern) {
-              updatePattern(editingPattern.id, pattern);
-            } else {
-              addPattern(pattern);
-            }
-            setShowAddModal(false);
-          }}
+          onSave={handleSavePattern}
         />
       )}
 
-      {/* Delete Confirmation */}
       <ConfirmModal
         visible={deleteConfirmId !== null}
-        title="Delete Pattern"
-        message="Are you sure you want to delete this strand pattern? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        confirmStyle="destructive"
+        title="Delete Pattern?"
+        message="This will permanently delete this strand pattern. This action cannot be undone."
         onConfirm={() => deleteConfirmId && handleDeletePattern(deleteConfirmId)}
         onCancel={() => setDeleteConfirmId(null)}
       />
 
-      {/* Clear All Confirmation */}
       <ConfirmModal
         visible={showClearConfirm}
-        title="Clear All Patterns"
-        message="This will delete ALL strand patterns permanently. This action cannot be undone. Are you sure?"
-        confirmText="Clear All"
-        cancelText="Cancel"
-        confirmStyle="destructive"
+        title="Clear All Patterns?"
+        message="This will permanently delete all custom strand patterns. This action cannot be undone."
         onConfirm={() => {
           clearAllPatterns();
           setShowClearConfirm(false);
@@ -446,7 +649,6 @@ export default function StrandPatternsScreen() {
     </View>
   );
 }
-
 interface PatternEditorModalProps {
   pattern: CustomStrandPattern | null;
   onClose: () => void;
