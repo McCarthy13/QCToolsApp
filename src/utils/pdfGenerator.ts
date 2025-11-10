@@ -49,6 +49,81 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
   } = params;
 
   try {
+    // Separate bottom and top strand slippages
+    const bottomStrands = slippages.filter(s => s.strandId.startsWith('B'));
+    const topStrands = slippages.filter(s => s.strandId.startsWith('T'));
+
+    // Calculate bottom strand statistics
+    const bottomStats = (() => {
+      const values = bottomStrands.map(s => {
+        const e1Raw = parseMeasurementInput(s.leftSlippage);
+        const e2Raw = parseMeasurementInput(s.rightSlippage);
+        const e1 = s.leftExceedsOne ? 1.0 : (e1Raw ?? 0);
+        const e2 = s.rightExceedsOne ? 1.0 : (e2Raw ?? 0);
+        return {
+          e1, e2,
+          e1Exceeds: s.leftExceedsOne,
+          e2Exceeds: s.rightExceedsOne,
+          total: e1 + e2,
+        };
+      });
+
+      const totalE1 = values.reduce((sum, v) => sum + v.e1, 0);
+      const totalE2 = values.reduce((sum, v) => sum + v.e2, 0);
+      const totalBoth = values.reduce((sum, v) => sum + v.total, 0);
+      const count = values.length;
+      const anyE1Exceeds = values.some(v => v.e1Exceeds);
+      const anyE2Exceeds = values.some(v => v.e2Exceeds);
+      const anyExceeds = anyE1Exceeds || anyE2Exceeds;
+
+      return {
+        totalE1,
+        totalE2,
+        totalBoth,
+        avgE1: count > 0 ? totalE1 / count : 0,
+        avgE2: count > 0 ? totalE2 / count : 0,
+        avgBoth: count > 0 ? totalBoth / count : 0,
+        anyE1Exceeds,
+        anyE2Exceeds,
+        anyExceeds,
+      };
+    })();
+
+    // Calculate top strand statistics
+    const topStats = (() => {
+      const values = topStrands.map(s => {
+        const e1Raw = parseMeasurementInput(s.leftSlippage);
+        const e2Raw = parseMeasurementInput(s.rightSlippage);
+        const e1 = s.leftExceedsOne ? 1.0 : (e1Raw ?? 0);
+        const e2 = s.rightExceedsOne ? 1.0 : (e2Raw ?? 0);
+        return {
+          e1, e2,
+          e1Exceeds: s.leftExceedsOne,
+          e2Exceeds: s.rightExceedsOne,
+          total: e1 + e2,
+        };
+      });
+
+      const totalE1 = values.reduce((sum, v) => sum + v.e1, 0);
+      const totalE2 = values.reduce((sum, v) => sum + v.e2, 0);
+      const totalBoth = values.reduce((sum, v) => sum + v.total, 0);
+      const count = values.length;
+      const anyE1Exceeds = values.some(v => v.e1Exceeds);
+      const anyE2Exceeds = values.some(v => v.e2Exceeds);
+      const anyExceeds = anyE1Exceeds || anyE2Exceeds;
+
+      return {
+        totalE1,
+        totalE2,
+        totalBoth,
+        avgE1: count > 0 ? totalE1 / count : 0,
+        avgE2: count > 0 ? totalE2 / count : 0,
+        avgBoth: count > 0 ? totalBoth / count : 0,
+        anyE1Exceeds,
+        anyE2Exceeds,
+        anyExceeds,
+      };
+    })();
     // Convert image URI to base64 data URI if provided
     let base64Image: string | undefined;
     if (crossSectionImageUri) {
@@ -107,7 +182,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             body {
               font-family: 'Helvetica Neue', Arial, sans-serif;
-              padding: 20px;
+              padding: 30px 40px;
               color: #1f2937;
               line-height: 1.4;
               background-color: #ffffff;
@@ -116,7 +191,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             .header {
               border-bottom: 3px solid #2563eb;
               padding-bottom: 8px;
-              margin-bottom: 15px;
+              margin-bottom: 12px;
             }
 
             h1 {
@@ -131,13 +206,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .section {
-              margin-bottom: 15px;
+              margin-bottom: 12px;
             }
 
             h2 {
               font-size: 15px;
               color: #374151;
-              margin-bottom: 8px;
+              margin-bottom: 6px;
               padding-bottom: 3px;
               border-bottom: 2px solid #e5e7eb;
             }
@@ -325,12 +400,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             <h2>Product Details</h2>
             <div class="info-grid">
               <div class="info-item">
-                <div class="info-label">Project Name</div>
-                <div class="info-value">${config.projectName || ''}</div>
-              </div>
-              <div class="info-item">
                 <div class="info-label">Project Number</div>
                 <div class="info-value">${config.projectNumber || ''}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Project Name</div>
+                <div class="info-value">${config.projectName || ''}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Mark Number</div>
@@ -339,6 +414,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               <div class="info-item">
                 <div class="info-label">ID Number</div>
                 <div class="info-value">${config.idNumber || ''}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Product Type</div>
+                <div class="info-value">${config.productType}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Strand Pattern</div>
+                <div class="info-value">${strandPatternName || config.strandPattern}</div>
               </div>
               ${config.span ? (() => {
                 const spanFormatted = formatSpanForPDF(config.span);
@@ -352,24 +435,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               })() : `
               <div class="info-item">
                 <div class="info-label">Span</div>
-                <div class="info-value"></div>
+                <div class="info-value">-</div>
               </div>
               `}
               <div class="info-item">
-                <div class="info-label">Pour Date</div>
-                <div class="info-value">${config.pourDate || ''}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Product Type</div>
-                <div class="info-value">${config.productType}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Strand Pattern</div>
-                <div class="info-value">${strandPatternName || config.strandPattern}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Product Width (Cut)</div>
-                <div class="info-value">${config.productWidth ? `${config.productWidth}"` : ''}</div>
+                <div class="info-label">Width${config.productWidth ? ' (Cut)' : ''}</div>
+                <div class="info-value">${config.productWidth ? `${config.productWidth}"` : '-'}</div>
               </div>
             </div>
           </div>
@@ -379,78 +450,146 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <div class="section">
             <h2>Cross Section with Strand Pattern</h2>
             <div class="cross-section">
-              <div class="cross-section-label">Strand Arrangement & Cut Width</div>
               <img src="${base64Image}" alt="Cross Section Diagram" />
             </div>
           </div>
           ` : ''}
 
-          <!-- Overall Statistics -->
+          <!-- Bottom Strand Statistics -->
+          ${bottomStrands.length > 0 ? `
           <div class="section">
-            <h2>Overall Statistics</h2>
+            <h2 style="color: #059669;">Bottom Strand Statistics</h2>
             <div class="stats-grid">
               <div class="stat-card">
                 <div class="stat-label">Total Slippage (Both Ends)</div>
                 <div class="stat-value">
-                  ${slippageStats.anyValueExceeds ? '>' : ''}${slippageStats.totalSlippage.toFixed(3)}"
+                  ${bottomStats.anyExceeds ? '>' : ''}${bottomStats.totalBoth.toFixed(3)}"
                 </div>
                 <div class="stat-value-small">
-                  ≈${slippageStats.anyValueExceeds ? '>' : ''}${decimalToFraction(slippageStats.totalSlippage)}
+                  ≈${bottomStats.anyExceeds ? '>' : ''}${decimalToFraction(bottomStats.totalBoth)}
                 </div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Total E1 Slippage</div>
                 <div class="stat-value">
-                  ${slippageStats.anyEnd1Exceeds ? '>' : ''}${slippageStats.totalSlippageEnd1.toFixed(3)}"
+                  ${bottomStats.anyE1Exceeds ? '>' : ''}${bottomStats.totalE1.toFixed(3)}"
                 </div>
                 <div class="stat-value-small">
-                  ≈${slippageStats.anyEnd1Exceeds ? '>' : ''}${decimalToFraction(slippageStats.totalSlippageEnd1)}
+                  ≈${bottomStats.anyE1Exceeds ? '>' : ''}${decimalToFraction(bottomStats.totalE1)}
                 </div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Total E2 Slippage</div>
                 <div class="stat-value">
-                  ${slippageStats.anyEnd2Exceeds ? '>' : ''}${slippageStats.totalSlippageEnd2.toFixed(3)}"
+                  ${bottomStats.anyE2Exceeds ? '>' : ''}${bottomStats.totalE2.toFixed(3)}"
                 </div>
                 <div class="stat-value-small">
-                  ≈${slippageStats.anyEnd2Exceeds ? '>' : ''}${decimalToFraction(slippageStats.totalSlippageEnd2)}
+                  ≈${bottomStats.anyE2Exceeds ? '>' : ''}${decimalToFraction(bottomStats.totalE2)}
                 </div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Average Slippage (Both Ends)</div>
                 <div class="stat-value">
-                  ${slippageStats.anyValueExceeds ? '>' : ''}${slippageStats.totalAvgSlippage.toFixed(3)}"
+                  ${bottomStats.anyExceeds ? '>' : ''}${bottomStats.avgBoth.toFixed(3)}"
                 </div>
                 <div class="stat-value-small">
-                  ≈${slippageStats.anyValueExceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippage)}
+                  ≈${bottomStats.anyExceeds ? '>' : ''}${decimalToFraction(bottomStats.avgBoth)}
                 </div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Average E1 Slippage</div>
                 <div class="stat-value">
-                  ${slippageStats.anyEnd1Exceeds ? '>' : ''}${slippageStats.totalAvgSlippageEnd1.toFixed(3)}"
+                  ${bottomStats.anyE1Exceeds ? '>' : ''}${bottomStats.avgE1.toFixed(3)}"
                 </div>
                 <div class="stat-value-small">
-                  ≈${slippageStats.anyEnd1Exceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippageEnd1)}
+                  ≈${bottomStats.anyE1Exceeds ? '>' : ''}${decimalToFraction(bottomStats.avgE1)}
                 </div>
               </div>
               <div class="stat-card">
                 <div class="stat-label">Average E2 Slippage</div>
                 <div class="stat-value">
-                  ${slippageStats.anyEnd2Exceeds ? '>' : ''}${slippageStats.totalAvgSlippageEnd2.toFixed(3)}"
+                  ${bottomStats.anyE2Exceeds ? '>' : ''}${bottomStats.avgE2.toFixed(3)}"
                 </div>
                 <div class="stat-value-small">
-                  ≈${slippageStats.anyEnd2Exceeds ? '>' : ''}${decimalToFraction(slippageStats.totalAvgSlippageEnd2)}
+                  ≈${bottomStats.anyE2Exceeds ? '>' : ''}${decimalToFraction(bottomStats.avgE2)}
                 </div>
               </div>
             </div>
-
-            ${slippageStats.anyValueExceeds ? `
+            ${bottomStats.anyExceeds ? `
             <div class="warning-box">
-              <div class="warning-text">⚠ WARNING: Contains values exceeding 1"</div>
+              <div class="warning-text">⚠ WARNING: Bottom strands contain values exceeding 1"</div>
             </div>
             ` : ''}
           </div>
+          ` : ''}
+
+          <!-- Top Strand Statistics -->
+          ${topStrands.length > 0 ? `
+          <div class="section">
+            <h2 style="color: #2563eb;">Top Strand Statistics</h2>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Total Slippage (Both Ends)</div>
+                <div class="stat-value">
+                  ${topStats.anyExceeds ? '>' : ''}${topStats.totalBoth.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${topStats.anyExceeds ? '>' : ''}${decimalToFraction(topStats.totalBoth)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Total E1 Slippage</div>
+                <div class="stat-value">
+                  ${topStats.anyE1Exceeds ? '>' : ''}${topStats.totalE1.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${topStats.anyE1Exceeds ? '>' : ''}${decimalToFraction(topStats.totalE1)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Total E2 Slippage</div>
+                <div class="stat-value">
+                  ${topStats.anyE2Exceeds ? '>' : ''}${topStats.totalE2.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${topStats.anyE2Exceeds ? '>' : ''}${decimalToFraction(topStats.totalE2)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Average Slippage (Both Ends)</div>
+                <div class="stat-value">
+                  ${topStats.anyExceeds ? '>' : ''}${topStats.avgBoth.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${topStats.anyExceeds ? '>' : ''}${decimalToFraction(topStats.avgBoth)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Average E1 Slippage</div>
+                <div class="stat-value">
+                  ${topStats.anyE1Exceeds ? '>' : ''}${topStats.avgE1.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${topStats.anyE1Exceeds ? '>' : ''}${decimalToFraction(topStats.avgE1)}
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Average E2 Slippage</div>
+                <div class="stat-value">
+                  ${topStats.anyE2Exceeds ? '>' : ''}${topStats.avgE2.toFixed(3)}"
+                </div>
+                <div class="stat-value-small">
+                  ≈${topStats.anyE2Exceeds ? '>' : ''}${decimalToFraction(topStats.avgE2)}
+                </div>
+              </div>
+            </div>
+            ${topStats.anyExceeds ? `
+            <div class="warning-box">
+              <div class="warning-text">⚠ WARNING: Top strands contain values exceeding 1"</div>
+            </div>
+            ` : ''}
+          </div>
+          ` : ''}
 
           <!-- Individual Strand Data -->
           <div class="section">
