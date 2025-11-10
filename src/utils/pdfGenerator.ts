@@ -591,40 +591,76 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     if (isWeb) {
       console.log('[PDF Generator] Web platform detected - using jsPDF for direct PDF download...');
 
-      // Wait for jsPDF to load if not ready
+      // Wait for both libraries to load
       let attempts = 0;
-      while (!jsPDF && attempts < 50) {
+      while ((!jsPDF || !html2canvas) && attempts < 50) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
       }
 
-      if (!jsPDF) {
-        console.error('[PDF Generator] jsPDF not loaded, falling back to print dialog');
+      if (!jsPDF || !html2canvas) {
+        console.error('[PDF Generator] Libraries not loaded, falling back to print dialog');
         await Print.printAsync({ html: htmlContent });
         return 'web-print-dialog-opened';
       }
 
       try {
+        console.log('[PDF Generator] Creating temporary element for rendering...');
+
         // Create a temporary div to render the HTML
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
         tempDiv.style.position = 'absolute';
         tempDiv.style.left = '-9999px';
-        tempDiv.style.width = '8.5in';
+        tempDiv.style.top = '0';
+        tempDiv.style.width = '816px'; // Letter width at 96dpi
+        tempDiv.style.backgroundColor = 'white';
         document.body.appendChild(tempDiv);
 
-        // Use html2canvas if available, otherwise use jsPDF's html method
-        const pdf = new jsPDF('p', 'pt', 'letter');
+        // Wait a moment for styles to apply
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-        await pdf.html(tempDiv, {
-          callback: function(doc: any) {
-            doc.save(`Slippage-Report-${Date.now()}.pdf`);
-          },
-          x: 0,
-          y: 0,
-          width: 612, // 8.5 inches in points
-          windowWidth: 816, // Scaled for better rendering
+        console.log('[PDF Generator] Rendering HTML to canvas...');
+
+        // Convert HTML to canvas
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2, // Higher quality
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
         });
+
+        console.log('[PDF Generator] Creating PDF from canvas...');
+
+        // Create PDF and add the canvas as an image
+        const pdf = new jsPDF('p', 'pt', 'letter');
+        const imgData = canvas.toDataURL('image/png');
+
+        const pdfWidth = 612; // 8.5 inches in points
+        const pdfHeight = 792; // 11 inches in points
+
+        // Calculate dimensions to fit the content
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        // If content is longer than one page, split it
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pdfHeight;
+        }
+
+        // Save the PDF
+        pdf.save(`Slippage-Report-${Date.now()}.pdf`);
 
         // Cleanup
         document.body.removeChild(tempDiv);
@@ -632,7 +668,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         console.log('[PDF Generator] PDF downloaded successfully');
         return 'web-pdf-downloaded';
       } catch (error: any) {
-        console.error('[PDF Generator] jsPDF failed:', error);
+        console.error('[PDF Generator] PDF generation failed:', error);
         console.log('[PDF Generator] Falling back to print dialog');
         await Print.printAsync({ html: htmlContent });
         return 'web-print-dialog-opened';
