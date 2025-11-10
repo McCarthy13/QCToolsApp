@@ -43,6 +43,11 @@ A comprehensive mobile app for precast concrete quality management, built with R
   - Fixed condition logic to show strands when `strandCoordinates`, `bottomStrandSizes`, or `topStrandCoordinates` are provided
   - Applied fix to all 6 CrossSection components
   - Strands now visible in Slippage Identifier screen, Slippage Summary screen, and PDF reports
+- ✅ **Improved PDF generation for web platform**:
+  - Web platform now properly uses browser print dialog instead of attempting file creation
+  - Users can save reports as PDF using browser's "Save as PDF" option
+  - Native platforms continue to generate and share PDF files directly
+  - Added platform detection to handle web and native differently
 
 ## Features
 

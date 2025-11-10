@@ -144,9 +144,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
       if (filePath) {
         console.log('[PDF] PDF generated successfully:', filePath);
-        // Share the PDF
-        await sharePDF(filePath);
-        console.log('[PDF] PDF shared successfully');
+
+        // On web, the print dialog is already shown, so we don't need to share
+        if (filePath === 'web-print-dialog-opened') {
+          console.log('[PDF] Web print dialog opened - user can save as PDF from browser');
+          // Optionally show a success message
+          Alert.alert(
+            'Print Dialog Opened',
+            'Use your browser\'s print dialog to save the report as PDF. Select "Save as PDF" as the printer destination.'
+          );
+        } else {
+          // On native platforms, share the PDF file
+          await sharePDF(filePath);
+          console.log('[PDF] PDF shared successfully');
+        }
       } else {
         console.log('[PDF] Failed to generate PDF - no file path returned');
         Alert.alert('Error', 'Failed to generate PDF report. Please try again.');

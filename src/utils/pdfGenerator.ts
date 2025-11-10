@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
 
@@ -572,7 +573,26 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
     // Generate PDF using expo-print
     console.log('[PDF Generator] Calling expo-print with HTML length:', htmlContent.length);
+    console.log('[PDF Generator] Platform:', Platform.OS);
 
+    // On web, expo-print opens a print dialog instead of creating a file
+    // Use Print.printAsync which triggers browser print and allows "Save as PDF"
+    if (Platform.OS === 'web') {
+      console.log('[PDF Generator] Using web print dialog...');
+      try {
+        await Print.printAsync({
+          html: htmlContent,
+        });
+        console.log('[PDF Generator] Print dialog opened successfully');
+        // On web, we don't get a file URI, so return a success indicator
+        return 'web-print-dialog-opened';
+      } catch (printError: any) {
+        console.error('[PDF Generator] Web print failed:', printError);
+        throw printError;
+      }
+    }
+
+    // For native platforms (iOS/Android), generate actual PDF file
     let uri: string;
     try {
       // First attempt: try with image if available
