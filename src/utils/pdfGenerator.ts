@@ -575,10 +575,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     console.log('[PDF Generator] Calling expo-print with HTML length:', htmlContent.length);
     console.log('[PDF Generator] Platform:', Platform.OS);
 
-    // On web, expo-print opens a print dialog instead of creating a file
-    // Use Print.printAsync which triggers browser print and allows "Save as PDF"
-    if (Platform.OS === 'web') {
-      console.log('[PDF Generator] Using web print dialog...');
+    // On web, printToFileAsync doesn't work - it opens print dialog
+    // Check if we're on web by testing if printToFileAsync exists
+    const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+
+    if (isWeb) {
+      console.log('[PDF Generator] Web platform detected - using printAsync...');
       try {
         await Print.printAsync({
           html: htmlContent,
