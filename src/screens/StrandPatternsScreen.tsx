@@ -87,6 +87,30 @@ export default function StrandPatternsScreen() {
     return pattern.department === selectedDepartment && pattern.productType === selectedProductType;
   });
 
+  // Sort patterns: Bottom strands first (highest to lowest), then Top strands (highest to lowest), then Both
+  const sortedPatterns = [...filteredPatterns].sort((a, b) => {
+    // First, group by position: Bottom -> Top -> Both
+    const positionOrder = { 'Bottom': 0, 'Top': 1, 'Both': 2 };
+    const positionDiff = positionOrder[a.position] - positionOrder[b.position];
+
+    if (positionDiff !== 0) {
+      return positionDiff;
+    }
+
+    // Within same position, sort by pattern number (highest first)
+    // Extract numeric part from pattern ID (e.g., "152" from "152-70" or "T40" from "T40-70")
+    const getPatternNumber = (patternId: string): number => {
+      const match = patternId.match(/(\d+)/);
+      return match ? parseInt(match[1]) : 0;
+    };
+
+    const aNum = getPatternNumber(a.patternId);
+    const bNum = getPatternNumber(b.patternId);
+
+    // Sort descending (highest first)
+    return bNum - aNum;
+  });
+
   const handleAddPattern = () => {
     if (!selectedDepartment || !selectedProductType) {
       Alert.alert('Error', 'Please select a department and product type first');
@@ -106,13 +130,13 @@ export default function StrandPatternsScreen() {
     setDeleteConfirmId(null);
   };
 
-  const handleSavePattern = async (patternData: Omit<CustomStrandPattern, 'id'>) => {
+  const handleSavePattern = async (patternData: Omit<CustomStrandPattern, 'id' | 'department' | 'productType'>) => {
     if (!selectedDepartment || !selectedProductType) {
       Alert.alert('Error', 'Please select a department and product type');
       return;
     }
 
-    const fullPatternData = {
+    const fullPatternData: Omit<CustomStrandPattern, 'id'> = {
       ...patternData,
       department: selectedDepartment,
       productType: selectedProductType,
@@ -472,12 +496,12 @@ export default function StrandPatternsScreen() {
               Strand Patterns
             </Text>
             <Text className="text-base text-gray-600">
-              {filteredPatterns.length} pattern(s) for {selectedProductType}
+              {sortedPatterns.length} pattern(s) for {selectedProductType}
             </Text>
           </View>
 
           {/* Patterns List */}
-          {filteredPatterns.length === 0 ? (
+          {sortedPatterns.length === 0 ? (
             <View className="bg-white rounded-xl p-8 items-center mb-5">
               <View className="bg-gray-100 rounded-full p-6 mb-4">
                 <Ionicons name="albums-outline" size={48} color="#9CA3AF" />
@@ -491,7 +515,7 @@ export default function StrandPatternsScreen() {
             </View>
           ) : (
             <View className="space-y-3 mb-5">
-              {filteredPatterns.map((pattern) => (
+              {sortedPatterns.map((pattern) => (
                 <View
                   key={pattern.id}
                   className="bg-white rounded-xl p-4 shadow-sm"
@@ -652,7 +676,7 @@ export default function StrandPatternsScreen() {
 interface PatternEditorModalProps {
   pattern: CustomStrandPattern | null;
   onClose: () => void;
-  onSave: (pattern: Omit<CustomStrandPattern, 'id'>) => void;
+  onSave: (pattern: Omit<CustomStrandPattern, 'id' | 'department' | 'productType'>) => void;
 }
 
 function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProps) {
