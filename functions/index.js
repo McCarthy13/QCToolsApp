@@ -37,7 +37,7 @@ exports.openaiVisionProxy = onRequest({
     const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
     // Hardcoded API key for immediate deployment
-    const OPENAI_API_KEY = "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";
+    const OPENAI_API_KEY = "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";
 
     if (!OPENAI_API_KEY) {
       console.error("[OpenAI Vision Proxy] Missing API key");
