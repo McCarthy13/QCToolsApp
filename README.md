@@ -18,6 +18,8 @@ A comprehensive mobile app for precast concrete quality management, built with R
 - ✅ Deployed Cloud Function successfully
 - ✅ Function URL: https://openaivisionproxy-k2ycslozcq-uc.a.run.app
 - ✅ Camera scanner now working with new API key
+- ✅ Changed "Project Information" to "Product Details" in Camber Calculator and Product Details screens
+- ✅ Fixed span input fields layout to prevent fraction button from being pushed off-screen after scanning product tags
 
 ## Features
 

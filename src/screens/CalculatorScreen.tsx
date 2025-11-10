@@ -240,10 +240,10 @@ export default function CalculatorScreen() {
             </View>
           )}
 
-          {/* Optional Project Information */}
+          {/* Optional Product Details */}
           <View className="px-6 mt-6">
             <Text className="text-gray-900 text-lg font-semibold mb-4">
-              Project Information (Optional)
+              Product Details (Optional)
             </Text>
 
             <View className="mb-4">
@@ -309,28 +309,33 @@ export default function CalculatorScreen() {
               <Text className="text-gray-700 text-sm font-medium mb-2">
                 Span (Optional)
               </Text>
-              <View className="flex-row items-center gap-2">
-                <TextInput
-                  className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-                  placeholder="Feet"
-                  placeholderTextColor="#9CA3AF"
-                  cursorColor="#000000"
-                  value={spanFeet}
-                  onChangeText={setSpanFeet}
-                  keyboardType="numeric"
-                />
+              <View className="flex-row items-center" style={{ gap: 8 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <TextInput
+                    className="bg-white border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
+                    placeholder="Feet"
+                    placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
+                    value={spanFeet}
+                    onChangeText={setSpanFeet}
+                    keyboardType="numeric"
+                  />
+                </View>
                 <Text className="text-gray-600 font-medium">-</Text>
-                <TextInput
-                  className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-                  placeholder="Inches"
-                  placeholderTextColor="#9CA3AF"
-                  cursorColor="#000000"
-                  value={spanInches}
-                  onChangeText={setSpanInches}
-                  keyboardType="numeric"
-                />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <TextInput
+                    className="bg-white border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
+                    placeholder="Inches"
+                    placeholderTextColor="#9CA3AF"
+                    cursorColor="#000000"
+                    value={spanInches}
+                    onChangeText={setSpanInches}
+                    keyboardType="numeric"
+                  />
+                </View>
                 <Pressable
-                  className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 min-w-[80px] items-center"
+                  className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-3 items-center"
+                  style={{ width: 70 }}
                   onPress={() => {
                     const fractions = ['0', '1/8', '1/4', '3/8', '1/2', '5/8', '3/4', '7/8'];
                     const currentIndex = fractions.indexOf(spanFraction);
@@ -338,7 +343,7 @@ export default function CalculatorScreen() {
                     setSpanFraction(fractions[nextIndex]);
                   }}
                 >
-                  <Text className="text-gray-900 font-medium">
+                  <Text className="text-gray-900 font-medium text-sm">
                     {spanFraction === '0' ? '0' : spanFraction}"
                   </Text>
                 </Pressable>
