@@ -49,8 +49,11 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   const { config } = route.params;
   const { customPatterns } = useStrandPatternStore();
 
-  // Get the selected strand pattern
+  // Get the selected strand patterns (bottom and optionally top)
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
+  const selectedTopPattern = config.topStrandPattern
+    ? customPatterns.find(p => p.id === config.topStrandPattern)
+    : undefined;
 
   // Calculate active strands based on product width and product side
   const activeStrandIndices = useMemo(() => {
@@ -105,37 +108,58 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
 
   // Calculate total strand count and initialize fields
   const initialSlippages = useMemo(() => {
-    if (!selectedPattern) return [];
-    
-    const totalCount = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
-    
-    // Determine which strands are active based on activeStrandIndices
-    let activeStrands: number[];
-    
-    if (activeStrandIndices === null) {
-      // No filtering - all strands are active
-      activeStrands = Array.from({ length: totalCount }, (_, i) => i + 1);
-    } else {
-      // Convert 0-based indices to 1-based strand numbers
-      activeStrands = activeStrandIndices.map(idx => idx + 1);
-    }
-    
-    // Create array of strands with their sizes - only for active strands
     const strands: StrandSlippage[] = [];
-    for (const strandNum of activeStrands) {
-      const strandSize = selectedPattern.strandSizes?.[strandNum - 1];
-      strands.push({
-        strandId: strandNum.toString(),
-        leftSlippage: "0",
-        rightSlippage: "0",
-        leftExceedsOne: false,
-        rightExceedsOne: false,
-        size: strandSize,
-      });
+
+    // Add bottom strands
+    if (selectedPattern) {
+      const totalCount = selectedPattern.strand_3_8 + selectedPattern.strand_1_2 + selectedPattern.strand_0_6;
+
+      // Determine which strands are active based on activeStrandIndices
+      let activeStrands: number[];
+
+      if (activeStrandIndices === null) {
+        // No filtering - all strands are active
+        activeStrands = Array.from({ length: totalCount }, (_, i) => i + 1);
+      } else {
+        // Convert 0-based indices to 1-based strand numbers
+        activeStrands = activeStrandIndices.map(idx => idx + 1);
+      }
+
+      // Create array of strands with their sizes - only for active strands
+      for (const strandNum of activeStrands) {
+        const strandSize = selectedPattern.strandSizes?.[strandNum - 1];
+        strands.push({
+          strandId: `B${strandNum}`, // B prefix for bottom strands
+          leftSlippage: "0",
+          rightSlippage: "0",
+          leftExceedsOne: false,
+          rightExceedsOne: false,
+          size: strandSize,
+        });
+      }
     }
-    
+
+    // Add top strands
+    if (selectedTopPattern) {
+      const totalTopCount = selectedTopPattern.strand_3_8 + selectedTopPattern.strand_1_2 + selectedTopPattern.strand_0_6;
+
+      // For top strands, use all strands (no cut-width filtering for now)
+      // TODO: Implement cut-width filtering for top strands if needed
+      for (let i = 1; i <= totalTopCount; i++) {
+        const strandSize = selectedTopPattern.strandSizes?.[i - 1];
+        strands.push({
+          strandId: `T${i}`, // T prefix for top strands
+          leftSlippage: "0",
+          rightSlippage: "0",
+          leftExceedsOne: false,
+          rightExceedsOne: false,
+          size: strandSize,
+        });
+      }
+    }
+
     return strands;
-  }, [selectedPattern, activeStrandIndices]);
+  }, [selectedPattern, selectedTopPattern, activeStrandIndices]);
 
   const [slippages, setSlippages] = useState<StrandSlippage[]>(initialSlippages);
 
@@ -314,125 +338,255 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
 
         {/* Slippage inputs for each strand */}
         <View className="px-6">
-          <Text className="text-gray-900 text-base font-semibold mb-2">
-            {activeStrandIndices === null ? 'Slippage Values' : 'Slippage Values (Active Strands)'}
-          </Text>
+          {/* Bottom Strands Section */}
+          {slippages.some(s => s.strandId.startsWith('B')) && (
+            <>
+              <Text className="text-gray-900 text-base font-semibold mb-2">
+                Bottom Strands {activeStrandIndices === null ? '' : '(Active Strands)'}
+              </Text>
 
-          {slippages.map((strand, index) => (
-            <View
-              key={strand.strandId}
-              className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-200"
-            >
-              {/* Strand header - more compact */}
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center">
-                  <View className="bg-red-500 rounded-full w-6 h-6 items-center justify-center mr-2">
-                    <Text className="text-white font-bold text-xs">
-                      {strand.strandId}
-                    </Text>
-                  </View>
-                  <Text className="text-gray-900 font-semibold text-sm">
-                    Strand {strand.strandId}
-                    {strand.size && (
-                      <Text className="text-gray-600 font-normal text-xs">
-                        {' '}({strand.size}")
+              {slippages.filter(s => s.strandId.startsWith('B')).map((strand, index) => (
+                <View
+                  key={strand.strandId}
+                  className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-200"
+                >
+                  {/* Strand header - more compact */}
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center">
+                      <View className="bg-green-600 rounded-full w-6 h-6 items-center justify-center mr-2">
+                        <Text className="text-white font-bold text-xs">
+                          {strand.strandId.substring(1)}
+                        </Text>
+                      </View>
+                      <Text className="text-gray-900 font-semibold text-sm">
+                        Bottom Strand {strand.strandId.substring(1)}
+                        {strand.size && (
+                          <Text className="text-gray-600 font-normal text-xs">
+                            {' '}({strand.size}")
+                          </Text>
+                        )}
                       </Text>
-                    )}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="flex-row gap-2">
-                {/* End 1 */}
-                <View className="flex-1">
-                  <Text className="text-xs font-medium text-gray-600 mb-1">
-                    END 1
-                  </Text>
-                  <TextInput
-                    className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
-                      strand.leftExceedsOne 
-                        ? "text-orange-600 font-bold" 
-                        : "text-gray-900"
-                    }`}
-                    placeholder="0.5"
-                    placeholderTextColor="#9CA3AF"
-                    cursorColor="#000000"
-                    value={strand.leftExceedsOne ? ">1\"" : strand.leftSlippage}
-                    onChangeText={(text) =>
-                      updateSlippage(strand.strandId, "left", text)
-                    }
-                    onFocus={() => handleFocus(strand.strandId, "left")}
-                    onBlur={() => handleBlur(strand.strandId, "left")}
-                    editable={!strand.leftExceedsOne}
-                    keyboardType="default"
-                  />
-                  <Pressable
-                    className="flex-row items-center"
-                    onPress={() => toggleExceedsOne(strand.strandId, "left")}
-                  >
-                    <View
-                      className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
-                        strand.leftExceedsOne
-                          ? "bg-orange-500 border-orange-500"
-                          : "bg-white border-gray-300"
-                      }`}
-                    >
-                      {strand.leftExceedsOne && (
-                        <Text className="text-white text-xs font-bold">✓</Text>
-                      )}
                     </View>
-                    <Text className="text-gray-700 text-xs">
-                      {'>1"'}
-                    </Text>
-                  </Pressable>
-                </View>
+                  </View>
 
-                {/* End 2 */}
-                <View className="flex-1">
-                  <Text className="text-xs font-medium text-gray-600 mb-1">
-                    END 2
-                  </Text>
-                  <TextInput
-                    className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
-                      strand.rightExceedsOne 
-                        ? "text-orange-600 font-bold" 
-                        : "text-gray-900"
-                    }`}
-                    placeholder="0.5"
-                    placeholderTextColor="#9CA3AF"
-                    cursorColor="#000000"
-                    value={strand.rightExceedsOne ? ">1\"" : strand.rightSlippage}
-                    onChangeText={(text) =>
-                      updateSlippage(strand.strandId, "right", text)
-                    }
-                    onFocus={() => handleFocus(strand.strandId, "right")}
-                    onBlur={() => handleBlur(strand.strandId, "right")}
-                    editable={!strand.rightExceedsOne}
-                    keyboardType="default"
-                  />
-                  <Pressable
-                    className="flex-row items-center"
-                    onPress={() => toggleExceedsOne(strand.strandId, "right")}
-                  >
-                    <View
-                      className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
-                        strand.rightExceedsOne
-                          ? "bg-orange-500 border-orange-500"
-                          : "bg-white border-gray-300"
-                      }`}
-                    >
-                      {strand.rightExceedsOne && (
-                        <Text className="text-white text-xs font-bold">✓</Text>
-                      )}
+                  <View className="flex-row gap-2">
+                    {/* End 1 */}
+                    <View className="flex-1">
+                      <Text className="text-xs font-medium text-gray-600 mb-1">
+                        END 1
+                      </Text>
+                      <TextInput
+                        className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
+                          strand.leftExceedsOne
+                            ? "text-orange-600 font-bold"
+                            : "text-gray-900"
+                        }`}
+                        placeholder="0.5"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
+                        value={strand.leftExceedsOne ? ">1\"" : strand.leftSlippage}
+                        onChangeText={(text) =>
+                          updateSlippage(strand.strandId, "left", text)
+                        }
+                        onFocus={() => handleFocus(strand.strandId, "left")}
+                        onBlur={() => handleBlur(strand.strandId, "left")}
+                        editable={!strand.leftExceedsOne}
+                        keyboardType="default"
+                      />
+                      <Pressable
+                        className="flex-row items-center"
+                        onPress={() => toggleExceedsOne(strand.strandId, "left")}
+                      >
+                        <View
+                          className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
+                            strand.leftExceedsOne
+                              ? "bg-orange-500 border-orange-500"
+                              : "bg-white border-gray-300"
+                          }`}
+                        >
+                          {strand.leftExceedsOne && (
+                            <Text className="text-white text-xs font-bold">✓</Text>
+                          )}
+                        </View>
+                        <Text className="text-gray-700 text-xs">
+                          {'>1"'}
+                        </Text>
+                      </Pressable>
                     </View>
-                    <Text className="text-gray-700 text-xs">
-                      {'>1"'}
-                    </Text>
-                  </Pressable>
+
+                    {/* End 2 */}
+                    <View className="flex-1">
+                      <Text className="text-xs font-medium text-gray-600 mb-1">
+                        END 2
+                      </Text>
+                      <TextInput
+                        className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
+                          strand.rightExceedsOne
+                            ? "text-orange-600 font-bold"
+                            : "text-gray-900"
+                        }`}
+                        placeholder="0.5"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
+                        value={strand.rightExceedsOne ? ">1\"" : strand.rightSlippage}
+                        onChangeText={(text) =>
+                          updateSlippage(strand.strandId, "right", text)
+                        }
+                        onFocus={() => handleFocus(strand.strandId, "right")}
+                        onBlur={() => handleBlur(strand.strandId, "right")}
+                        editable={!strand.rightExceedsOne}
+                        keyboardType="default"
+                      />
+                      <Pressable
+                        className="flex-row items-center"
+                        onPress={() => toggleExceedsOne(strand.strandId, "right")}
+                      >
+                        <View
+                          className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
+                            strand.rightExceedsOne
+                              ? "bg-orange-500 border-orange-500"
+                              : "bg-white border-gray-300"
+                          }`}
+                        >
+                          {strand.rightExceedsOne && (
+                            <Text className="text-white text-xs font-bold">✓</Text>
+                          )}
+                        </View>
+                        <Text className="text-gray-700 text-xs">
+                          {'>1"'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          ))}
+              ))}
+            </>
+          )}
+
+          {/* Top Strands Section */}
+          {slippages.some(s => s.strandId.startsWith('T')) && (
+            <>
+              <Text className="text-gray-900 text-base font-semibold mb-2 mt-4">
+                Top Strands
+              </Text>
+
+              {slippages.filter(s => s.strandId.startsWith('T')).map((strand, index) => (
+                <View
+                  key={strand.strandId}
+                  className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-200"
+                >
+                  {/* Strand header - more compact */}
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center">
+                      <View className="bg-blue-600 rounded-full w-6 h-6 items-center justify-center mr-2">
+                        <Text className="text-white font-bold text-xs">
+                          {strand.strandId.substring(1)}
+                        </Text>
+                      </View>
+                      <Text className="text-gray-900 font-semibold text-sm">
+                        Top Strand {strand.strandId.substring(1)}
+                        {strand.size && (
+                          <Text className="text-gray-600 font-normal text-xs">
+                            {' '}({strand.size}")
+                          </Text>
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="flex-row gap-2">
+                    {/* End 1 */}
+                    <View className="flex-1">
+                      <Text className="text-xs font-medium text-gray-600 mb-1">
+                        END 1
+                      </Text>
+                      <TextInput
+                        className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
+                          strand.leftExceedsOne
+                            ? "text-orange-600 font-bold"
+                            : "text-gray-900"
+                        }`}
+                        placeholder="0.5"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
+                        value={strand.leftExceedsOne ? ">1\"" : strand.leftSlippage}
+                        onChangeText={(text) =>
+                          updateSlippage(strand.strandId, "left", text)
+                        }
+                        onFocus={() => handleFocus(strand.strandId, "left")}
+                        onBlur={() => handleBlur(strand.strandId, "left")}
+                        editable={!strand.leftExceedsOne}
+                        keyboardType="default"
+                      />
+                      <Pressable
+                        className="flex-row items-center"
+                        onPress={() => toggleExceedsOne(strand.strandId, "left")}
+                      >
+                        <View
+                          className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
+                            strand.leftExceedsOne
+                              ? "bg-orange-500 border-orange-500"
+                              : "bg-white border-gray-300"
+                          }`}
+                        >
+                          {strand.leftExceedsOne && (
+                            <Text className="text-white text-xs font-bold">✓</Text>
+                          )}
+                        </View>
+                        <Text className="text-gray-700 text-xs">
+                          {'>1"'}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* End 2 */}
+                    <View className="flex-1">
+                      <Text className="text-xs font-medium text-gray-600 mb-1">
+                        END 2
+                      </Text>
+                      <TextInput
+                        className={`bg-white border border-gray-300 rounded-lg px-2 py-2 text-sm mb-1 ${
+                          strand.rightExceedsOne
+                            ? "text-orange-600 font-bold"
+                            : "text-gray-900"
+                        }`}
+                        placeholder="0.5"
+                        placeholderTextColor="#9CA3AF"
+                        cursorColor="#000000"
+                        value={strand.rightExceedsOne ? ">1\"" : strand.rightSlippage}
+                        onChangeText={(text) =>
+                          updateSlippage(strand.strandId, "right", text)
+                        }
+                        onFocus={() => handleFocus(strand.strandId, "right")}
+                        onBlur={() => handleBlur(strand.strandId, "right")}
+                        editable={!strand.rightExceedsOne}
+                        keyboardType="default"
+                      />
+                      <Pressable
+                        className="flex-row items-center"
+                        onPress={() => toggleExceedsOne(strand.strandId, "right")}
+                      >
+                        <View
+                          className={`w-4 h-4 rounded border-2 mr-1.5 items-center justify-center ${
+                            strand.rightExceedsOne
+                              ? "bg-orange-500 border-orange-500"
+                              : "bg-white border-gray-300"
+                          }`}
+                        >
+                          {strand.rightExceedsOne && (
+                            <Text className="text-white text-xs font-bold">✓</Text>
+                          )}
+                        </View>
+                        <Text className="text-gray-700 text-xs">
+                          {'>1"'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
 
           {/* Calculate button */}
           <Pressable

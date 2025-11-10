@@ -8,6 +8,8 @@ export interface SlippageData {
   rightSlippage: string;
   leftExceedsOne: boolean;
   rightExceedsOne: boolean;
+  strandSource?: 'bottom' | 'top'; // Which pattern this strand comes from
+  size?: '3/8' | '1/2' | '0.6'; // Strand size from pattern
 }
 
 export interface SlippageConfig {

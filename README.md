@@ -20,6 +20,13 @@ A comprehensive mobile app for precast concrete quality management, built with R
 - ✅ Camera scanner now working with new API key
 - ✅ Changed "Project Information" to "Product Details" in Camber Calculator and Product Details screens
 - ✅ Fixed span input fields layout to prevent fraction button from being pushed off-screen after scanning product tags
+- ✅ **Added support for top strand patterns in Slippage Identifier**:
+  - Updated SlippageData interface to track strand source (bottom/top)
+  - Modified SlippageIdentifierScreen to display input fields for both bottom AND top strands
+  - Updated SlippageSummaryScreen to show separate sections for bottom and top strands
+  - Enhanced PDF generator to include both bottom and top strand data in reports
+  - Strands now use prefixes: "B" for bottom strands, "T" for top strands
+  - Visual distinction: Bottom strands shown with green badges, Top strands with blue badges
 
 ## Features
 

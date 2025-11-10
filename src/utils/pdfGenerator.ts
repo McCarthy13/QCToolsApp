@@ -444,58 +444,120 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <!-- Individual Strand Data -->
           <div class="section">
             <h2>Slippage by Strand</h2>
-            <table class="strand-table">
-              <thead>
-                <tr>
-                  <th>Strand</th>
-                  <th>END 1</th>
-                  <th>END 2</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${slippages.map((strand) => {
-                  const end1Value = parseMeasurementInput(strand.leftSlippage);
-                  const end2Value = parseMeasurementInput(strand.rightSlippage);
-                  // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
-                  const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
-                  const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
-                  const strandTotal = e1 + e2;
-                  const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-                  const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
 
-                  return `
-                    <tr>
-                      <td class="strand-id">
-                        Strand ${strand.strandId}${strandSize ? ` (${strandSize})` : ''}
-                      </td>
-                      <td>
-                        <span style="color: #047857; font-weight: 600;">
-                          ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
-                        </span>
-                        <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                          (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
-                        </span>
-                      </td>
-                      <td>
-                        <span style="color: #6d28d9; font-weight: 600;">
-                          ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
-                        </span>
-                        <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                          (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
-                        </span>
-                      </td>
-                      <td class="strand-total">
-                        ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
-                        <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                          (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
-                        </span>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+            ${slippages.some(s => s.strandId.startsWith('B')) ? `
+              <h3 style="font-size: 13px; color: #059669; margin: 10px 0 5px 0; font-weight: 600;">Bottom Strands</h3>
+              <table class="strand-table">
+                <thead>
+                  <tr>
+                    <th>Strand</th>
+                    <th>END 1</th>
+                    <th>END 2</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${slippages.filter(s => s.strandId.startsWith('B')).map((strand) => {
+                    const end1Value = parseMeasurementInput(strand.leftSlippage);
+                    const end2Value = parseMeasurementInput(strand.rightSlippage);
+                    // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
+                    const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
+                    const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
+                    const strandTotal = e1 + e2;
+                    const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
+                    const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
+                    const strandNum = strand.strandId.substring(1);
+
+                    return `
+                      <tr>
+                        <td class="strand-id">
+                          Bottom Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
+                        </td>
+                        <td>
+                          <span style="color: #047857; font-weight: 600;">
+                            ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
+                          </span>
+                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
+                            (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
+                          </span>
+                        </td>
+                        <td>
+                          <span style="color: #6d28d9; font-weight: 600;">
+                            ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
+                          </span>
+                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
+                            (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
+                          </span>
+                        </td>
+                        <td class="strand-total">
+                          ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
+                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
+                            (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
+                          </span>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+
+            ${slippages.some(s => s.strandId.startsWith('T')) ? `
+              <h3 style="font-size: 13px; color: #2563eb; margin: 15px 0 5px 0; font-weight: 600;">Top Strands</h3>
+              <table class="strand-table">
+                <thead>
+                  <tr>
+                    <th>Strand</th>
+                    <th>END 1</th>
+                    <th>END 2</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${slippages.filter(s => s.strandId.startsWith('T')).map((strand) => {
+                    const end1Value = parseMeasurementInput(strand.leftSlippage);
+                    const end2Value = parseMeasurementInput(strand.rightSlippage);
+                    // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
+                    const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
+                    const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
+                    const strandTotal = e1 + e2;
+                    const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
+                    const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
+                    const strandNum = strand.strandId.substring(1);
+
+                    return `
+                      <tr>
+                        <td class="strand-id">
+                          Top Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
+                        </td>
+                        <td>
+                          <span style="color: #047857; font-weight: 600;">
+                            ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
+                          </span>
+                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
+                            (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
+                          </span>
+                        </td>
+                        <td>
+                          <span style="color: #6d28d9; font-weight: 600;">
+                            ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
+                          </span>
+                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
+                            (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
+                          </span>
+                        </td>
+                        <td class="strand-total">
+                          ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
+                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
+                            (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
+                          </span>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            ` : ''}
           </div>
 
           <!-- Footer -->

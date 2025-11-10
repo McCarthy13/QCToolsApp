@@ -47,13 +47,27 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   // Ref for capturing cross-section as image
   const crossSectionRef = useRef<View>(null);
 
-  // Get the selected strand pattern
+  // Get the selected strand patterns (bottom and optionally top)
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
+  const selectedTopPattern = config.topStrandPattern
+    ? customPatterns.find(p => p.id === config.topStrandPattern)
+    : undefined;
 
   // Helper to get strand size by position
   const getStrandSize = (strandId: string): string => {
-    const index = parseInt(strandId) - 1;
-    const size = selectedPattern?.strandSizes?.[index];
+    // Check if it's a top strand (starts with T) or bottom strand (starts with B or is just a number)
+    const isTopStrand = strandId.startsWith('T');
+    const isBottomStrand = strandId.startsWith('B');
+
+    // Extract the numeric part (remove T or B prefix if present)
+    const numericId = isTopStrand || isBottomStrand
+      ? strandId.substring(1)
+      : strandId;
+    const index = parseInt(numericId) - 1;
+
+    // Get size from the appropriate pattern
+    const pattern = isTopStrand ? selectedTopPattern : selectedPattern;
+    const size = pattern?.strandSizes?.[index];
     return size ? `${size}"` : '';
   };
 
@@ -417,65 +431,137 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          {/* Per-Strand Details - more compact */}
+          {/* Per-Strand Details - separated by bottom/top */}
           <View className="bg-gray-50 rounded-lg p-2.5 mb-3">
             <Text className="text-gray-700 text-xs font-semibold mb-2">
               By Strand
             </Text>
-            {slippages.map((strand) => {
-              const end1Value = parseMeasurementInput(strand.leftSlippage);
-              const end2Value = parseMeasurementInput(strand.rightSlippage);
-              // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
-              const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
-              const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
-              const strandTotal = e1 + e2;
-              const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-              
-              return (
-                <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
-                  {/* Strand Header - inline */}
-                  <View className="flex-row items-center justify-between mb-1.5">
-                    <View className="flex-row items-center">
-                      <View className="bg-red-500 rounded-full w-5 h-5 items-center justify-center mr-1.5">
-                        <Text className="text-white font-bold text-xs">
-                          {strand.strandId}
-                        </Text>
-                      </View>
-                      <Text className="text-gray-900 text-xs font-semibold">
-                        Strand {strand.strandId}
-                        {getStrandSize(strand.strandId) && (
-                          <Text className="text-gray-600 font-normal">
-                            {' '}({getStrandSize(strand.strandId)})
+
+            {/* Bottom Strands */}
+            {slippages.some(s => s.strandId.startsWith('B')) && (
+              <>
+                <Text className="text-gray-600 text-xs font-semibold mb-1.5">
+                  Bottom Strands
+                </Text>
+                {slippages.filter(s => s.strandId.startsWith('B')).map((strand) => {
+                  const end1Value = parseMeasurementInput(strand.leftSlippage);
+                  const end2Value = parseMeasurementInput(strand.rightSlippage);
+                  // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
+                  const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
+                  const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
+                  const strandTotal = e1 + e2;
+                  const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
+
+                  return (
+                    <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
+                      {/* Strand Header - inline */}
+                      <View className="flex-row items-center justify-between mb-1.5">
+                        <View className="flex-row items-center">
+                          <View className="bg-green-600 rounded-full w-5 h-5 items-center justify-center mr-1.5">
+                            <Text className="text-white font-bold text-xs">
+                              {strand.strandId.substring(1)}
+                            </Text>
+                          </View>
+                          <Text className="text-gray-900 text-xs font-semibold">
+                            Bottom Strand {strand.strandId.substring(1)}
+                            {getStrandSize(strand.strandId) && (
+                              <Text className="text-gray-600 font-normal">
+                                {' '}({getStrandSize(strand.strandId)})
+                              </Text>
+                            )}
                           </Text>
-                        )}
-                      </Text>
+                        </View>
+                        <View className="bg-blue-100 px-2 py-0.5 rounded">
+                          <Text className="text-blue-700 text-xs font-bold">
+                            {hasExceeds && ">"}Total: {strandTotal.toFixed(2)}"
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* END 1 & END 2 - inline */}
+                      <View className="flex-row gap-2 ml-6">
+                        <View className="flex-1 bg-white rounded p-1.5 border border-green-200">
+                          <Text className="text-gray-600 text-xs mb-0.5">E1</Text>
+                          <Text className="text-green-600 text-xs font-bold">
+                            {strand.leftExceedsOne ? '>1"' : (end1Value !== null && end1Value !== 0 ? `${end1Value.toFixed(3)}"` : '0"')}
+                          </Text>
+                        </View>
+
+                        <View className="flex-1 bg-white rounded p-1.5 border border-purple-200">
+                          <Text className="text-gray-600 text-xs mb-0.5">E2</Text>
+                          <Text className="text-purple-600 text-xs font-bold">
+                            {strand.rightExceedsOne ? '>1"' : (end2Value !== null && end2Value !== 0 ? `${end2Value.toFixed(3)}"` : '0"')}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                    <View className="bg-blue-100 px-2 py-0.5 rounded">
-                      <Text className="text-blue-700 text-xs font-bold">
-                        {hasExceeds && ">"}Total: {strandTotal.toFixed(2)}"
-                      </Text>
+                  );
+                })}
+              </>
+            )}
+
+            {/* Top Strands */}
+            {slippages.some(s => s.strandId.startsWith('T')) && (
+              <>
+                <Text className="text-gray-600 text-xs font-semibold mb-1.5 mt-2">
+                  Top Strands
+                </Text>
+                {slippages.filter(s => s.strandId.startsWith('T')).map((strand) => {
+                  const end1Value = parseMeasurementInput(strand.leftSlippage);
+                  const end2Value = parseMeasurementInput(strand.rightSlippage);
+                  // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
+                  const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
+                  const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
+                  const strandTotal = e1 + e2;
+                  const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
+
+                  return (
+                    <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
+                      {/* Strand Header - inline */}
+                      <View className="flex-row items-center justify-between mb-1.5">
+                        <View className="flex-row items-center">
+                          <View className="bg-blue-600 rounded-full w-5 h-5 items-center justify-center mr-1.5">
+                            <Text className="text-white font-bold text-xs">
+                              {strand.strandId.substring(1)}
+                            </Text>
+                          </View>
+                          <Text className="text-gray-900 text-xs font-semibold">
+                            Top Strand {strand.strandId.substring(1)}
+                            {getStrandSize(strand.strandId) && (
+                              <Text className="text-gray-600 font-normal">
+                                {' '}({getStrandSize(strand.strandId)})
+                              </Text>
+                            )}
+                          </Text>
+                        </View>
+                        <View className="bg-blue-100 px-2 py-0.5 rounded">
+                          <Text className="text-blue-700 text-xs font-bold">
+                            {hasExceeds && ">"}Total: {strandTotal.toFixed(2)}"
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* END 1 & END 2 - inline */}
+                      <View className="flex-row gap-2 ml-6">
+                        <View className="flex-1 bg-white rounded p-1.5 border border-green-200">
+                          <Text className="text-gray-600 text-xs mb-0.5">E1</Text>
+                          <Text className="text-green-600 text-xs font-bold">
+                            {strand.leftExceedsOne ? '>1"' : (end1Value !== null && end1Value !== 0 ? `${end1Value.toFixed(3)}"` : '0"')}
+                          </Text>
+                        </View>
+
+                        <View className="flex-1 bg-white rounded p-1.5 border border-purple-200">
+                          <Text className="text-gray-600 text-xs mb-0.5">E2</Text>
+                          <Text className="text-purple-600 text-xs font-bold">
+                            {strand.rightExceedsOne ? '>1"' : (end2Value !== null && end2Value !== 0 ? `${end2Value.toFixed(3)}"` : '0"')}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                  
-                  {/* END 1 & END 2 - inline */}
-                  <View className="flex-row gap-2 ml-6">
-                    <View className="flex-1 bg-white rounded p-1.5 border border-green-200">
-                      <Text className="text-gray-600 text-xs mb-0.5">E1</Text>
-                      <Text className="text-green-600 text-xs font-bold">
-                        {strand.leftExceedsOne ? '>1"' : (end1Value !== null && end1Value !== 0 ? `${end1Value.toFixed(3)}"` : '0"')}
-                      </Text>
-                    </View>
-                    
-                    <View className="flex-1 bg-white rounded p-1.5 border border-purple-200">
-                      <Text className="text-gray-600 text-xs mb-0.5">E2</Text>
-                      <Text className="text-purple-600 text-xs font-bold">
-                        {strand.rightExceedsOne ? '>1"' : (end2Value !== null && end2Value !== 0 ? `${end2Value.toFixed(3)}"` : '0"')}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
+                  );
+                })}
+              </>
+            )}
           </View>
 
           {/* Success Messages */}
