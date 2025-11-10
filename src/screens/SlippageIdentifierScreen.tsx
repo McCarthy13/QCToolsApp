@@ -273,6 +273,9 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
               productSide={config.productSide || null}
               productWidth={config.productWidth}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : config.productType === '1248' ? (
             <CrossSection1248
@@ -281,6 +284,9 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
               productSide={config.productSide || null}
               productWidth={config.productWidth}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : config.productType === '1250' ? (
             <CrossSection1250
@@ -289,6 +295,9 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
               productSide={config.productSide || null}
               productWidth={config.productWidth}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : config.productType === '1648' ? (
             <CrossSection1648
@@ -297,6 +306,9 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
               productSide={config.productSide || null}
               productWidth={config.productWidth}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : config.productType === '1650' ? (
             <CrossSection1650
@@ -305,6 +317,9 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
               productSide={config.productSide || null}
               productWidth={config.productWidth}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           ) : (
             <CrossSection8048
@@ -313,6 +328,9 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
               productSide={config.productSide || null}
               productWidth={config.productWidth}
               strandCoordinates={selectedPattern?.strandCoordinates}
+              bottomStrandSizes={selectedPattern?.strandSizes}
+              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+              topStrandSizes={selectedTopPattern?.strandSizes}
             />
           )}
         </View>

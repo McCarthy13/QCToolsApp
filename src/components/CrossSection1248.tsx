@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path, Defs, ClipPath } from 'react-native-svg';
+import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path, Defs, ClipPath, Polygon } from 'react-native-svg';
 
 interface StrandSlippage {
   strandId: string;
@@ -8,6 +8,13 @@ interface StrandSlippage {
   rightSlippage: string;
   leftExceedsOne: boolean;
   rightExceedsOne: boolean;
+}
+
+interface StrandInfo {
+  x: number;
+  y: number;
+  size?: '3/8' | '1/2' | '0.6';
+  isTop?: boolean; // Whether this is a top strand
 }
 
 interface CrossSection1248Props {
@@ -20,6 +27,9 @@ interface CrossSection1248Props {
   slippages?: StrandSlippage[]; // Optional slippage data to display
   showSlippageValues?: boolean; // Whether to show E1/E2 labels
   strandCoordinates?: Array<{ x: number; y: number }>; // Optional custom strand positions
+  bottomStrandSizes?: Array<'3/8' | '1/2' | '0.6'>; // Sizes for bottom strands
+  topStrandCoordinates?: Array<{ x: number; y: number }>; // Top strand positions
+  topStrandSizes?: Array<'3/8' | '1/2' | '0.6'>; // Sizes for top strands
 }
 
 export default function CrossSection1248({
@@ -32,6 +42,9 @@ export default function CrossSection1248({
   slippages = [],
   showSlippageValues = false,
   strandCoordinates,
+  bottomStrandSizes,
+  topStrandCoordinates,
+  topStrandSizes,
 }: CrossSection1248Props) {
   // Dimensions in inches - 12" tall x 48" wide
   // Horizontal layout same as 1048, taller cores
@@ -52,20 +65,35 @@ export default function CrossSection1248({
   // Strand positions (x from left edge, y from bottom)
   // Use custom coordinates if provided, otherwise use defaults for 6-strand pattern (5 cores)
   // X positions same as 1048, Y position same as 1048 (same bottom flange)
-  const STRAND_POSITIONS = strandCoordinates ?
+  const BOTTOM_STRAND_POSITIONS = strandCoordinates ?
     strandCoordinates.map((coord, index) => ({
       x: coord.x,
       y: coord.y,
-      id: index + 1
+      id: index + 1,
+      size: bottomStrandSizes?.[index],
+      isTop: false,
     })) :
     [
-      { x: 1.375, y: 2.46, id: 1 },       // Centered between left edge and Core 1
-      { x: 10.78125, y: 2.46, id: 2 },    // Centered between Core 1 and Core 2
-      { x: 19.59375, y: 2.46, id: 3 },    // Centered between Core 2 and Core 3
-      { x: 28.40625, y: 2.46, id: 4 },    // Centered between Core 3 and Core 4
-      { x: 37.21875, y: 2.46, id: 5 },    // Centered between Core 4 and Core 5
-      { x: 46.625, y: 2.46, id: 6 },      // Centered between Core 5 and right edge
+      { x: 1.375, y: 2.46, id: 1, size: bottomStrandSizes?.[0], isTop: false },
+      { x: 10.78125, y: 2.46, id: 2, size: bottomStrandSizes?.[1], isTop: false },
+      { x: 19.59375, y: 2.46, id: 3, size: bottomStrandSizes?.[2], isTop: false },
+      { x: 28.40625, y: 2.46, id: 4, size: bottomStrandSizes?.[3], isTop: false },
+      { x: 37.21875, y: 2.46, id: 5, size: bottomStrandSizes?.[4], isTop: false },
+      { x: 46.625, y: 2.46, id: 6, size: bottomStrandSizes?.[5], isTop: false },
     ];
+
+  // Top strand positions (if provided)
+  const TOP_STRAND_POSITIONS = topStrandCoordinates ?
+    topStrandCoordinates.map((coord, index) => ({
+      x: coord.x,
+      y: coord.y,
+      id: index + 1,
+      size: topStrandSizes?.[index],
+      isTop: true,
+    })) : [];
+
+  // Combine bottom and top strands
+  const ALL_STRAND_POSITIONS = [...BOTTOM_STRAND_POSITIONS, ...TOP_STRAND_POSITIONS];
 
   // Calculate display dimensions
   const displayWidth = productWidth ? productWidth * scale : FULL_WIDTH * scale;
@@ -102,14 +130,14 @@ export default function CrossSection1248({
   });
 
   // Calculate strand positions relative to the displayed section
-  const visibleStrands = STRAND_POSITIONS.map(strand => ({
+  const visibleStrands = ALL_STRAND_POSITIONS.map((strand) => ({
     ...strand,
     displayX: (strand.x * scale) - xOffset,
     displayY: displayHeight - (strand.y * scale), // Flip y for SVG coordinates
     // If activeStrands is undefined, all strands are active (full-width product)
     isActive: activeStrands ? activeStrands.includes(strand.id) : true,
     isHighlighted: highlightedStrand === strand.id,
-  })).filter(strand => {
+  })).filter((strand) => {
     // Only show strands within the visible area
     return strand.displayX >= 0 && strand.displayX <= displayWidth;
   });
@@ -291,20 +319,70 @@ export default function CrossSection1248({
         {(highlightedStrand !== null || activeStrands !== undefined || showSlippageValues) && visibleStrands.map((strand) => {
           const strandRadius = strand.isActive ? 5 : 3.5;
           const strokeWidth = strand.isActive ? 2.5 : 1.5;
-          const fillColor = strand.isActive ? '#EF4444' : '#D1D5DB';
-          const strokeColor = strand.isHighlighted ? '#3B82F6' : (strand.isActive ? '#991B1B' : '#9CA3AF');
 
-          return (
-            <Circle
-              key={`strand-${strand.id}`}
-              cx={padding + strand.displayX}
-              cy={padding + strand.displayY}
-              r={strandRadius}
-              fill={fillColor}
-              stroke={strokeColor}
-              strokeWidth={strokeWidth}
-            />
-          );
+          // Color based on whether it's top or bottom strand
+          const baseColor = strand.isTop ? '#2563EB' : '#059669'; // Blue for top, green for bottom
+          const darkColor = strand.isTop ? '#1E40AF' : '#047857';
+          const fillColor = strand.isActive ? baseColor : '#D1D5DB';
+          const strokeColor = strand.isHighlighted ? '#3B82F6' : (strand.isActive ? darkColor : '#9CA3AF');
+
+          const cx = padding + strand.displayX;
+          const cy = padding + strand.displayY;
+
+          // Render different shapes based on strand size
+          // Bottom strands (green): 0.6" = circles, 1/2" = X marks
+          // Top strands (blue): 3/8" = diamonds
+
+          if (strand.isTop && strand.size === '3/8') {
+            // Diamond shape for top 3/8" strands
+            const diamondSize = strand.isActive ? 7 : 5;
+            const points = `${cx},${cy - diamondSize} ${cx + diamondSize},${cy} ${cx},${cy + diamondSize} ${cx - diamondSize},${cy}`;
+            return (
+              <Polygon
+                key={`strand-${strand.id}-${strand.isTop ? 'top' : 'bottom'}`}
+                points={points}
+                fill={fillColor}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+              />
+            );
+          } else if (!strand.isTop && strand.size === '1/2') {
+            // X mark for bottom 1/2" strands
+            const xSize = strand.isActive ? 6 : 4;
+            return (
+              <React.Fragment key={`strand-${strand.id}-${strand.isTop ? 'top' : 'bottom'}`}>
+                <Line
+                  x1={cx - xSize}
+                  y1={cy - xSize}
+                  x2={cx + xSize}
+                  y2={cy + xSize}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth + 0.5}
+                />
+                <Line
+                  x1={cx - xSize}
+                  y1={cy + xSize}
+                  x2={cx + xSize}
+                  y2={cy - xSize}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth + 0.5}
+                />
+              </React.Fragment>
+            );
+          } else {
+            // Circle for bottom 0.6" strands (or default)
+            return (
+              <Circle
+                key={`strand-${strand.id}-${strand.isTop ? 'top' : 'bottom'}`}
+                cx={cx}
+                cy={cy}
+                r={strandRadius}
+                fill={fillColor}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+              />
+            );
+          }
         })}
 
         {/* Strand labels - Only show when actively highlighting or working with strands */}
@@ -315,7 +393,7 @@ export default function CrossSection1248({
 
           return (
             <SvgText
-              key={`label-${strand.id}`}
+              key={`label-${strand.id}-${strand.isTop ? 'top' : 'bottom'}`}
               x={padding + strand.displayX}
               y={padding + strand.displayY - (strand.isActive ? 12 : 10)}
               fontSize={fontSize}
@@ -323,7 +401,7 @@ export default function CrossSection1248({
               fontWeight={fontWeight}
               textAnchor="middle"
             >
-              {strand.id}
+              {strand.isTop ? `T${strand.id}` : `B${strand.id}`}
             </SvgText>
           );
         })}

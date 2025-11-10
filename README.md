@@ -28,6 +28,16 @@ A comprehensive mobile app for precast concrete quality management, built with R
   - Strands now use prefixes: "B" for bottom strands (B1, B2, B3...), "T" for top strands (T1, T2, T3...)
   - Visual distinction: Bottom strands shown with green badges, Top strands with blue badges
   - Deployed to production at https://precast-qc-tools-web-app.web.app
+- ✅ **Enhanced cross-section visualization with shape-based strand identification**:
+  - Bottom strands now displayed in GREEN (instead of red)
+  - Top strands displayed in BLUE
+  - **Shape coding by strand size:**
+    - 0.6" strands = Circles ⭕
+    - 1/2" strands = X marks ✖️
+    - 3/8" strands (top only) = Diamonds 🔷
+  - Updated all 6 CrossSection components (8048, 1048, 1248, 1250, 1648, 1650)
+  - Cross-sections now show both bottom and top strands simultaneously
+  - Labels show B1, B2... for bottom strands and T1, T2... for top strands
 
 ## Features
 
