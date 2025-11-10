@@ -109,12 +109,19 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       if (crossSectionRef.current) {
         try {
           console.log('[PDF] Capturing cross-section...');
+          console.log('[PDF] crossSectionRef.current exists:', !!crossSectionRef.current);
+
           crossSectionImageUri = await captureRef(crossSectionRef, {
             format: 'png',
-            quality: 0.6, // Reduced quality to prevent memory issues
-            width: 700, // Reduced size to prevent C++ exceptions
+            quality: 0.8, // Increased quality
+            result: 'data-uri', // Request data URI directly for web
           });
-          console.log('[PDF] Cross-section captured:', crossSectionImageUri);
+          console.log('[PDF] Cross-section captured successfully');
+          console.log('[PDF] Image URI type:', crossSectionImageUri?.startsWith('data:') ? 'data-uri' : crossSectionImageUri?.startsWith('blob:') ? 'blob' : 'file');
+          console.log('[PDF] Image URI length:', crossSectionImageUri?.length);
+          if (crossSectionImageUri) {
+            console.log('[PDF] Image URI prefix:', crossSectionImageUri.substring(0, 100));
+          }
         } catch (captureError) {
           console.error('[PDF] Error capturing cross-section:', captureError);
           console.log('[PDF] Continuing without cross-section image');
