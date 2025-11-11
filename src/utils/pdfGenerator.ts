@@ -10,9 +10,19 @@ let jsPDF: any = null;
 let html2canvas: any = null;
 
 // Dynamically import jsPDF and html2canvas only on web
-if (typeof window !== 'undefined') {
-  import('jspdf').then(module => { jsPDF = module.jsPDF; });
-  import('html2canvas').then(module => { html2canvas = module.default; });
+if (Platform.OS === 'web') {
+  import('jspdf').then(module => {
+    jsPDF = module.jsPDF;
+    console.log('[PDF Generator] jsPDF loaded successfully');
+  }).catch(err => {
+    console.error('[PDF Generator] Failed to load jsPDF:', err);
+  });
+  import('html2canvas').then(module => {
+    html2canvas = module.default;
+    console.log('[PDF Generator] html2canvas loaded successfully');
+  }).catch(err => {
+    console.error('[PDF Generator] Failed to load html2canvas:', err);
+  });
 }
 
 interface PDFGenerationParams {
@@ -781,7 +791,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     console.log('[PDF Generator] Platform:', Platform.OS);
 
     // Check if we're on web
-    const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+    const isWeb = Platform.OS === 'web';
 
     if (isWeb) {
       console.log('[PDF Generator] Web platform detected - using jsPDF for direct PDF download...');
