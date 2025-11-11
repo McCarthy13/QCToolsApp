@@ -79,6 +79,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       slippages,
       config,
       createdBy: currentUser?.email || 'Unknown',
+      userId: currentUser?.id || '',
     };
     addUserRecord(record);
     setSaveSuccess(true);
@@ -93,6 +94,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       slippages,
       config,
       createdBy: currentUser?.email || 'Unknown',
+      userId: currentUser?.id || '',
     };
     publishRecord(record, currentUser?.email || 'Unknown');
     setPublishSuccess(true);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,13 +17,41 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SlippageHis
 export default function SlippageHistoryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { userRecords, publishedRecords, removeUserRecord, removePublishedRecord, clearUserRecords, clearPublishedRecords } = useSlippageHistoryStore();
+  const {
+    userRecords,
+    publishedRecords,
+    removeUserRecord,
+    removePublishedRecord,
+    clearUserRecords,
+    clearPublishedRecords,
+    syncUserRecords,
+    syncPublishedRecords,
+    subscribeToPublishedRecords,
+    isSyncing,
+  } = useSlippageHistoryStore();
   const { customPatterns } = useStrandPatternStore();
   const currentUser = useAuthStore((state) => state.currentUser);
-  
+
   const [activeTab, setActiveTab] = useState<"my-records" | "published">("my-records");
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+
+  // Sync data from Firebase when component mounts
+  useEffect(() => {
+    syncUserRecords();
+    syncPublishedRecords();
+
+    // Subscribe to real-time updates for published records
+    const unsubscribe = subscribeToPublishedRecords();
+    return () => unsubscribe();
+  }, [syncUserRecords, syncPublishedRecords, subscribeToPublishedRecords]);
+
+  // Re-sync user records when tab changes
+  useEffect(() => {
+    if (activeTab === "my-records") {
+      syncUserRecords();
+    }
+  }, [activeTab, syncUserRecords]);
 
   const handleClearAll = () => {
     if (activeTab === "my-records") {

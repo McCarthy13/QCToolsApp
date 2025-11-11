@@ -37,6 +37,33 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // User slippage records - private to each user
+    match /userSlippageRecords/{recordId} {
+      // Users can only create/read/update/delete their own records
+      allow create: if isApproved() && request.resource.data.userId == request.auth.uid;
+      allow read: if isApproved() && resource.data.userId == request.auth.uid;
+      allow update: if isApproved() && resource.data.userId == request.auth.uid;
+      allow delete: if isApproved() && resource.data.userId == request.auth.uid;
+
+      // Admins can access all user records
+      allow read, write, delete: if isAdmin();
+    }
+
+    // Published slippage records - visible to all approved users
+    match /publishedSlippageRecords/{recordId} {
+      // All approved users can read published records
+      allow read: if isApproved();
+
+      // Any approved user can publish (create)
+      allow create: if isApproved();
+
+      // Only admins can delete published records
+      allow delete: if isAdmin();
+
+      // No one can update published records (they are immutable once published)
+      allow update: if false;
+    }
+
     // All other collections - only approved users can access
     match /{document=**} {
       allow read, write: if isApproved();
