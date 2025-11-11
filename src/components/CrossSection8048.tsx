@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path, Defs, ClipPath, Polygon } from 'react-native-svg';
-import StrandSizeLegend from './StrandSizeLegend';
+import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path, Defs, ClipPath, Polygon, G } from 'react-native-svg';
 
 interface StrandSlippage {
   strandId: string;
@@ -140,9 +139,11 @@ export default function CrossSection8048({
     // Only show strands within the visible area
     return strand.displayX >= 0 && strand.displayX <= displayWidth;
   });
-  
+
   const svgWidth = displayWidth + 40; // Add padding
-  const svgHeight = displayHeight + 40 + (showSlippageValues ? 45 : 0); // Add extra space for E1/E2 values below
+  // Add extra space for legend if strands are visible
+  const legendSpace = (strandCoordinates || bottomStrandSizes || topStrandCoordinates) ? 60 : 0;
+  const svgHeight = displayHeight + 40 + (showSlippageValues ? 45 : 0) + legendSpace; // Add extra space for E1/E2 values and legend
   const padding = 20;
   
   // Keyway dimensions (exact coordinates from user specification)
@@ -268,14 +269,9 @@ export default function CrossSection8048({
   
   // Generate a stable clip path ID
   const clipPathId = React.useMemo(() => `plank-clip-${Math.random().toString(36).substr(2, 9)}`, []);
-  
-  // Calculate extra height needed for legend (if strands are visible)
-  // Legend needs: baseSize * 2 + marginTop where baseSize = 12 * (scale/10)
-  // Adding significant extra padding (50px) to ensure no cutoff
-  const legendHeight = (strandCoordinates || bottomStrandSizes || topStrandCoordinates) ? (12 * (scale / 10) * 2 + 8 * (scale / 10) + 50) : 0;
 
   return (
-    <View style={{ width: svgWidth, height: svgHeight + legendHeight, alignSelf: 'center', overflow: 'visible', paddingBottom: 20 }}>
+    <View style={{ width: svgWidth, height: svgHeight, alignSelf: 'center' }}>
       <Svg width={svgWidth} height={svgHeight}>
         {/* Define clip path for clean core cutting */}
         <Defs>
@@ -413,19 +409,19 @@ export default function CrossSection8048({
         {showSlippageValues && slippages.length > 0 && visibleStrands.map((strand) => {
           const slippageData = slippages.find(s => parseInt(s.strandId) === strand.id);
           if (!slippageData) return null;
-          
+
           const e1Display = slippageData.leftExceedsOne ? '>1"' : slippageData.leftSlippage;
           const e2Display = slippageData.rightExceedsOne ? '>1"' : slippageData.rightSlippage;
-          
+
           const fontSize = 11;
           const lineHeight = 16;
-          
+
           // Position below the cross-section
           // E1 on first line, E2 on second line, both centered under the strand
           const belowCrossSectionY = padding + displayHeight + 15;
           const e1Y = belowCrossSectionY;
           const e2Y = belowCrossSectionY + lineHeight;
-          
+
           return (
             <React.Fragment key={`slippage-${strand.id}`}>
               {/* E1 value (first line below cross-section) */}
@@ -439,7 +435,7 @@ export default function CrossSection8048({
               >
                 E1: {e1Display}
               </SvgText>
-              
+
               {/* E2 value (second line below cross-section) */}
               <SvgText
                 x={padding + strand.displayX}
@@ -454,12 +450,100 @@ export default function CrossSection8048({
             </React.Fragment>
           );
         })}
-      </Svg>
 
-      {/* Show legend if strands are visible */}
-      {(strandCoordinates || bottomStrandSizes || topStrandCoordinates) && (
-        <StrandSizeLegend scale={scale / 10} />
-      )}
+        {/* Legend inside SVG - only show if strands are visible */}
+        {(strandCoordinates || bottomStrandSizes || topStrandCoordinates) && (() => {
+          const legendScale = scale / 10;
+          const baseSize = 12 * legendScale;
+          const spacing = 60 * legendScale;
+          const symbolSize = 6 * legendScale;
+          const fontSize = 10 * legendScale;
+          const legendY = padding + displayHeight + (showSlippageValues ? 45 : 0) + 10;
+          const legendCenterX = svgWidth / 2;
+
+          return (
+            <G>
+              {/* Title */}
+              <SvgText
+                x={legendCenterX}
+                y={legendY + fontSize}
+                fontSize={fontSize}
+                fill="#374151"
+                fontWeight="600"
+                textAnchor="middle"
+              >
+                Strand Size Key
+              </SvgText>
+
+              {/* Circle = 0.6" */}
+              <G>
+                <Circle
+                  cx={legendCenterX - spacing}
+                  cy={legendY + baseSize * 1.5}
+                  r={symbolSize}
+                  fill="#059669"
+                  stroke="#047857"
+                  strokeWidth={2}
+                />
+                <SvgText
+                  x={legendCenterX - spacing + symbolSize + 8}
+                  y={legendY + baseSize * 1.5 + 4}
+                  fontSize={fontSize * 0.9}
+                  fill="#1F2937"
+                >
+                  ⭕ = 0.6"
+                </SvgText>
+              </G>
+
+              {/* X = 1/2" */}
+              <G>
+                <Line
+                  x1={legendCenterX - symbolSize}
+                  y1={legendY + baseSize * 1.5 - symbolSize}
+                  x2={legendCenterX + symbolSize}
+                  y2={legendY + baseSize * 1.5 + symbolSize}
+                  stroke="#059669"
+                  strokeWidth={2.5}
+                />
+                <Line
+                  x1={legendCenterX - symbolSize}
+                  y1={legendY + baseSize * 1.5 + symbolSize}
+                  x2={legendCenterX + symbolSize}
+                  y2={legendY + baseSize * 1.5 - symbolSize}
+                  stroke="#059669"
+                  strokeWidth={2.5}
+                />
+                <SvgText
+                  x={legendCenterX + symbolSize + 8}
+                  y={legendY + baseSize * 1.5 + 4}
+                  fontSize={fontSize * 0.9}
+                  fill="#1F2937"
+                >
+                  ✖️ = 1/2"
+                </SvgText>
+              </G>
+
+              {/* Diamond = 3/8" */}
+              <G>
+                <Polygon
+                  points={`${legendCenterX + spacing},${legendY + baseSize * 1.5 - symbolSize} ${legendCenterX + spacing + symbolSize},${legendY + baseSize * 1.5} ${legendCenterX + spacing},${legendY + baseSize * 1.5 + symbolSize} ${legendCenterX + spacing - symbolSize},${legendY + baseSize * 1.5}`}
+                  fill="#059669"
+                  stroke="#047857"
+                  strokeWidth={2}
+                />
+                <SvgText
+                  x={legendCenterX + spacing + symbolSize + 8}
+                  y={legendY + baseSize * 1.5 + 4}
+                  fontSize={fontSize * 0.9}
+                  fill="#1F2937"
+                >
+                  🔷 = 3/8"
+                </SvgText>
+              </G>
+            </G>
+          );
+        })()}
+      </Svg>
     </View>
   );
 }
