@@ -14,14 +14,36 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-11)
+- ✅ **DEPLOYED: Fixed Firestore permissions error for library collections**:
+  - Added explicit security rules for all library collections (strandLibrary, aggregateLibrary, admixLibrary, projectLibrary, productLibrary)
+  - All approved users can now read and write to library collections
+  - Fixes "Missing or insufficient permissions" error when subscribing to strandLibrary
+  - Deployed Firestore rules to production
+- ✅ **Improved cross-section legend and PDF size**:
+  - Increased legend symbols and text size (symbols 33% larger, text 40% larger)
+  - Reduced spacing between symbols and "=" values for cleaner layout
+  - Increased PDF cross-section image height from 110px to 180px (63% larger)
+  - Cross-sections now much more readable on computer screens
+- ✅ **Fixed strand pattern validation for top strands**:
+  - Top strand positions now correctly allow negative e values (centroid - strand height can be negative)
+  - Bottom strand positions still require positive e values as expected
+  - Deployed to production web app
+- ✅ **Implemented Firebase Firestore sync for slippage history records**:
+  - Converted slippage history from local-only AsyncStorage to Firebase Firestore
+  - User records (private) stored in userSlippageRecords collection
+  - Published records (public) stored in publishedSlippageRecords collection
+  - Records now sync across all devices when user is logged in
+  - Real-time subscriptions for published records
+  - Proper security rules for data isolation
+- ✅ **Added logout functionality**:
+  - Red logout button on dashboard screen
+  - Displays current user email and role
+  - Users can sign out to verify credentials across devices
 - ✅ **Fixed strand size legend cutoff in all cross-section displays**:
   - Added dynamic height calculation to all 6 CrossSection components
   - Container View now includes space for StrandSizeLegend
   - Legend now fully visible in app screens and PDF reports
   - Fixes applied to: CrossSection8048, 1048, 1247, 1250, 1648, 1650
-- ✅ **Increased cross-section illustration height in PDF reports**:
-  - Max height increased from 75px to 110px to prevent strand legend cutoff
-  - Cross-section now displays fully with strand size legend visible
 - ✅ **Added "Required Force (lbs)" field to strand pattern creator**:
   - New optional field in strand pattern creation/editing form
   - Allows specifying required force in pounds for each strand pattern
