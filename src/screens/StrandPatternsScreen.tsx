@@ -819,10 +819,15 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
     }
 
     // Validate e value
+    // For top strands, e can be negative (centroid - strand height can be negative)
+    // For bottom strands, e should be positive
     const e = parseFloat(eValue);
-    if (!eValue || isNaN(e) || e <= 0) {
-      validationErrors.push('e value must be greater than 0');
+    if (!eValue || isNaN(e)) {
+      validationErrors.push('e value is required');
+    } else if (position === 'Bottom' && e <= 0) {
+      validationErrors.push('e value must be greater than 0 for bottom strands');
     }
+    // Top strands can have negative e values, so no validation needed for that case
 
     // Validate strand size designations if strands exist
     if (count_3_8 + count_1_2 + count_0_6 > 0 && !validateStrandDesignations()) {
