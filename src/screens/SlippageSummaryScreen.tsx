@@ -357,6 +357,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         <View
           ref={crossSectionRef}
           className="items-center my-3"
+          style={{ overflow: 'visible', minHeight: 200 }}
           collapsable={false}
           // @ts-ignore - data-testid is not in React Native types but works on web
           data-testid="cross-section-container"

@@ -262,7 +262,7 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
         </View>
 
         {/* Cross-section diagram */}
-        <View className="items-center my-4">
+        <View className="items-center my-4" style={{ overflow: 'visible', minHeight: 200 }}>
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section - {config.productType} Hollow Core Plank
           </Text>
