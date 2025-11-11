@@ -147,7 +147,7 @@ const tools: Tool[] = [
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  
+
   // Search functionality
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,8 +157,14 @@ export default function DashboardScreen() {
   const { getAllAdmixes } = useAdmixLibraryStore();
   const { getAllContacts } = useContactsStore();
   const currentUser = useAuthStore((state) => state.currentUser);
+  const logout = useAuthStore((state) => state.logout);
 
   const isAdmin = currentUser?.role === 'admin';
+
+  const handleLogout = async () => {
+    await logout();
+    // Navigation to login will happen automatically via App.tsx when currentUser becomes null
+  };
 
   const handleToolPress = (tool: Tool) => {
     if (tool.comingSoon) {
@@ -230,11 +236,22 @@ export default function DashboardScreen() {
                 >
                   <Ionicons name="search" size={24} color="white" />
                 </Pressable>
+                <Pressable
+                  onPress={handleLogout}
+                  className="bg-red-600 rounded-full p-3 active:bg-red-700"
+                >
+                  <Ionicons name="log-out-outline" size={24} color="white" />
+                </Pressable>
               </View>
             </View>
             <Text className="text-base text-gray-600">
               Select a tool to get started
             </Text>
+            {currentUser && (
+              <Text className="text-sm text-gray-500 mt-1">
+                Logged in as: {currentUser.email} ({currentUser.role})
+              </Text>
+            )}
           </View>
 
           {/* Tools Grid - 3 Columns */}
