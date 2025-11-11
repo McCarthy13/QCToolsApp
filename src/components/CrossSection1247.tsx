@@ -273,11 +273,11 @@ export default function CrossSection1247({
 
   // Calculate extra height needed for legend (if strands are visible)
   // Legend needs: baseSize * 2 + marginTop where baseSize = 12 * (scale/10)
-  // Adding extra padding to ensure no cutoff
-  const legendHeight = (strandCoordinates || bottomStrandSizes || topStrandCoordinates) ? (12 * (scale / 10) * 2 + 8 * (scale / 10) + 10) : 0;
+  // Adding significant extra padding (50px) to ensure no cutoff
+  const legendHeight = (strandCoordinates || bottomStrandSizes || topStrandCoordinates) ? (12 * (scale / 10) * 2 + 8 * (scale / 10) + 50) : 0;
 
   return (
-    <View style={{ width: svgWidth, height: svgHeight + legendHeight, alignSelf: 'center', overflow: 'visible' }}>
+    <View style={{ width: svgWidth, height: svgHeight + legendHeight, alignSelf: 'center', overflow: 'visible', paddingBottom: 20 }}>
       <Svg width={svgWidth} height={svgHeight}>
         {/* Define clip path for clean core cutting */}
         <Defs>
