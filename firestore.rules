@@ -64,6 +64,32 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // Library collections - shared data accessible to all approved users
+    match /strandLibrary/{strandId} {
+      // All approved users can read and write strand definitions
+      allow read, write: if isApproved();
+    }
+
+    match /aggregateLibrary/{aggregateId} {
+      // All approved users can read and write aggregate definitions
+      allow read, write: if isApproved();
+    }
+
+    match /admixLibrary/{admixId} {
+      // All approved users can read and write admix definitions
+      allow read, write: if isApproved();
+    }
+
+    match /projectLibrary/{projectId} {
+      // All approved users can read and write project definitions
+      allow read, write: if isApproved();
+    }
+
+    match /productLibrary/{productId} {
+      // All approved users can read and write product definitions
+      allow read, write: if isApproved();
+    }
+
     // All other collections - only approved users can access
     match /{document=**} {
       allow read, write: if isApproved();
