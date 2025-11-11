@@ -29,7 +29,7 @@ interface Props {
 const PRODUCT_TYPES = [
   { id: "8048", label: '8048', height: 8, width: 48 },
   { id: "1048", label: '1048', height: 10, width: 48 },
-  { id: "1248", label: '1248', height: 12, width: 48 },
+  { id: "1247", label: '1247', height: 12, width: 48 },
   { id: "1250", label: '1250', height: 12, width: 48 },
   { id: "1648", label: '1648', height: 16, width: 48 },
   { id: "1650", label: '1650', height: 16, width: 48 },

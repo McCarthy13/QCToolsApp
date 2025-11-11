@@ -47,7 +47,7 @@ export default function CrossSection1250({
   topStrandSizes,
 }: CrossSection1250Props) {
   // Dimensions in inches - 12" tall x 48" wide
-  // Different core configuration from 1248
+  // Different core configuration from 1247
   const FULL_WIDTH = 48;
   const HEIGHT = 12;
 
@@ -55,7 +55,7 @@ export default function CrossSection1250({
   const BOTTOM_FLANGE = 1.5625; // 1 9/16"
   const TOP_FLANGE = 1.5625; // 1 9/16" (12 - 1.5625 - 8.875 = 1.5625)
 
-  // Core dimensions - 5 cores total with different sizing than 1248
+  // Core dimensions - 5 cores total with different sizing than 1247
   const CORE_WIDTH = 6.4375; // 6 7/16"
   const CORE_HEIGHT = 8.875; // 8 7/8"
   const EDGE_TO_FIRST_CORE = 3.15625; // 3 5/32" (corrected for exact 48" width)
@@ -109,7 +109,7 @@ export default function CrossSection1250({
   }
   // No product side = show full width (xOffset = 0)
 
-  // Calculate core positions (5 cores total for 1248)
+  // Calculate core positions (5 cores total for 1250)
   const coreY = BOTTOM_FLANGE * scale;
   const cores = [];
   for (let i = 0; i < NUM_CORES; i++) {

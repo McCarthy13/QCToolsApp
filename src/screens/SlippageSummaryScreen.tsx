@@ -12,7 +12,7 @@ import { useAuthStore } from "../state/authStore";
 import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1048 from "../components/CrossSection1048";
-import CrossSection1248 from "../components/CrossSection1248";
+import CrossSection1247 from "../components/CrossSection1247";
 import CrossSection1250 from "../components/CrossSection1250";
 import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
 import { captureRef } from "react-native-view-shot";
@@ -377,8 +377,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               topStrandCoordinates={selectedTopPattern?.strandCoordinates}
               topStrandSizes={selectedTopPattern?.strandSizes}
             />
-          ) : config.productType === '1248' ? (
-            <CrossSection1248
+          ) : config.productType === '1247' ? (
+            <CrossSection1247
               scale={6}
               activeStrands={activeStrandIndices || undefined}
               productSide={config.productSide || null}

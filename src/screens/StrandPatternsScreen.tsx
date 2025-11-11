@@ -27,7 +27,7 @@ type ProductTypesByDepartment = {
 };
 
 const PRODUCT_TYPES: ProductTypesByDepartment = {
-  'Extruded': ['8048', '1048', '1248', '1250', '1648'],
+  'Extruded': ['8048', '1048', '1247', '1250', '1648'],
   'Wall Panels': [],
   'Flexicore': [],
   'Precast': [],
@@ -59,8 +59,8 @@ export default function StrandPatternsScreen() {
         } else if (name.includes('1048')) {
           detectedProductType = '1048';
           detectedDepartment = 'Extruded';
-        } else if (name.includes('1248')) {
-          detectedProductType = '1248';
+        } else if (name.includes('1247')) {
+          detectedProductType = '1247';
           detectedDepartment = 'Extruded';
         } else if (name.includes('1250')) {
           detectedProductType = '1250';
