@@ -454,10 +454,11 @@ export default function CrossSection1048({
         {/* Legend inside SVG - only show if strands are visible */}
         {(strandCoordinates || bottomStrandSizes || topStrandCoordinates) && (() => {
           const legendScale = scale / 10;
-          const baseSize = 12 * legendScale;
-          const spacing = 60 * legendScale;
-          const symbolSize = 6 * legendScale;
-          const fontSize = 10 * legendScale;
+          const baseSize = 16 * legendScale; // Increased from 12
+          const spacing = 70 * legendScale; // Increased from 60
+          const symbolSize = 8 * legendScale; // Increased from 6
+          const fontSize = 14 * legendScale; // Increased from 10
+          const labelGap = 5; // Gap between symbol and label text (fixed, not scaled)
           const legendY = padding + displayHeight + (showSlippageValues ? 45 : 0) + 10;
           const legendCenterX = svgWidth / 2;
 
@@ -483,10 +484,10 @@ export default function CrossSection1048({
                   r={symbolSize}
                   fill="#059669"
                   stroke="#047857"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                 />
                 <SvgText
-                  x={legendCenterX - spacing + symbolSize + 10}
+                  x={legendCenterX - spacing + symbolSize + labelGap}
                   y={legendY + baseSize * 1.5 + 4}
                   fontSize={fontSize * 0.9}
                   fill="#1F2937"
@@ -503,7 +504,7 @@ export default function CrossSection1048({
                   x2={legendCenterX + symbolSize}
                   y2={legendY + baseSize * 1.5 + symbolSize}
                   stroke="#059669"
-                  strokeWidth={2.5}
+                  strokeWidth={3}
                 />
                 <Line
                   x1={legendCenterX - symbolSize}
@@ -511,10 +512,10 @@ export default function CrossSection1048({
                   x2={legendCenterX + symbolSize}
                   y2={legendY + baseSize * 1.5 - symbolSize}
                   stroke="#059669"
-                  strokeWidth={2.5}
+                  strokeWidth={3}
                 />
                 <SvgText
-                  x={legendCenterX + symbolSize + 10}
+                  x={legendCenterX + symbolSize + labelGap}
                   y={legendY + baseSize * 1.5 + 4}
                   fontSize={fontSize * 0.9}
                   fill="#1F2937"
@@ -529,10 +530,10 @@ export default function CrossSection1048({
                   points={`${legendCenterX + spacing},${legendY + baseSize * 1.5 - symbolSize} ${legendCenterX + spacing + symbolSize},${legendY + baseSize * 1.5} ${legendCenterX + spacing},${legendY + baseSize * 1.5 + symbolSize} ${legendCenterX + spacing - symbolSize},${legendY + baseSize * 1.5}`}
                   fill="#2563EB"
                   stroke="#1E40AF"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                 />
                 <SvgText
-                  x={legendCenterX + spacing + symbolSize + 10}
+                  x={legendCenterX + spacing + symbolSize + labelGap}
                   y={legendY + baseSize * 1.5 + 4}
                   fontSize={fontSize * 0.9}
                   fill="#1F2937"

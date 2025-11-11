@@ -329,8 +329,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .cross-section img {
-              max-width: 90%;
-              max-height: 110px;
+              max-width: 95%;
+              max-height: 180px;
               height: auto;
               border-radius: 2px;
               display: block;
