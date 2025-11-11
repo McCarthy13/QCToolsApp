@@ -475,7 +475,7 @@ export default function CrossSection1048({
                 Strand Size Key
               </SvgText>
 
-              {/* Circle = 0.6" */}
+              {/* Green Circle = 0.6" */}
               <G>
                 <Circle
                   cx={legendCenterX - spacing}
@@ -486,16 +486,16 @@ export default function CrossSection1048({
                   strokeWidth={2}
                 />
                 <SvgText
-                  x={legendCenterX - spacing + symbolSize + 8}
+                  x={legendCenterX - spacing + symbolSize + 10}
                   y={legendY + baseSize * 1.5 + 4}
                   fontSize={fontSize * 0.9}
                   fill="#1F2937"
                 >
-                  ⭕ = 0.6"
+                  = 0.6"
                 </SvgText>
               </G>
 
-              {/* X = 1/2" */}
+              {/* Green X = 1/2" */}
               <G>
                 <Line
                   x1={legendCenterX - symbolSize}
@@ -514,30 +514,30 @@ export default function CrossSection1048({
                   strokeWidth={2.5}
                 />
                 <SvgText
-                  x={legendCenterX + symbolSize + 8}
+                  x={legendCenterX + symbolSize + 10}
                   y={legendY + baseSize * 1.5 + 4}
                   fontSize={fontSize * 0.9}
                   fill="#1F2937"
                 >
-                  ✖️ = 1/2"
+                  = 1/2"
                 </SvgText>
               </G>
 
-              {/* Diamond = 3/8" */}
+              {/* Blue Diamond = 3/8" */}
               <G>
                 <Polygon
                   points={`${legendCenterX + spacing},${legendY + baseSize * 1.5 - symbolSize} ${legendCenterX + spacing + symbolSize},${legendY + baseSize * 1.5} ${legendCenterX + spacing},${legendY + baseSize * 1.5 + symbolSize} ${legendCenterX + spacing - symbolSize},${legendY + baseSize * 1.5}`}
-                  fill="#059669"
-                  stroke="#047857"
+                  fill="#2563EB"
+                  stroke="#1E40AF"
                   strokeWidth={2}
                 />
                 <SvgText
-                  x={legendCenterX + spacing + symbolSize + 8}
+                  x={legendCenterX + spacing + symbolSize + 10}
                   y={legendY + baseSize * 1.5 + 4}
                   fontSize={fontSize * 0.9}
                   fill="#1F2937"
                 >
-                  🔷 = 3/8"
+                  = 3/8"
                 </SvgText>
               </G>
             </G>
