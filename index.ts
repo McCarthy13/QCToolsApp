@@ -6,6 +6,24 @@ LogBox.ignoreLogs(["Expo AV has been deprecated", "Disconnected from Metro"]);
 // Polyfill for web-only libraries (html2canvas, jspdf) on React Native
 // These libraries expect a browser environment, so we provide minimal mocks
 if (Platform.OS !== 'web' && typeof window !== 'undefined') {
+  // Create a mock location object that both window and document can share
+  const mockLocation = {
+    href: 'about:blank',
+    origin: 'about:blank',
+    protocol: 'about:',
+    host: '',
+    hostname: '',
+    port: '',
+    pathname: 'blank',
+    search: '',
+    hash: '',
+  };
+
+  // Mock window.location for html2canvas
+  if (!window.location) {
+    (window as any).location = mockLocation;
+  }
+
   // Mock document object for html2canvas
   if (!window.document) {
     (window as any).document = {
@@ -16,9 +34,7 @@ if (Platform.OS !== 'web' && typeof window !== 'undefined') {
         protocol: '',
         search: '',
       }),
-      location: {
-        href: 'about:blank',
-      },
+      location: mockLocation,
     };
   }
 }
