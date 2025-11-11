@@ -909,6 +909,15 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     // For native platforms (iOS/Android), generate actual PDF file
     let uri: string;
     try {
+      console.log('[PDF Generator] Starting PDF generation...');
+      console.log('[PDF Generator] HTML length:', htmlContent.length, 'characters');
+      console.log('[PDF Generator] Has base64 image:', !!base64Image);
+
+      // Validate HTML before printing
+      if (!htmlContent || htmlContent.length === 0) {
+        throw new Error('HTML content is empty');
+      }
+
       // First attempt: try with image if available
       const result = await Print.printToFileAsync({
         html: htmlContent,
@@ -922,14 +931,18 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       console.error('[PDF Generator] Error message:', printError?.message);
       console.error('[PDF Generator] Error name:', printError?.name);
 
-      // If the error is a C++ exception or related to image processing, try without image
-      if (base64Image && (
-        printError?.message?.includes('C++') ||
-        printError?.message?.includes('exception') ||
-        printError?.message?.includes('image') ||
-        printError?.message?.includes('memory')
-      )) {
-        console.log('[PDF Generator] Detected image-related error, retrying without image...');
+      // Check if error is related to image or memory issues
+      const errorMessage = printError?.message?.toLowerCase() || '';
+      const isImageError = base64Image && (
+        errorMessage.includes('c++') ||
+        errorMessage.includes('exception') ||
+        errorMessage.includes('image') ||
+        errorMessage.includes('memory') ||
+        errorMessage.includes('printing did not complete')
+      );
+
+      if (isImageError) {
+        console.log('[PDF Generator] Detected potential image-related error, retrying without image...');
         base64Image = undefined;
 
         // Regenerate HTML without image sections
@@ -937,6 +950,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           .replace(/<img[^>]*>/gi, '')
           .replace(/data:image\/[^"'\s]*/gi, '')
           .replace(/<!-- Cross Section -->[\s\S]*?<\/div>\s*<\/div>/i, '');
+
+        console.log('[PDF Generator] Retrying without image, HTML length:', htmlWithoutImage.length);
 
         try {
           const retryResult = await Print.printToFileAsync({
@@ -948,7 +963,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           console.log('[PDF Generator] PDF created successfully without image at:', uri);
         } catch (retryError) {
           console.error('[PDF Generator] Retry failed:', retryError);
-          throw new Error('Failed to generate PDF even without images');
+          throw new Error('Failed to generate PDF even without images: ' + (retryError as Error)?.message);
         }
       } else {
         // If it's not an image-related error, throw the original error

@@ -14,6 +14,11 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-10)
+- ✅ **Improved PDF generation error handling**:
+  - Added validation for HTML content before printing
+  - Enhanced error detection for "Printing did not complete" errors
+  - Now retries PDF generation without images when print errors occur
+  - Better logging to diagnose PDF generation issues
 - ✅ **Fixed html2canvas document.createElement error in React Native**:
   - Added document object mock in index.ts for React Native platforms
   - Prevents html2canvas initialization errors on mobile
