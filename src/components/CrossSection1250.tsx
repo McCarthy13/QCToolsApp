@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import Svg, { Rect, Ellipse, Circle, Text as SvgText, Line, Path, Defs, ClipPath, Polygon } from 'react-native-svg';
+import StrandSizeLegend from './StrandSizeLegend';
 
 interface StrandSlippage {
   strandId: string;
@@ -450,6 +451,11 @@ export default function CrossSection1250({
           );
         })}
       </Svg>
+
+      {/* Show legend if strands are visible */}
+      {(strandCoordinates || bottomStrandSizes || topStrandCoordinates) && (
+        <StrandSizeLegend scale={scale / 10} />
+      )}
     </View>
   );
 }

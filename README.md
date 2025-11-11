@@ -14,6 +14,12 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-10)
+- ✅ **Added Strand Size Legend to all CrossSection components**:
+  - Created reusable StrandSizeLegend component showing shape key
+  - Circle = 0.6", X = 1/2", Diamond = 3/8"
+  - Legend appears below cross-section when strands are visible
+  - Applied to all 6 CrossSection components (8048, 1048, 1247, 1250, 1648, 1650)
+  - Scales proportionally with cross-section scale
 - 🚀 **DEPLOYED TO PRODUCTION** - All fixes including PDF layout improvements deployed to https://precast-qc-tools-web-app.web.app
 - ✅ **Improved PDF layout and formatting**:
   - Cross-section image now properly centered using flexbox layout (display: flex, justify-content: center)
