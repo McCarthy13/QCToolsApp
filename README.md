@@ -14,6 +14,10 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-10)
+- ✅ **Fixed Latin1 encoding error for jsPDF/fast-png library**:
+  - Added TextDecoder polyfill in index.ts to support latin1 encoding
+  - Latin1 encoding now maps bytes directly to Unicode codepoints
+  - Resolves "Unknown encoding: latin1" error when generating PDF reports
 - ✅ **Changed product type 1248 to 1247 throughout the entire codebase**:
   - Renamed CrossSection1248 component to CrossSection1247
   - Updated all imports and references across all screens
