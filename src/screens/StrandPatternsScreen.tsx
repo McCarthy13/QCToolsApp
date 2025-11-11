@@ -566,6 +566,7 @@ export default function StrandPatternsScreen() {
                       {pattern.strand_1_2 > 0 && `${pattern.strand_1_2} × 1/2" `}
                       {pattern.strand_0_6 > 0 && `${pattern.strand_0_6} × 0.6" `}
                       • e = {pattern.eValue}" • Force = {pattern.pullingForce}%
+                      {pattern.requiredForce && ` • ${pattern.requiredForce.toLocaleString()} lbs`}
                     </Text>
                   </View>
                 </View>
@@ -696,6 +697,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
   const [centroid, setCentroid] = useState('');
   const [strandHeight, setStrandHeight] = useState('');
   const [eValue, setEValue] = useState(pattern?.eValue.toString() || '');
+  const [requiredForce, setRequiredForce] = useState(pattern?.requiredForce?.toString() || '');
   const [errors, setErrors] = useState<string[]>([]);
 
   // Parse fraction or decimal input
@@ -878,6 +880,7 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
       strandCoordinates: parsedCoordinates,
       eValue: e,
       pullingForce: force,
+      requiredForce: requiredForce ? parseFloat(requiredForce) : undefined,
       totalArea: calculateTotalArea(),
     });
   };
@@ -1280,6 +1283,25 @@ function PatternEditorModal({ pattern, onClose, onSave }: PatternEditorModalProp
                 keyboardType="decimal-pad"
                 value={eValue}
                 onChangeText={setEValue}
+              />
+            </View>
+
+            {/* Required Force (lbs) - Optional */}
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-gray-700 mb-2">
+                Required Force (lbs) - Optional
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Required force in pounds for this strand pattern
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
+                placeholder="e.g., 15000"
+                placeholderTextColor="#9CA3AF"
+                cursorColor="#000000"
+                keyboardType="numeric"
+                value={requiredForce}
+                onChangeText={setRequiredForce}
               />
             </View>
 

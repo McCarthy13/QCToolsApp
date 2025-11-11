@@ -14,6 +14,14 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-10)
+- ✅ **Increased cross-section illustration height in PDF reports**:
+  - Max height increased from 75px to 110px to prevent strand legend cutoff
+  - Cross-section now displays fully with strand size legend visible
+- ✅ **Added "Required Force (lbs)" field to strand pattern creator**:
+  - New optional field in strand pattern creation/editing form
+  - Allows specifying required force in pounds for each strand pattern
+  - Will be used in future calculations involving strand patterns
+  - Displays in strand pattern list view when set
 - ✅ **Added Strand Size Legend to all CrossSection components**:
   - Created reusable StrandSizeLegend component showing shape key
   - Circle = 0.6", X = 1/2", Diamond = 3/8"

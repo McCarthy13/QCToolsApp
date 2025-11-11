@@ -20,6 +20,7 @@ export interface CustomStrandPattern {
   strandCoordinates?: StrandCoordinate[]; // (x,y) position of each strand from bottom-left corner
   eValue: number; // Distance from bottom to center of strand (inches)
   pullingForce: number; // Percentage of break strength (1-99%)
+  requiredForce?: number; // Required force in pounds (lbs) for this strand pattern
   totalArea: number; // Total strand area in in²
   // Legacy fields - kept for backward compatibility with old patterns
   momentOfInertia?: number; // Deprecated: Should come from product, not strand pattern
