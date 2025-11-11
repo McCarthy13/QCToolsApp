@@ -272,10 +272,12 @@ export default function CrossSection1048({
   const clipPathId = React.useMemo(() => `plank-clip-${Math.random().toString(36).substr(2, 9)}`, []);
 
   // Calculate extra height needed for legend (if strands are visible)
-  const legendHeight = (strandCoordinates || bottomStrandSizes || topStrandCoordinates) ? (12 * (scale / 10) * 2 + 8 * (scale / 10)) : 0;
+  // Legend needs: baseSize * 2 + marginTop where baseSize = 12 * (scale/10)
+  // Adding extra padding to ensure no cutoff
+  const legendHeight = (strandCoordinates || bottomStrandSizes || topStrandCoordinates) ? (12 * (scale / 10) * 2 + 8 * (scale / 10) + 10) : 0;
 
   return (
-    <View style={{ width: svgWidth, height: svgHeight + legendHeight, alignSelf: 'center' }}>
+    <View style={{ width: svgWidth, height: svgHeight + legendHeight, alignSelf: 'center', overflow: 'visible' }}>
       <Svg width={svgWidth} height={svgHeight}>
         {/* Define clip path for clean core cutting */}
         <Defs>
