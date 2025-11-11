@@ -15,8 +15,10 @@ A comprehensive mobile app for precast concrete quality management, built with R
 
 ### Recent Updates (2025-11-10)
 - ✅ **CRITICAL FIX: PDF generator now downloads files directly on web (no print dialog)**:
-  - Fixed platform detection to use `Platform.OS === 'web'` instead of checking window object
+  - Fixed platform detection in both pdfGenerator.ts AND SlippageSummaryScreen.tsx to use `Platform.OS === 'web'`
+  - Fixed "Element is not attached to a Document" error on React Native
   - jsPDF and html2canvas now only load on web platform (not React Native)
+  - captureRef (react-native-view-shot) only used on native platforms
   - Added error logging to help diagnose library loading issues
   - Web users now get direct PDF file downloads instead of print dialog
 - ✅ **Improved PDF generation error handling**:

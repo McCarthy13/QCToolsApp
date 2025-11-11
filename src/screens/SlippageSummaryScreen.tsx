@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef } from "react";
-import { View, Text, ScrollView, Pressable, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
@@ -106,7 +106,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     try {
       // Capture the cross-section diagram as an image
       let crossSectionImageUri: string | undefined;
-      const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+      const isWeb = Platform.OS === 'web';
 
       if (crossSectionRef.current) {
         try {
