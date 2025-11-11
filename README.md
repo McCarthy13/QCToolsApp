@@ -14,6 +14,16 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-11)
+- ✅ **PDF styling improvements and responsive design**:
+  - Changed table headers from blue gradient to black background with white text (prevents confusion with top strand blue color)
+  - Removed purple color from END 2 values - all END 1 and END 2 values now black
+  - Bottom strand names display in green (#059669), Top strand names display in blue (#2563eb)
+  - Implemented responsive sizing with CSS media queries for different screen sizes:
+    - Mobile (< 768px): Optimized for small screens, prevents legend cutoff
+    - Tablet (768px - 1023px): Medium sizing with improved readability
+    - Desktop (≥ 1024px): Large cross-section images (up to 500px height) and significantly larger text for easy reading
+  - Cross-section legend now fully visible on all device sizes
+  - Font sizes automatically scale based on device: 9px (mobile), 10px (tablet), 12px (desktop)
 - ✅ **DEPLOYED: Fixed Firestore permissions error for library collections**:
   - Added explicit security rules for all library collections (strandLibrary, aggregateLibrary, admixLibrary, projectLibrary, productLibrary)
   - All approved users can now read and write to library collections

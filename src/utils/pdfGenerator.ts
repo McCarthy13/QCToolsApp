@@ -235,6 +235,62 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               overflow: hidden;
             }
 
+            /* Responsive font and layout sizing */
+            @media screen and (min-width: 768px) {
+              /* Tablets - slightly larger text */
+              body, .pdf-container {
+                font-size: 10px;
+                padding: 16px 24px;
+              }
+              h1 {
+                font-size: 16px !important;
+              }
+              h2 {
+                font-size: 11px !important;
+              }
+              .strand-table th {
+                font-size: 8px !important;
+              }
+              .strand-table td {
+                font-size: 8.5px !important;
+              }
+            }
+
+            @media screen and (min-width: 1024px) {
+              /* Desktop - much larger text for readability */
+              body, .pdf-container {
+                font-size: 12px;
+                padding: 20px 30px;
+                max-width: 800px;
+              }
+              h1 {
+                font-size: 20px !important;
+              }
+              h2 {
+                font-size: 14px !important;
+              }
+              .strand-table th {
+                font-size: 10px !important;
+                padding: 5px 6px !important;
+              }
+              .strand-table td {
+                font-size: 11px !important;
+                padding: 5px 6px !important;
+              }
+              .info-label {
+                font-size: 8px !important;
+              }
+              .info-value {
+                font-size: 10px !important;
+              }
+              .stat-label {
+                font-size: 8px !important;
+              }
+              .stat-value {
+                font-size: 11px !important;
+              }
+            }
+
             .header {
               border-bottom: 2px solid #2563eb;
               padding-bottom: 3px;
@@ -336,6 +392,38 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               display: block;
               margin: 0 auto;
             }
+
+            /* Responsive sizing for different devices */
+            @media screen and (min-width: 768px) {
+              /* Tablets and larger - increase cross-section size */
+              .cross-section img {
+                max-height: 300px;
+                max-width: 90%;
+              }
+            }
+
+            @media screen and (min-width: 1024px) {
+              /* Desktop - significantly larger cross-section */
+              .cross-section {
+                padding: 8px;
+              }
+              .cross-section img {
+                max-height: 500px;
+                max-width: 85%;
+              }
+            }
+
+            @media screen and (max-width: 767px) {
+              /* Mobile devices - ensure cross-section fits with legend */
+              .cross-section {
+                padding: 2px;
+                margin: 2px auto;
+              }
+              .cross-section img {
+                max-height: 180px;
+                max-width: 100%;
+              }
+            }
             ` : ''}
 
             .stats-grid {
@@ -389,7 +477,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .strand-table th {
-              background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+              background: #000000;
               padding: 3px 4px;
               text-align: left;
               font-size: 6.5px;
@@ -398,7 +486,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               letter-spacing: 0.08em;
               word-spacing: 0.2em;
               font-weight: 700;
-              border-bottom: 2px solid #1e3a8a;
+              border-bottom: 2px solid #000000;
               line-height: 1.4;
               vertical-align: middle;
               white-space: nowrap;
@@ -697,11 +785,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
                     return `
                       <tr>
-                        <td class="strand-id">
+                        <td style="font-weight: 700; color: #059669;">
                           Bottom Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
                         </td>
                         <td>
-                          <span style="color: #047857; font-weight: 600;">
+                          <span style="color: #111827; font-weight: 600;">
                             ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
                           </span>
                           <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
@@ -709,7 +797,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                           </span>
                         </td>
                         <td>
-                          <span style="color: #6d28d9; font-weight: 600;">
+                          <span style="color: #111827; font-weight: 600;">
                             ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
                           </span>
                           <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
@@ -754,11 +842,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
                     return `
                       <tr>
-                        <td class="strand-id">
+                        <td style="font-weight: 700; color: #2563eb;">
                           Top Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
                         </td>
                         <td>
-                          <span style="color: #047857; font-weight: 600;">
+                          <span style="color: #111827; font-weight: 600;">
                             ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
                           </span>
                           <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
@@ -766,7 +854,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                           </span>
                         </td>
                         <td>
-                          <span style="color: #6d28d9; font-weight: 600;">
+                          <span style="color: #111827; font-weight: 600;">
                             ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
                           </span>
                           <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
