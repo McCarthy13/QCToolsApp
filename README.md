@@ -14,6 +14,13 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-10)
+- ✅ **Improved PDF layout and formatting**:
+  - Cross-section image now properly centered using flexbox layout
+  - Reduced page padding and margins to fit all content on one page
+  - Set image max-width to 90% for better centering
+  - Added @page CSS rule to control page size
+  - Added overflow:hidden to prevent page breaks
+  - Reduced section spacing (5px → 4px) and header spacing (5px → 4px)
 - 🚀 **DEPLOYED TO PRODUCTION** - All fixes deployed to https://precast-qc-tools-web-app.web.app
 - ✅ **CRITICAL FIX: PDF generator now downloads files directly on web (no print dialog)**:
   - Fixed platform detection in both pdfGenerator.ts AND SlippageSummaryScreen.tsx to use `Platform.OS === 'web'`

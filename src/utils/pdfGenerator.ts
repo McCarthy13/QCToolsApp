@@ -211,6 +211,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
+            @page {
+              size: letter;
+              margin: 0;
+            }
+
             * {
               margin: 0;
               padding: 0;
@@ -219,19 +224,21 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             body, .pdf-container {
               font-family: 'Helvetica Neue', Arial, sans-serif;
-              padding: 16px 20px;
+              padding: 12px 18px;
               color: #1f2937;
               line-height: 1.3;
               background-color: #ffffff;
               font-size: 9px;
               word-spacing: 0.2em;
               letter-spacing: 0.02em;
+              max-width: 612px;
+              overflow: hidden;
             }
 
             .header {
               border-bottom: 2px solid #2563eb;
               padding-bottom: 3px;
-              margin-bottom: 5px;
+              margin-bottom: 4px;
             }
 
             h1 {
@@ -252,13 +259,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .section {
-              margin-bottom: 5px;
+              margin-bottom: 4px;
             }
 
             h2 {
               font-size: 9px;
               color: #374151;
-              margin-bottom: 3px;
+              margin-bottom: 2px;
               padding-bottom: 2px;
               border-bottom: 1px solid #e5e7eb;
               line-height: 1.3;
@@ -311,18 +318,23 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 4px 0;
+              margin: 4px auto;
               padding: 4px;
               background: #ffffff;
               border-radius: 3px;
               border: 1px solid #e5e7eb;
+              display: flex;
+              justify-content: center;
+              align-items: center;
             }
 
             .cross-section img {
-              max-width: 100%;
-              max-height: 85px;
+              max-width: 90%;
+              max-height: 75px;
               height: auto;
               border-radius: 2px;
+              display: block;
+              margin: 0 auto;
             }
             ` : ''}
 
