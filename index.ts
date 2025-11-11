@@ -1,7 +1,27 @@
 import "./global.css";
 import "react-native-get-random-values";
-import { LogBox } from "react-native";
+import { LogBox, Platform } from "react-native";
 LogBox.ignoreLogs(["Expo AV has been deprecated", "Disconnected from Metro"]);
+
+// Polyfill for web-only libraries (html2canvas, jspdf) on React Native
+// These libraries expect a browser environment, so we provide minimal mocks
+if (Platform.OS !== 'web' && typeof window !== 'undefined') {
+  // Mock document object for html2canvas
+  if (!window.document) {
+    (window as any).document = {
+      createElement: () => ({
+        href: '',
+        hostname: '',
+        pathname: '',
+        protocol: '',
+        search: '',
+      }),
+      location: {
+        href: 'about:blank',
+      },
+    };
+  }
+}
 
 // Polyfill for latin1 encoding support (required by jspdf/fast-png)
 // Latin1 is essentially the first 256 Unicode characters
