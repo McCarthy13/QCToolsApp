@@ -40,8 +40,16 @@ function info(message) {
 // Load .env file
 function loadEnvFile() {
   const envPath = path.join(process.cwd(), '.env');
+
+  // Check if credentials are already in environment
+  if (process.env.FIREBASE_SERVICE_ACCOUNT && process.env.FIREBASE_PROJECT_ID) {
+    info('Using Firebase credentials from environment variables');
+    return;
+  }
+
+  // If not in environment, try to load from .env file
   if (!fs.existsSync(envPath)) {
-    error('.env file not found');
+    error('.env file not found and credentials not in environment');
   }
 
   const envContent = fs.readFileSync(envPath, 'utf8');
@@ -63,8 +71,8 @@ function loadEnvFile() {
 async function main() {
   log('\n🚀 Starting Firebase deployment process...', 'magenta');
 
-  // Load environment variables from .env
-  info('Loading credentials from .env file...');
+  // Load environment variables from .env or use existing environment
+  info('Loading credentials...');
   loadEnvFile();
 
   // Check for required environment variables
