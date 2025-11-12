@@ -117,20 +117,28 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       await initializeAuth();
-      // Initialize all Firebase-backed stores in parallel
-      await Promise.all([
-        initializeStrandLibrary(),
-        initializeStrandPatterns(),
-        initializeProducts(),
-        initializeAggregates(),
-        initializeAdmixes(),
-        initializeProjects(),
-        initializeContacts(),
-      ]);
       setIsLoading(false);
     };
     init();
   }, []);
+
+  // Initialize Firebase-backed stores only after user is authenticated
+  useEffect(() => {
+    if (currentUser && currentUser.status === 'approved') {
+      const initStores = async () => {
+        await Promise.all([
+          initializeStrandLibrary(),
+          initializeStrandPatterns(),
+          initializeProducts(),
+          initializeAggregates(),
+          initializeAdmixes(),
+          initializeProjects(),
+          initializeContacts(),
+        ]);
+      };
+      initStores();
+    }
+  }, [currentUser]);
 
   // Handle successful login
   const handleLoginSuccess = (requiresPasswordChange: boolean) => {

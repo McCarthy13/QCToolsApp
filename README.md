@@ -13,6 +13,14 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Admin Approval System** - Working and tested
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
+### Recent Updates (2025-11-12)
+- ✅ **FIXED: Firestore permission errors on app startup**:
+  - Fixed race condition where Firebase-backed stores were initializing before user authentication
+  - Stores now only initialize AFTER user is authenticated and approved
+  - Prevents "Missing or insufficient permissions" errors on login screen
+  - Updated App.tsx to split auth initialization and store initialization into separate useEffect hooks
+  - **NOTE**: Firestore security rules must still be deployed to production for full fix
+
 ### Recent Updates (2025-11-11)
 - ✅ **PDF styling improvements and responsive design**:
   - Changed table headers from blue gradient to black background with white text (prevents confusion with top strand blue color)
