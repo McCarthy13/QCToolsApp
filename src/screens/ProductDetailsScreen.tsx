@@ -68,6 +68,7 @@ export default function ProductDetailsScreen({ navigation }: Props) {
   // Project Name autocomplete
   const [showProjectNameSuggestions, setShowProjectNameSuggestions] = useState(false);
   const [projectNameSuggestions, setProjectNameSuggestions] = useState<Array<{jobNumber: string, jobName: string}>>([]);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
 
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -76,7 +77,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
     if (projectNumber.trim()) {
       const project = findByJobNumber(projectNumber);
       if (project) {
+        setIsAutoFilling(true);
         setProjectName(project.jobName);
+        setTimeout(() => setIsAutoFilling(false), 100);
       } else {
         // Clear project name if job number doesn't match any project
         setProjectName("");
@@ -89,6 +92,9 @@ export default function ProductDetailsScreen({ navigation }: Props) {
 
   // Filter Project Name suggestions when user types
   useEffect(() => {
+    // Don't show suggestions if we're auto-filling from job number
+    if (isAutoFilling) return;
+
     if (projectName.trim().length >= 2) {
       const suggestions = searchByJobName(projectName);
       setProjectNameSuggestions(suggestions);
@@ -97,13 +103,15 @@ export default function ProductDetailsScreen({ navigation }: Props) {
       setProjectNameSuggestions([]);
       setShowProjectNameSuggestions(false);
     }
-  }, [projectName, searchByJobName]);
+  }, [projectName, searchByJobName, isAutoFilling]);
 
   // Handle selecting a project name from suggestions
   const handleSelectProjectName = (jobNumber: string, jobName: string) => {
+    setIsAutoFilling(true);
     setProjectName(jobName);
     setProjectNumber(jobNumber);
     setShowProjectNameSuggestions(false);
+    setTimeout(() => setIsAutoFilling(false), 100);
   };
 
   // Get bottom patterns (where strands are positioned)
