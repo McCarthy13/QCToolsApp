@@ -37,7 +37,6 @@ yarn-error.*
 # iOS & Android
 ios/
 android/
-.env
 
 # Credentials backup (contains sensitive API keys)
 CREDENTIALS.md
