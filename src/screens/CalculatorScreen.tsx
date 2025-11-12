@@ -56,7 +56,13 @@ export default function CalculatorScreen() {
       const project = findByJobNumber(projectNumber);
       if (project) {
         setProjectName(project.jobName);
+      } else {
+        // Clear project name if job number doesn't match any project
+        setProjectName('');
       }
+    } else {
+      // Clear project name if job number is empty
+      setProjectName('');
     }
   }, [projectNumber, findByJobNumber]);
 

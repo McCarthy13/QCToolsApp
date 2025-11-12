@@ -14,8 +14,9 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-12)
-- ✅ **DEPLOYED: Auto-populate Project Name from Job Number**:
+- ✅ **DEPLOYED: Auto-populate Project Name from Job Number (Fixed)**:
   - When a Job Number (Project Number) is entered or scanned, the Project Name field automatically populates from the Project Library
+  - **NOW TRULY DYNAMIC**: Project Name clears when Job Number is modified/deleted and no longer matches
   - Works in both Camber Calculator and Slippage Identifier (Product Details) screens
   - Uses the existing `useJobAutocomplete` hook with `findByJobNumber` function
   - Real-time lookup as user types or when camera scanner fills the field
