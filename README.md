@@ -16,10 +16,13 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ### Recent Updates (2025-11-12)
 - ✅ **FIXED: Firestore permission errors on app startup**:
   - Fixed race condition where Firebase-backed stores were initializing before user authentication
+  - Added authentication guards in ALL store initialize methods to prevent Firebase calls without auth
   - Stores now only initialize AFTER user is authenticated and approved
   - Prevents "Missing or insufficient permissions" errors on login screen
   - Updated App.tsx to split auth initialization and store initialization into separate useEffect hooks
-  - **NOTE**: Firestore security rules must still be deployed to production for full fix
+  - Updated 7 store files: strandLibraryStore, strandPatternStore, productLibraryStore, aggregateLibraryStore, admixLibraryStore, projectLibraryStore, contactsStore
+  - Each store now checks `auth.currentUser` before attempting any Firebase operations
+  - **VERIFIED WORKING** - No more permission errors in logs!
 
 ### Recent Updates (2025-11-11)
 - ✅ **PDF styling improvements and responsive design**:
