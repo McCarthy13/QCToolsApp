@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { Ionicons } from "@expo/vector-icons";
 import { parseMeasurementInput } from "../utils/cn";
+import { useJobAutocomplete } from "../utils/jobAutocomplete";
 
 type ProductDetailsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -38,6 +39,7 @@ const PRODUCT_TYPES = [
 export default function ProductDetailsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { customPatterns } = useStrandPatternStore();
+  const { findByJobNumber } = useJobAutocomplete();
 
   // Optional fields
   const [projectName, setProjectName] = useState("");
@@ -64,6 +66,16 @@ export default function ProductDetailsScreen({ navigation }: Props) {
   const [showTopStrandModal, setShowTopStrandModal] = useState(false);
 
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Auto-populate Project Name when Project Number changes
+  useEffect(() => {
+    if (projectNumber.trim()) {
+      const project = findByJobNumber(projectNumber);
+      if (project) {
+        setProjectName(project.jobName);
+      }
+    }
+  }, [projectNumber, findByJobNumber]);
 
   // Get bottom patterns (where strands are positioned)
   const bottomPatterns = customPatterns.filter(

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { parseMeasurementInput } from '../utils/cn';
+import { useJobAutocomplete } from '../utils/jobAutocomplete';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Calculator'>;
 
@@ -32,6 +33,7 @@ export default function CalculatorScreen() {
   const { currentInputs, addCalculation } = useCalculatorStore();
   const { customPatterns } = useStrandPatternStore();
   const { products } = useProductLibraryStore();
+  const { findByJobNumber } = useJobAutocomplete();
 
   const [projectName, setProjectName] = useState('');
   const [projectNumber, setProjectNumber] = useState('');
@@ -47,6 +49,16 @@ export default function CalculatorScreen() {
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [selectedSubProductId, setSelectedSubProductId] = useState<string>('');
   const [showProductModal, setShowProductModal] = useState(false);
+
+  // Auto-populate Project Name when Project Number changes
+  useEffect(() => {
+    if (projectNumber.trim()) {
+      const project = findByJobNumber(projectNumber);
+      if (project) {
+        setProjectName(project.jobName);
+      }
+    }
+  }, [projectNumber, findByJobNumber]);
 
   const [strandPattern, setStrandPattern] = useState<string>('');
   const [topStrandPattern, setTopStrandPattern] = useState<string>('');
