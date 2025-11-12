@@ -14,6 +14,13 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-12)
+- ✅ **FIXED: PDF Generator for Slippage Summary Reports**:
+  - Fixed race condition where jsPDF and html2canvas libraries weren't loading properly on web
+  - Improved dynamic import handling with proper async/await pattern
+  - Added comprehensive error logging to help diagnose PDF generation issues
+  - Libraries now load via a single Promise that's awaited before PDF generation
+  - Better error handling with fallback to browser print dialog if libraries fail to load
+  - Enhanced logging throughout the PDF generation pipeline for easier debugging
 - ✅ **DEPLOYED: Autocomplete Dropdown for Project Name (Polished)**:
   - When typing in the Project Name field, a dropdown shows filtered suggestions from the Project Library
   - **FIXED UI**: Dropdown now properly floats above other fields with proper z-index and shadow

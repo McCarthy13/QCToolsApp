@@ -8,21 +8,24 @@ import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn
 // Web-only PDF generation using jsPDF
 let jsPDF: any = null;
 let html2canvas: any = null;
+let librariesLoading: Promise<void> | null = null;
 
 // Dynamically import jsPDF and html2canvas only on web
 if (Platform.OS === 'web') {
-  import('jspdf').then(module => {
-    jsPDF = module.jsPDF;
-    console.log('[PDF Generator] jsPDF loaded successfully');
-  }).catch(err => {
-    console.error('[PDF Generator] Failed to load jsPDF:', err);
-  });
-  import('html2canvas').then(module => {
-    html2canvas = module.default;
-    console.log('[PDF Generator] html2canvas loaded successfully');
-  }).catch(err => {
-    console.error('[PDF Generator] Failed to load html2canvas:', err);
-  });
+  librariesLoading = (async () => {
+    try {
+      const jsPDFModule = await import('jspdf');
+      jsPDF = jsPDFModule.jsPDF;
+      console.log('[PDF Generator] jsPDF loaded successfully');
+
+      const html2canvasModule = await import('html2canvas');
+      html2canvas = html2canvasModule.default;
+      console.log('[PDF Generator] html2canvas loaded successfully');
+    } catch (err) {
+      console.error('[PDF Generator] Failed to load PDF libraries:', err);
+      throw err;
+    }
+  })();
 }
 
 interface PDFGenerationParams {
@@ -896,15 +899,22 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     if (isWeb) {
       console.log('[PDF Generator] Web platform detected - using jsPDF for direct PDF download...');
 
-      // Wait for both libraries to load
-      let attempts = 0;
-      while ((!jsPDF || !html2canvas) && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
+      // Wait for libraries to load if they haven't already
+      if (librariesLoading) {
+        try {
+          console.log('[PDF Generator] Waiting for libraries to load...');
+          await librariesLoading;
+          console.log('[PDF Generator] Libraries loaded successfully');
+        } catch (err) {
+          console.error('[PDF Generator] Failed to load libraries:', err);
+          console.log('[PDF Generator] Falling back to print dialog');
+          await Print.printAsync({ html: htmlContent });
+          return 'web-print-dialog-opened';
+        }
       }
 
       if (!jsPDF || !html2canvas) {
-        console.error('[PDF Generator] Libraries not loaded, falling back to print dialog');
+        console.error('[PDF Generator] Libraries not available, falling back to print dialog');
         await Print.printAsync({ html: htmlContent });
         return 'web-print-dialog-opened';
       }
@@ -962,14 +972,23 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
         console.log('[PDF Generator] Rendering HTML to canvas...');
 
-        // Convert HTML to canvas
+        // Convert HTML to canvas with better error handling
         const canvas = await html2canvas(tempDiv, {
           scale: 2, // Higher quality
           useCORS: true,
           allowTaint: true,
           logging: true, // Enable logging to debug
           backgroundColor: '#ffffff',
+          onclone: (clonedDoc: Document) => {
+            console.log('[PDF Generator] Document cloned for rendering');
+            // Ensure images are visible in the clone
+            const clonedImages = clonedDoc.querySelectorAll('img');
+            console.log('[PDF Generator] Found', clonedImages.length, 'images in cloned document');
+          },
         });
+
+        console.log('[PDF Generator] Canvas created successfully');
+        console.log('[PDF Generator] Canvas dimensions:', canvas.width, 'x', canvas.height);
 
         console.log('[PDF Generator] Creating PDF from canvas...');
 
@@ -1010,6 +1029,22 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         return 'web-pdf-downloaded';
       } catch (error: any) {
         console.error('[PDF Generator] PDF generation failed:', error);
+        console.error('[PDF Generator] Error name:', error?.name);
+        console.error('[PDF Generator] Error message:', error?.message);
+        if (error?.stack) {
+          console.error('[PDF Generator] Error stack:', error.stack);
+        }
+
+        // Try to clean up the temp div if it exists
+        try {
+          const existingTempDiv = document.querySelector('[style*="-9999px"]');
+          if (existingTempDiv) {
+            document.body.removeChild(existingTempDiv);
+          }
+        } catch (cleanupError) {
+          console.error('[PDF Generator] Cleanup failed:', cleanupError);
+        }
+
         console.log('[PDF Generator] Falling back to print dialog');
         await Print.printAsync({ html: htmlContent });
         return 'web-print-dialog-opened';
