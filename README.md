@@ -14,9 +14,10 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-12)
-- ✅ **DEPLOYED: Autocomplete Dropdown for Project Name (Fixed)**:
+- ✅ **DEPLOYED: Autocomplete Dropdown for Project Name (Polished)**:
   - When typing in the Project Name field, a dropdown shows filtered suggestions from the Project Library
-  - **FIXED**: You can now type freely without interference - autocomplete only triggers when YOU type, not when fields auto-populate
+  - **FIXED UI**: Dropdown now properly floats above other fields with proper z-index and shadow
+  - **FIXED TYPING**: You can now type freely without interference - autocomplete only triggers when YOU type, not when fields auto-populate
   - Suggestions appear after typing 2+ characters and filter in real-time as you type
   - Each suggestion shows the Project Name and Job Number
   - Clicking a suggestion fills both Project Name AND Project Number automatically

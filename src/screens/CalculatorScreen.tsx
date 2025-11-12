@@ -295,11 +295,11 @@ export default function CalculatorScreen() {
               Product Details (Optional)
             </Text>
 
-            <View className="mb-4">
+            <View className="mb-4" style={{ zIndex: 10 }}>
               <Text className="text-gray-700 text-sm font-medium mb-2">
                 Project Name
               </Text>
-              <View>
+              <View style={{ position: 'relative' }}>
                 <TextInput
                   className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
                   placeholder="Enter project name"
@@ -318,13 +318,30 @@ export default function CalculatorScreen() {
                   }}
                 />
                 {showProjectNameSuggestions && projectNameSuggestions.length > 0 && (
-                  <View className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg" style={{ zIndex: 1000, maxHeight: 200 }}>
-                    <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                  <View
+                    className="bg-white border border-gray-300 rounded-lg"
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: 4,
+                      zIndex: 9999,
+                      maxHeight: 200,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 8,
+                      elevation: 8,
+                    }}
+                  >
+                    <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
                       {projectNameSuggestions.map((suggestion, index) => (
                         <Pressable
                           key={`${suggestion.jobNumber}-${index}`}
                           onPress={() => handleSelectProjectName(suggestion.jobNumber, suggestion.jobName)}
                           className="px-4 py-3 border-b border-gray-200"
+                          style={{ backgroundColor: '#fff' }}
                         >
                           <Text className="text-gray-900 text-base font-medium">{suggestion.jobName}</Text>
                           <Text className="text-gray-500 text-sm">Job #: {suggestion.jobNumber}</Text>
