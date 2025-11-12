@@ -67,7 +67,7 @@ export default function ProductTagScannerScreen() {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 1,
+        quality: 0.7, // Reduced from 1.0 for faster processing
         exif: true,
         base64: true, // Get base64 data directly
       });
@@ -192,7 +192,7 @@ export default function ProductTagScannerScreen() {
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1.0,
+        quality: 0.7, // Reduced from 1.0 for faster processing
         skipProcessing: false,
       });
 

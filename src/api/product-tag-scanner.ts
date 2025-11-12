@@ -188,7 +188,7 @@ Return ONLY the JSON, no other text.`;
     // Call OpenAI API using fetch
     // For web, the Cloud Function handles the Authorization header
     const requestBody = {
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini', // Using mini for faster processing
       messages: [
         {
           role: 'user',
@@ -198,14 +198,14 @@ Return ONLY the JSON, no other text.`;
               type: 'image_url',
               image_url: {
                 url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
+                detail: 'low', // Changed from 'high' for faster processing
               },
             },
           ],
         },
       ],
       temperature: 0.1,
-      max_tokens: 1000,
+      max_tokens: 300, // Reduced from 1000 for faster response
     };
 
     const fetchOptions: RequestInit = {
