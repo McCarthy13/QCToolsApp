@@ -39,7 +39,7 @@ const PRODUCT_TYPES = [
 export default function ProductDetailsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { customPatterns } = useStrandPatternStore();
-  const { findByJobNumber } = useJobAutocomplete();
+  const { findByJobNumber, searchByJobName } = useJobAutocomplete();
 
   // Optional fields
   const [projectName, setProjectName] = useState("");
@@ -65,6 +65,10 @@ export default function ProductDetailsScreen({ navigation }: Props) {
   const [showStrandModal, setShowStrandModal] = useState(false);
   const [showTopStrandModal, setShowTopStrandModal] = useState(false);
 
+  // Project Name autocomplete
+  const [showProjectNameSuggestions, setShowProjectNameSuggestions] = useState(false);
+  const [projectNameSuggestions, setProjectNameSuggestions] = useState<Array<{jobNumber: string, jobName: string}>>([]);
+
   const [errors, setErrors] = useState<string[]>([]);
 
   // Auto-populate Project Name when Project Number changes
@@ -82,6 +86,25 @@ export default function ProductDetailsScreen({ navigation }: Props) {
       setProjectName("");
     }
   }, [projectNumber, findByJobNumber]);
+
+  // Filter Project Name suggestions when user types
+  useEffect(() => {
+    if (projectName.trim().length >= 2) {
+      const suggestions = searchByJobName(projectName);
+      setProjectNameSuggestions(suggestions);
+      setShowProjectNameSuggestions(suggestions.length > 0);
+    } else {
+      setProjectNameSuggestions([]);
+      setShowProjectNameSuggestions(false);
+    }
+  }, [projectName, searchByJobName]);
+
+  // Handle selecting a project name from suggestions
+  const handleSelectProjectName = (jobNumber: string, jobName: string) => {
+    setProjectName(jobName);
+    setProjectNumber(jobNumber);
+    setShowProjectNameSuggestions(false);
+  };
 
   // Get bottom patterns (where strands are positioned)
   const bottomPatterns = customPatterns.filter(
@@ -256,14 +279,41 @@ export default function ProductDetailsScreen({ navigation }: Props) {
               <Text className="text-gray-700 text-sm font-medium mb-2">
                 Project Name
               </Text>
-              <TextInput
-                className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-                placeholder="Enter project name"
-                placeholderTextColor="#9CA3AF"
-                cursorColor="#000000"
-                value={projectName}
-                onChangeText={setProjectName}
-              />
+              <View>
+                <TextInput
+                  className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
+                  placeholder="Enter project name"
+                  placeholderTextColor="#9CA3AF"
+                  cursorColor="#000000"
+                  value={projectName}
+                  onChangeText={setProjectName}
+                  onBlur={() => {
+                    // Delay hiding suggestions to allow click events to register
+                    setTimeout(() => setShowProjectNameSuggestions(false), 200);
+                  }}
+                  onFocus={() => {
+                    if (projectName.trim().length >= 2 && projectNameSuggestions.length > 0) {
+                      setShowProjectNameSuggestions(true);
+                    }
+                  }}
+                />
+                {showProjectNameSuggestions && projectNameSuggestions.length > 0 && (
+                  <View className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg" style={{ zIndex: 1000, maxHeight: 200 }}>
+                    <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
+                      {projectNameSuggestions.map((suggestion, index) => (
+                        <Pressable
+                          key={`${suggestion.jobNumber}-${index}`}
+                          onPress={() => handleSelectProjectName(suggestion.jobNumber, suggestion.jobName)}
+                          className="px-4 py-3 border-b border-gray-200"
+                        >
+                          <Text className="text-gray-900 text-base font-medium">{suggestion.jobName}</Text>
+                          <Text className="text-gray-500 text-sm">Job #: {suggestion.jobNumber}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
             </View>
 
             <View className="mb-4">
