@@ -127,9 +127,15 @@ export async function parseScheduleImage(
       console.log('[Schedule Scanner] Original blob size:', blob.size);
 
       // Compress image before converting to base64
-      const compressedBlob = await compressImage(blob);
-      console.log('[Schedule Scanner] Compressed blob size:', compressedBlob.size, 'reduction:',
-        Math.round((1 - compressedBlob.size / blob.size) * 100) + '%');
+      let compressedBlob = blob;
+      try {
+        compressedBlob = await compressImage(blob);
+        console.log('[Schedule Scanner] Compressed blob size:', compressedBlob.size, 'reduction:',
+          Math.round((1 - compressedBlob.size / blob.size) * 100) + '%');
+      } catch (compressionError) {
+        console.warn('[Schedule Scanner] Compression failed, using original blob:', compressionError);
+        // Continue with original blob if compression fails
+      }
 
       base64Image = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
