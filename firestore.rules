@@ -90,6 +90,12 @@ service cloud.firestore {
       allow read, write: if isApproved();
     }
 
+    // Contacts collection - accessible to all authenticated users
+    match /contacts/{contactId} {
+      // Authenticated users can read and write contacts
+      allow read, write: if isAuthenticated();
+    }
+
     // All other collections - only approved users can access
     match /{document=**} {
       allow read, write: if isApproved();

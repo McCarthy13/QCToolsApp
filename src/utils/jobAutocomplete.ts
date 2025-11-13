@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import { Project } from '../types/project-library';
 
@@ -16,28 +17,28 @@ export function useJobAutocomplete() {
   /**
    * Find project by exact job number match
    */
-  const findByJobNumber = (jobNumber: string): Project | null => {
+  const findByJobNumber = useCallback((jobNumber: string): Project | null => {
     const trimmed = jobNumber.trim();
     if (!trimmed) return null;
     
     return projects.find(p => p.jobNumber.toLowerCase() === trimmed.toLowerCase()) || null;
-  };
+  }, [projects]);
 
   /**
    * Find project by exact job name match
    */
-  const findByJobName = (jobName: string): Project | null => {
+  const findByJobName = useCallback((jobName: string): Project | null => {
     const trimmed = jobName.trim();
     if (!trimmed) return null;
     
     return projects.find(p => p.jobName.toLowerCase() === trimmed.toLowerCase()) || null;
-  };
+  }, [projects]);
 
   /**
    * Search for projects by partial job name match
    * Returns array of matching projects sorted by relevance
    */
-  const searchByJobName = (query: string): JobSuggestion[] => {
+  const searchByJobName = useCallback((query: string): JobSuggestion[] => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed || trimmed.length < 2) return [];
 
@@ -61,12 +62,12 @@ export function useJobAutocomplete() {
       
       return a.jobName.localeCompare(b.jobName);
     });
-  };
+  }, [projects]);
 
   /**
    * Search for projects by partial job number match
    */
-  const searchByJobNumber = (query: string): JobSuggestion[] => {
+  const searchByJobNumber = useCallback((query: string): JobSuggestion[] => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return [];
 
@@ -78,7 +79,7 @@ export function useJobAutocomplete() {
         project,
       }))
       .sort((a, b) => a.jobNumber.localeCompare(b.jobNumber));
-  };
+  }, [projects]);
 
   return {
     findByJobNumber,
