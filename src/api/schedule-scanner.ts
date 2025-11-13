@@ -6,6 +6,59 @@
 
 import { extractJobNumber } from '../utils/jobNumberValidation';
 
+/**
+ * Compress an image blob for faster upload
+ * Reduces resolution and quality while maintaining readability for OCR
+ */
+async function compressImage(blob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    img.onload = () => {
+      // Target max dimension: 1600px (higher quality for better OCR accuracy)
+      const maxDimension = 1600;
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate scaling factor
+      if (width > height && width > maxDimension) {
+        height = (height * maxDimension) / width;
+        width = maxDimension;
+      } else if (height > maxDimension) {
+        width = (width * maxDimension) / height;
+        height = maxDimension;
+      }
+
+      // Set canvas size
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw and compress
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (compressedBlob) => {
+            if (compressedBlob) {
+              resolve(compressedBlob);
+            } else {
+              reject(new Error('Failed to compress image'));
+            }
+          },
+          'image/jpeg',
+          0.85 // 85% quality - higher quality for better OCR accuracy
+        );
+      } else {
+        reject(new Error('Failed to get canvas context'));
+      }
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image for compression'));
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
 export interface ParsedScheduleEntry {
   formBed?: string; // User-assigned only, not from AI
   position?: number; // Position number from Pos column (sequential: 1, 2, 3...)
@@ -46,20 +99,43 @@ export async function parseScheduleImage(
   }
 ): Promise<ScheduleParseResult> {
   try {
-    // Convert image to base64
-    const base64Image = await fetch(imageUri)
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve, reject) => {
+    console.log('[Schedule Scanner] Starting image conversion...');
+
+    // Convert and compress image to base64
+    let base64Image: string;
+
+    try {
+      const response = await fetch(imageUri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      console.log('[Schedule Scanner] Original blob size:', blob.size);
+
+      // Compress image before converting to base64
+      const compressedBlob = await compressImage(blob);
+      console.log('[Schedule Scanner] Compressed blob size:', compressedBlob.size, 'reduction:',
+        Math.round((1 - compressedBlob.size / blob.size) * 100) + '%');
+
+      base64Image = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
-          // Remove data URL prefix
           const base64Data = base64.split(',')[1] || base64;
           resolve(base64Data);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      }));
+        reader.readAsDataURL(compressedBlob);
+      });
+    } catch (fetchError) {
+      console.error('[Schedule Scanner] Fetch/conversion error:', fetchError);
+      if (imageUri.startsWith('data:')) {
+        base64Image = imageUri.split(',')[1] || imageUri;
+      } else {
+        throw new Error(`Failed to load image: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+      }
+    }
 
     // Create prompt for AI to parse the schedule
     const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Read each row independently and extract EXACTLY what you see.
@@ -144,42 +220,57 @@ IMPORTANT:
 - Extract EXACTLY what you see - do NOT try to fix or correct values
 - Confidence should be 0-1 (how certain you are about each value)`;
 
-    // Call AI with vision using fetch API
-    console.log('[Schedule Scanner] Calling OpenAI API...');
-    console.log('[Schedule Scanner] Using GPT-4o vision model');
+    console.log('[Schedule Scanner] Starting API call...');
 
-    // Use Vibecode proxy endpoint for better performance
-    const apiUrl = process.env.OPENAI_BASE_URL
-      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-      : 'https://api.openai.com/v1/chat/completions';
+    // For deployed web builds, use our Firebase Cloud Function proxy
+    const isWeb = typeof window !== 'undefined';
 
-    const response = await fetch(apiUrl, {
+    const apiUrl = isWeb
+      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/openaiVisionProxy'
+      : (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
+        ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+        : 'https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions';
+
+    const apiKey = isWeb ? 'not-needed-for-cloud-function' : 'vibecode-proxy-key';
+
+    console.log('[Schedule Scanner] Platform:', isWeb ? 'web' : 'native');
+    console.log('[Schedule Scanner] API URL:', apiUrl);
+
+    const requestBody = {
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`,
+                detail: 'high',
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0,
+      max_tokens: 8000,
+    };
+
+    const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high',
-                },
-              },
-            ],
-          },
-        ],
-        temperature: 0,
-        max_tokens: 8000,
-      }),
-    });
+      body: JSON.stringify(requestBody),
+    };
+
+    // Add Authorization header only for non-web platforms
+    if (!isWeb) {
+      (fetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(apiUrl, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -255,9 +346,25 @@ export async function parseScheduleWithTextExtraction(
   imageUri: string
 ): Promise<ScheduleParseResult> {
   try {
-    const base64Image = await fetch(imageUri)
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve, reject) => {
+    console.log('[Schedule Scanner] Starting text extraction method...');
+
+    // Convert and compress image to base64
+    let base64Image: string;
+
+    try {
+      const response = await fetch(imageUri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      console.log('[Schedule Scanner] Original blob size:', blob.size);
+
+      // Compress image before converting to base64
+      const compressedBlob = await compressImage(blob);
+      console.log('[Schedule Scanner] Compressed blob size:', compressedBlob.size);
+
+      base64Image = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
@@ -265,8 +372,16 @@ export async function parseScheduleWithTextExtraction(
           resolve(base64Data);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      }));
+        reader.readAsDataURL(compressedBlob);
+      });
+    } catch (fetchError) {
+      console.error('[Schedule Scanner] Fetch/conversion error:', fetchError);
+      if (imageUri.startsWith('data:')) {
+        base64Image = imageUri.split(',')[1] || imageUri;
+      } else {
+        throw new Error(`Failed to load image: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+      }
+    }
 
     // Step 1: Extract text
     const extractPrompt = `Extract all text from this production schedule image.
@@ -274,38 +389,51 @@ Maintain the layout and structure as much as possible. Return plain text.`;
 
     console.log('[Schedule Scanner] Step 1: Extracting text...');
 
-    // Use Vibecode proxy endpoint for better performance
-    const apiUrl = process.env.OPENAI_BASE_URL
-      ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-      : 'https://api.openai.com/v1/chat/completions';
+    // For deployed web builds, use our Firebase Cloud Function proxy
+    const isWeb = typeof window !== 'undefined';
 
-    const extractResponse = await fetch(apiUrl, {
+    const apiUrl = isWeb
+      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/openaiVisionProxy'
+      : (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
+        ? `${process.env.OPENAI_BASE_URL}/chat/completions`
+        : 'https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions';
+
+    const apiKey = isWeb ? 'not-needed-for-cloud-function' : 'vibecode-proxy-key';
+
+    const extractRequestBody = {
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: extractPrompt },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`,
+                detail: 'high',
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0,
+      max_tokens: 4000,
+    };
+
+    const extractFetchOptions: RequestInit = {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: extractPrompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high',
-                },
-              },
-            ],
-          },
-        ],
-        temperature: 0,
-        max_tokens: 4000,
-      }),
-    });
+      body: JSON.stringify(extractRequestBody),
+    };
+
+    if (!isWeb) {
+      (extractFetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const extractResponse = await fetch(apiUrl, extractFetchOptions);
 
     if (!extractResponse.ok) {
       const errorText = await extractResponse.text();
@@ -338,19 +466,27 @@ Return JSON with this structure:
 IMPORTANT: Create separate entries for each piece, extract ID numbers from ID column. DO NOT include formBed field.`;
 
     console.log('[Schedule Scanner] Step 2: Structuring data...');
-    const structureResponse = await fetch(apiUrl, {
+
+    const structureRequestBody = {
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: structurePrompt }],
+      temperature: 0.1,
+      max_tokens: 2000,
+    };
+
+    const structureFetchOptions: RequestInit = {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.EXPO_PUBLIC_VIBECODE_OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: structurePrompt }],
-        temperature: 0.1,
-        max_tokens: 2000,
-      }),
-    });
+      body: JSON.stringify(structureRequestBody),
+    };
+
+    if (!isWeb) {
+      (structureFetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const structureResponse = await fetch(apiUrl, structureFetchOptions);
 
     if (!structureResponse.ok) {
       const errorText = await structureResponse.text();
