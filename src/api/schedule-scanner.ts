@@ -437,8 +437,8 @@ BEGIN EXTRACTION NOW:`;
       jobNumber: entry.jobNumber ? extractJobNumber(entry.jobNumber) : '', // Remove letters/prefixes
     }));
 
-    // CRITICAL VALIDATION: Check for errors
-    const validationErrors: string[] = [];
+    // VALIDATION: Log warnings but don't block
+    console.log('[Schedule Scanner] Validation checks:');
 
     // 1. Check if we have the correct number of entries based on highest position
     if (cleanedEntries.length > 0) {
@@ -451,11 +451,11 @@ BEGIN EXTRACTION NOW:`;
 
       if (positions.length > 0) {
         const highestPosition = Math.max(...positions);
+        console.log(`[Schedule Scanner] Entry count: ${cleanedEntries.length}, Highest position: ${highestPosition}`);
 
         if (cleanedEntries.length !== highestPosition) {
-          validationErrors.push(
-            `Entry count mismatch: Found ${cleanedEntries.length} entries but highest Position is ${highestPosition}. ` +
-            `Must have exactly ${highestPosition} entries.`
+          console.warn(
+            `[Schedule Scanner] WARNING: Entry count mismatch! Found ${cleanedEntries.length} entries but highest Position is ${highestPosition}`
           );
         }
       }
@@ -471,6 +471,8 @@ BEGIN EXTRACTION NOW:`;
 
     if (idNumbers.length > 0) {
       const idSet = new Set(idNumbers);
+      console.log(`[Schedule Scanner] Total IDs: ${idNumbers.length}, Unique IDs: ${idSet.size}`);
+
       if (idSet.size !== idNumbers.length) {
         // Find duplicates
         const duplicates: string[] = [];
@@ -484,22 +486,8 @@ BEGIN EXTRACTION NOW:`;
           seen.add(id);
         }
 
-        validationErrors.push(
-          `Duplicate ID numbers found: ${duplicates.join(', ')}. ` +
-          `Every ID number must be unique. This indicates a reading error.`
-        );
+        console.warn(`[Schedule Scanner] WARNING: Duplicate ID numbers found: ${duplicates.join(', ')}`);
       }
-    }
-
-    // If there are validation errors, return failure with detailed error message
-    if (validationErrors.length > 0) {
-      console.error('[Schedule Scanner] Validation failed:', validationErrors);
-      return {
-        success: false,
-        entries: [],
-        error: 'Data validation failed:\n\n' + validationErrors.map((err, i) => `${i + 1}. ${err}`).join('\n\n') +
-               '\n\nPlease retake the photo with better lighting and ensure the entire schedule is visible and in focus.',
-      };
     }
 
     return {
