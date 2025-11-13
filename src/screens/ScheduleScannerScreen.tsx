@@ -32,6 +32,8 @@ export default function ScheduleScannerScreen() {
 
   const handleCapture = async () => {
     try {
+      console.log('[Scanner Screen] Starting capture...');
+
       // Request camera permissions
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -53,48 +55,90 @@ export default function ScheduleScannerScreen() {
       });
 
       if (result.canceled) {
+        console.log('[Scanner Screen] User canceled camera');
         return;
       }
 
       const photo = result.assets[0];
       if (photo?.uri) {
+        console.log('[Scanner Screen] Photo captured, URI:', photo.uri);
         setCapturedImage(photo.uri);
         setIsProcessing(true);
 
-        // Parse the image with AI
-        const parseResult = await parseScheduleImage(photo.uri, {
-          date: selectedDate,
-        });
+        try {
+          console.log('[Scanner Screen] Starting AI parsing...');
+          // Parse the image with AI
+          const parseResult = await parseScheduleImage(photo.uri, {
+            date: selectedDate,
+          });
 
-        setIsProcessing(false);
+          console.log('[Scanner Screen] Parse result:', parseResult);
+          setIsProcessing(false);
 
-        if (parseResult.success && parseResult.entries.length > 0) {
-          setParsedEntries(parseResult.entries);
-          setShowResults(true);
-        } else {
+          if (parseResult.success && parseResult.entries.length > 0) {
+            console.log('[Scanner Screen] Successfully parsed', parseResult.entries.length, 'entries');
+            setParsedEntries(parseResult.entries);
+            setShowResults(true);
+          } else {
+            console.error('[Scanner Screen] No entries found or parse failed:', parseResult.error);
+            Alert.alert(
+              'No Data Found',
+              parseResult.error || 'Could not extract schedule entries from the image. Please try again with better lighting or a clearer photo.',
+              [
+                { text: 'Retry', onPress: () => { setCapturedImage(null); setIsProcessing(false); } },
+                { text: 'Cancel', onPress: () => navigation.goBack() },
+              ]
+            );
+          }
+        } catch (parseError) {
+          console.error('[Scanner Screen] Parse error:', parseError);
+          setIsProcessing(false);
+          setCapturedImage(null);
+
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
           Alert.alert(
-            'No Data Found',
-            'Could not extract schedule entries from the image. Please try again with better lighting or a clearer photo.',
+            'Processing Error',
+            `Failed to process image: ${errorMessage}`,
             [
-              { text: 'Retry', onPress: () => setCapturedImage(null) },
+              { text: 'Retry', onPress: handleCapture },
               { text: 'Cancel', onPress: () => navigation.goBack() },
             ]
           );
         }
       }
     } catch (error) {
+      console.error('[Scanner Screen] Capture error:', error);
       setIsProcessing(false);
-      Alert.alert('Error', 'Failed to capture or process image. Please try again.');
-      console.error('Capture error:', error);
+      setCapturedImage(null);
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert(
+        'Camera Error',
+        `Failed to capture image: ${errorMessage}`,
+        [{ text: 'OK' }]
+      );
     }
   };
 
   const handleImportEntries = () => {
-    navigation.navigate('ScheduleReview', {
-      entries: parsedEntries,
-      date: selectedDate.toISOString(),
-      department: selectedDepartment,
-    });
+    try {
+      console.log('[Scanner Screen] Importing', parsedEntries.length, 'entries');
+      console.log('[Scanner Screen] Date:', selectedDate.toISOString());
+      console.log('[Scanner Screen] Department:', selectedDepartment);
+
+      navigation.navigate('ScheduleReview', {
+        entries: parsedEntries,
+        date: selectedDate.toISOString(),
+        department: selectedDepartment,
+      });
+    } catch (error) {
+      console.error('[Scanner Screen] Navigation error:', error);
+      Alert.alert(
+        'Navigation Error',
+        'Failed to navigate to review screen. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const handleRetake = () => {
