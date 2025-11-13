@@ -151,53 +151,146 @@ export async function parseScheduleImage(
     }
 
     // Create prompt for AI to parse the schedule
-    const prompt = `You are analyzing a daily production schedule for a precast concrete plant. Read each row independently and extract EXACTLY what you see.
+    const prompt = `You are a PRECISION OCR system for a precast concrete plant's production schedule. Your task is MAXIMUM ACCURACY data extraction.
 
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
 
-EXTRACTION APPROACH:
-- Read the image from TOP to BOTTOM
-- Extract EVERY row you can see
-- Treat each row as completely independent (do NOT try to find patterns or verify consistency)
-- Extract EXACTLY what is printed - do NOT guess, correct, or infer values
-- IGNORE all highlighter marks, pen markups, handwritten notes
+═══════════════════════════════════════════════════════════════
+CRITICAL ACCURACY REQUIREMENTS:
+═══════════════════════════════════════════════════════════════
 
-COLUMNS TO EXTRACT (Position through Cutback):
+⚠️ ZERO TOLERANCE FOR ERRORS:
+- Every digit, letter, and symbol must be EXACTLY as printed
+- Do NOT make assumptions, inferences, or corrections
+- Do NOT auto-complete patterns (job numbers, marks, IDs are often non-sequential)
+- When uncertain about a character, examine it 3 times before deciding
+- IGNORE all handwritten notes, highlighter marks, pen marks - ONLY read printed text
 
-1. POSITION (Pos): Number in first column (1, 2, 3, etc.) - this tells you how many total rows to extract
+═══════════════════════════════════════════════════════════════
+EXTRACTION METHOD (READ THIS CAREFULLY):
+═══════════════════════════════════════════════════════════════
 
-2. JOB: Extract ONLY numeric digits, ignore letters (E255096 → 255096)
+STEP 1: COUNT ROWS
+- Look at the "Pos" (Position) column on the far left
+- Find the HIGHEST position number visible (e.g., if highest is 15, you need 15 entries)
+- This is your target count - you MUST extract exactly this many rows
 
-3. MARK: Letter + number exactly as shown (H1, M2, etc.)
+STEP 2: EXTRACT EACH ROW LEFT TO RIGHT
+For EACH row, read across the columns in this exact order:
 
-4. ID: 6-7 digit number - read carefully, each digit matters
+┌─────────────────────────────────────────────────────────────┐
+│ Column 1: POSITION (Pos)                                     │
+│ • Sequential number: 1, 2, 3, 4...                          │
+│ • This is your row counter                                   │
+└─────────────────────────────────────────────────────────────┘
 
-5. LENGTH 1: Format as feet'-inch fraction" (28'-6 1/2")
+┌─────────────────────────────────────────────────────────────┐
+│ Column 2: JOB NUMBER                                         │
+│ • May have letter prefix (E, D, etc.) - REMOVE the letters  │
+│ • Extract ONLY the numeric digits                            │
+│ • Examples:                                                  │
+│   - "E255096" → "255096"                                     │
+│   - "255096" → "255096"                                      │
+│   - "D123456" → "123456"                                     │
+│ • Typically 5-6 digits                                       │
+│ • DO NOT assume all rows have same job number               │
+└─────────────────────────────────────────────────────────────┘
 
-6. LENGTH 2: Format as feet'-inch fraction" (28'-6 1/2")
+┌─────────────────────────────────────────────────────────────┐
+│ Column 3: MARK NUMBER                                        │
+│ • Format: Letter(s) + Number                                 │
+│ • Examples: H1, H2, M1, M2, DT1, G1                         │
+│ • Read EXACTLY as printed - case sensitive                   │
+│ • DO NOT assume sequential (might jump: H1, H3, H5...)      │
+└─────────────────────────────────────────────────────────────┘
 
-7. WIDTH: Numeric value in inches (48, 24, etc.)
+┌─────────────────────────────────────────────────────────────┐
+│ Column 4: ID NUMBER ⚠️ CRITICAL - READ VERY CAREFULLY       │
+│ • Usually 6-7 digits                                         │
+│ • EVERY DIGIT MATTERS - this is critical data                │
+│ • Read digit by digit, left to right                         │
+│ • Double-check each digit:                                   │
+│   - Is it a 1 or 7?                                          │
+│   - Is it a 0 or 8?                                          │
+│   - Is it a 3 or 8?                                          │
+│   - Is it a 5 or 6?                                          │
+│ • DO NOT assume sequential IDs                               │
+│ • If uncertain, reduce confidence score                      │
+└─────────────────────────────────────────────────────────────┘
 
-8. ANGLE: Numeric value in degrees (0, 2, etc.)
+┌─────────────────────────────────────────────────────────────┐
+│ Column 5: LENGTH 1                                           │
+│ • Format: feet'-inches fraction"                             │
+│ • Examples:                                                  │
+│   - "28'-6 1/2\"" (28 feet, 6 and a half inches)            │
+│   - "30'-0\"" (30 feet, 0 inches)                           │
+│   - "25'-3 3/4\"" (25 feet, 3 and three-quarters inches)    │
+│ • Keep exact spacing and formatting                          │
+└─────────────────────────────────────────────────────────────┘
 
-9. CUTBACK: Format as feet'-inch fraction" (0'-6", 1'-3 1/2")
+┌─────────────────────────────────────────────────────────────┐
+│ Column 6: LENGTH 2                                           │
+│ • Same format as LENGTH 1                                    │
+│ • Often identical to LENGTH 1, but NOT always                │
+│ • Read independently - don't copy from LENGTH 1              │
+└─────────────────────────────────────────────────────────────┘
 
-CRITICAL RULES:
-- Look at Position column FIRST - the highest position number = total rows to extract
-- If you see Position 15, you MUST extract 15 entries
-- Do NOT try to "correct" ID numbers or other values - extract EXACTLY what you see
-- Do NOT assume sequential patterns in ID numbers, marks, or other fields
-- Each row is independent - read what's printed for THAT specific row
-- If text is blurry or unclear, do your best but mark confidence lower
+┌─────────────────────────────────────────────────────────────┐
+│ Column 7: WIDTH                                              │
+│ • Number in inches (no units shown, just number)             │
+│ • Examples: 48, 24, 12, 36                                   │
+│ • Extract as integer number                                  │
+└─────────────────────────────────────────────────────────────┘
 
-FINAL CHECK:
-Count the highest Position number you see. That's how many entries you need.
-If Position goes up to 15, your JSON must have 15 entries.
+┌─────────────────────────────────────────────────────────────┐
+│ Column 8: ANGLE                                              │
+│ • Number in degrees (no degree symbol, just number)          │
+│ • Usually 0, but can be 2, 5, etc.                          │
+│ • Extract as number                                          │
+└─────────────────────────────────────────────────────────────┘
 
-Return ONLY a valid JSON object with this structure:
+┌─────────────────────────────────────────────────────────────┐
+│ Column 9: CUTBACK                                            │
+│ • Format: feet'-inches fraction" or "feet inches"            │
+│ • Examples:                                                  │
+│   - "0'-6\"" (0 feet, 6 inches)                             │
+│   - "1'-3 1/2\"" (1 foot, 3 and a half inches)              │
+│   - "0 ft 6 in" (alternative format)                         │
+│ • Keep exact formatting as shown                             │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+CONFIDENCE SCORING:
+═══════════════════════════════════════════════════════════════
+
+For each entry, assign confidence 0.0 to 1.0:
+• 1.0 = Crystal clear, 100% certain
+• 0.9 = Very clear, high confidence
+• 0.8 = Clear but minor ambiguity
+• 0.7 = Readable but some blur or uncertainty
+• 0.6 = Difficult to read, made best guess
+• <0.6 = Very uncertain
+
+═══════════════════════════════════════════════════════════════
+QUALITY CHECKS BEFORE SUBMITTING:
+═══════════════════════════════════════════════════════════════
+
+✓ Count check: Number of entries = highest Position number?
+✓ All ID numbers have 6-7 digits?
+✓ All job numbers are numeric only (letters removed)?
+✓ All mark numbers have letter + number format?
+✓ All measurements use correct format with feet' and inches"?
+✓ Did you read each row independently without copying patterns?
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT:
+═══════════════════════════════════════════════════════════════
+
+Return ONLY valid JSON (no markdown, no explanation):
+
 {
-  "date": "date from schedule if visible",
+  "date": "date from schedule header if visible, or null",
   "entries": [
     {
       "position": 1,
@@ -210,28 +303,13 @@ Return ONLY a valid JSON object with this structure:
       "angle": 0,
       "cutback": "0'-6\"",
       "confidence": 0.95
-    },
-    {
-      "position": 2,
-      "jobNumber": "255096",
-      "markNumber": "H2",
-      "idNumber": "1234568",
-      "length1": "28'-6 1/2\"",
-      "length2": "28'-6 1/2\"",
-      "width": 48,
-      "angle": 0,
-      "cutback": "0'-6\"",
-      "confidence": 0.95
     }
-    ... continue for ALL positions up to the highest position number
   ]
 }
 
-IMPORTANT:
-- Return ONLY the JSON, no other text
-- Use null for missing fields
-- Extract EXACTLY what you see - do NOT try to fix or correct values
-- Confidence should be 0-1 (how certain you are about each value)`;
+Use null for any field that is truly blank or unreadable.
+
+BEGIN EXTRACTION NOW:`;
 
     console.log('[Schedule Scanner] Starting API call...');
 
