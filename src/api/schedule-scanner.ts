@@ -118,42 +118,44 @@ export async function parseScheduleImage(
     let base64Image: string;
 
     try {
-      const response = await fetch(imageUri);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      console.log('[Schedule Scanner] Original blob size:', blob.size);
-
-      // Compress image before converting to base64
-      let compressedBlob = blob;
-      try {
-        compressedBlob = await compressImage(blob);
-        console.log('[Schedule Scanner] Compressed blob size:', compressedBlob.size, 'reduction:',
-          Math.round((1 - compressedBlob.size / blob.size) * 100) + '%');
-      } catch (compressionError) {
-        console.warn('[Schedule Scanner] Compression failed, using original blob:', compressionError);
-        // Continue with original blob if compression fails
-      }
-
-      base64Image = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          const base64Data = base64.split(',')[1] || base64;
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(compressedBlob);
-      });
-    } catch (fetchError) {
-      console.error('[Schedule Scanner] Fetch/conversion error:', fetchError);
-      if (imageUri.startsWith('data:')) {
+      // First check if imageUri is already base64
+      if (imageUri.startsWith('data:image')) {
+        console.log('[Schedule Scanner] Image is already base64 data URI');
         base64Image = imageUri.split(',')[1] || imageUri;
       } else {
-        throw new Error(`Failed to load image: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+        // Fetch and convert image
+        console.log('[Schedule Scanner] Fetching image from:', imageUri.substring(0, 100));
+        const response = await fetch(imageUri);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        console.log('[Schedule Scanner] Original blob size:', blob.size, 'type:', blob.type);
+
+        // Skip compression entirely - just convert to base64
+        // Compression was causing issues in deployed environment
+        console.log('[Schedule Scanner] Converting to base64 without compression...');
+
+        base64Image = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            try {
+              const base64 = reader.result as string;
+              const base64Data = base64.split(',')[1] || base64;
+              console.log('[Schedule Scanner] Base64 conversion complete, length:', base64Data.length);
+              resolve(base64Data);
+            } catch (err) {
+              reject(new Error(`Base64 conversion error: ${err}`));
+            }
+          };
+          reader.onerror = () => reject(new Error('FileReader error'));
+          reader.readAsDataURL(blob);
+        });
       }
+    } catch (fetchError) {
+      console.error('[Schedule Scanner] Fetch/conversion error:', fetchError);
+      throw new Error(`Failed to load image: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
     }
 
     // Create prompt for AI to parse the schedule
