@@ -171,10 +171,11 @@ CRITICAL ACCURACY REQUIREMENTS:
 EXTRACTION METHOD (READ THIS CAREFULLY):
 ═══════════════════════════════════════════════════════════════
 
-STEP 1: COUNT ROWS
+STEP 1: COUNT ROWS ⚠️ ABSOLUTELY CRITICAL
 - Look at the "Pos" (Position) column on the far left
 - Find the HIGHEST position number visible (e.g., if highest is 15, you need 15 entries)
-- This is your target count - you MUST extract exactly this many rows
+- This is your target count - you MUST extract EXACTLY this many rows
+- NUMBER OF ENTRIES IN YOUR JSON = HIGHEST POSITION NUMBER (no exceptions)
 
 STEP 2: EXTRACT EACH ROW LEFT TO RIGHT
 For EACH row, read across the columns in this exact order:
@@ -206,16 +207,19 @@ For EACH row, read across the columns in this exact order:
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│ Column 4: ID NUMBER ⚠️ CRITICAL - READ VERY CAREFULLY       │
+│ Column 4: ID NUMBER ⚠️⚠️⚠️ MOST CRITICAL - UNIQUE VALUES    │
 │ • Usually 6-7 digits                                         │
-│ • EVERY DIGIT MATTERS - this is critical data                │
+│ • EVERY DIGIT MATTERS - this is the most critical data       │
 │ • Read digit by digit, left to right                         │
 │ • Double-check each digit:                                   │
 │   - Is it a 1 or 7?                                          │
 │   - Is it a 0 or 8?                                          │
 │   - Is it a 3 or 8?                                          │
 │   - Is it a 5 or 6?                                          │
-│ • DO NOT assume sequential IDs                               │
+│ • ⚠️ CRITICAL: Every ID number MUST be DIFFERENT             │
+│ • If you see duplicate IDs, you made an error - recheck     │
+│ • DO NOT assume sequential or patterns - read what's there  │
+│ • DO NOT auto-correct or fix what looks "wrong"             │
 │ • If uncertain, reduce confidence score                      │
 └─────────────────────────────────────────────────────────────┘
 
@@ -273,15 +277,34 @@ For each entry, assign confidence 0.0 to 1.0:
 • <0.6 = Very uncertain
 
 ═══════════════════════════════════════════════════════════════
+DATA VALIDATION RULES:
+═══════════════════════════════════════════════════════════════
+
+FIELDS THAT CAN HAVE IDENTICAL VALUES (across multiple rows):
+✓ Job Number - multiple pieces can have same job
+✓ Mark Number - marks can repeat
+✓ Length 1 - lengths can be identical
+✓ Length 2 - lengths can be identical
+✓ Width - widths can be identical
+✓ Angle - angles can be identical
+✓ Cutback - cutbacks can be identical
+
+FIELD THAT MUST BE UNIQUE:
+⚠️ ID NUMBER - EVERY ID MUST BE DIFFERENT
+   If you see duplicate IDs, you made a reading error. Go back and read more carefully.
+
+═══════════════════════════════════════════════════════════════
 QUALITY CHECKS BEFORE SUBMITTING:
 ═══════════════════════════════════════════════════════════════
 
-✓ Count check: Number of entries = highest Position number?
+✓ CRITICAL: Number of entries = highest Position number?
+✓ CRITICAL: Are all ID numbers UNIQUE (no duplicates)?
 ✓ All ID numbers have 6-7 digits?
 ✓ All job numbers are numeric only (letters removed)?
 ✓ All mark numbers have letter + number format?
 ✓ All measurements use correct format with feet' and inches"?
 ✓ Did you read each row independently without copying patterns?
+✓ Did you extract EXACTLY what's printed (no corrections or assumptions)?
 
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT:
