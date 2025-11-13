@@ -4,6 +4,59 @@
  * Uses camera to capture product tags and AI to parse specific fields
  */
 
+/**
+ * Compress an image blob for faster upload
+ * Reduces resolution and quality while maintaining readability for OCR
+ */
+async function compressImage(blob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    img.onload = () => {
+      // Target max dimension: 1024px (good balance between size and OCR accuracy)
+      const maxDimension = 1024;
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate scaling factor
+      if (width > height && width > maxDimension) {
+        height = (height * maxDimension) / width;
+        width = maxDimension;
+      } else if (height > maxDimension) {
+        width = (width * maxDimension) / height;
+        height = maxDimension;
+      }
+
+      // Set canvas size
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw and compress
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (compressedBlob) => {
+            if (compressedBlob) {
+              resolve(compressedBlob);
+            } else {
+              reject(new Error('Failed to compress image'));
+            }
+          },
+          'image/jpeg',
+          0.75 // 75% quality - good balance between size and readability
+        );
+      } else {
+        reject(new Error('Failed to get canvas context'));
+      }
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image for compression'));
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
 export interface ProductTagData {
   projectName?: string;
   projectNumber?: string;
@@ -37,7 +90,7 @@ export async function parseProductTag(
   try {
     console.log('[Product Tag Scanner] Starting image conversion, URI:', imageUri);
 
-    // Convert image to base64
+    // Convert and compress image to base64
     let base64Image: string;
 
     try {
@@ -50,7 +103,12 @@ export async function parseProductTag(
       }
 
       const blob = await response.blob();
-      console.log('[Product Tag Scanner] Blob size:', blob.size, 'type:', blob.type);
+      console.log('[Product Tag Scanner] Original blob size:', blob.size, 'type:', blob.type);
+
+      // Compress image before converting to base64
+      const compressedBlob = await compressImage(blob);
+      console.log('[Product Tag Scanner] Compressed blob size:', compressedBlob.size, 'reduction:',
+        Math.round((1 - compressedBlob.size / blob.size) * 100) + '%');
 
       base64Image = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -65,7 +123,7 @@ export async function parseProductTag(
           console.error('[Product Tag Scanner] FileReader error:', error);
           reject(error);
         };
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(compressedBlob);
       });
     } catch (fetchError) {
       console.error('[Product Tag Scanner] Fetch/conversion error:', fetchError);
