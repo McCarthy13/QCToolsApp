@@ -50,14 +50,6 @@ export const useContactsStore = create<ContactsState>()((set, get) => ({
   initialize: async () => {
     if (get().initialized) return;
 
-    // Check if user is authenticated before initializing
-    const { auth } = await import('../config/firebase');
-    if (!auth.currentUser) {
-      console.warn('Cannot initialize contacts: User not authenticated');
-      set({ loading: false, initialized: false });
-      return;
-    }
-
     set({ loading: true });
 
     try {
