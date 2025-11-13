@@ -9,8 +9,21 @@ import { extractJobNumber } from '../utils/jobNumberValidation';
 /**
  * Compress an image blob for faster upload
  * Reduces resolution and quality while maintaining readability for OCR
+ *
+ * Note: On React Native, image compression is handled by expo-image-picker
+ * with the quality parameter, so we just pass through the blob
  */
 async function compressImage(blob: Blob): Promise<Blob> {
+  // Check if we're in a web environment
+  const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+
+  // On React Native, skip compression - expo-image-picker already handles it
+  if (!isWeb) {
+    console.log('[Schedule Scanner] Skipping compression on React Native (handled by expo-image-picker)');
+    return blob;
+  }
+
+  // Web environment - use canvas compression
   return new Promise((resolve, reject) => {
     const img = new Image();
     const canvas = document.createElement('canvas');

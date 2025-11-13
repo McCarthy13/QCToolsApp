@@ -343,19 +343,6 @@ export default function ScheduleReviewScreen() {
               />
             </View>
 
-            {/* ID Number */}
-            <View>
-              <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>ID Number</Text>
-              <TextInput
-                value={entry.idNumber || ''}
-                onChangeText={(text) => handleUpdateEntry(selectedIndex, 'idNumber', text)}
-                style={{ backgroundColor: '#1f2937', color: '#fff', padding: 12, borderRadius: 8, fontSize: 16 }}
-                placeholder="ID from schedule"
-                placeholderTextColor="#6b7280"
-                cursorColor="#000000"
-              />
-            </View>
-
             {/* Mark Number (Single) */}
             <View>
               <Text style={{ color: '#9ca3af', fontSize: 14, marginBottom: 8 }}>Mark Number</Text>
