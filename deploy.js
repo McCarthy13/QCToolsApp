@@ -113,6 +113,19 @@ async function main() {
   process.env.GOOGLE_APPLICATION_CREDENTIALS = tempSaFile;
 
   try {
+    // Patch @react-navigation/elements for web compatibility
+    log('\n🔧 Applying patches for web compatibility...', 'blue');
+    const useFrameSizePath = path.join(process.cwd(), 'node_modules/@react-navigation/elements/src/useFrameSize.tsx');
+    if (fs.existsSync(useFrameSizePath)) {
+      let content = fs.readFileSync(useFrameSizePath, 'utf8');
+      content = content.replace(
+        /const SafeAreaListener = require\('react-native-safe-area-context'\)\s*\.SafeAreaListener as/,
+        "const SafeAreaListener = (typeof require !== 'undefined'\n  ? require('react-native-safe-area-context').SafeAreaListener\n  : undefined) as"
+      );
+      fs.writeFileSync(useFrameSizePath, content);
+      success('Patches applied');
+    }
+
     // Build the web app
     log('\n📦 Building Expo web app...', 'blue');
     execSync('npx expo export:web', {
