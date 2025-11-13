@@ -15,8 +15,8 @@ async function compressImage(blob: Blob): Promise<Blob> {
     const ctx = canvas.getContext('2d');
 
     img.onload = () => {
-      // Target max dimension: 1024px (good balance between size and OCR accuracy)
-      const maxDimension = 1024;
+      // Target max dimension: 1600px (higher quality for better OCR accuracy)
+      const maxDimension = 1600;
       let width = img.width;
       let height = img.height;
 
@@ -45,7 +45,7 @@ async function compressImage(blob: Blob): Promise<Blob> {
             }
           },
           'image/jpeg',
-          0.75 // 75% quality - good balance between size and readability
+          0.85 // 85% quality - higher quality for better OCR accuracy
         );
       } else {
         reject(new Error('Failed to get canvas context'));
@@ -256,7 +256,7 @@ Return ONLY the JSON, no other text.`;
               type: 'image_url',
               image_url: {
                 url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'low', // Changed from 'high' for faster processing
+                detail: 'high', // Changed to 'high' for better OCR accuracy
               },
             },
           ],
