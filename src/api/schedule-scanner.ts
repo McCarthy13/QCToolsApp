@@ -432,38 +432,63 @@ BEGIN EXTRACTION NOW:`;
     const parsed = JSON.parse(jsonStr);
 
     // Clean and extract job numbers from entries
-    let cleanedEntries = (parsed.entries || []).map((entry: ParsedScheduleEntry) => ({
+    let cleanedEntries = (parsed.entries || []).map((entry: any) => ({
       ...entry,
-      jobNumber: extractJobNumber(entry.jobNumber), // Remove letters/prefixes
+      jobNumber: entry.jobNumber ? extractJobNumber(entry.jobNumber) : '', // Remove letters/prefixes
     }));
 
     // CRITICAL VALIDATION: Check for errors
     const validationErrors: string[] = [];
 
     // 1. Check if we have the correct number of entries based on highest position
-    const positions = cleanedEntries.map((e: ParsedScheduleEntry) => e.position).filter((p: number | undefined): p is number => p !== undefined);
-    const highestPosition = Math.max(...positions, 0);
+    if (cleanedEntries.length > 0) {
+      const positions: number[] = [];
+      for (const entry of cleanedEntries) {
+        if (entry.position && typeof entry.position === 'number') {
+          positions.push(entry.position);
+        }
+      }
 
-    if (cleanedEntries.length !== highestPosition) {
-      validationErrors.push(
-        `Entry count mismatch: Found ${cleanedEntries.length} entries but highest Position is ${highestPosition}. ` +
-        `Must have exactly ${highestPosition} entries.`
-      );
+      if (positions.length > 0) {
+        const highestPosition = Math.max(...positions);
+
+        if (cleanedEntries.length !== highestPosition) {
+          validationErrors.push(
+            `Entry count mismatch: Found ${cleanedEntries.length} entries but highest Position is ${highestPosition}. ` +
+            `Must have exactly ${highestPosition} entries.`
+          );
+        }
+      }
     }
 
     // 2. Check for duplicate ID numbers
-    const idNumbers = cleanedEntries
-      .map((e: ParsedScheduleEntry) => e.idNumber)
-      .filter((id: string | undefined): id is string => id !== undefined && id !== null && id !== '');
+    const idNumbers: string[] = [];
+    for (const entry of cleanedEntries) {
+      if (entry.idNumber && typeof entry.idNumber === 'string' && entry.idNumber.trim() !== '') {
+        idNumbers.push(entry.idNumber.trim());
+      }
+    }
 
-    const duplicateIds = idNumbers.filter((id: string, index: number) => idNumbers.indexOf(id) !== index);
-    const uniqueDuplicates = [...new Set(duplicateIds)];
+    if (idNumbers.length > 0) {
+      const idSet = new Set(idNumbers);
+      if (idSet.size !== idNumbers.length) {
+        // Find duplicates
+        const duplicates: string[] = [];
+        const seen = new Set<string>();
+        for (const id of idNumbers) {
+          if (seen.has(id)) {
+            if (!duplicates.includes(id)) {
+              duplicates.push(id);
+            }
+          }
+          seen.add(id);
+        }
 
-    if (uniqueDuplicates.length > 0) {
-      validationErrors.push(
-        `Duplicate ID numbers found: ${uniqueDuplicates.join(', ')}. ` +
-        `Every ID number must be unique. This indicates a reading error.`
-      );
+        validationErrors.push(
+          `Duplicate ID numbers found: ${duplicates.join(', ')}. ` +
+          `Every ID number must be unique. This indicates a reading error.`
+        );
+      }
     }
 
     // If there are validation errors, return failure with detailed error message
