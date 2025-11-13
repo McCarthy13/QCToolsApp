@@ -156,6 +156,11 @@ export async function parseScheduleImage(
 ${options?.date ? `Expected Date: ${options.date.toLocaleDateString()}` : ''}
 ${options?.department ? `Department: ${options.department}` : ''}
 
+⚠️⚠️⚠️ CRITICAL: YOUR RESPONSE WILL BE REJECTED IF:
+1. Number of entries ≠ highest Position number
+2. Any ID numbers are duplicated
+3. You made assumptions or corrections instead of reading exactly what's printed
+
 ═══════════════════════════════════════════════════════════════
 CRITICAL ACCURACY REQUIREMENTS:
 ═══════════════════════════════════════════════════════════════
@@ -171,14 +176,15 @@ CRITICAL ACCURACY REQUIREMENTS:
 EXTRACTION METHOD (READ THIS CAREFULLY):
 ═══════════════════════════════════════════════════════════════
 
-STEP 1: COUNT ROWS ⚠️ ABSOLUTELY CRITICAL
+STEP 1: COUNT ROWS ⚠️⚠️⚠️ ABSOLUTELY CRITICAL - DO THIS FIRST
 - Look at the "Pos" (Position) column on the far left
 - Find the HIGHEST position number visible (e.g., if highest is 15, you need 15 entries)
 - This is your target count - you MUST extract EXACTLY this many rows
 - NUMBER OF ENTRIES IN YOUR JSON = HIGHEST POSITION NUMBER (no exceptions)
+- If you cannot see all rows clearly, adjust photo or increase confidence threshold
 
 STEP 2: EXTRACT EACH ROW LEFT TO RIGHT
-For EACH row, read across the columns in this exact order:
+For EACH row from position 1 to the highest position, read across the columns in this exact order:
 
 ┌─────────────────────────────────────────────────────────────┐
 │ Column 1: POSITION (Pos)                                     │
@@ -210,17 +216,20 @@ For EACH row, read across the columns in this exact order:
 │ Column 4: ID NUMBER ⚠️⚠️⚠️ MOST CRITICAL - UNIQUE VALUES    │
 │ • Usually 6-7 digits                                         │
 │ • EVERY DIGIT MATTERS - this is the most critical data       │
-│ • Read digit by digit, left to right                         │
-│ • Double-check each digit:                                   │
-│   - Is it a 1 or 7?                                          │
-│   - Is it a 0 or 8?                                          │
-│   - Is it a 3 or 8?                                          │
-│   - Is it a 5 or 6?                                          │
-│ • ⚠️ CRITICAL: Every ID number MUST be DIFFERENT             │
-│ • If you see duplicate IDs, you made an error - recheck     │
+│ • Read digit by digit, left to right, VERY SLOWLY            │
+│ • Triple-check each digit:                                   │
+│   - Is it a 1 or 7? Look at the shape carefully             │
+│   - Is it a 0 or 8? Check if it's closed or open            │
+│   - Is it a 3 or 8? Look at the curves                      │
+│   - Is it a 5 or 6? Check the top and bottom                │
+│   - Is it a 2 or Z? Numbers only, no letters                │
+│ • ⚠️ CRITICAL RULE: Every ID number MUST be DIFFERENT        │
+│ • If you see duplicate IDs, you MADE AN ERROR - go back     │
+│ • Check each ID against all others before finalizing         │
 │ • DO NOT assume sequential or patterns - read what's there  │
 │ • DO NOT auto-correct or fix what looks "wrong"             │
-│ • If uncertain, reduce confidence score                      │
+│ • When in doubt, mark lower confidence - never guess         │
+│ • This field WILL BE VALIDATED - duplicates = rejection      │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -294,17 +303,31 @@ FIELD THAT MUST BE UNIQUE:
    If you see duplicate IDs, you made a reading error. Go back and read more carefully.
 
 ═══════════════════════════════════════════════════════════════
-QUALITY CHECKS BEFORE SUBMITTING:
+QUALITY CHECKS BEFORE SUBMITTING (DO NOT SKIP):
 ═══════════════════════════════════════════════════════════════
 
-✓ CRITICAL: Number of entries = highest Position number?
-✓ CRITICAL: Are all ID numbers UNIQUE (no duplicates)?
+MANDATORY CHECKS - YOUR RESPONSE WILL BE REJECTED IF ANY FAIL:
+
+✓ CRITICAL #1: Count the entries in your JSON array
+   • Does this number = the highest Position number you saw?
+   • If not, you're missing entries - find them and add them
+
+✓ CRITICAL #2: Check all ID numbers for duplicates
+   • List out all ID numbers
+   • Are there any duplicates?
+   • If yes, you made a reading error - go back and reread each ID very carefully
+
 ✓ All ID numbers have 6-7 digits?
 ✓ All job numbers are numeric only (letters removed)?
 ✓ All mark numbers have letter + number format?
 ✓ All measurements use correct format with feet' and inches"?
 ✓ Did you read each row independently without copying patterns?
 ✓ Did you extract EXACTLY what's printed (no corrections or assumptions)?
+
+BEFORE YOU RETURN YOUR RESPONSE:
+- Count your entries one more time
+- Scan all IDs for duplicates one more time
+- If either check fails, FIX IT NOW
 
 ═══════════════════════════════════════════════════════════════
 OUTPUT FORMAT:
@@ -409,10 +432,50 @@ BEGIN EXTRACTION NOW:`;
     const parsed = JSON.parse(jsonStr);
 
     // Clean and extract job numbers from entries
-    const cleanedEntries = (parsed.entries || []).map((entry: ParsedScheduleEntry) => ({
+    let cleanedEntries = (parsed.entries || []).map((entry: ParsedScheduleEntry) => ({
       ...entry,
       jobNumber: extractJobNumber(entry.jobNumber), // Remove letters/prefixes
     }));
+
+    // CRITICAL VALIDATION: Check for errors
+    const validationErrors: string[] = [];
+
+    // 1. Check if we have the correct number of entries based on highest position
+    const positions = cleanedEntries.map((e: ParsedScheduleEntry) => e.position).filter((p: number | undefined): p is number => p !== undefined);
+    const highestPosition = Math.max(...positions, 0);
+
+    if (cleanedEntries.length !== highestPosition) {
+      validationErrors.push(
+        `Entry count mismatch: Found ${cleanedEntries.length} entries but highest Position is ${highestPosition}. ` +
+        `Must have exactly ${highestPosition} entries.`
+      );
+    }
+
+    // 2. Check for duplicate ID numbers
+    const idNumbers = cleanedEntries
+      .map((e: ParsedScheduleEntry) => e.idNumber)
+      .filter((id: string | undefined): id is string => id !== undefined && id !== null && id !== '');
+
+    const duplicateIds = idNumbers.filter((id: string, index: number) => idNumbers.indexOf(id) !== index);
+    const uniqueDuplicates = [...new Set(duplicateIds)];
+
+    if (uniqueDuplicates.length > 0) {
+      validationErrors.push(
+        `Duplicate ID numbers found: ${uniqueDuplicates.join(', ')}. ` +
+        `Every ID number must be unique. This indicates a reading error.`
+      );
+    }
+
+    // If there are validation errors, return failure with detailed error message
+    if (validationErrors.length > 0) {
+      console.error('[Schedule Scanner] Validation failed:', validationErrors);
+      return {
+        success: false,
+        entries: [],
+        error: 'Data validation failed:\n\n' + validationErrors.map((err, i) => `${i + 1}. ${err}`).join('\n\n') +
+               '\n\nPlease retake the photo with better lighting and ensure the entire schedule is visible and in focus.',
+      };
+    }
 
     return {
       success: true,
