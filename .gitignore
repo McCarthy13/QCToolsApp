@@ -1,12 +1,18 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Environment variables and secrets
+.env
+.env.*
+*.env
+!.env.example
+
 # dependencies
 node_modules/
 
 # Expo
 .expo/
 dist/
-# web-build/  # Temporarily allowing web-build to be committed for deployment
+web-build/  # Contains bundled code that may expose secrets
 expo-env.d.ts
 
 # Native
