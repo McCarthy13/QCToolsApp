@@ -2,8 +2,6 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
-DO NOT ADD .env to the gitignore. THE .env SHOULD BE PUSHED TO GIT FOR THE PROJECT TO WORK. 
-
 ## Deployment Status
 
 ✅ **Web App Deployed** - Live at https://precast-qc-tools-web-app.web.app

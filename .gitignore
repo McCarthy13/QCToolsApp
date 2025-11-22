@@ -1,7 +1,7 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # Environment variables and credentials
-# NOTE: DO NOTE ADD .env TO THE GITIGNORE. THE .env SHOULD BE PUSHED TO GIT FOR THE PROJECT TO WORK. 
+.env
 
 # Vibecode auto-generated files
 changelog.txt
