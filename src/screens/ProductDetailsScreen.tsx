@@ -102,6 +102,37 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
 
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Clear strand pattern selections when product type changes
+  useEffect(() => {
+    // Don't run on initial render or when in edit mode and loading existing config
+    if (editMode && existingConfig?.productType === productType) return;
+
+    // Clear strand patterns if they don't match the new product type
+    if (productType && strandPattern) {
+      const selectedPattern = customPatterns.find(p => p.id === strandPattern);
+      if (selectedPattern) {
+        const matchesProductType =
+          selectedPattern.productType === productType ||
+          selectedPattern.name.includes(`(${productType})`);
+        if (!matchesProductType) {
+          setStrandPattern("");
+        }
+      }
+    }
+
+    if (productType && topStrandPattern) {
+      const selectedPattern = customPatterns.find(p => p.id === topStrandPattern);
+      if (selectedPattern) {
+        const matchesProductType =
+          selectedPattern.productType === productType ||
+          selectedPattern.name.includes(`(${productType})`);
+        if (!matchesProductType) {
+          setTopStrandPattern("");
+        }
+      }
+    }
+  }, [productType, customPatterns]);
+
   // Auto-populate Project Name when Project Number changes
   useEffect(() => {
     if (projectNumber.trim()) {
@@ -145,12 +176,28 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   };
 
   // Get bottom patterns (where strands are positioned)
-  const bottomPatterns = customPatterns.filter(
-    (p) => p.position === "Bottom" || p.position === "Both"
-  );
-  const topPatterns = customPatterns.filter(
-    (p) => p.position === "Top" || p.position === "Both"
-  );
+  // Filter by position AND product type if a product type is selected
+  const bottomPatterns = customPatterns.filter((p) => {
+    const hasCorrectPosition = p.position === "Bottom" || p.position === "Both";
+    // If no product type selected yet, show all patterns
+    if (!productType) return hasCorrectPosition;
+    // Filter by productType field OR check if productType is in pattern name (in parentheses)
+    const matchesProductType =
+      p.productType === productType ||
+      p.name.includes(`(${productType})`);
+    return hasCorrectPosition && matchesProductType;
+  });
+
+  const topPatterns = customPatterns.filter((p) => {
+    const hasCorrectPosition = p.position === "Top" || p.position === "Both";
+    // If no product type selected yet, show all patterns
+    if (!productType) return hasCorrectPosition;
+    // Filter by productType field OR check if productType is in pattern name (in parentheses)
+    const matchesProductType =
+      p.productType === productType ||
+      p.name.includes(`(${productType})`);
+    return hasCorrectPosition && matchesProductType;
+  });
 
   const selectedProductType = PRODUCT_TYPES.find((p) => p.id === productType);
   const selectedStrandPattern = customPatterns.find(
