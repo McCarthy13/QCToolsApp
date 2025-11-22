@@ -14,29 +14,19 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
 ### Recent Updates (2025-11-22)
-- ✅ **Added Design vs Cast Strand Pattern Comparison**:
-  - **Extended SlippageConfig interface** to support separate design and cast patterns:
-    - `strandPattern` and `topStrandPattern` remain for design patterns (or cast if not comparing)
-    - New `castStrandPattern` and `castTopStrandPattern` fields for actual cast patterns
-  - **Created comprehensive comparison utility** (`src/utils/strandPatternComparison.ts`):
-    - Identifies strands missing in cast pattern but present in design
-    - Identifies extra strands in cast pattern not in design
-    - Detects strand size mismatches (3/8" vs 1/2" vs 0.6")
-    - Detects strand location mismatches (x,y coordinates with 0.5" tolerance)
-    - Provides detailed difference descriptions for each issue
-  - **Enhanced Slippage Summary Screen** with visual pattern comparison:
-    - New "Design vs Cast Pattern Analysis" section after cross-section diagram
-    - Separate panels for bottom and top strand comparisons
-    - Color-coded indicators: Green for matches, Red for differences
-    - Lists all specific differences with clear descriptions
-    - Shows pattern names for both design and cast
-  - **Enhanced PDF Report** with pattern comparison section:
-    - Automatically includes comparison when cast patterns are specified
-    - Professional formatting with color-coded warnings
-    - Detailed list of all strand differences
-    - Section appears after cross-section, before statistics
-  - **Full type safety** across navigation types and store interfaces
-  - Allows quality control to document and track design specification compliance
+- ✅ **Design vs Cast Strand Pattern Tracking**:
+  - Added separate fields for design and cast strand patterns for both bottom and top strands
+  - **Bottom Strand Patterns**:
+    - Design Strand Pattern (required) - the pattern the piece was designed with
+    - Cast Strand Pattern (optional) - defaults to "Matches Design", can select different pattern if cast with heavier pattern
+  - **Top Strand Patterns** (optional, but both required if one is selected):
+    - Top Design Strand Pattern - the pattern the top was designed with
+    - Top Cast Strand Pattern - defaults to "Matches Design", can select different pattern if cast with heavier pattern
+  - This allows engineers to track when pieces designed with lighter strand patterns were cast with heavier patterns (common when multiple patterns are scheduled together)
+  - Updated data models across all screens: ProductDetails, SlippageIdentifier, SlippageSummary
+  - Updated SlippageConfig interface in slippageHistoryStore to store cast pattern info
+  - Updated PDF generator to include cast pattern information in reports
+  - Added validation to ensure both top design and cast patterns are selected together
 
 ### Recent Updates (2025-11-21)
 - ✅ **Made all historical records editable across the app**:

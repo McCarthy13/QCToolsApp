@@ -22,10 +22,10 @@ export interface SlippageConfig {
   span?: number;
   pourDate?: string;
   productType: string;
-  strandPattern: string; // Design bottom strand pattern (or cast if not specified separately)
-  topStrandPattern?: string; // Design top strand pattern (or cast if not specified separately)
-  castStrandPattern?: string; // Cast bottom strand pattern (for comparison with design)
-  castTopStrandPattern?: string; // Cast top strand pattern (for comparison with design)
+  strandPattern: string;
+  castStrandPattern?: string;
+  topStrandPattern?: string;
+  topCastStrandPattern?: string;
   productWidth?: number;  // For cut-width products
   productSide?: 'L1' | 'L2';  // Which side is the product side (keeper side)
 }

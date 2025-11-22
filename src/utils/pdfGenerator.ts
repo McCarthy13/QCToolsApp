@@ -48,6 +48,9 @@ interface PDFGenerationParams {
   crossSectionImageUri?: string;
   getStrandSize?: (strandId: string) => string;
   strandPatternName?: string;
+  castStrandPatternName?: string;
+  topStrandPatternName?: string;
+  topCastStrandPatternName?: string;
   bottomPatternComparison?: StrandPatternComparison | null;
   topPatternComparison?: StrandPatternComparison | null;
 }
@@ -62,6 +65,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     crossSectionImageUri,
     getStrandSize,
     strandPatternName,
+    castStrandPatternName,
+    topStrandPatternName,
+    topCastStrandPatternName,
     bottomPatternComparison,
     topPatternComparison,
   } = params;

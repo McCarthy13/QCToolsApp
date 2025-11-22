@@ -83,16 +83,20 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   // Required fields
   const [productType, setProductType] = useState(existingConfig?.productType || "");
   const [strandPattern, setStrandPattern] = useState(existingConfig?.strandPattern || "");
+  const [castStrandPattern, setCastStrandPattern] = useState(existingConfig?.castStrandPattern || "");
 
   // Optional field
   const [topStrandPattern, setTopStrandPattern] = useState(existingConfig?.topStrandPattern || "");
+  const [topCastStrandPattern, setTopCastStrandPattern] = useState(existingConfig?.topCastStrandPattern || "");
   const [productWidth, setProductWidth] = useState(existingConfig?.productWidth?.toString() || "");
   const [productSide, setProductSide] = useState<'L1' | 'L2' | ''>(existingConfig?.productSide || '');
 
   // Modals
   const [showProductModal, setShowProductModal] = useState(false);
   const [showStrandModal, setShowStrandModal] = useState(false);
+  const [showCastStrandModal, setShowCastStrandModal] = useState(false);
   const [showTopStrandModal, setShowTopStrandModal] = useState(false);
+  const [showTopCastStrandModal, setShowTopCastStrandModal] = useState(false);
   const [showFractionModal, setShowFractionModal] = useState(false);
 
   // Project Name autocomplete
@@ -116,6 +120,19 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
           selectedPattern.name.includes(`(${productType})`);
         if (!matchesProductType) {
           setStrandPattern("");
+          setCastStrandPattern("");
+        }
+      }
+    }
+
+    if (productType && castStrandPattern) {
+      const selectedPattern = customPatterns.find(p => p.id === castStrandPattern);
+      if (selectedPattern) {
+        const matchesProductType =
+          selectedPattern.productType === productType ||
+          selectedPattern.name.includes(`(${productType})`);
+        if (!matchesProductType) {
+          setCastStrandPattern("");
         }
       }
     }
@@ -128,6 +145,19 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
           selectedPattern.name.includes(`(${productType})`);
         if (!matchesProductType) {
           setTopStrandPattern("");
+          setTopCastStrandPattern("");
+        }
+      }
+    }
+
+    if (productType && topCastStrandPattern) {
+      const selectedPattern = customPatterns.find(p => p.id === topCastStrandPattern);
+      if (selectedPattern) {
+        const matchesProductType =
+          selectedPattern.productType === productType ||
+          selectedPattern.name.includes(`(${productType})`);
+        if (!matchesProductType) {
+          setTopCastStrandPattern("");
         }
       }
     }
@@ -203,8 +233,14 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   const selectedStrandPattern = customPatterns.find(
     (p) => p.id === strandPattern
   );
+  const selectedCastStrandPattern = customPatterns.find(
+    (p) => p.id === castStrandPattern
+  );
   const selectedTopStrandPattern = customPatterns.find(
     (p) => p.id === topStrandPattern
+  );
+  const selectedTopCastStrandPattern = customPatterns.find(
+    (p) => p.id === topCastStrandPattern
   );
 
   // Check if this is a cut-width product
@@ -262,6 +298,42 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
     return feet + (inches + fractionValue) / 12;
   };
 
+  const handlePopulateTestValues = () => {
+    // Get current date in MM/DD/YYYY format
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const year = today.getFullYear();
+    const currentDate = `${month}/${day}/${year}`;
+
+    // Set all the test values
+    setProjectName("MOCK JOB");
+    setProjectNumber("000000");
+    setMarkNumber("H000");
+    setIdNumber("0000000");
+    setSpanFeet("30");
+    setSpanInches("6");
+    setSpanFraction("1/2");
+    setPourDate(currentDate);
+    setProductType("8048");
+    setProductWidth("40");
+    setProductSide("L1");
+
+    // Find and set strand patterns by name
+    const bottomDesignPattern = customPatterns.find(p => p.name === "77-70 (8048)");
+    const bottomCastPattern = customPatterns.find(p => p.name === "126-70 (8048)");
+    const topDesignPattern = customPatterns.find(p => p.name === "T16-70 (8048)");
+    const topCastPattern = customPatterns.find(p => p.name === "T32-70 (8048)");
+
+    if (bottomDesignPattern) setStrandPattern(bottomDesignPattern.id);
+    if (bottomCastPattern) setCastStrandPattern(bottomCastPattern.id);
+    if (topDesignPattern) setTopStrandPattern(topDesignPattern.id);
+    if (topCastPattern) setTopCastStrandPattern(topCastPattern.id);
+
+    // Clear any errors
+    setErrors([]);
+  };
+
   const handleContinue = () => {
     const validationErrors: string[] = [];
 
@@ -270,7 +342,17 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
       validationErrors.push("Product Type/Size is required");
     }
     if (!strandPattern) {
-      validationErrors.push("Strand Pattern is required");
+      validationErrors.push("Bottom Design Strand Pattern is required");
+    }
+
+    // Validate top strand patterns - if either is selected, both must be selected
+    if (topStrandPattern || topCastStrandPattern) {
+      if (!topStrandPattern) {
+        validationErrors.push("Top Design Strand Pattern is required when Top Cast Strand Pattern is selected");
+      }
+      if (!topCastStrandPattern) {
+        validationErrors.push("Top Cast Strand Pattern is required when Top Design Strand Pattern is selected");
+      }
     }
 
     // Validate product side if product is cut-width
@@ -297,7 +379,9 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
         pourDate: pourDate || undefined,
         productType: productType,
         strandPattern: strandPattern,
+        castStrandPattern: castStrandPattern || undefined,
         topStrandPattern: topStrandPattern || undefined,
+        topCastStrandPattern: topCastStrandPattern || undefined,
         productWidth: parsedWidth !== null ? parsedWidth : undefined,
         productSide: isCutWidth && productSide ? productSide : undefined,
       },
@@ -324,43 +408,54 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
               <Text className="text-gray-900 text-2xl font-bold">
                 Product Details
               </Text>
-              <Pressable
-                onPress={() => {
-                  navigation.navigate("ProductTagScanner", {
-                    onDataScanned: (data) => {
-                      // Fill all fields from the scanned tag
-                      if (data.projectName) setProjectName(data.projectName);
-                      if (data.projectNumber) setProjectNumber(data.projectNumber);
-                      if (data.markNumber) setMarkNumber(data.markNumber);
-                      if (data.idNumber) setIdNumber(data.idNumber);
-                      if (data.span) {
-                        setSpanFeet(data.span.feet.toString());
-                        setSpanInches(data.span.inches.toString());
-                        setSpanFraction("0"); // Decimal inches, no fraction
-                      }
-                      if (data.pourDate) setPourDate(data.pourDate);
-                      if (data.productWidth) {
-                        setProductWidth(data.productWidth.toString());
-                      }
-                      if (data.strandPattern) {
-                        // Find matching strand pattern by ID or name
-                        const matchingPattern = customPatterns.find(
-                          p => p.patternId === data.strandPattern || p.name.includes(data.strandPattern || '')
-                        );
-                        if (matchingPattern) {
-                          setStrandPattern(matchingPattern.id);
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={handlePopulateTestValues}
+                  className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
+                >
+                  <Ionicons name="flask" size={20} color="#fff" />
+                  <Text className="text-white text-sm font-semibold ml-2">
+                    Test Values
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate("ProductTagScanner", {
+                      onDataScanned: (data) => {
+                        // Fill all fields from the scanned tag
+                        if (data.projectName) setProjectName(data.projectName);
+                        if (data.projectNumber) setProjectNumber(data.projectNumber);
+                        if (data.markNumber) setMarkNumber(data.markNumber);
+                        if (data.idNumber) setIdNumber(data.idNumber);
+                        if (data.span) {
+                          setSpanFeet(data.span.feet.toString());
+                          setSpanInches(data.span.inches.toString());
+                          setSpanFraction("0"); // Decimal inches, no fraction
                         }
-                      }
-                    },
-                  });
-                }}
-                className="bg-blue-500 rounded-lg px-4 py-2 flex-row items-center"
-              >
-                <Ionicons name="camera" size={20} color="#fff" />
-                <Text className="text-white text-sm font-semibold ml-2">
-                  Scan Product Tag
-                </Text>
-              </Pressable>
+                        if (data.pourDate) setPourDate(data.pourDate);
+                        if (data.productWidth) {
+                          setProductWidth(data.productWidth.toString());
+                        }
+                        if (data.strandPattern) {
+                          // Find matching strand pattern by ID or name
+                          const matchingPattern = customPatterns.find(
+                            p => p.patternId === data.strandPattern || p.name.includes(data.strandPattern || '')
+                          );
+                          if (matchingPattern) {
+                            setStrandPattern(matchingPattern.id);
+                          }
+                        }
+                      },
+                    });
+                  }}
+                  className="bg-blue-500 rounded-lg px-4 py-2 flex-row items-center"
+                >
+                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Text className="text-white text-sm font-semibold ml-2">
+                    Scan Product Tag
+                  </Text>
+                </Pressable>
+              </View>
             </View>
             <Text className="text-gray-600 text-sm mt-1">
               Configure project details and select strand pattern
@@ -726,14 +821,17 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
               </Pressable>
             </View>
 
-            {/* Strand Pattern */}
+            {/* Bottom Strand Pattern (Design) */}
             <View className="mb-4">
               <Text className="text-gray-700 text-sm font-medium mb-2">
-                Strand Pattern <Text className="text-red-500">*</Text>
+                Bottom Design Strand Pattern <Text className="text-red-500">*</Text>
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                The strand pattern this piece was designed with
               </Text>
               <Pressable
                 className={`bg-white border ${
-                  errors.includes("Strand Pattern is required")
+                  errors.includes("Bottom Design Strand Pattern is required")
                     ? "border-red-500"
                     : "border-gray-300"
                 } rounded-lg px-4 py-3 flex-row items-center justify-between`}
@@ -746,7 +844,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                 >
                   {selectedStrandPattern
                     ? selectedStrandPattern.name
-                    : "Select strand pattern"}
+                    : "Select design strand pattern"}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </Pressable>
@@ -757,13 +855,45 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
               )}
             </View>
 
-            {/* Top Strand Pattern (Optional) */}
+            {/* Bottom Cast Strand Pattern */}
             <View className="mb-4">
               <Text className="text-gray-700 text-sm font-medium mb-2">
-                Top Strand Pattern (Optional)
+                Bottom Cast Strand Pattern
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Leave as "Matches Design" unless cast with a different pattern
               </Text>
               <Pressable
                 className="bg-white border border-gray-300 rounded-lg px-4 py-3 flex-row items-center justify-between"
+                onPress={() => setShowCastStrandModal(true)}
+              >
+                <Text
+                  className={`text-base ${
+                    castStrandPattern ? "text-gray-900" : "text-gray-400"
+                  }`}
+                >
+                  {selectedCastStrandPattern
+                    ? selectedCastStrandPattern.name
+                    : "Matches Design"}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            {/* Top Strand Pattern (Design) (Optional) */}
+            <View className="mb-4">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Top Design Strand Pattern (Optional)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                If selected, both top design and cast patterns must be specified
+              </Text>
+              <Pressable
+                className={`bg-white border ${
+                  errors.some(e => e.includes("Top Design Strand Pattern"))
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg px-4 py-3 flex-row items-center justify-between`}
                 onPress={() => setShowTopStrandModal(true)}
               >
                 <Text
@@ -774,6 +904,35 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                   {selectedTopStrandPattern
                     ? selectedTopStrandPattern.name
                     : "None"}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            {/* Top Cast Strand Pattern (Optional) */}
+            <View className="mb-4">
+              <Text className="text-gray-700 text-sm font-medium mb-2">
+                Top Cast Strand Pattern (Optional)
+              </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Leave as "Matches Design" unless cast with a different pattern
+              </Text>
+              <Pressable
+                className={`bg-white border ${
+                  errors.some(e => e.includes("Top Cast Strand Pattern"))
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg px-4 py-3 flex-row items-center justify-between`}
+                onPress={() => setShowTopCastStrandModal(true)}
+              >
+                <Text
+                  className={`text-base ${
+                    topCastStrandPattern ? "text-gray-900" : "text-gray-400"
+                  }`}
+                >
+                  {selectedTopCastStrandPattern
+                    ? selectedTopCastStrandPattern.name
+                    : "Matches Design"}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </Pressable>
@@ -917,6 +1076,83 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
         </View>
       </Modal>
 
+      {/* Cast Strand Pattern Modal */}
+      <Modal
+        visible={showCastStrandModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCastStrandModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-3xl max-h-[70%]">
+            <View className="p-4 border-b border-gray-200 flex-row items-center justify-between">
+              <Text className="text-gray-900 text-lg font-semibold">
+                Select Cast Strand Pattern
+              </Text>
+              <Pressable onPress={() => setShowCastStrandModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+            <ScrollView className="p-4">
+              {/* Matches Design Option */}
+              <Pressable
+                className={`p-4 mb-2 rounded-lg border ${
+                  castStrandPattern === ""
+                    ? "bg-blue-50 border-blue-500"
+                    : "bg-white border-gray-200"
+                }`}
+                onPress={() => {
+                  setCastStrandPattern("");
+                  setShowCastStrandModal(false);
+                }}
+              >
+                <Text
+                  className={`text-base font-semibold ${
+                    castStrandPattern === ""
+                      ? "text-blue-600"
+                      : "text-gray-900"
+                  }`}
+                >
+                  Matches Design
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">
+                  Cast with the same pattern as designed
+                </Text>
+              </Pressable>
+
+              {bottomPatterns.map((pattern) => (
+                <Pressable
+                  key={pattern.id}
+                  className={`p-4 mb-2 rounded-lg border ${
+                    castStrandPattern === pattern.id
+                      ? "bg-blue-50 border-blue-500"
+                      : "bg-white border-gray-200"
+                  }`}
+                  onPress={() => {
+                    setCastStrandPattern(pattern.id);
+                    setShowCastStrandModal(false);
+                  }}
+                >
+                  <Text
+                    className={`text-base font-semibold ${
+                      castStrandPattern === pattern.id
+                        ? "text-blue-600"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {pattern.name}
+                  </Text>
+                  <Text className="text-gray-600 text-sm mt-1">
+                    Pattern ID: {pattern.patternId} • Position:{" "}
+                    {pattern.position}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Top Strand Pattern Modal */}
       <Modal
         visible={showTopStrandModal}
@@ -944,6 +1180,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                 }`}
                 onPress={() => {
                   setTopStrandPattern("");
+                  setTopCastStrandPattern(""); // Clear cast pattern too
                   setShowTopStrandModal(false);
                 }}
               >
@@ -974,6 +1211,83 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                   <Text
                     className={`text-base font-semibold ${
                       topStrandPattern === pattern.id
+                        ? "text-blue-600"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {pattern.name}
+                  </Text>
+                  <Text className="text-gray-600 text-sm mt-1">
+                    Pattern ID: {pattern.patternId} • Position:{" "}
+                    {pattern.position}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Top Cast Strand Pattern Modal */}
+      <Modal
+        visible={showTopCastStrandModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTopCastStrandModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-3xl max-h-[70%]">
+            <View className="p-4 border-b border-gray-200 flex-row items-center justify-between">
+              <Text className="text-gray-900 text-lg font-semibold">
+                Select Top Cast Strand Pattern
+              </Text>
+              <Pressable onPress={() => setShowTopCastStrandModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+            <ScrollView className="p-4">
+              {/* Matches Design Option */}
+              <Pressable
+                className={`p-4 mb-2 rounded-lg border ${
+                  topCastStrandPattern === ""
+                    ? "bg-blue-50 border-blue-500"
+                    : "bg-white border-gray-200"
+                }`}
+                onPress={() => {
+                  setTopCastStrandPattern("");
+                  setShowTopCastStrandModal(false);
+                }}
+              >
+                <Text
+                  className={`text-base font-semibold ${
+                    topCastStrandPattern === ""
+                      ? "text-blue-600"
+                      : "text-gray-900"
+                  }`}
+                >
+                  Matches Design
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">
+                  Cast with the same pattern as designed
+                </Text>
+              </Pressable>
+
+              {topPatterns.map((pattern) => (
+                <Pressable
+                  key={pattern.id}
+                  className={`p-4 mb-2 rounded-lg border ${
+                    topCastStrandPattern === pattern.id
+                      ? "bg-blue-50 border-blue-500"
+                      : "bg-white border-gray-200"
+                  }`}
+                  onPress={() => {
+                    setTopCastStrandPattern(pattern.id);
+                    setShowTopCastStrandModal(false);
+                  }}
+                >
+                  <Text
+                    className={`text-base font-semibold ${
+                      topCastStrandPattern === pattern.id
                         ? "text-blue-600"
                         : "text-gray-900"
                     }`}

@@ -9,7 +9,7 @@ import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
 import { useAuthStore } from "../state/authStore";
-import { compareStrandPatterns, formatComparisonForDisplay } from "../utils/strandPatternComparison";
+import { compareStrandPatterns } from "../utils/strandPatternComparison";
 import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1047 from "../components/CrossSection1047";
@@ -49,39 +49,45 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const crossSectionRef = useRef<View>(null);
 
   // Get the selected strand patterns (bottom and optionally top)
-  const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
-  const selectedTopPattern = config.topStrandPattern
-    ? customPatterns.find(p => p.id === config.topStrandPattern)
-    : undefined;
-
-  // Get cast strand patterns if specified
-  const castPattern = config.castStrandPattern
+  // Use CAST patterns if available, otherwise fall back to DESIGN patterns
+  const designPattern = customPatterns.find(p => p.id === config.strandPattern);
+  const selectedPattern = config.castStrandPattern
+    ? customPatterns.find(p => p.id === config.castStrandPattern)
+    : designPattern;
+  const selectedCastPattern = config.castStrandPattern
     ? customPatterns.find(p => p.id === config.castStrandPattern)
     : undefined;
-  const castTopPattern = config.castTopStrandPattern
-    ? customPatterns.find(p => p.id === config.castTopStrandPattern)
+
+  const designTopPattern = config.topStrandPattern
+    ? customPatterns.find(p => p.id === config.topStrandPattern)
+    : undefined;
+  const selectedTopPattern = config.topCastStrandPattern
+    ? customPatterns.find(p => p.id === config.topCastStrandPattern)
+    : designTopPattern;
+  const selectedTopCastPattern = config.topCastStrandPattern
+    ? customPatterns.find(p => p.id === config.topCastStrandPattern)
     : undefined;
 
   // Compare design vs cast patterns
   const bottomPatternComparison = useMemo(() => {
-    // If no cast pattern specified, assume design and cast are the same
+    // If no cast pattern specified, patterns match
     if (!config.castStrandPattern) {
       return null;
     }
-    return compareStrandPatterns(selectedPattern, castPattern, 'Bottom');
-  }, [selectedPattern, castPattern, config.castStrandPattern]);
+    return compareStrandPatterns(designPattern, selectedCastPattern, 'Bottom');
+  }, [designPattern, selectedCastPattern, config.castStrandPattern]);
 
   const topPatternComparison = useMemo(() => {
     // Only compare if there are top patterns
-    if (!config.topStrandPattern && !config.castTopStrandPattern) {
+    if (!config.topStrandPattern && !config.topCastStrandPattern) {
       return null;
     }
-    // If no cast top pattern specified but there's a design top pattern, assume they're the same
-    if (config.topStrandPattern && !config.castTopStrandPattern) {
+    // If no cast top pattern specified but there's a design top pattern, patterns match
+    if (config.topStrandPattern && !config.topCastStrandPattern) {
       return null;
     }
-    return compareStrandPatterns(selectedTopPattern, castTopPattern, 'Top');
-  }, [selectedTopPattern, castTopPattern, config.topStrandPattern, config.castTopStrandPattern]);
+    return compareStrandPatterns(designTopPattern, selectedTopCastPattern, 'Top');
+  }, [designTopPattern, selectedTopCastPattern, config.topStrandPattern, config.topCastStrandPattern]);
 
   // Helper to get strand size by position
   const getStrandSize = (strandId: string): string => {
@@ -219,6 +225,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         crossSectionImageUri,
         getStrandSize,
         strandPatternName: selectedPattern?.name,
+        castStrandPatternName: selectedCastPattern?.name,
+        topStrandPatternName: selectedTopPattern?.name,
+        topCastStrandPatternName: selectedTopCastPattern?.name,
         bottomPatternComparison,
         topPatternComparison,
       });
