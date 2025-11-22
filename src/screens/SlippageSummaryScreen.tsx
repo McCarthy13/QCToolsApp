@@ -9,6 +9,7 @@ import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
 import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
 import { useAuthStore } from "../state/authStore";
+import { compareStrandPatterns, formatComparisonForDisplay } from "../utils/strandPatternComparison";
 import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1047 from "../components/CrossSection1047";
@@ -52,6 +53,35 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const selectedTopPattern = config.topStrandPattern
     ? customPatterns.find(p => p.id === config.topStrandPattern)
     : undefined;
+
+  // Get cast strand patterns if specified
+  const castPattern = config.castStrandPattern
+    ? customPatterns.find(p => p.id === config.castStrandPattern)
+    : undefined;
+  const castTopPattern = config.castTopStrandPattern
+    ? customPatterns.find(p => p.id === config.castTopStrandPattern)
+    : undefined;
+
+  // Compare design vs cast patterns
+  const bottomPatternComparison = useMemo(() => {
+    // If no cast pattern specified, assume design and cast are the same
+    if (!config.castStrandPattern) {
+      return null;
+    }
+    return compareStrandPatterns(selectedPattern, castPattern, 'Bottom');
+  }, [selectedPattern, castPattern, config.castStrandPattern]);
+
+  const topPatternComparison = useMemo(() => {
+    // Only compare if there are top patterns
+    if (!config.topStrandPattern && !config.castTopStrandPattern) {
+      return null;
+    }
+    // If no cast top pattern specified but there's a design top pattern, assume they're the same
+    if (config.topStrandPattern && !config.castTopStrandPattern) {
+      return null;
+    }
+    return compareStrandPatterns(selectedTopPattern, castTopPattern, 'Top');
+  }, [selectedTopPattern, castTopPattern, config.topStrandPattern, config.castTopStrandPattern]);
 
   // Helper to get strand size by position
   const getStrandSize = (strandId: string): string => {
@@ -189,6 +219,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         crossSectionImageUri,
         getStrandSize,
         strandPatternName: selectedPattern?.name,
+        bottomPatternComparison,
+        topPatternComparison,
       });
 
       if (filePath) {
@@ -439,6 +471,93 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 </Text>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* Strand Pattern Comparison - Design vs Cast */}
+        {(bottomPatternComparison || topPatternComparison) && (
+          <View className="px-6 mb-3">
+            <Text className="text-gray-900 text-base font-semibold mb-2">
+              Design vs Cast Pattern Analysis
+            </Text>
+
+            {/* Bottom Pattern Comparison */}
+            {bottomPatternComparison && (
+              <View className="mb-2">
+                <View className={`rounded-lg p-3 ${bottomPatternComparison.hasDifferences ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <View className="flex-row items-center mb-2">
+                    <Ionicons
+                      name={bottomPatternComparison.hasDifferences ? "alert-circle" : "checkmark-circle"}
+                      size={18}
+                      color={bottomPatternComparison.hasDifferences ? "#DC2626" : "#059669"}
+                    />
+                    <Text className={`text-xs font-bold ml-2 ${bottomPatternComparison.hasDifferences ? 'text-red-800' : 'text-green-800'}`}>
+                      Bottom Strands
+                    </Text>
+                  </View>
+                  <View className="mb-1.5">
+                    <Text className="text-xs text-gray-700">
+                      <Text className="font-semibold">Design:</Text> {bottomPatternComparison.designPatternName || 'Not specified'}
+                    </Text>
+                    <Text className="text-xs text-gray-700">
+                      <Text className="font-semibold">Cast:</Text> {bottomPatternComparison.castPatternName || 'Not specified'}
+                    </Text>
+                  </View>
+                  <Text className={`text-xs ${bottomPatternComparison.hasDifferences ? 'text-red-700 font-semibold' : 'text-green-700'}`}>
+                    {bottomPatternComparison.summary}
+                  </Text>
+                  {bottomPatternComparison.hasDifferences && bottomPatternComparison.differences.length > 0 && (
+                    <View className="mt-2 bg-white rounded p-2">
+                      {bottomPatternComparison.differences.map((diff, idx) => (
+                        <View key={idx} className="flex-row items-start mb-1">
+                          <Text className="text-red-600 text-xs mr-1">•</Text>
+                          <Text className="text-xs text-gray-800 flex-1">{diff.description}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* Top Pattern Comparison */}
+            {topPatternComparison && (
+              <View className="mb-2">
+                <View className={`rounded-lg p-3 ${topPatternComparison.hasDifferences ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <View className="flex-row items-center mb-2">
+                    <Ionicons
+                      name={topPatternComparison.hasDifferences ? "alert-circle" : "checkmark-circle"}
+                      size={18}
+                      color={topPatternComparison.hasDifferences ? "#DC2626" : "#059669"}
+                    />
+                    <Text className={`text-xs font-bold ml-2 ${topPatternComparison.hasDifferences ? 'text-red-800' : 'text-green-800'}`}>
+                      Top Strands
+                    </Text>
+                  </View>
+                  <View className="mb-1.5">
+                    <Text className="text-xs text-gray-700">
+                      <Text className="font-semibold">Design:</Text> {topPatternComparison.designPatternName || 'Not specified'}
+                    </Text>
+                    <Text className="text-xs text-gray-700">
+                      <Text className="font-semibold">Cast:</Text> {topPatternComparison.castPatternName || 'Not specified'}
+                    </Text>
+                  </View>
+                  <Text className={`text-xs ${topPatternComparison.hasDifferences ? 'text-red-700 font-semibold' : 'text-green-700'}`}>
+                    {topPatternComparison.summary}
+                  </Text>
+                  {topPatternComparison.hasDifferences && topPatternComparison.differences.length > 0 && (
+                    <View className="mt-2 bg-white rounded p-2">
+                      {topPatternComparison.differences.map((diff, idx) => (
+                        <View key={idx} className="flex-row items-start mb-1">
+                          <Text className="text-red-600 text-xs mr-1">•</Text>
+                          <Text className="text-xs text-gray-800 flex-1">{diff.description}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
         )}
 

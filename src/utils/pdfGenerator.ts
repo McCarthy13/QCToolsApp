@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
+import { StrandPatternComparison, formatComparisonForPDF } from './strandPatternComparison';
 
 // Web-only PDF generation using jsPDF
 let jsPDF: any = null;
@@ -47,6 +48,8 @@ interface PDFGenerationParams {
   crossSectionImageUri?: string;
   getStrandSize?: (strandId: string) => string;
   strandPatternName?: string;
+  bottomPatternComparison?: StrandPatternComparison | null;
+  topPatternComparison?: StrandPatternComparison | null;
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -59,6 +62,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     crossSectionImageUri,
     getStrandSize,
     strandPatternName,
+    bottomPatternComparison,
+    topPatternComparison,
   } = params;
 
   try {
@@ -620,6 +625,53 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             <div class="cross-section">
               <img src="${base64Image}" alt="Cross Section Diagram" />
             </div>
+          </div>
+          ` : ''}
+
+          <!-- Design vs Cast Pattern Comparison -->
+          ${(bottomPatternComparison || topPatternComparison) ? `
+          <div class="section">
+            <h2>Design vs Cast Pattern Analysis</h2>
+
+            ${bottomPatternComparison ? `
+              <div style="margin-bottom: 6px;">
+                <div style="padding: 5px 6px; border-radius: 4px; background: ${bottomPatternComparison.hasDifferences ? '#FEE2E2' : '#D1FAE5'}; border: 1px solid ${bottomPatternComparison.hasDifferences ? '#FCA5A5' : '#6EE7B7'};">
+                  <div style="font-size: 8px; font-weight: 700; color: ${bottomPatternComparison.hasDifferences ? '#991B1B' : '#047857'}; margin-bottom: 3px;">
+                    Bottom Strands: ${bottomPatternComparison.hasDifferences ? '⚠ DIFFERENCES FOUND' : '✓ PATTERNS MATCH'}
+                  </div>
+                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 2px;">
+                    <strong>Design:</strong> ${bottomPatternComparison.designPatternName || 'Not specified'}
+                  </div>
+                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 3px;">
+                    <strong>Cast:</strong> ${bottomPatternComparison.castPatternName || 'Not specified'}
+                  </div>
+                  <div style="font-size: 7.5px; color: ${bottomPatternComparison.hasDifferences ? '#7F1D1D' : '#065F46'}; font-weight: ${bottomPatternComparison.hasDifferences ? '600' : 'normal'};">
+                    ${bottomPatternComparison.summary}
+                  </div>
+                  ${bottomPatternComparison.hasDifferences && bottomPatternComparison.differences.length > 0 ? formatComparisonForPDF(bottomPatternComparison) : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            ${topPatternComparison ? `
+              <div style="margin-bottom: 6px;">
+                <div style="padding: 5px 6px; border-radius: 4px; background: ${topPatternComparison.hasDifferences ? '#FEE2E2' : '#D1FAE5'}; border: 1px solid ${topPatternComparison.hasDifferences ? '#FCA5A5' : '#6EE7B7'};">
+                  <div style="font-size: 8px; font-weight: 700; color: ${topPatternComparison.hasDifferences ? '#991B1B' : '#047857'}; margin-bottom: 3px;">
+                    Top Strands: ${topPatternComparison.hasDifferences ? '⚠ DIFFERENCES FOUND' : '✓ PATTERNS MATCH'}
+                  </div>
+                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 2px;">
+                    <strong>Design:</strong> ${topPatternComparison.designPatternName || 'Not specified'}
+                  </div>
+                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 3px;">
+                    <strong>Cast:</strong> ${topPatternComparison.castPatternName || 'Not specified'}
+                  </div>
+                  <div style="font-size: 7.5px; color: ${topPatternComparison.hasDifferences ? '#7F1D1D' : '#065F46'}; font-weight: ${topPatternComparison.hasDifferences ? '600' : 'normal'};">
+                    ${topPatternComparison.summary}
+                  </div>
+                  ${topPatternComparison.hasDifferences && topPatternComparison.differences.length > 0 ? formatComparisonForPDF(topPatternComparison) : ''}
+                </div>
+              </div>
+            ` : ''}
           </div>
           ` : ''}
 
