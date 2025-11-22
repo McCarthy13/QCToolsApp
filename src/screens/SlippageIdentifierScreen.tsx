@@ -50,10 +50,18 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   const { customPatterns } = useStrandPatternStore();
 
   // Get the selected strand patterns (bottom and optionally top)
-  const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
-  const selectedTopPattern = config.topStrandPattern
+  // Use CAST patterns if available, otherwise fall back to DESIGN patterns
+  const designPattern = customPatterns.find(p => p.id === config.strandPattern);
+  const selectedPattern = config.castStrandPattern
+    ? customPatterns.find(p => p.id === config.castStrandPattern)
+    : designPattern;
+
+  const designTopPattern = config.topStrandPattern
     ? customPatterns.find(p => p.id === config.topStrandPattern)
     : undefined;
+  const selectedTopPattern = config.topCastStrandPattern
+    ? customPatterns.find(p => p.id === config.topCastStrandPattern)
+    : designTopPattern;
 
   // Calculate active strands based on product width and product side
   const activeStrandIndices = useMemo(() => {
