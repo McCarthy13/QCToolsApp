@@ -298,6 +298,42 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
     return feet + (inches + fractionValue) / 12;
   };
 
+  const handlePopulateTestValues = () => {
+    // Get current date in MM/DD/YYYY format
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const year = today.getFullYear();
+    const currentDate = `${month}/${day}/${year}`;
+
+    // Set all the test values
+    setProjectName("MOCK JOB");
+    setProjectNumber("000000");
+    setMarkNumber("H000");
+    setIdNumber("0000000");
+    setSpanFeet("30");
+    setSpanInches("6");
+    setSpanFraction("1/2");
+    setPourDate(currentDate);
+    setProductType("8048");
+    setProductWidth("40");
+    setProductSide("L1");
+
+    // Find and set strand patterns by name
+    const bottomDesignPattern = customPatterns.find(p => p.name === "77-70 (8048)");
+    const bottomCastPattern = customPatterns.find(p => p.name === "126-70 (8048)");
+    const topDesignPattern = customPatterns.find(p => p.name === "T16-70 (8048)");
+    const topCastPattern = customPatterns.find(p => p.name === "T32-70 (8048)");
+
+    if (bottomDesignPattern) setStrandPattern(bottomDesignPattern.id);
+    if (bottomCastPattern) setCastStrandPattern(bottomCastPattern.id);
+    if (topDesignPattern) setTopStrandPattern(topDesignPattern.id);
+    if (topCastPattern) setTopCastStrandPattern(topCastPattern.id);
+
+    // Clear any errors
+    setErrors([]);
+  };
+
   const handleContinue = () => {
     const validationErrors: string[] = [];
 
@@ -372,43 +408,54 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
               <Text className="text-gray-900 text-2xl font-bold">
                 Product Details
               </Text>
-              <Pressable
-                onPress={() => {
-                  navigation.navigate("ProductTagScanner", {
-                    onDataScanned: (data) => {
-                      // Fill all fields from the scanned tag
-                      if (data.projectName) setProjectName(data.projectName);
-                      if (data.projectNumber) setProjectNumber(data.projectNumber);
-                      if (data.markNumber) setMarkNumber(data.markNumber);
-                      if (data.idNumber) setIdNumber(data.idNumber);
-                      if (data.span) {
-                        setSpanFeet(data.span.feet.toString());
-                        setSpanInches(data.span.inches.toString());
-                        setSpanFraction("0"); // Decimal inches, no fraction
-                      }
-                      if (data.pourDate) setPourDate(data.pourDate);
-                      if (data.productWidth) {
-                        setProductWidth(data.productWidth.toString());
-                      }
-                      if (data.strandPattern) {
-                        // Find matching strand pattern by ID or name
-                        const matchingPattern = customPatterns.find(
-                          p => p.patternId === data.strandPattern || p.name.includes(data.strandPattern || '')
-                        );
-                        if (matchingPattern) {
-                          setStrandPattern(matchingPattern.id);
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={handlePopulateTestValues}
+                  className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
+                >
+                  <Ionicons name="flask" size={20} color="#fff" />
+                  <Text className="text-white text-sm font-semibold ml-2">
+                    Test Values
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate("ProductTagScanner", {
+                      onDataScanned: (data) => {
+                        // Fill all fields from the scanned tag
+                        if (data.projectName) setProjectName(data.projectName);
+                        if (data.projectNumber) setProjectNumber(data.projectNumber);
+                        if (data.markNumber) setMarkNumber(data.markNumber);
+                        if (data.idNumber) setIdNumber(data.idNumber);
+                        if (data.span) {
+                          setSpanFeet(data.span.feet.toString());
+                          setSpanInches(data.span.inches.toString());
+                          setSpanFraction("0"); // Decimal inches, no fraction
                         }
-                      }
-                    },
-                  });
-                }}
-                className="bg-blue-500 rounded-lg px-4 py-2 flex-row items-center"
-              >
-                <Ionicons name="camera" size={20} color="#fff" />
-                <Text className="text-white text-sm font-semibold ml-2">
-                  Scan Product Tag
-                </Text>
-              </Pressable>
+                        if (data.pourDate) setPourDate(data.pourDate);
+                        if (data.productWidth) {
+                          setProductWidth(data.productWidth.toString());
+                        }
+                        if (data.strandPattern) {
+                          // Find matching strand pattern by ID or name
+                          const matchingPattern = customPatterns.find(
+                            p => p.patternId === data.strandPattern || p.name.includes(data.strandPattern || '')
+                          );
+                          if (matchingPattern) {
+                            setStrandPattern(matchingPattern.id);
+                          }
+                        }
+                      },
+                    });
+                  }}
+                  className="bg-blue-500 rounded-lg px-4 py-2 flex-row items-center"
+                >
+                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Text className="text-white text-sm font-semibold ml-2">
+                    Scan Product Tag
+                  </Text>
+                </Pressable>
+              </View>
             </View>
             <Text className="text-gray-600 text-sm mt-1">
               Configure project details and select strand pattern
