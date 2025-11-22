@@ -13,6 +13,21 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Admin Approval System** - Working and tested
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
+### Recent Updates (2025-11-22)
+- ✅ **Design vs Cast Strand Pattern Tracking**:
+  - Added separate fields for design and cast strand patterns for both bottom and top strands
+  - **Bottom Strand Patterns**:
+    - Design Strand Pattern (required) - the pattern the piece was designed with
+    - Cast Strand Pattern (optional) - defaults to "Matches Design", can select different pattern if cast with heavier pattern
+  - **Top Strand Patterns** (optional, but both required if one is selected):
+    - Top Design Strand Pattern - the pattern the top was designed with
+    - Top Cast Strand Pattern - defaults to "Matches Design", can select different pattern if cast with heavier pattern
+  - This allows engineers to track when pieces designed with lighter strand patterns were cast with heavier patterns (common when multiple patterns are scheduled together)
+  - Updated data models across all screens: ProductDetails, SlippageIdentifier, SlippageSummary
+  - Updated SlippageConfig interface in slippageHistoryStore to store cast pattern info
+  - Updated PDF generator to include cast pattern information in reports
+  - Added validation to ensure both top design and cast patterns are selected together
+
 ### Recent Updates (2025-11-21)
 - ✅ **Made all historical records editable across the app**:
   - **Camber Calculator History**: Added Edit button to Results screen that navigates to Calculator with pre-filled data

@@ -49,8 +49,14 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
   // Get the selected strand patterns (bottom and optionally top)
   const selectedPattern = customPatterns.find(p => p.id === config.strandPattern);
+  const selectedCastPattern = config.castStrandPattern
+    ? customPatterns.find(p => p.id === config.castStrandPattern)
+    : undefined;
   const selectedTopPattern = config.topStrandPattern
     ? customPatterns.find(p => p.id === config.topStrandPattern)
+    : undefined;
+  const selectedTopCastPattern = config.topCastStrandPattern
+    ? customPatterns.find(p => p.id === config.topCastStrandPattern)
     : undefined;
 
   // Helper to get strand size by position
@@ -189,6 +195,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         crossSectionImageUri,
         getStrandSize,
         strandPatternName: selectedPattern?.name,
+        castStrandPatternName: selectedCastPattern?.name,
+        topStrandPatternName: selectedTopPattern?.name,
+        topCastStrandPatternName: selectedTopCastPattern?.name,
       });
 
       if (filePath) {

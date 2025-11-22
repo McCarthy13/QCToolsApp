@@ -16,7 +16,9 @@ export type RootStackParamList = {
           pourDate?: string;
           productType: string;
           strandPattern: string;
+          castStrandPattern?: string;
           topStrandPattern?: string;
+          topCastStrandPattern?: string;
           productWidth?: number;
           productSide?: 'L1' | 'L2';
         };
@@ -54,7 +56,9 @@ export type RootStackParamList = {
       pourDate?: string;
       productType: string;
       strandPattern: string;
+      castStrandPattern?: string;
       topStrandPattern?: string;
+      topCastStrandPattern?: string;
       productWidth?: number;
       productSide?: 'L1' | 'L2';
     };
@@ -90,7 +94,9 @@ export type RootStackParamList = {
       pourDate?: string;
       productType: string;
       strandPattern: string;
+      castStrandPattern?: string;
       topStrandPattern?: string;
+      topCastStrandPattern?: string;
       productWidth?: number;
       productSide?: 'L1' | 'L2';
     };

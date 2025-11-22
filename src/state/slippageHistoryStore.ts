@@ -23,7 +23,9 @@ export interface SlippageConfig {
   pourDate?: string;
   productType: string;
   strandPattern: string;
+  castStrandPattern?: string;
   topStrandPattern?: string;
+  topCastStrandPattern?: string;
   productWidth?: number;  // For cut-width products
   productSide?: 'L1' | 'L2';  // Which side is the product side (keeper side)
 }
