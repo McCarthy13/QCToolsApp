@@ -1,0 +1,51 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# Environment variables and credentials
+# NOTE: DO NOTE ADD .env TO THE GITIGNORE. THE .env SHOULD BE PUSHED TO GIT FOR THE PROJECT TO WORK. 
+
+# Vibecode auto-generated files
+changelog.txt
+
+# Firebase cache
+.firebase/
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/  # Contains bundled code that may expose secrets
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# macOS
+.DS_Store
+*.pem
+
+# typescript
+*.tsbuildinfo
+
+# iOS & Android
+ios/
+android/
+
+# Credentials backup (contains sensitive API keys)
+CREDENTIALS.md

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auth Storage</title>
+</head>
+<body>
+    <h1>Auth Storage Debug</h1>
+    <pre id="output"></pre>
+    <button onclick="clearStorage()">Clear Auth Storage</button>
+
+    <script>
+        // Read the auth storage
+        const authData = localStorage.getItem('precast-auth-storage');
+        const output = document.getElementById('output');
+
+        if (authData) {
+            try {
+                const parsed = JSON.parse(authData);
+                output.textContent = 'Auth Storage:\n' + JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                output.textContent = 'Error parsing: ' + e.message + '\n\nRaw data:\n' + authData;
+            }
+        } else {
+            output.textContent = 'No auth storage found';
+        }
+
+        function clearStorage() {
+            localStorage.removeItem('precast-auth-storage');
+            alert('Auth storage cleared! Reload the app.');
+        }
+    </script>
+</body>
+</html>
