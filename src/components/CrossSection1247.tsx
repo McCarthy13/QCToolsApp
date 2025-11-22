@@ -47,7 +47,7 @@ export default function CrossSection1247({
   topStrandSizes,
 }: CrossSection1247Props) {
   // Dimensions in inches - 12" tall x 48" wide
-  // Horizontal layout same as 1048, taller cores
+  // Horizontal layout same as 1047, taller cores
   const FULL_WIDTH = 48;
   const HEIGHT = 12;
 
@@ -55,16 +55,16 @@ export default function CrossSection1247({
   const BOTTOM_FLANGE = 1.375; // 1 3/8"
   const TOP_FLANGE = 1.375; // 1 3/8" (12 - 1.375 - 9.25 = 1.375)
 
-  // Core dimensions - 5 cores total, horizontal layout same as 1048
-  const CORE_WIDTH = 7.25; // 7 1/4" (same as 1048)
-  const CORE_HEIGHT = 9.25; // 9 1/4" (taller than 1048)
-  const EDGE_TO_FIRST_CORE = 2.75; // 2 3/4" (same as 1048)
-  const CORE_SPACING = 1.5625; // 1 9/16" between cores (same as 1048)
+  // Core dimensions - 5 cores total, horizontal layout same as 1047
+  const CORE_WIDTH = 7.25; // 7 1/4" (same as 1047)
+  const CORE_HEIGHT = 9.25; // 9 1/4" (taller than 1047)
+  const EDGE_TO_FIRST_CORE = 2.75; // 2 3/4" (same as 1047)
+  const CORE_SPACING = 1.5625; // 1 9/16" between cores (same as 1047)
   const NUM_CORES = 5;
 
   // Strand positions (x from left edge, y from bottom)
   // Use custom coordinates if provided, otherwise use defaults for 6-strand pattern (5 cores)
-  // X positions same as 1048, Y position same as 1048 (same bottom flange)
+  // X positions same as 1047, Y position same as 1047 (same bottom flange)
   const BOTTOM_STRAND_POSITIONS = strandCoordinates ?
     strandCoordinates.map((coord, index) => ({
       x: coord.x,

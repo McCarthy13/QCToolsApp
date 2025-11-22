@@ -148,7 +148,7 @@ A comprehensive mobile app for precast concrete quality management, built with R
   - Added dynamic height calculation to all 6 CrossSection components
   - Container View now includes space for StrandSizeLegend
   - Legend now fully visible in app screens and PDF reports
-  - Fixes applied to: CrossSection8048, 1048, 1247, 1250, 1648, 1650
+  - Fixes applied to: CrossSection8048, 1047, 1247, 1250, 1648, 1650
 - ✅ **Added "Required Force (lbs)" field to strand pattern creator**:
   - New optional field in strand pattern creation/editing form
   - Allows specifying required force in pounds for each strand pattern
@@ -160,7 +160,7 @@ A comprehensive mobile app for precast concrete quality management, built with R
   - Created reusable StrandSizeLegend component showing shape key
   - Circle = 0.6", X = 1/2", Diamond = 3/8"
   - Legend appears below cross-section when strands are visible
-  - Applied to all 6 CrossSection components (8048, 1048, 1247, 1250, 1648, 1650)
+  - Applied to all 6 CrossSection components (8048, 1047, 1247, 1250, 1648, 1650)
   - Scales proportionally with cross-section scale
 - 🚀 **DEPLOYED TO PRODUCTION** - All fixes including PDF layout improvements deployed to https://precast-qc-tools-web-app.web.app
 - ✅ **Improved PDF layout and formatting**:
@@ -219,7 +219,7 @@ A comprehensive mobile app for precast concrete quality management, built with R
     - 3/8" strands = Diamonds 🔷
     - 1/2" strands = X marks ✖️
     - 0.6" strands = Circles ⭕
-  - Updated all 6 CrossSection components (8048, 1048, 1247, 1250, 1648, 1650)
+  - Updated all 6 CrossSection components (8048, 1047, 1247, 1250, 1648, 1650)
   - Cross-sections now show both bottom and top strands simultaneously
   - Labels show B1, B2... for bottom strands and T1, T2... for top strands
 - ✅ **Fixed strand indicator visibility issue**:

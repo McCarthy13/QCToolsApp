@@ -20,10 +20,10 @@ export interface ToleranceSpec {
   notes?: string;
 }
 
-// Sub-product type (e.g., 8048, 1048, 1247 under Hollow Core Slabs)
+// Sub-product type (e.g., 8048, 1047, 1247 under Hollow Core Slabs)
 export interface SubProduct {
   id: string;
-  name: string; // e.g., "8048", "1048", "1247", "1250"
+  name: string; // e.g., "8048", "1047", "1247", "1250"
   description?: string;
   tolerances: ToleranceSpec[];
   typicalDimensions?: string;
@@ -44,7 +44,7 @@ export interface SubProduct {
   fpu?: number; // f'pu - Ultimate tensile strength of strand in ksi (e.g., 270)
 
   // Cross-section component (without strands, shows webs and cores)
-  crossSectionComponent?: string; // Component name like "CrossSection8048", "CrossSection1048"
+  crossSectionComponent?: string; // Component name like "CrossSection8048", "CrossSection1047"
 
   isActive: boolean;
   createdAt: number;

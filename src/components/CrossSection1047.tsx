@@ -17,7 +17,7 @@ interface StrandInfo {
   isTop?: boolean; // Whether this is a top strand
 }
 
-interface CrossSection1048Props {
+interface CrossSection1047Props {
   scale?: number; // Pixels per inch
   showDimensions?: boolean;
   highlightedStrand?: number | null;
@@ -32,7 +32,7 @@ interface CrossSection1048Props {
   topStrandSizes?: Array<'3/8' | '1/2' | '0.6'>; // Sizes for top strands
 }
 
-export default function CrossSection1048({
+export default function CrossSection1047({
   scale = 10, // Default: 10 pixels per inch
   showDimensions = false,
   highlightedStrand = null,
@@ -45,7 +45,7 @@ export default function CrossSection1048({
   bottomStrandSizes,
   topStrandCoordinates,
   topStrandSizes,
-}: CrossSection1048Props) {
+}: CrossSection1047Props) {
   // Dimensions in inches - 10" tall x 48" wide
   // This is a distinct product type with 5 cores (not a scaled 8048)
   const FULL_WIDTH = 48;
@@ -110,7 +110,7 @@ export default function CrossSection1048({
   }
   // No product side = show full width (xOffset = 0)
 
-  // Calculate core positions (5 cores total for 1048)
+  // Calculate core positions (5 cores total for 1047)
   const coreY = BOTTOM_FLANGE * scale;
   const cores = [];
   for (let i = 0; i < NUM_CORES; i++) {

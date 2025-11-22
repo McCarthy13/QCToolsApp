@@ -36,7 +36,7 @@ interface Props {
 // Product types/sizes for hollow-core planks
 const PRODUCT_TYPES = [
   { id: "8048", label: '8048', height: 8, width: 48 },
-  { id: "1048", label: '1048', height: 10, width: 48 },
+  { id: "1047", label: '1047', height: 10, width: 48 },
   { id: "1247", label: '1247', height: 12, width: 48 },
   { id: "1250", label: '1250', height: 12, width: 48 },
   { id: "1648", label: '1648', height: 16, width: 48 },

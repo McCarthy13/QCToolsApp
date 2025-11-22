@@ -7,7 +7,7 @@ import { useProductLibraryStore } from "../state/productLibraryStore";
 import { useState, useEffect } from "react";
 import { ProductType, ToleranceSpec } from "../types/product-library";
 import CrossSection8048 from "../components/CrossSection8048";
-import CrossSection1048 from "../components/CrossSection1048";
+import CrossSection1047 from "../components/CrossSection1047";
 import CrossSection1247 from "../components/CrossSection1247";
 import CrossSection1250 from "../components/CrossSection1250";
 import CrossSection1648 from "../components/CrossSection1648";
@@ -582,8 +582,8 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                                               {subProduct.name === '8048' && (
                                                 <CrossSection8048 scale={4} showDimensions={false} />
                                               )}
-                                              {subProduct.name === '1048' && (
-                                                <CrossSection1048 scale={4} showDimensions={false} />
+                                              {subProduct.name === '1047' && (
+                                                <CrossSection1047 scale={4} showDimensions={false} />
                                               )}
                                               {subProduct.name === '1247' && (
                                                 <CrossSection1247 scale={4} showDimensions={false} />
@@ -1223,7 +1223,7 @@ export default function ProductLibraryScreen({ navigation }: Props) {
                     <TextInput
                       value={subProductName}
                       onChangeText={setSubProductName}
-                      placeholder="e.g., 8048, 1048, 1247, 1250"
+                      placeholder="e.g., 8048, 1047, 1247, 1250"
                       placeholderTextColor="#9CA3AF"
                       cursorColor="#000000"
                       selectionColor="#3B82F6"

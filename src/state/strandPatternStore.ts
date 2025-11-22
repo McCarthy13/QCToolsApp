@@ -11,7 +11,7 @@ export interface CustomStrandPattern {
   patternId: string; // Format: "101-75" (pattern number - pulling force %)
   name: string;
   department: 'Wall Panels' | 'Extruded' | 'Flexicore' | 'Precast'; // Department category
-  productType: '8048' | '1048' | '1247' | '1250' | '1648' | string; // Product type within department
+  productType: '8048' | '1047' | '1247' | '1250' | '1648' | string; // Product type within department
   position: 'Top' | 'Bottom' | 'Both'; // Where strands are positioned
   strand_3_8: number; // Count of 3/8" strands
   strand_1_2: number; // Count of 1/2" strands

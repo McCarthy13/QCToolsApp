@@ -11,7 +11,7 @@ import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistor
 import { useAuthStore } from "../state/authStore";
 import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
-import CrossSection1048 from "../components/CrossSection1048";
+import CrossSection1047 from "../components/CrossSection1047";
 import CrossSection1247 from "../components/CrossSection1247";
 import CrossSection1250 from "../components/CrossSection1250";
 import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
@@ -373,8 +373,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           <Text className="text-gray-700 text-xs font-semibold mb-2">
             Cross Section with Slippage Values
           </Text>
-          {config.productType === '1048' ? (
-            <CrossSection1048
+          {config.productType === '1047' ? (
+            <CrossSection1047
               scale={6}
               activeStrands={activeStrandIndices || undefined}
               productSide={config.productSide || null}
