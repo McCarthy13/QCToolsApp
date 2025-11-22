@@ -188,8 +188,25 @@ export const useSlippageHistoryStore = create<SlippageHistoryState>()(
             console.log('[SlippageHistoryStore] Sample record:', JSON.stringify(allRecords[0], null, 2));
           }
 
+          // Migration: Update any records with productType "1048" to "1047"
+          const migratedRecords = allRecords.map(record => {
+            if (record.config.productType === '1048') {
+              console.log(`[Migration] Updating slippage record ${record.id} from product type 1048 to 1047`);
+              const migratedRecord = {
+                ...record,
+                config: { ...record.config, productType: '1047' }
+              };
+              // Update in Firebase
+              userRecordsSync.set(record.id, migratedRecord).catch(err =>
+                console.error(`Failed to migrate record ${record.id}:`, err)
+              );
+              return migratedRecord;
+            }
+            return record;
+          });
+
           // Filter to only show current user's records
-          const userRecords = allRecords.filter(r => r.userId === currentUser.id);
+          const userRecords = migratedRecords.filter(r => r.userId === currentUser.id);
           console.log('[SlippageHistoryStore] Filtered to', userRecords.length, 'user records for userId:', currentUser.id);
 
           set({ userRecords, isSyncing: false });
@@ -207,7 +224,25 @@ export const useSlippageHistoryStore = create<SlippageHistoryState>()(
         set({ isSyncing: true });
         try {
           const publishedRecords = await publishedRecordsSync.fetchAll();
-          set({ publishedRecords, isSyncing: false });
+
+          // Migration: Update any published records with productType "1048" to "1047"
+          const migratedRecords = publishedRecords.map(record => {
+            if (record.config.productType === '1048') {
+              console.log(`[Migration] Updating published record ${record.id} from product type 1048 to 1047`);
+              const migratedRecord = {
+                ...record,
+                config: { ...record.config, productType: '1047' }
+              };
+              // Update in Firebase
+              publishedRecordsSync.set(record.id, migratedRecord).catch(err =>
+                console.error(`Failed to migrate published record ${record.id}:`, err)
+              );
+              return migratedRecord;
+            }
+            return record;
+          });
+
+          set({ publishedRecords: migratedRecords, isSyncing: false });
         } catch (error) {
           console.error('Failed to sync published records from Firebase:', error);
           set({ isSyncing: false });

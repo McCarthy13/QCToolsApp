@@ -55,7 +55,22 @@ export const useStrandPatternStore = create<StrandPatternState>()((set, get) => 
 
     try {
       const patterns = await firebaseSync.fetchAll();
-      set({ customPatterns: patterns, loading: false, initialized: true });
+
+      // Migration: Update any patterns with productType "1048" to "1047"
+      const migratedPatterns = patterns.map(pattern => {
+        if (pattern.productType === '1048') {
+          console.log(`[Migration] Updating pattern ${pattern.id} from product type 1048 to 1047`);
+          const migratedPattern = { ...pattern, productType: '1047' };
+          // Update in Firebase
+          firebaseSync.set(pattern.id, migratedPattern).catch(err =>
+            console.error(`Failed to migrate pattern ${pattern.id}:`, err)
+          );
+          return migratedPattern;
+        }
+        return pattern;
+      });
+
+      set({ customPatterns: migratedPatterns, loading: false, initialized: true });
 
       // Subscribe to real-time updates
       firebaseSync.subscribe((updatedPatterns) => {
