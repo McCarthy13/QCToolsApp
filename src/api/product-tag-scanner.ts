@@ -228,10 +228,10 @@ Return ONLY the JSON, no other text.`;
     const isWeb = typeof window !== 'undefined';
 
     const apiUrl = isWeb
-      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/openaiVisionProxy'
-      : (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
-        ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-        : 'https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions';
+      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/claudeVisionProxy'
+      : (typeof process !== 'undefined' && process.env?.ANTHROPIC_BASE_URL)
+        ? `${process.env.ANTHROPIC_BASE_URL}/messages`
+        : 'https://api.anthropic.com.proxy.vibecodeapp.com/v1/messages';
 
     const apiKey = isWeb ? 'not-needed-for-cloud-function' : 'vibecode-proxy-key';
 
@@ -243,27 +243,28 @@ Return ONLY the JSON, no other text.`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    // Call OpenAI API using fetch
-    // For web, the Cloud Function handles the Authorization header
+    // Call Claude API using fetch
+    // For web, the Cloud Function handles the x-api-key header
     const requestBody = {
-      model: 'gpt-4o-mini', // Using mini for faster processing
+      model: 'claude-3-5-sonnet-20241022',
       messages: [
         {
           role: 'user',
           content: [
-            { type: 'text', text: prompt },
             {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high', // Changed to 'high' for better OCR accuracy
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Image,
               },
             },
+            { type: 'text', text: prompt },
           ],
         },
       ],
       temperature: 0.1,
-      max_tokens: 300, // Reduced from 1000 for faster response
+      max_tokens: 300,
     };
 
     const fetchOptions: RequestInit = {
@@ -275,9 +276,10 @@ Return ONLY the JSON, no other text.`;
       signal: controller.signal,
     };
 
-    // Add Authorization header only for non-web platforms
+    // Add x-api-key header only for non-web platforms
     if (!isWeb) {
-      (fetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+      (fetchOptions.headers as Record<string, string>)['x-api-key'] = apiKey;
+      (fetchOptions.headers as Record<string, string>)['anthropic-version'] = '2023-06-01';
     }
 
     const response = await fetch(apiUrl, fetchOptions);
@@ -301,8 +303,8 @@ Return ONLY the JSON, no other text.`;
     const result = await response.json();
     console.log('[Product Tag Scanner] Full API response:', JSON.stringify(result, null, 2));
 
-    // Parse the response
-    const content = result.choices?.[0]?.message?.content;
+    // Parse the response - Claude's format is different
+    const content = result.content?.[0]?.text;
     if (!content) {
       throw new Error('No response from AI');
     }

@@ -371,10 +371,10 @@ BEGIN EXTRACTION NOW:`;
     const isWeb = typeof window !== 'undefined';
 
     const apiUrl = isWeb
-      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/openaiVisionProxy'
-      : (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
-        ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-        : 'https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions';
+      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/claudeVisionProxy'
+      : (typeof process !== 'undefined' && process.env?.ANTHROPIC_BASE_URL)
+        ? `${process.env.ANTHROPIC_BASE_URL}/messages`
+        : 'https://api.anthropic.com.proxy.vibecodeapp.com/v1/messages';
 
     const apiKey = isWeb ? 'not-needed-for-cloud-function' : 'vibecode-proxy-key';
 
@@ -382,19 +382,20 @@ BEGIN EXTRACTION NOW:`;
     console.log('[Schedule Scanner] API URL:', apiUrl);
 
     const requestBody = {
-      model: 'gpt-4o',
+      model: 'claude-3-5-sonnet-20241022',
       messages: [
         {
           role: 'user',
           content: [
-            { type: 'text', text: prompt },
             {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Image,
               },
             },
+            { type: 'text', text: prompt },
           ],
         },
       ],
@@ -410,9 +411,10 @@ BEGIN EXTRACTION NOW:`;
       body: JSON.stringify(requestBody),
     };
 
-    // Add Authorization header only for non-web platforms
+    // Add x-api-key header only for non-web platforms
     if (!isWeb) {
-      (fetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+      (fetchOptions.headers as Record<string, string>)['x-api-key'] = apiKey;
+      (fetchOptions.headers as Record<string, string>)['anthropic-version'] = '2023-06-01';
     }
 
     const response = await fetch(apiUrl, fetchOptions);
@@ -425,8 +427,8 @@ BEGIN EXTRACTION NOW:`;
 
     const result = await response.json();
 
-    // Parse the response
-    const content = result.choices?.[0]?.message?.content;
+    // Parse the response - Claude's format is different
+    const content = result.content?.[0]?.text;
     if (!content) {
       throw new Error('No response from AI');
     }
@@ -591,27 +593,28 @@ Maintain the layout and structure as much as possible. Return plain text.`;
     const isWeb = typeof window !== 'undefined';
 
     const apiUrl = isWeb
-      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/openaiVisionProxy'
-      : (typeof process !== 'undefined' && process.env?.OPENAI_BASE_URL)
-        ? `${process.env.OPENAI_BASE_URL}/chat/completions`
-        : 'https://api.openai.com.proxy.vibecodeapp.com/v1/chat/completions';
+      ? 'https://us-central1-precast-qc-tools-web-app.cloudfunctions.net/claudeVisionProxy'
+      : (typeof process !== 'undefined' && process.env?.ANTHROPIC_BASE_URL)
+        ? `${process.env.ANTHROPIC_BASE_URL}/messages`
+        : 'https://api.anthropic.com.proxy.vibecodeapp.com/v1/messages';
 
     const apiKey = isWeb ? 'not-needed-for-cloud-function' : 'vibecode-proxy-key';
 
     const extractRequestBody = {
-      model: 'gpt-4o',
+      model: 'claude-3-5-sonnet-20241022',
       messages: [
         {
           role: 'user',
           content: [
-            { type: 'text', text: extractPrompt },
             {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Image,
               },
             },
+            { type: 'text', text: extractPrompt },
           ],
         },
       ],
@@ -628,7 +631,8 @@ Maintain the layout and structure as much as possible. Return plain text.`;
     };
 
     if (!isWeb) {
-      (extractFetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+      (extractFetchOptions.headers as Record<string, string>)['x-api-key'] = apiKey;
+      (extractFetchOptions.headers as Record<string, string>)['anthropic-version'] = '2023-06-01';
     }
 
     const extractResponse = await fetch(apiUrl, extractFetchOptions);
@@ -640,7 +644,7 @@ Maintain the layout and structure as much as possible. Return plain text.`;
     }
 
     const extractResult = await extractResponse.json();
-    const extractedText = extractResult.choices?.[0]?.message?.content || '';
+    const extractedText = extractResult.content?.[0]?.text || '';
 
     // Step 2: Structure the text
     const structurePrompt = `Parse this production schedule text into structured JSON. Create ONE entry per individual piece.
@@ -666,8 +670,11 @@ IMPORTANT: Create separate entries for each piece, extract ID numbers from ID co
     console.log('[Schedule Scanner] Step 2: Structuring data...');
 
     const structureRequestBody = {
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: structurePrompt }],
+      model: 'claude-3-5-sonnet-20241022',
+      messages: [{
+        role: 'user',
+        content: [{ type: 'text', text: structurePrompt }]
+      }],
       temperature: 0.1,
       max_tokens: 2000,
     };
@@ -681,7 +688,8 @@ IMPORTANT: Create separate entries for each piece, extract ID numbers from ID co
     };
 
     if (!isWeb) {
-      (structureFetchOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${apiKey}`;
+      (structureFetchOptions.headers as Record<string, string>)['x-api-key'] = apiKey;
+      (structureFetchOptions.headers as Record<string, string>)['anthropic-version'] = '2023-06-01';
     }
 
     const structureResponse = await fetch(apiUrl, structureFetchOptions);
@@ -693,7 +701,7 @@ IMPORTANT: Create separate entries for each piece, extract ID numbers from ID co
     }
 
     const structureResult = await structureResponse.json();
-    const content = structureResult.choices?.[0]?.message?.content || '{}';
+    const content = structureResult.content?.[0]?.text || '{}';
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const jsonStr = jsonMatch ? jsonMatch[0] : content;
     const parsed = JSON.parse(jsonStr);
