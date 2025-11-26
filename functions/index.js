@@ -4,6 +4,22 @@
  * Provides server-side proxy for Claude API calls to avoid CORS and SSL issues
  */
 
+// Load environment variables from .env.prod file
+const fs = require('fs');
+const path = require('path');
+
+// Try to load .env.prod file (created during deployment)
+const envPath = path.join(__dirname, '.env.prod');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const [key, ...values] = line.split('=');
+    if (key && values.length > 0) {
+      process.env[key.trim()] = values.join('=').trim();
+    }
+  });
+}
+
 const {onRequest} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
 
@@ -18,7 +34,6 @@ exports.claudeVisionProxy = onRequest({
   cors: true,
   maxInstances: 10,
   timeoutSeconds: 60,
-  secrets: ["ANTHROPIC_API_KEY"], // Declare secret
 }, async (req, res) => {
   // Only allow POST requests
   if (req.method !== "POST") {

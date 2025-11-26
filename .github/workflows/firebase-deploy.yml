@@ -42,7 +42,7 @@ jobs:
           cd functions && npm install && cd ..
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRECAST_QC_TOOLS_WEB_APP }}' > $HOME/gcloud-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json
-          echo "${{ secrets.ANTHROPIC_API_KEY }}" | firebase functions:secrets:set ANTHROPIC_API_KEY --project precast-qc-tools-web-app --data-file=- || true
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" > functions/.env.prod
           firebase deploy --only functions --force --project precast-qc-tools-web-app
 
       - name: Deploy to Firebase Hosting
