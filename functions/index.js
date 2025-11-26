@@ -4,13 +4,14 @@
  * Provides server-side proxy for Claude API calls to avoid CORS and SSL issues
  */
 
-// Load environment variables from .env file (for local development and deployment)
-require('dotenv').config();
-
 const {onRequest} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
+const {defineString} = require("firebase-functions/params");
 
 initializeApp();
+
+// Define the API key as a parameter that can be set via environment variables
+const anthropicApiKey = defineString("ANTHROPIC_API_KEY");
 
 /**
  * Claude Vision Proxy
@@ -21,7 +22,6 @@ exports.claudeVisionProxy = onRequest({
   cors: true,
   maxInstances: 10,
   timeoutSeconds: 60,
-  secrets: [], // No secrets needed, we'll use environment variables
 }, async (req, res) => {
   // Only allow POST requests
   if (req.method !== "POST") {
@@ -35,8 +35,8 @@ exports.claudeVisionProxy = onRequest({
       return res.status(400).json({error: "Missing or invalid messages"});
     }
 
-    // Get API key from environment variable (set in Firebase Functions config)
-    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    // Get API key from environment variable
+    const ANTHROPIC_API_KEY = anthropicApiKey.value();
 
     if (!ANTHROPIC_API_KEY) {
       console.error("[Claude Vision Proxy] Missing API key");
