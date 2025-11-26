@@ -4,6 +4,9 @@
  * Provides server-side proxy for Claude API calls to avoid CORS and SSL issues
  */
 
+// Load environment variables from .env file (for local development and deployment)
+require('dotenv').config();
+
 const {onRequest} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
 
