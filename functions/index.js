@@ -6,12 +6,8 @@
 
 const {onRequest} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
-const {defineString} = require("firebase-functions/params");
 
 initializeApp();
-
-// Define the API key as a parameter that can be set via environment variables
-const anthropicApiKey = defineString("ANTHROPIC_API_KEY");
 
 /**
  * Claude Vision Proxy
@@ -22,6 +18,7 @@ exports.claudeVisionProxy = onRequest({
   cors: true,
   maxInstances: 10,
   timeoutSeconds: 60,
+  secrets: ["ANTHROPIC_API_KEY"], // Declare secret
 }, async (req, res) => {
   // Only allow POST requests
   if (req.method !== "POST") {
@@ -36,7 +33,7 @@ exports.claudeVisionProxy = onRequest({
     }
 
     // Get API key from environment variable
-    const ANTHROPIC_API_KEY = anthropicApiKey.value();
+    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
     if (!ANTHROPIC_API_KEY) {
       console.error("[Claude Vision Proxy] Missing API key");
