@@ -8,7 +8,7 @@ A comprehensive mobile app for precast concrete quality management, built with R
 ✅ **Firebase Authentication** - Fully integrated with email/password sign-in
 ✅ **Firestore Database** - Ready for real-time data sync
 ✅ **Cloud Storage** - Ready for file uploads
-✅ **Cloud Functions** - OpenAI Vision API proxy deployed with updated API key
+✅ **Cloud Functions** - Claude 3.5 Sonnet Vision API proxy deployed with API key configured
 ✅ **Product Tag Scanner** - Working in deployed web app with native camera
 ✅ **Admin Approval System** - Working and tested
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
