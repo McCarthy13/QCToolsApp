@@ -49,3 +49,10 @@ android/
 
 # Credentials backup (contains sensitive API keys)
 CREDENTIALS.md
+firebase-service-account.json
+*service-account*.json
+*.pem
+*.p12
+*.key
+.env*
+!.env.example
