@@ -45,6 +45,37 @@ All sensitive credentials are protected via `.gitignore`:
 ✅ **Admin Approval System** - Working and tested
 ✅ **Data Import Tool** - Import existing data from JSON to Firebase
 
+## Environment Variables
+
+The following environment variables are required and should be configured via the Vibecode ENV tab:
+
+### Firebase Configuration (Web App Build)
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
+
+### Firebase Service Account (Deployment)
+- `FIREBASE_PROJECT_ID=precast-qc-tools-web-app`
+- `FIREBASE_SERVICE_ACCOUNT` (JSON string)
+
+### API Keys (Firebase Functions)
+- `ANTHROPIC_API_KEY` - For Claude 3.5 Sonnet vision scanning
+- `OPENAI_API_KEY` - Legacy support (not currently used)
+
+**Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
+
+### Recent Updates (2025-12-01)
+- ✅ **Repository Cleanup & Security Hardening**:
+  - Removed 36 temporary/debug files from assets directory
+  - Removed debug HTML files
+  - Enhanced .gitignore to protect all credential types
+  - Configured dual git remotes (GitHub primary, Vibecode backup)
+  - Verified no hardcoded credentials in codebase
+  - All secrets properly managed via environment variables
+
 ### Recent Updates (2025-11-22)
 - ✅ **Design vs Cast Strand Pattern Comparison & Analysis**:
   - **Created comprehensive comparison utility** (`src/utils/strandPatternComparison.ts`):
