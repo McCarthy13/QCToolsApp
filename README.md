@@ -2,6 +2,38 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
+## Git Repository Configuration
+
+This project is configured with dual remote repositories for seamless synchronization:
+
+- **origin** (Primary): GitHub - https://github.com/McCarthy13/QCToolsApp
+- **vibecode** (Backup): Vibecode Sandbox Repository
+
+### Automatic Syncing
+
+All changes are automatically synced to both repositories. To manually sync:
+
+```bash
+./sync-repos.sh
+```
+
+Or manually push to both:
+
+```bash
+git push origin main      # Push to GitHub
+git push vibecode main    # Push to Vibecode
+```
+
+### Security
+
+All sensitive credentials are protected via `.gitignore`:
+- `.env*` files (environment variables)
+- `*service-account*.json` (Firebase credentials)
+- API keys and tokens
+- See `.gitignore` for complete list
+
+**Important**: Never commit secrets to the repository. Use the Vibecode ENV tab to manage environment variables.
+
 ## Deployment Status
 
 ✅ **Web App Deployed** - Live at https://precast-qc-tools-web-app.web.app
