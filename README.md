@@ -4,35 +4,48 @@ A comprehensive mobile app for precast concrete quality management, built with R
 
 ## Git Repository Configuration
 
-This project is configured with dual remote repositories for seamless synchronization:
+This project is configured to sync with GitHub as the primary remote repository:
 
 - **origin** (Primary): GitHub - https://github.com/McCarthy13/QCToolsApp
-- **vibecode** (Backup): Vibecode Sandbox Repository
+- All changes are automatically committed and pushed to GitHub
+- The Vibecode sandbox stays in sync with GitHub
 
-### Automatic Syncing
+### Three-Way Synchronization
 
-All changes are automatically synced to both repositories. To manually sync:
+All three environments are kept in sync:
+1. **GitHub Repository** (https://github.com/McCarthy13/QCToolsApp) - Primary source of truth
+2. **Vibecode Sandbox** (/home/user/workspace/) - Development environment
+3. **Firebase Hosting** (https://precast-qc-tools-web-app.web.app) - Production deployment
 
-```bash
-./sync-repos.sh
-```
-
-Or manually push to both:
-
-```bash
-git push origin main      # Push to GitHub
-git push vibecode main    # Push to Vibecode
-```
+Every code change is:
+- Committed to the local sandbox repository
+- Pushed to GitHub automatically
+- Deployed to Firebase (when using `node deploy.js`)
 
 ### Security
 
 All sensitive credentials are protected via `.gitignore`:
 - `.env*` files (environment variables)
 - `*service-account*.json` (Firebase credentials)
-- API keys and tokens
+- API keys and tokens (Anthropic, OpenAI, GitHub)
+- Firebase configuration files
 - See `.gitignore` for complete list
 
 **Important**: Never commit secrets to the repository. Use the Vibecode ENV tab to manage environment variables.
+
+### Manual Git Operations
+
+To push changes manually:
+```bash
+git add .
+git commit -m "Your commit message"
+git push origin main
+```
+
+To pull latest changes from GitHub:
+```bash
+git pull origin main
+```
 
 ## Deployment Status
 
