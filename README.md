@@ -391,6 +391,14 @@ This will:
 
 **Note:** Cloud Functions are deployed separately and require additional permissions (already configured).
 
+### Custom Domain & SSL
+
+Want to use your own domain with free SSL? See **[CUSTOM_DOMAIN_SETUP.md](./CUSTOM_DOMAIN_SETUP.md)** for:
+- Connecting a custom domain (e.g., `qctools.yourcompany.com`)
+- DNS configuration for all major providers
+- Free automatic SSL certificate setup
+- Multi-Factor Authentication (MFA) implementation guide
+
 ### Deploy Cloud Functions Only
 
 If you need to update just the Cloud Functions:
