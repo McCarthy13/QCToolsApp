@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
+import { useAuthStore } from "../state/authStore";
 import { Ionicons } from "@expo/vector-icons";
 import { parseMeasurementInput } from "../utils/cn";
 import { useJobAutocomplete } from "../utils/jobAutocomplete";
@@ -46,6 +47,8 @@ const PRODUCT_TYPES = [
 export default function ProductDetailsScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { customPatterns } = useStrandPatternStore();
+  const { currentUser } = useAuthStore();
+  const isAdmin = currentUser?.role === 'admin';
   const { findByJobNumber, searchByJobName } = useJobAutocomplete();
 
   // Check if we're in edit mode
@@ -409,15 +412,17 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                 Product Details
               </Text>
               <View className="flex-row gap-2">
-                <Pressable
-                  onPress={handlePopulateTestValues}
-                  className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
-                >
-                  <Ionicons name="flask" size={20} color="#fff" />
-                  <Text className="text-white text-sm font-semibold ml-2">
-                    Test Values
-                  </Text>
-                </Pressable>
+                {isAdmin && (
+                  <Pressable
+                    onPress={handlePopulateTestValues}
+                    className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
+                  >
+                    <Ionicons name="flask" size={20} color="#fff" />
+                    <Text className="text-white text-sm font-semibold ml-2">
+                      Test Values
+                    </Text>
+                  </Pressable>
+                )}
                 <Pressable
                   onPress={() => {
                     navigation.navigate("ProductTagScanner", {

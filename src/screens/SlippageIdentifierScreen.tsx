@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../navigation/types";
 import { useStrandPatternStore } from "../state/strandPatternStore";
+import { useAuthStore } from "../state/authStore";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1047 from "../components/CrossSection1047";
 import CrossSection1247 from "../components/CrossSection1247";
@@ -48,6 +49,8 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { config, editMode, existingSlippages, recordId } = route.params;
   const { customPatterns } = useStrandPatternStore();
+  const { currentUser } = useAuthStore();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Get the selected strand patterns (bottom and optionally top)
   // Use CAST patterns if available, otherwise fall back to DESIGN patterns
@@ -318,15 +321,17 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
             <Text className="text-gray-900 text-2xl font-bold">
               Slippage Identifier
             </Text>
-            <Pressable
-              onPress={handlePopulateTestValues}
-              className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
-            >
-              <Ionicons name="flask" size={20} color="#fff" />
-              <Text className="text-white text-sm font-semibold ml-2">
-                Test Values
-              </Text>
-            </Pressable>
+            {isAdmin && (
+              <Pressable
+                onPress={handlePopulateTestValues}
+                className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
+              >
+                <Ionicons name="flask" size={20} color="#fff" />
+                <Text className="text-white text-sm font-semibold ml-2">
+                  Test Values
+                </Text>
+              </Pressable>
+            )}
           </View>
           <Text className="text-gray-600 text-sm mt-1">
             Enter slippage values at each strand end
