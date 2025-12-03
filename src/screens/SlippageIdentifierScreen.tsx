@@ -267,6 +267,38 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
     );
   };
 
+  const handlePopulateTestValues = () => {
+    // Test values mapping: strandId -> [E1, E2, E1ExceedsOne, E2ExceedsOne]
+    const testValues: Record<string, { e1: string; e2: string; e1ExceedsOne: boolean; e2ExceedsOne: boolean }> = {
+      'B1': { e1: '0', e2: '0.10', e1ExceedsOne: false, e2ExceedsOne: false },
+      'B2': { e1: '0', e2: '0.20', e1ExceedsOne: false, e2ExceedsOne: false },
+      'B3': { e1: '0.45', e2: '0', e1ExceedsOne: false, e2ExceedsOne: true },
+      'B4': { e1: '0.20', e2: '0.45', e1ExceedsOne: false, e2ExceedsOne: false },
+      'B5': { e1: '0', e2: '0', e1ExceedsOne: false, e2ExceedsOne: false },
+      'B6': { e1: '0', e2: '0', e1ExceedsOne: false, e2ExceedsOne: false },
+      'T1': { e1: '0', e2: '0', e1ExceedsOne: false, e2ExceedsOne: false },
+      'T2': { e1: '0.50', e2: '0', e1ExceedsOne: false, e2ExceedsOne: true },
+      'T3': { e1: '0.65', e2: '0', e1ExceedsOne: false, e2ExceedsOne: true },
+      'T4': { e1: '0', e2: '0.30', e1ExceedsOne: false, e2ExceedsOne: false },
+    };
+
+    setSlippages((prev) =>
+      prev.map((s) => {
+        const testValue = testValues[s.strandId];
+        if (testValue) {
+          return {
+            ...s,
+            leftSlippage: testValue.e1,
+            rightSlippage: testValue.e2,
+            leftExceedsOne: testValue.e1ExceedsOne,
+            rightExceedsOne: testValue.e2ExceedsOne,
+          };
+        }
+        return s;
+      })
+    );
+  };
+
 
 
   return (
@@ -282,9 +314,20 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
       >
         {/* Header */}
         <View className="px-6 py-4 border-b border-gray-200">
-          <Text className="text-gray-900 text-2xl font-bold">
-            Slippage Identifier
-          </Text>
+          <View className="flex-row items-center justify-between mb-1">
+            <Text className="text-gray-900 text-2xl font-bold">
+              Slippage Identifier
+            </Text>
+            <Pressable
+              onPress={handlePopulateTestValues}
+              className="bg-purple-500 rounded-lg px-4 py-2 flex-row items-center"
+            >
+              <Ionicons name="flask" size={20} color="#fff" />
+              <Text className="text-white text-sm font-semibold ml-2">
+                Test Values
+              </Text>
+            </Pressable>
+          </View>
           <Text className="text-gray-600 text-sm mt-1">
             Enter slippage values at each strand end
           </Text>
