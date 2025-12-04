@@ -102,6 +102,15 @@ The following environment variables are required and should be configured via th
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
 
 ### Recent Updates (2025-12-04)
+- ✅ **Enhanced Design vs Cast Pattern Comparison**:
+  - Added side-by-side cross-section view when design differs from cast
+  - Design pattern (blue) vs Cast pattern (green) shown simultaneously
+  - Inline strand difference annotations in slippage value lists
+  - Location-based strand matching (compares by x,y coordinates, not labels)
+  - Shows specific mismatches: size differences, missing/extra strands
+  - Applied to both on-screen view and PDF reports
+  - Improves clarity of what changed between design and actual casting
+
 - ✅ **Configured Git Repository for GitHub Integration**:
   - Updated git remote origin to point to GitHub (https://github.com/McCarthy13/QCToolsApp)
   - Configured Personal Access Token authentication for secure pushes
