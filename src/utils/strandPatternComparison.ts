@@ -1,13 +1,13 @@
 import { CustomStrandPattern } from '../state/strandPatternStore';
 
 export interface StrandDifference {
-  strandIndex: number; // 1-based strand number
+  castStrandIndex?: number; // 1-based strand number in cast pattern
+  designStrandIndex?: number; // 1-based strand number in design pattern
   position: 'Bottom' | 'Top';
-  issueType: 'missing_in_cast' | 'missing_in_design' | 'size_mismatch' | 'location_mismatch';
+  issueType: 'missing_in_cast' | 'extra_in_cast' | 'size_mismatch';
   designSize?: string;
   castSize?: string;
-  designLocation?: { x: number; y: number };
-  castLocation?: { x: number; y: number };
+  location: { x: number; y: number };
   description: string;
 }
 
@@ -24,7 +24,7 @@ export interface StrandPatternComparison {
 }
 
 /**
- * Compares design and cast strand patterns and identifies differences
+ * Compares design and cast strand patterns and identifies differences based on strand LOCATIONS
  * @param designPattern - The design strand pattern (expected pattern)
  * @param castPattern - The cast strand pattern (actual pattern)
  * @param position - Whether this is a 'Bottom' or 'Top' strand comparison
@@ -69,89 +69,101 @@ export function compareStrandPatterns(
     return result;
   }
 
-  // Compare strand counts
-  const designStrandCount =
-    designPattern.strand_3_8 + designPattern.strand_1_2 + designPattern.strand_0_6;
-  const castStrandCount =
-    castPattern.strand_3_8 + castPattern.strand_1_2 + castPattern.strand_0_6;
-
-  // Compare strand sizes
+  // Compare based on physical locations, not index
   const designSizes = designPattern.strandSizes || [];
   const castSizes = castPattern.strandSizes || [];
+  const designCoords = designPattern.strandCoordinates || [];
+  const castCoords = castPattern.strandCoordinates || [];
 
-  const maxLength = Math.max(designSizes.length, castSizes.length);
+  const locationTolerance = 0.5; // 0.5" tolerance for matching locations
 
-  for (let i = 0; i < maxLength; i++) {
-    const strandIndex = i + 1;
-    const designSize = designSizes[i];
-    const castSize = castSizes[i];
-    const designCoord = designPattern.strandCoordinates?.[i];
-    const castCoord = castPattern.strandCoordinates?.[i];
+  // Track which design strands have been matched
+  const matchedDesignIndices = new Set<number>();
 
-    // Check for missing strands
-    if (designSize && !castSize) {
-      result.differences.push({
-        strandIndex,
-        position,
-        issueType: 'missing_in_cast',
-        designSize: designSize ? `${designSize}"` : undefined,
-        description: `${position} Strand ${strandIndex} (${designSize}") exists in design but missing in cast pattern`,
-      });
-    } else if (!designSize && castSize) {
-      result.differences.push({
-        strandIndex,
-        position,
-        issueType: 'missing_in_design',
-        castSize: castSize ? `${castSize}"` : undefined,
-        description: `${position} Strand ${strandIndex} (${castSize}") exists in cast but missing in design pattern`,
-      });
-    } else if (designSize && castSize) {
-      // Check for size mismatch
+  // For each cast strand, find the matching design strand at that location
+  castCoords.forEach((castCoord, castIndex) => {
+    const castSize = castSizes[castIndex];
+    const castStrandNum = castIndex + 1;
+
+    // Find design strand at the same location
+    let matchedDesignIndex = -1;
+    let minDistance = Infinity;
+
+    designCoords.forEach((designCoord, designIndex) => {
+      if (matchedDesignIndices.has(designIndex)) return; // Already matched
+
+      const distance = Math.sqrt(
+        Math.pow(castCoord.x - designCoord.x, 2) +
+        Math.pow(castCoord.y - designCoord.y, 2)
+      );
+
+      if (distance <= locationTolerance && distance < minDistance) {
+        minDistance = distance;
+        matchedDesignIndex = designIndex;
+      }
+    });
+
+    if (matchedDesignIndex >= 0) {
+      // Found a matching design strand at this location
+      matchedDesignIndices.add(matchedDesignIndex);
+      const designSize = designSizes[matchedDesignIndex];
+      const designStrandNum = matchedDesignIndex + 1;
+
+      // Check for size mismatch at this location
       if (designSize !== castSize) {
         result.differences.push({
-          strandIndex,
+          castStrandIndex: castStrandNum,
+          designStrandIndex: designStrandNum,
           position,
           issueType: 'size_mismatch',
           designSize: `${designSize}"`,
           castSize: `${castSize}"`,
-          description: `${position} Strand ${strandIndex} size mismatch: Design=${designSize}", Cast=${castSize}"`,
+          location: castCoord,
+          description: `Strand at (${castCoord.x}", ${castCoord.y}"): Design=${designSize}", Cast=${castSize}"`,
         });
       }
-
-      // Check for location mismatch (if coordinates are available)
-      if (designCoord && castCoord) {
-        const xDiff = Math.abs(designCoord.x - castCoord.x);
-        const yDiff = Math.abs(designCoord.y - castCoord.y);
-        const tolerance = 0.5; // 0.5" tolerance
-
-        if (xDiff > tolerance || yDiff > tolerance) {
-          result.differences.push({
-            strandIndex,
-            position,
-            issueType: 'location_mismatch',
-            designLocation: designCoord,
-            castLocation: castCoord,
-            description: `${position} Strand ${strandIndex} location mismatch: Design=(${designCoord.x}", ${designCoord.y}"), Cast=(${castCoord.x}", ${castCoord.y}")`,
-          });
-        }
-      }
+    } else {
+      // No design strand at this cast location - extra strand in cast
+      result.differences.push({
+        castStrandIndex: castStrandNum,
+        position,
+        issueType: 'extra_in_cast',
+        castSize: `${castSize}"`,
+        location: castCoord,
+        description: `Extra ${castSize}" strand in cast at (${castCoord.x}", ${castCoord.y}") - not in design`,
+      });
     }
-  }
+  });
+
+  // Check for design strands that don't have a matching cast strand
+  designCoords.forEach((designCoord, designIndex) => {
+    if (!matchedDesignIndices.has(designIndex)) {
+      const designSize = designSizes[designIndex];
+      const designStrandNum = designIndex + 1;
+
+      result.differences.push({
+        designStrandIndex: designStrandNum,
+        position,
+        issueType: 'missing_in_cast',
+        designSize: `${designSize}"`,
+        location: designCoord,
+        description: `Missing ${designSize}" strand at (${designCoord.x}", ${designCoord.y}") - in design but not cast`,
+      });
+    }
+  });
 
   result.hasDifferences = result.differences.length > 0;
 
   // Generate summary
   if (result.hasDifferences) {
     const missingInCast = result.differences.filter(d => d.issueType === 'missing_in_cast').length;
-    const missingInDesign = result.differences.filter(d => d.issueType === 'missing_in_design').length;
+    const extraInCast = result.differences.filter(d => d.issueType === 'extra_in_cast').length;
     const sizeMismatches = result.differences.filter(d => d.issueType === 'size_mismatch').length;
-    const locationMismatches = result.differences.filter(d => d.issueType === 'location_mismatch').length;
 
     const summaryParts: string[] = [];
     if (missingInCast > 0) summaryParts.push(`${missingInCast} strand(s) missing in cast`);
-    if (missingInDesign > 0) summaryParts.push(`${missingInDesign} extra strand(s) in cast`);
+    if (extraInCast > 0) summaryParts.push(`${extraInCast} extra strand(s) in cast`);
     if (sizeMismatches > 0) summaryParts.push(`${sizeMismatches} size mismatch(es)`);
-    if (locationMismatches > 0) summaryParts.push(`${locationMismatches} location mismatch(es)`);
 
     result.summary = `${result.differences.length} difference(s) found: ${summaryParts.join(', ')}`;
   } else {
@@ -198,13 +210,11 @@ export function formatComparisonForPDF(comparison: StrandPatternComparison): str
     let diffHtml = `<li style="margin-bottom: 4px; color: #1f2937;">`;
 
     if (diff.issueType === 'missing_in_cast') {
-      diffHtml += `<strong style="color: #dc2626;">Missing in Cast:</strong> ${diff.position} Strand ${diff.strandIndex} (${diff.designSize}) exists in design but not in cast pattern`;
-    } else if (diff.issueType === 'missing_in_design') {
-      diffHtml += `<strong style="color: #ea580c;">Extra in Cast:</strong> ${diff.position} Strand ${diff.strandIndex} (${diff.castSize}) exists in cast but not in design pattern`;
+      diffHtml += `<strong style="color: #dc2626;">Missing in Cast:</strong> ${diff.designSize} strand at (${diff.location.x}", ${diff.location.y}") - in design but not cast`;
+    } else if (diff.issueType === 'extra_in_cast') {
+      diffHtml += `<strong style="color: #ea580c;">Extra in Cast:</strong> ${diff.castSize} strand at (${diff.location.x}", ${diff.location.y}") - not in design`;
     } else if (diff.issueType === 'size_mismatch') {
-      diffHtml += `<strong style="color: #ca8a04;">Size Mismatch:</strong> ${diff.position} Strand ${diff.strandIndex} - Design: ${diff.designSize}, Cast: ${diff.castSize}`;
-    } else if (diff.issueType === 'location_mismatch') {
-      diffHtml += `<strong style="color: #9333ea;">Location Mismatch:</strong> ${diff.position} Strand ${diff.strandIndex} - Design: (${diff.designLocation?.x}", ${diff.designLocation?.y}"), Cast: (${diff.castLocation?.x}", ${diff.castLocation?.y}")`;
+      diffHtml += `<strong style="color: #ca8a04;">Size Mismatch:</strong> Strand at (${diff.location.x}", ${diff.location.y}") - Design: ${diff.designSize}, Cast: ${diff.castSize}`;
     }
 
     diffHtml += `</li>`;

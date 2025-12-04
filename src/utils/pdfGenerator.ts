@@ -844,10 +844,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                     const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
                     const strandNum = strand.strandId.substring(1);
 
-                    // Find differences for this strand
-                    const strandDiffs = bottomPatternComparison?.differences.filter(diff =>
-                      diff.description.includes(`Strand ${strandNum}`)
-                    ) || [];
+                    // Find differences for this strand location
+                    const strandDiffs = bottomPatternComparison?.differences || [];
 
                     return `
                       <tr>
@@ -856,9 +854,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                           ${strandDiffs.length > 0 ? `
                             <div style="margin-top: 3px; padding: 3px 4px; background: #FEF3C7; border-left: 2px solid #F59E0B; font-size: 6px; font-weight: normal; color: #92400E; line-height: 1.3;">
                               <strong style="font-size: 6.5px;">⚠ Design vs Cast:</strong><br/>
-                              ${strandDiffs.map(diff =>
-                                `• ${diff.description.replace(`Bottom Strand ${strandNum}: `, '')}`
-                              ).join('<br/>')}
+                              ${strandDiffs.map(diff => `• ${diff.description}`).join('<br/>')}
                             </div>
                           ` : ''}
                         </td>
@@ -914,10 +910,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                     const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
                     const strandNum = strand.strandId.substring(1);
 
-                    // Find differences for this strand
-                    const strandDiffs = topPatternComparison?.differences.filter(diff =>
-                      diff.description.includes(`Strand ${strandNum}`)
-                    ) || [];
+                    // Find differences for this strand location
+                    const strandDiffs = topPatternComparison?.differences || [];
 
                     return `
                       <tr>
@@ -926,9 +920,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                           ${strandDiffs.length > 0 ? `
                             <div style="margin-top: 3px; padding: 3px 4px; background: #FEF3C7; border-left: 2px solid #F59E0B; font-size: 6px; font-weight: normal; color: #92400E; line-height: 1.3;">
                               <strong style="font-size: 6.5px;">⚠ Design vs Cast:</strong><br/>
-                              ${strandDiffs.map(diff =>
-                                `• ${diff.description.replace(`Top Strand ${strandNum}: `, '')}`
-                              ).join('<br/>')}
+                              ${strandDiffs.map(diff => `• ${diff.description}`).join('<br/>')}
                             </div>
                           ` : ''}
                         </td>

@@ -107,7 +107,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     return size ? `${size}"` : '';
   };
 
-  // Helper to get strand differences for individual strands
+  // Helper to get strand differences for individual strands based on LOCATION
   const getStrandDifferences = (strandId: string) => {
     const isTopStrand = strandId.startsWith('T');
     const comparison = isTopStrand ? topPatternComparison : bottomPatternComparison;
@@ -116,14 +116,26 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       return null;
     }
 
+    // Get the strand's index in the CAST pattern (what we're measuring)
     const numericId = strandId.substring(1);
-    const index = parseInt(numericId) - 1;
+    const castIndex = parseInt(numericId) - 1;
 
-    // Find differences that apply to this specific strand
+    // Get the cast strand's location
+    const castPattern = isTopStrand ? selectedTopPattern : selectedPattern;
+    const castCoord = castPattern?.strandCoordinates?.[castIndex];
+
+    if (!castCoord) {
+      return null;
+    }
+
+    // Find differences that apply to this location
+    const locationTolerance = 0.5;
     const strandDiffs = comparison.differences.filter(diff => {
-      // Check if this difference mentions this strand number
-      const strandNum = `Strand ${numericId}`;
-      return diff.description.includes(strandNum);
+      const distance = Math.sqrt(
+        Math.pow(diff.location.x - castCoord.x, 2) +
+        Math.pow(diff.location.y - castCoord.y, 2)
+      );
+      return distance <= locationTolerance;
     });
 
     if (strandDiffs.length === 0) {
@@ -812,7 +824,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                           </View>
                           {strandDiffs.map((diff, idx) => (
                             <Text key={idx} className="text-amber-800 text-[10px] ml-4 mt-0.5">
-                              • {diff.description.replace(`Bottom Strand ${strand.strandId.substring(1)}: `, '')}
+                              • {diff.description}
                             </Text>
                           ))}
                         </View>
@@ -893,7 +905,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                           </View>
                           {strandDiffs.map((diff, idx) => (
                             <Text key={idx} className="text-amber-800 text-[10px] ml-4 mt-0.5">
-                              • {diff.description.replace(`Top Strand ${strand.strandId.substring(1)}: `, '')}
+                              • {diff.description}
                             </Text>
                           ))}
                         </View>
