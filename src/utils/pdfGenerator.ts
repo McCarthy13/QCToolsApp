@@ -53,6 +53,8 @@ interface PDFGenerationParams {
   topCastStrandPatternName?: string;
   bottomPatternComparison?: StrandPatternComparison | null;
   topPatternComparison?: StrandPatternComparison | null;
+  castStrandCoordinates?: { x: number; y: number }[];
+  castTopStrandCoordinates?: { x: number; y: number }[];
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -70,6 +72,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     topCastStrandPatternName,
     bottomPatternComparison,
     topPatternComparison,
+    castStrandCoordinates,
+    castTopStrandCoordinates,
   } = params;
 
   try {
@@ -843,9 +847,21 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                     const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
                     const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
                     const strandNum = strand.strandId.substring(1);
+                    const castIndex = parseInt(strandNum) - 1;
 
-                    // Find differences for this strand location
-                    const strandDiffs = bottomPatternComparison?.differences || [];
+                    // Get cast strand location from the provided coordinates
+                    const castCoord = castStrandCoordinates?.[castIndex];
+
+                    // Find differences that apply to THIS strand's location
+                    const locationTolerance = 0.5;
+                    const strandDiffs = bottomPatternComparison?.differences.filter(diff => {
+                      if (!castCoord) return false;
+                      const distance = Math.sqrt(
+                        Math.pow(diff.location.x - castCoord.x, 2) +
+                        Math.pow(diff.location.y - castCoord.y, 2)
+                      );
+                      return distance <= locationTolerance;
+                    }) || [];
 
                     return `
                       <tr>
@@ -909,9 +925,21 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                     const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
                     const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
                     const strandNum = strand.strandId.substring(1);
+                    const castIndex = parseInt(strandNum) - 1;
 
-                    // Find differences for this strand location
-                    const strandDiffs = topPatternComparison?.differences || [];
+                    // Get cast top strand location from the provided coordinates
+                    const castCoord = castTopStrandCoordinates?.[castIndex];
+
+                    // Find differences that apply to THIS strand's location
+                    const locationTolerance = 0.5;
+                    const strandDiffs = topPatternComparison?.differences.filter(diff => {
+                      if (!castCoord) return false;
+                      const distance = Math.sqrt(
+                        Math.pow(diff.location.x - castCoord.x, 2) +
+                        Math.pow(diff.location.y - castCoord.y, 2)
+                      );
+                      return distance <= locationTolerance;
+                    }) || [];
 
                     return `
                       <tr>

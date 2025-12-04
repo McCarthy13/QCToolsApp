@@ -268,6 +268,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         topCastStrandPatternName: selectedTopCastPattern?.name,
         bottomPatternComparison,
         topPatternComparison,
+        castStrandCoordinates: selectedPattern?.strandCoordinates,
+        castTopStrandCoordinates: selectedTopPattern?.strandCoordinates,
       });
 
       if (filePath) {
