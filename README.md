@@ -6,45 +6,66 @@ A comprehensive mobile app for precast concrete quality management, built with R
 
 This project is configured to sync with GitHub as the primary remote repository:
 
-- **origin** (Primary): GitHub - https://github.com/McCarthy13/QCToolsApp
-- All changes are automatically committed and pushed to GitHub
+- **Remote Origin**: https://github.com/McCarthy13/QCToolsApp
+- **Authentication**: Personal Access Token (configured)
+- All code changes should be committed and pushed to GitHub
 - The Vibecode sandbox stays in sync with GitHub
 
 ### Three-Way Synchronization
 
-All three environments are kept in sync:
+All three environments must stay in sync:
 1. **GitHub Repository** (https://github.com/McCarthy13/QCToolsApp) - Primary source of truth
 2. **Vibecode Sandbox** (/home/user/workspace/) - Development environment
 3. **Firebase Hosting** (https://precast-qc-tools-web-app.web.app) - Production deployment
 
-Every code change is:
-- Committed to the local sandbox repository
-- Pushed to GitHub automatically
-- Deployed to Firebase (when using `node deploy.js`)
+### Workflow for Every Update
+
+For every code change, you must:
+1. Make changes in Vibecode sandbox
+2. Commit changes to local git repository
+3. Push to GitHub repository (`git push origin main`)
+4. Deploy to Firebase (when ready using `node deploy.js`)
+
+This ensures all three environments remain synchronized.
 
 ### Security
 
 All sensitive credentials are protected via `.gitignore`:
-- `.env*` files (environment variables)
+- `.env` and `.env*` files (environment variables)
 - `*service-account*.json` (Firebase credentials)
 - API keys and tokens (Anthropic, OpenAI, GitHub)
 - Firebase configuration files
+- `.git-credentials` (git authentication tokens)
 - See `.gitignore` for complete list
 
-**Important**: Never commit secrets to the repository. Use the Vibecode ENV tab to manage environment variables.
+**Critical**: Never commit secrets to the repository. All credentials must:
+- Be listed in `.gitignore`
+- Be managed through local `.env` files only
+- Never appear in committed code or configuration files
 
-### Manual Git Operations
+Environment variables are:
+- Stored in `/home/user/workspace/.env` (local only, git-ignored)
+- Stored in `/home/user/workspace/functions/.env` (local only, git-ignored)
+- Template provided in `.env.example` files (safe to commit)
 
-To push changes manually:
+### Git Operations
+
+**Push changes to GitHub:**
 ```bash
 git add .
 git commit -m "Your commit message"
 git push origin main
 ```
 
-To pull latest changes from GitHub:
+**Pull latest changes from GitHub:**
 ```bash
 git pull origin main
+```
+
+**Check repository status:**
+```bash
+git status
+git remote -v
 ```
 
 ## Deployment Status
@@ -79,6 +100,17 @@ The following environment variables are required and should be configured via th
 - `OPENAI_API_KEY` - Legacy support (not currently used)
 
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
+
+### Recent Updates (2025-12-04)
+- ✅ **Configured Git Repository for GitHub Integration**:
+  - Updated git remote origin to point to GitHub (https://github.com/McCarthy13/QCToolsApp)
+  - Configured Personal Access Token authentication for secure pushes
+  - Enhanced .gitignore to protect all environment files (.env, .env.local, .env*.local)
+  - Added .git-credentials to gitignore to prevent token exposure
+  - Created local .env files with all required credentials (git-ignored)
+  - Established three-way sync workflow: Vibecode Sandbox ↔ GitHub ↔ Firebase
+  - All code changes now require: commit → push to GitHub → deploy to Firebase
+  - Verified secrets protection: no credentials committed to repository
 
 ### Recent Updates (2025-12-03)
 - ✅ **GitHub Integration & Environment Configuration**:
