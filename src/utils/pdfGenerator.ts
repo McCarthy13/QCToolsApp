@@ -844,10 +844,23 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                     const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
                     const strandNum = strand.strandId.substring(1);
 
+                    // Find differences for this strand
+                    const strandDiffs = bottomPatternComparison?.differences.filter(diff =>
+                      diff.description.includes(`Strand ${strandNum}`)
+                    ) || [];
+
                     return `
                       <tr>
                         <td style="font-weight: 700; color: #059669;">
                           Bottom Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
+                          ${strandDiffs.length > 0 ? `
+                            <div style="margin-top: 3px; padding: 3px 4px; background: #FEF3C7; border-left: 2px solid #F59E0B; font-size: 6px; font-weight: normal; color: #92400E; line-height: 1.3;">
+                              <strong style="font-size: 6.5px;">⚠ Design vs Cast:</strong><br/>
+                              ${strandDiffs.map(diff =>
+                                `• ${diff.description.replace(`Bottom Strand ${strandNum}: `, '')}`
+                              ).join('<br/>')}
+                            </div>
+                          ` : ''}
                         </td>
                         <td>
                           <span style="color: #111827; font-weight: 600;">
@@ -901,10 +914,23 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                     const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
                     const strandNum = strand.strandId.substring(1);
 
+                    // Find differences for this strand
+                    const strandDiffs = topPatternComparison?.differences.filter(diff =>
+                      diff.description.includes(`Strand ${strandNum}`)
+                    ) || [];
+
                     return `
                       <tr>
                         <td style="font-weight: 700; color: #2563eb;">
                           Top Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
+                          ${strandDiffs.length > 0 ? `
+                            <div style="margin-top: 3px; padding: 3px 4px; background: #FEF3C7; border-left: 2px solid #F59E0B; font-size: 6px; font-weight: normal; color: #92400E; line-height: 1.3;">
+                              <strong style="font-size: 6.5px;">⚠ Design vs Cast:</strong><br/>
+                              ${strandDiffs.map(diff =>
+                                `• ${diff.description.replace(`Top Strand ${strandNum}: `, '')}`
+                              ).join('<br/>')}
+                            </div>
+                          ` : ''}
                         </td>
                         <td>
                           <span style="color: #111827; font-weight: 600;">

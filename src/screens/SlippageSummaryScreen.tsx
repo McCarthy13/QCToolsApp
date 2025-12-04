@@ -107,6 +107,32 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     return size ? `${size}"` : '';
   };
 
+  // Helper to get strand differences for individual strands
+  const getStrandDifferences = (strandId: string) => {
+    const isTopStrand = strandId.startsWith('T');
+    const comparison = isTopStrand ? topPatternComparison : bottomPatternComparison;
+
+    if (!comparison || !comparison.hasDifferences) {
+      return null;
+    }
+
+    const numericId = strandId.substring(1);
+    const index = parseInt(numericId) - 1;
+
+    // Find differences that apply to this specific strand
+    const strandDiffs = comparison.differences.filter(diff => {
+      // Check if this difference mentions this strand number
+      const strandNum = `Strand ${numericId}`;
+      return diff.description.includes(strandNum);
+    });
+
+    if (strandDiffs.length === 0) {
+      return null;
+    }
+
+    return strandDiffs;
+  };
+
   // Save and publish handlers
   const handleSave = () => {
     console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
@@ -402,72 +428,242 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           </Text>
         </View>
 
-        {/* Cross-section diagram - smaller */}
-        <View
-          ref={crossSectionRef}
-          className="items-center my-3"
-          style={{ overflow: 'visible', minHeight: 200 }}
-          collapsable={false}
-          // @ts-ignore - data-testid is not in React Native types but works on web
-          data-testid="cross-section-container"
-        >
-          <Text className="text-gray-700 text-xs font-semibold mb-2">
-            Cross Section with Slippage Values
-          </Text>
-          {config.productType === '1047' ? (
-            <CrossSection1047
-              scale={6}
-              activeStrands={activeStrandIndices || undefined}
-              productSide={config.productSide || null}
-              productWidth={config.productWidth}
-              slippages={slippages}
-              showSlippageValues={true}
-              strandCoordinates={selectedPattern?.strandCoordinates}
-              bottomStrandSizes={selectedPattern?.strandSizes}
-              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
-              topStrandSizes={selectedTopPattern?.strandSizes}
-            />
-          ) : config.productType === '1247' ? (
-            <CrossSection1247
-              scale={6}
-              activeStrands={activeStrandIndices || undefined}
-              productSide={config.productSide || null}
-              productWidth={config.productWidth}
-              slippages={slippages}
-              showSlippageValues={true}
-              strandCoordinates={selectedPattern?.strandCoordinates}
-              bottomStrandSizes={selectedPattern?.strandSizes}
-              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
-              topStrandSizes={selectedTopPattern?.strandSizes}
-            />
-          ) : config.productType === '1250' ? (
-            <CrossSection1250
-              scale={6}
-              activeStrands={activeStrandIndices || undefined}
-              productSide={config.productSide || null}
-              productWidth={config.productWidth}
-              slippages={slippages}
-              showSlippageValues={true}
-              strandCoordinates={selectedPattern?.strandCoordinates}
-              bottomStrandSizes={selectedPattern?.strandSizes}
-              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
-              topStrandSizes={selectedTopPattern?.strandSizes}
-            />
-          ) : (
-            <CrossSection8048
-              scale={6}
-              activeStrands={activeStrandIndices || undefined}
-              productSide={config.productSide || null}
-              productWidth={config.productWidth}
-              slippages={slippages}
-              showSlippageValues={true}
-              strandCoordinates={selectedPattern?.strandCoordinates}
-              bottomStrandSizes={selectedPattern?.strandSizes}
-              topStrandCoordinates={selectedTopPattern?.strandCoordinates}
-              topStrandSizes={selectedTopPattern?.strandSizes}
-            />
-          )}
-        </View>
+        {/* Cross-section diagram - Show side-by-side if design differs from cast */}
+        {(bottomPatternComparison?.hasDifferences || topPatternComparison?.hasDifferences) ? (
+          <View className="px-6 mb-3">
+            <Text className="text-gray-900 text-base font-semibold mb-3">
+              Design vs Cast Pattern Comparison
+            </Text>
+
+            {/* Side-by-side cross-sections */}
+            <View
+              ref={crossSectionRef}
+              collapsable={false}
+              // @ts-ignore
+              data-testid="cross-section-container"
+            >
+              <View className="flex-row gap-2">
+                {/* Design Pattern */}
+                <View className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-200">
+                  <Text className="text-blue-900 text-xs font-bold mb-1 text-center">
+                    DESIGN PATTERN
+                  </Text>
+                  <Text className="text-blue-700 text-[10px] mb-2 text-center">
+                    {designPattern?.name}
+                  </Text>
+                  {config.productType === '1047' ? (
+                    <CrossSection1047
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      showSlippageValues={false}
+                      strandCoordinates={designPattern?.strandCoordinates}
+                      bottomStrandSizes={designPattern?.strandSizes}
+                      topStrandCoordinates={designTopPattern?.strandCoordinates}
+                      topStrandSizes={designTopPattern?.strandSizes}
+                    />
+                  ) : config.productType === '1247' ? (
+                    <CrossSection1247
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      showSlippageValues={false}
+                      strandCoordinates={designPattern?.strandCoordinates}
+                      bottomStrandSizes={designPattern?.strandSizes}
+                      topStrandCoordinates={designTopPattern?.strandCoordinates}
+                      topStrandSizes={designTopPattern?.strandSizes}
+                    />
+                  ) : config.productType === '1250' ? (
+                    <CrossSection1250
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      showSlippageValues={false}
+                      strandCoordinates={designPattern?.strandCoordinates}
+                      bottomStrandSizes={designPattern?.strandSizes}
+                      topStrandCoordinates={designTopPattern?.strandCoordinates}
+                      topStrandSizes={designTopPattern?.strandSizes}
+                    />
+                  ) : (
+                    <CrossSection8048
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      showSlippageValues={false}
+                      strandCoordinates={designPattern?.strandCoordinates}
+                      bottomStrandSizes={designPattern?.strandSizes}
+                      topStrandCoordinates={designTopPattern?.strandCoordinates}
+                      topStrandSizes={designTopPattern?.strandSizes}
+                    />
+                  )}
+                </View>
+
+                {/* Cast Pattern */}
+                <View className="flex-1 bg-green-50 rounded-lg p-2 border border-green-200">
+                  <Text className="text-green-900 text-xs font-bold mb-1 text-center">
+                    CAST PATTERN
+                  </Text>
+                  <Text className="text-green-700 text-[10px] mb-2 text-center">
+                    {selectedCastPattern?.name || selectedPattern?.name}
+                  </Text>
+                  {config.productType === '1047' ? (
+                    <CrossSection1047
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      slippages={slippages}
+                      showSlippageValues={true}
+                      strandCoordinates={selectedPattern?.strandCoordinates}
+                      bottomStrandSizes={selectedPattern?.strandSizes}
+                      topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                      topStrandSizes={selectedTopPattern?.strandSizes}
+                    />
+                  ) : config.productType === '1247' ? (
+                    <CrossSection1247
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      slippages={slippages}
+                      showSlippageValues={true}
+                      strandCoordinates={selectedPattern?.strandCoordinates}
+                      bottomStrandSizes={selectedPattern?.strandSizes}
+                      topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                      topStrandSizes={selectedTopPattern?.strandSizes}
+                    />
+                  ) : config.productType === '1250' ? (
+                    <CrossSection1250
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      slippages={slippages}
+                      showSlippageValues={true}
+                      strandCoordinates={selectedPattern?.strandCoordinates}
+                      bottomStrandSizes={selectedPattern?.strandSizes}
+                      topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                      topStrandSizes={selectedTopPattern?.strandSizes}
+                    />
+                  ) : (
+                    <CrossSection8048
+                      scale={5}
+                      activeStrands={activeStrandIndices || undefined}
+                      productSide={config.productSide || null}
+                      productWidth={config.productWidth}
+                      slippages={slippages}
+                      showSlippageValues={true}
+                      strandCoordinates={selectedPattern?.strandCoordinates}
+                      bottomStrandSizes={selectedPattern?.strandSizes}
+                      topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                      topStrandSizes={selectedTopPattern?.strandSizes}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Pattern Differences Summary */}
+            {bottomPatternComparison?.hasDifferences && (
+              <View className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                <Text className="text-red-900 text-xs font-bold mb-2">
+                  ⚠ Bottom Strand Differences
+                </Text>
+                {bottomPatternComparison.differences.map((diff, idx) => (
+                  <View key={idx} className="flex-row items-start mb-1">
+                    <Text className="text-red-600 text-xs mr-1">•</Text>
+                    <Text className="text-xs text-red-800 flex-1">{diff.description}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {topPatternComparison?.hasDifferences && (
+              <View className="mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                <Text className="text-red-900 text-xs font-bold mb-2">
+                  ⚠ Top Strand Differences
+                </Text>
+                {topPatternComparison.differences.map((diff, idx) => (
+                  <View key={idx} className="flex-row items-start mb-1">
+                    <Text className="text-red-600 text-xs mr-1">•</Text>
+                    <Text className="text-xs text-red-800 flex-1">{diff.description}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ) : (
+          /* Single cross-section when patterns match */
+          <View
+            ref={crossSectionRef}
+            className="items-center my-3"
+            style={{ overflow: 'visible', minHeight: 200 }}
+            collapsable={false}
+            // @ts-ignore
+            data-testid="cross-section-container"
+          >
+            <Text className="text-gray-700 text-xs font-semibold mb-2">
+              Cross Section with Slippage Values
+            </Text>
+            {config.productType === '1047' ? (
+              <CrossSection1047
+                scale={6}
+                activeStrands={activeStrandIndices || undefined}
+                productSide={config.productSide || null}
+                productWidth={config.productWidth}
+                slippages={slippages}
+                showSlippageValues={true}
+                strandCoordinates={selectedPattern?.strandCoordinates}
+                bottomStrandSizes={selectedPattern?.strandSizes}
+                topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                topStrandSizes={selectedTopPattern?.strandSizes}
+              />
+            ) : config.productType === '1247' ? (
+              <CrossSection1247
+                scale={6}
+                activeStrands={activeStrandIndices || undefined}
+                productSide={config.productSide || null}
+                productWidth={config.productWidth}
+                slippages={slippages}
+                showSlippageValues={true}
+                strandCoordinates={selectedPattern?.strandCoordinates}
+                bottomStrandSizes={selectedPattern?.strandSizes}
+                topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                topStrandSizes={selectedTopPattern?.strandSizes}
+              />
+            ) : config.productType === '1250' ? (
+              <CrossSection1250
+                scale={6}
+                activeStrands={activeStrandIndices || undefined}
+                productSide={config.productSide || null}
+                productWidth={config.productWidth}
+                slippages={slippages}
+                showSlippageValues={true}
+                strandCoordinates={selectedPattern?.strandCoordinates}
+                bottomStrandSizes={selectedPattern?.strandSizes}
+                topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                topStrandSizes={selectedTopPattern?.strandSizes}
+              />
+            ) : (
+              <CrossSection8048
+                scale={6}
+                activeStrands={activeStrandIndices || undefined}
+                productSide={config.productSide || null}
+                productWidth={config.productWidth}
+                slippages={slippages}
+                showSlippageValues={true}
+                strandCoordinates={selectedPattern?.strandCoordinates}
+                bottomStrandSizes={selectedPattern?.strandSizes}
+                topStrandCoordinates={selectedTopPattern?.strandCoordinates}
+                topStrandSizes={selectedTopPattern?.strandSizes}
+              />
+            )}
+          </View>
+        )}
 
         {/* Cut-width info banner - more compact */}
         {config.productWidth && config.productSide && selectedPattern?.strandCoordinates && (
@@ -483,92 +679,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Strand Pattern Comparison - Design vs Cast */}
-        {(bottomPatternComparison || topPatternComparison) && (
-          <View className="px-6 mb-3">
-            <Text className="text-gray-900 text-base font-semibold mb-2">
-              Design vs Cast Pattern Analysis
-            </Text>
-
-            {/* Bottom Pattern Comparison */}
-            {bottomPatternComparison && (
-              <View className="mb-2">
-                <View className={`rounded-lg p-3 ${bottomPatternComparison.hasDifferences ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons
-                      name={bottomPatternComparison.hasDifferences ? "alert-circle" : "checkmark-circle"}
-                      size={18}
-                      color={bottomPatternComparison.hasDifferences ? "#DC2626" : "#059669"}
-                    />
-                    <Text className={`text-xs font-bold ml-2 ${bottomPatternComparison.hasDifferences ? 'text-red-800' : 'text-green-800'}`}>
-                      Bottom Strands
-                    </Text>
-                  </View>
-                  <View className="mb-1.5">
-                    <Text className="text-xs text-gray-700">
-                      <Text className="font-semibold">Design:</Text> {bottomPatternComparison.designPatternName || 'Not specified'}
-                    </Text>
-                    <Text className="text-xs text-gray-700">
-                      <Text className="font-semibold">Cast:</Text> {bottomPatternComparison.castPatternName || 'Not specified'}
-                    </Text>
-                  </View>
-                  <Text className={`text-xs ${bottomPatternComparison.hasDifferences ? 'text-red-700 font-semibold' : 'text-green-700'}`}>
-                    {bottomPatternComparison.summary}
-                  </Text>
-                  {bottomPatternComparison.hasDifferences && bottomPatternComparison.differences.length > 0 && (
-                    <View className="mt-2 bg-white rounded p-2">
-                      {bottomPatternComparison.differences.map((diff, idx) => (
-                        <View key={idx} className="flex-row items-start mb-1">
-                          <Text className="text-red-600 text-xs mr-1">•</Text>
-                          <Text className="text-xs text-gray-800 flex-1">{diff.description}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {/* Top Pattern Comparison */}
-            {topPatternComparison && (
-              <View className="mb-2">
-                <View className={`rounded-lg p-3 ${topPatternComparison.hasDifferences ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons
-                      name={topPatternComparison.hasDifferences ? "alert-circle" : "checkmark-circle"}
-                      size={18}
-                      color={topPatternComparison.hasDifferences ? "#DC2626" : "#059669"}
-                    />
-                    <Text className={`text-xs font-bold ml-2 ${topPatternComparison.hasDifferences ? 'text-red-800' : 'text-green-800'}`}>
-                      Top Strands
-                    </Text>
-                  </View>
-                  <View className="mb-1.5">
-                    <Text className="text-xs text-gray-700">
-                      <Text className="font-semibold">Design:</Text> {topPatternComparison.designPatternName || 'Not specified'}
-                    </Text>
-                    <Text className="text-xs text-gray-700">
-                      <Text className="font-semibold">Cast:</Text> {topPatternComparison.castPatternName || 'Not specified'}
-                    </Text>
-                  </View>
-                  <Text className={`text-xs ${topPatternComparison.hasDifferences ? 'text-red-700 font-semibold' : 'text-green-700'}`}>
-                    {topPatternComparison.summary}
-                  </Text>
-                  {topPatternComparison.hasDifferences && topPatternComparison.differences.length > 0 && (
-                    <View className="mt-2 bg-white rounded p-2">
-                      {topPatternComparison.differences.map((diff, idx) => (
-                        <View key={idx} className="flex-row items-start mb-1">
-                          <Text className="text-red-600 text-xs mr-1">•</Text>
-                          <Text className="text-xs text-gray-800 flex-1">{diff.description}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-          </View>
-        )}
 
         {/* Slippage Statistics - more compact */}
         <View className="px-6">
@@ -663,6 +773,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
                   const strandTotal = e1 + e2;
                   const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
+                  const strandDiffs = getStrandDifferences(strand.strandId);
 
                   return (
                     <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
@@ -689,6 +800,23 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                           </Text>
                         </View>
                       </View>
+
+                      {/* Pattern Differences Annotation */}
+                      {strandDiffs && strandDiffs.length > 0 && (
+                        <View className="ml-6 mb-1.5 bg-amber-50 border border-amber-300 rounded px-2 py-1">
+                          <View className="flex-row items-center">
+                            <Ionicons name="warning" size={12} color="#F59E0B" />
+                            <Text className="text-amber-900 text-[10px] font-semibold ml-1">
+                              Design vs Cast:
+                            </Text>
+                          </View>
+                          {strandDiffs.map((diff, idx) => (
+                            <Text key={idx} className="text-amber-800 text-[10px] ml-4 mt-0.5">
+                              • {diff.description.replace(`Bottom Strand ${strand.strandId.substring(1)}: `, '')}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
 
                       {/* END 1 & END 2 - inline */}
                       <View className="flex-row gap-2 ml-6">
@@ -726,6 +854,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
                   const strandTotal = e1 + e2;
                   const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
+                  const strandDiffs = getStrandDifferences(strand.strandId);
 
                   return (
                     <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
@@ -752,6 +881,23 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                           </Text>
                         </View>
                       </View>
+
+                      {/* Pattern Differences Annotation */}
+                      {strandDiffs && strandDiffs.length > 0 && (
+                        <View className="ml-6 mb-1.5 bg-amber-50 border border-amber-300 rounded px-2 py-1">
+                          <View className="flex-row items-center">
+                            <Ionicons name="warning" size={12} color="#F59E0B" />
+                            <Text className="text-amber-900 text-[10px] font-semibold ml-1">
+                              Design vs Cast:
+                            </Text>
+                          </View>
+                          {strandDiffs.map((diff, idx) => (
+                            <Text key={idx} className="text-amber-800 text-[10px] ml-4 mt-0.5">
+                              • {diff.description.replace(`Top Strand ${strand.strandId.substring(1)}: `, '')}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
 
                       {/* END 1 & END 2 - inline */}
                       <View className="flex-row gap-2 ml-6">
