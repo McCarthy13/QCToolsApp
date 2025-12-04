@@ -2,12 +2,17 @@
 
 # Environment variables and credentials
 .env
+.env.local
+.env*.local
 
 # Vibecode auto-generated files
 changelog.txt
 
 # Firebase cache
 .firebase/
+
+# Git credentials
+.git-credentials
 
 # dependencies
 node_modules/
