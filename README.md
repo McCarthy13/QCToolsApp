@@ -460,6 +460,21 @@ The following environment variables are required and should be configured via th
 
 ## Features
 
+### Aggregate Gradation Tool (Complete Integration)
+- **Complete ASTM C-33 Compliance Analysis** - All 64 functions from standalone tool fully integrated
+- **Main Analysis View** - Real-time gradation calculations with keyboard navigation between sieve inputs
+- **Admin Configuration** - Full CRUD operations for aggregate management with sieve editor
+- **Test Repository** - Comprehensive record management with filtering, viewing, editing, printing, and CSV export
+- **Configure Defaults** - Select up to 8 default aggregates for main page
+- **Print & Export** - Blank forms generation (5 per page landscape) and individual record export
+- **Gradation Charts** - Log-scale SVG charts showing sieve analysis curves
+- **C33 Compliance** - Color-coded pass/fail indicators for all ASTM C-33 limits
+- **Fineness Modulus** - Automatic calculation for fine aggregates
+- **Decant Percentage** - Automatic calculation with configurable limits
+- **No Production Records** - Date range tracking for periods without testing
+- **Firebase Integration** - All data stored in Firestore with real-time sync
+- **Mobile-First Design** - Card-based layouts optimized for mobile viewing
+
 ### Product Tag Scanner
 - **Native Camera Integration** - Uses iPhone native camera for sharp, clear images
 - **AI-Powered OCR** - Automatically extracts all product information from tags
