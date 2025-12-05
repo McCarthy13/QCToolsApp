@@ -103,6 +103,24 @@ The following environment variables are required and should be configured via th
 
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
 
+### Recent Updates (2025-12-05)
+- ✅ **Complete Aggregate Gradations Tool Integration**:
+  - Integrated standalone Gradations Tool (https://github.com/McCarthy13/GradationsTool) as native mobile experience
+  - **Multi-test entry**: Conduct multiple gradation tests simultaneously in single session
+  - **Material name tracking**: Label each test with load/batch identifier
+  - **Advanced keyboard navigation**: Enter/Tab/Arrow keys move between sieve weight inputs
+  - **Comprehensive repository**: Filter test history by aggregate, type, material name, date range
+  - **Pass/fail indicators**: Visual ASTM C-33 compliance status for each test
+  - **Detailed record viewing**: Complete gradation data tables with spec limits
+  - **Admin panel**: Manage aggregate configurations and default selections
+  - **Firebase cloud storage**: All tests and configurations sync across devices
+  - **Calculation accuracy**: Matches original HTML app exactly (%, cumulative %, passing, FM, decant)
+  - Components: TestEntryView, RepositoryView, AdminView, RecordDetailModal
+  - State management: Full Zustand store with Firebase integration (gradationsStore.ts)
+  - Data structure: Enhanced types supporting materialName, aggregateType, passes flag
+  - Default aggregates: Keystone #7, Kraemer 9/16", #9 Gravel, Concrete Sand with complete ASTM C-33 limits
+  - Future features: SVG charts, print/PDF export, CSV batch export
+
 ### Recent Updates (2025-12-04)
 - ✅ **Enhanced Design vs Cast Pattern Comparison**:
   - Added side-by-side cross-section view when design differs from cast
