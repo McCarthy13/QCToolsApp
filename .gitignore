@@ -8,6 +8,14 @@
 # Vibecode auto-generated files
 changelog.txt
 
+# Sensitive keys and credentials
+*service-account*.json
+firebase-service-account.json
+CREDENTIALS.md
+*.pem
+*.p12
+*.key
+
 # Firebase cache
 .firebase/
 
@@ -43,7 +51,6 @@ yarn-error.*
 
 # macOS
 .DS_Store
-*.pem
 
 # typescript
 *.tsbuildinfo
@@ -52,12 +59,5 @@ yarn-error.*
 ios/
 android/
 
-# Credentials backup (contains sensitive API keys)
-CREDENTIALS.md
-firebase-service-account.json
-*service-account*.json
-*.pem
-*.p12
-*.key
-.env*
-!.env.example
+# GitHub tokens and deployment scripts with embedded keys
+.github/workflows/*deploy*.yml
