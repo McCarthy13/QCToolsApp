@@ -33,6 +33,8 @@ export interface TestRecord {
 }
 
 export interface ActiveTest {
+  aggregateName: string;
+  date: string;
   materialName: string;
   sieveData: SieveData[];
   washedWeight: string;
