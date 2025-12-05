@@ -28,6 +28,8 @@ For every code change, you must:
 
 This ensures all three environments remain synchronized.
 
+**Quick Sync Command**: Use `./sync-repos.sh` to automatically push to both GitHub and Vibecode, then deploy to Firebase in one command.
+
 ### Security
 
 All sensitive credentials are protected via `.gitignore`:
