@@ -148,7 +148,7 @@ ${test.sieveData.map(s => `${s.name}: ${s.weightRetained}g (${s.percentPassing}%
               <View className="flex-row justify-between items-center">
                 <Text className="text-sm text-gray-600">Washed Weight:</Text>
                 <Text className="text-base font-semibold text-gray-800">
-                  {test.washedWeight.toFixed(2)} g
+                  {typeof test.washedWeight === 'number' ? test.washedWeight.toFixed(2) : test.washedWeight} g
                 </Text>
               </View>
             )}
