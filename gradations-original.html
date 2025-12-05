@@ -1,0 +1,2285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggregate Gradation Analysis</title>
+    <style>
+        /* Reset and base styles */
+        *, *::before, *::after { box-sizing: border-box; }
+        * { margin: 0; }
+        body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
+        img, picture, video, canvas, svg { display: block; max-width: 100%; }
+        input, button, textarea, select { font: inherit; }
+        p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+        #root, #__next { isolation: isolate; }
+
+        /* Tailwind CSS utility classes */
+        .min-h-screen { min-height: 100vh; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-white { background-color: #ffffff; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-yellow-100 { background-color: #fef3c7; }
+        .bg-yellow-50 { background-color: #fffbeb; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-green-50 { background-color: #f0fdf4; }
+        .bg-red-100 { background-color: #fef2f2; }
+        .bg-green-100 { background-color: #dcfce7; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-green-600 { background-color: #16a34a; }
+        .bg-purple-600 { background-color: #9333ea; }
+        .bg-orange-600 { background-color: #ea580c; }
+        .bg-red-600 { background-color: #dc2626; }
+        .bg-gray-600 { background-color: #4b5563; }
+        .bg-gray-400 { background-color: #9ca3af; }
+        .bg-gray-500 { background-color: #6b7280; }
+        .bg-transparent { background-color: transparent; }
+        .text-white { color: #ffffff; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-500 { color: #6b7280; }
+        .text-gray-700 { color: #374151; }
+        .text-gray-800 { color: #1f2937; }
+        .text-red-600 { color: #dc2626; }
+        .text-red-700 { color: #b91c1c; }
+        .text-green-600 { color: #16a34a; }
+        .text-green-700 { color: #15803d; }
+        .text-blue-600 { color: #2563eb; }
+        .text-blue-800 { color: #1e40af; }
+        .border { border-width: 1px; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .border-gray-400 { border-color: #9ca3af; }
+        .border-red-400 { border-color: #f87171; }
+        .border-green-400 { border-color: #4ade80; }
+        .border-blue-500 { border-color: #3b82f6; }
+        .border-2 { border-width: 2px; }
+        .border-dashed { border-style: dashed; }
+        .border-0 { border-width: 0px; }
+        .border-collapse { border-collapse: collapse; }
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .p-2 { padding: 0.5rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .px-0\.5 { padding-left: 0.125rem; padding-right: 0.125rem; }
+        .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-0 { padding-top: 0px; padding-bottom: 0px; }
+        .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .ml-1 { margin-left: 0.25rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        .ml-3 { margin-left: 0.75rem; }
+        .mr-3 { margin-right: 0.75rem; }
+        .w-full { width: 100%; }
+        .w-10 { width: 2.5rem; }
+        .w-11\/12 { width: 91.666667%; }
+        .max-w-7xl { max-width: 80rem; }
+        .max-w-6xl { max-width: 72rem; }
+        .max-w-xl { max-width: 36rem; }
+        .max-w-md { max-width: 28rem; }
+        .max-h-32 { max-height: 8rem; }
+        .max-h-\[80vh\] { max-height: 80vh; }
+        .h-full { height: 100%; }
+        .h-48 { height: 12rem; }
+        .h-96 { height: 24rem; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-grow { flex-grow: 1; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .items-end { align-items: flex-end; }
+        .items-stretch { align-items: stretch; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .justify-end { justify-content: flex-end; }
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .space-y-1 > * + * { margin-top: 0.25rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-3 > * + * { margin-top: 0.75rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-base { font-size: 1rem; line-height: 1.5rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .text-left { text-align: left; }
+        .text-center { text-align: center; }
+        .cursor-pointer { cursor: pointer; }
+        .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+        .hover\:bg-red-700:hover { background-color: #b91c1c; }
+        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-green-700:hover { background-color: #15803d; }
+        .hover\:bg-purple-700:hover { background-color: #7c2d12; }
+        .hover\:bg-orange-700:hover { background-color: #c2410c; }
+        .hover\:bg-gray-700:hover { background-color: #374151; }
+        .hover\:bg-gray-500:hover { background-color: #6b7280; }
+        .hover\:bg-gray-400:hover { background-color: #9ca3af; }
+        .hover\:bg-gray-100:hover { background-color: #f3f4f6; }
+        .hover\:bg-gray-50:hover { background-color: #f9fafb; }
+        .hover\:border-gray-400:hover { border-color: #9ca3af; }
+        .hover\:text-gray-700:hover { color: #374151; }
+        .hover\:text-gray-800:hover { color: #1f2937; }
+        .hover\:text-blue-800:hover { color: #1e40af; }
+        .hover\:text-green-800:hover { color: #166534; }
+        .hover\:text-red-800:hover { color: #991b1c; }
+        .hover\:text-white:hover { color: #ffffff; }
+        .hover\:bg-red-600:hover { background-color: #dc2626; }
+        .focus\:outline-none:focus { outline: 2px solid transparent; outline-offset: 2px; }
+        .focus\:ring-1:focus { box-shadow: 0 0 0 1px rgb(59 130 246 / 0.5); }
+        .focus\:ring-blue-400:focus { box-shadow: 0 0 0 1px rgb(96 165 250 / 0.5); }
+        .focus\:bg-white:focus { background-color: #ffffff; }
+        .focus\:border:focus { border-width: 1px; }
+        .focus\:border-blue-400:focus { border-color: #60a5fa; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .overflow-x-auto { overflow-x: auto; }
+        .overflow-y-auto { overflow-y: auto; }
+        .overflow-auto { overflow: auto; }
+        .overflow-hidden { overflow: hidden; }
+        .sticky { position: sticky; }
+        .left-0 { left: 0px; }
+        .fixed { position: fixed; }
+        .inset-0 { inset: 0px; }
+        .absolute { position: absolute; }
+        .relative { position: relative; }
+        .z-50 { z-index: 50; }
+        .z-100 { z-index: 100; }
+        .bg-black { background-color: #000000; }
+        .bg-opacity-50 { background-color: rgb(0 0 0 / 0.5); }
+        .list-disc { list-style-type: disc; }
+        .list-inside { list-style-position: inside; }
+        .underline { text-decoration-line: underline; }
+        .hidden { display: none; }
+        .block { display: block; }
+        .bg-inherit { background-color: inherit; }
+        .print-only { display: none; }
+        .print-visible { display: none; }
+        
+        /* Custom app styles */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        table th, table td { border: 1px solid #d1d5db; padding: 0.25rem 0.5rem; text-align: center; }
+        table th { background-color: #f3f4f6; font-weight: 600; }
+        table tbody tr:nth-child(even) { background-color: #f9fafb; }
+        table tfoot { background-color: #fef3c7; }
+        input, select, button { font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+        button { cursor: pointer; transition: all 0.2s; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .loading { display: flex; align-items: center; justify-content: center; min-height: 12rem; }
+        .spinner { width: 2rem; height: 2rem; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .chart-container { width: 100%; height: 12rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.25rem; margin-top: 0.5rem; position: relative; overflow: hidden; }
+        .chart-svg { width: 100%; height: 100%; }
+        
+        /* Responsive design */
+        @media (min-width: 640px) {
+            .sm\:flex-row { flex-direction: row; }
+            .sm\:items-center { align-items: center; }
+        }
+        @media (min-width: 768px) {
+            .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (min-width: 1024px) {
+            .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        
+        @media print {
+            /* === GENERAL RULES === */
+            .no-print { display: none !important; }
+            .print-visible { display: block !important; }
+            table { border-collapse: collapse !important; }
+            td, th { border: 1px solid #000 !important; }
+            .print-page { page-break-after: always; padding: 0; }
+            .print-page:last-child { page-break-after: auto; }
+            .print-form-small { break-inside: avoid; margin-bottom: 0.5in; }
+
+            /* === DEFAULT PRINT MODE (Portrait, Blank Forms) === */
+            @page {
+                size: letter portrait;
+                margin: 0.5in;
+            }
+
+            /* By default, hide everything inside #app except for the .print-only container */
+            body:not(.js-printing-record) #app > :not(.print-only) {
+                display: none !important;
+            }
+            body:not(.js-printing-record) .print-only {
+                display: block !important;
+            }
+
+            /* === RECORD PRINT MODE (Portrait, Modal) === */
+            @page record_portrait {
+                size: letter portrait;
+            }
+            body.js-printing-record {
+                page: record_portrait;
+            }
+            
+            /* Hide all direct children of #app... */
+            body.js-printing-record #app > * {
+                display: none !important;
+            }
+            /* ...and then UN-hide the modal's container to make it print. */
+            body.js-printing-record #app > .fixed.inset-0 {
+                display: block !important;
+                position: static !important;
+                background: none !important;
+                padding: 0 !important;
+            }
+
+            /* Reset modal content styles for printing */
+            body.js-printing-record .print-all-content {
+                max-width: none !important;
+                max-height: none !important;
+                overflow: visible !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+
+            /* Apply the vertical layout - gradation results on top, chart on bottom */
+            body.js-printing-record .record-view-grid {
+                display: block !important;
+            }
+
+            /* Add spacing before the Gradation Curve section */
+            body.js-printing-record .record-view-grid > div:last-child {
+                margin-top: 4rem !important;
+            }
+
+            /* Ensure the chart has enough height */
+            body.js-printing-record #viewRecordChart {
+                height: 400px !important;
+                margin-top: 1rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-gray-50 p-3">
+        <div class="max-w-7xl mx-auto">
+            <div id="app">
+                <!-- App content will be rendered here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONSTANTS =====
+        const STANDARD_SIEVES = {
+            '1"': 25.0,
+            '3/4"': 19.0,
+            '1/2"': 12.5,
+            '3/8"': 9.5,
+            '#4': 4.75,
+            '#8': 2.36,
+            '#16': 1.18,
+            '#30': 0.6,
+            '#50': 0.3,
+            '#100': 0.15,
+            '#200': 0.075,
+            'Pan': 0
+        };
+
+        const DEFAULT_AGGREGATES = {
+            'Keystone #7': {
+                type: 'Coarse',
+                sieves: [
+                    { name: '1"', size: 25.0, c33Lower: 100, c33Upper: 100 },
+                    { name: '3/4"', size: 19.0, c33Lower: 90, c33Upper: 100 },
+                    { name: '1/2"', size: 12.5, c33Lower: '-', c33Upper: '-' },
+                    { name: '3/8"', size: 9.5, c33Lower: 20, c33Upper: 55 },
+                    { name: '#4', size: 4.75, c33Lower: 0, c33Upper: 10 },
+                    { name: '#8', size: 2.36, c33Lower: 0, c33Upper: 5 },
+                    { name: '#16', size: 1.18, c33Lower: '-', c33Upper: '-' },
+                    { name: '#30', size: 0.6, c33Lower: '-', c33Upper: '-' },
+                    { name: '#50', size: 0.3, c33Lower: '-', c33Upper: '-' },
+                    { name: '#100', size: 0.15, c33Lower: '-', c33Upper: '-' },
+                    { name: '#200', size: 0.075, c33Lower: '-', c33Upper: '-' },
+                    { name: 'Pan', size: 0, c33Lower: '-', c33Upper: '-' }
+                ]
+            },
+            'Kraemer 9/16"': {
+                type: 'Coarse',
+                sieves: [
+                    { name: '1"', size: 25.0, c33Lower: 100, c33Upper: 100 },
+                    { name: '3/4"', size: 19.0, c33Lower: 100, c33Upper: 100 },
+                    { name: '1/2"', size: 12.5, c33Lower: 85, c33Upper: 100 },
+                    { name: '3/8"', size: 9.5, c33Lower: 10, c33Upper: 30 },
+                    { name: '#4', size: 4.75, c33Lower: 0, c33Upper: 10 },
+                    { name: '#8', size: 2.36, c33Lower: 0, c33Upper: 5 },
+                    { name: '#16', size: 1.18, c33Lower: '-', c33Upper: '-' },
+                    { name: '#30', size: 0.6, c33Lower: '-', c33Upper: '-' },
+                    { name: '#50', size: 0.3, c33Lower: '-', c33Upper: '-' },
+                    { name: '#100', size: 0.15, c33Lower: '-', c33Upper: '-' },
+                    { name: '#200', size: 0.075, c33Lower: '-', c33Upper: '-' },
+                    { name: 'Pan', size: 0, c33Lower: '-', c33Upper: '-' }
+                ]
+            },
+            '#9 Gravel (St. Croix)': {
+                type: 'Coarse',
+                sieves: [
+                    { name: '1"', size: 25.0, c33Lower: 100, c33Upper: 100 },
+                    { name: '3/4"', size: 19.0, c33Lower: 100, c33Upper: 100 },
+                    { name: '1/2"', size: 12.5, c33Lower: 100, c33Upper: 100 },
+                    { name: '3/8"', size: 9.5, c33Lower: 85, c33Upper: 100 },
+                    { name: '#4', size: 4.75, c33Lower: 10, c33Upper: 30 },
+                    { name: '#8', size: 2.36, c33Lower: 0, c33Upper: 10 },
+                    { name: '#16', size: 1.18, c33Lower: 0, c33Upper: 5 },
+                    { name: '#30', size: 0.6, c33Lower: '-', c33Upper: '-' },
+                    { name: '#50', size: 0.3, c33Lower: '-', c33Upper: '-' },
+                    { name: '#100', size: 0.15, c33Lower: '-', c33Upper: '-' },
+                    { name: '#200', size: 0.075, c33Lower: '-', c33Upper: '-' },
+                    { name: 'Pan', size: 0, c33Lower: '-', c33Upper: '-' }
+                ]
+            },
+            'Concrete Sand': {
+                type: 'Fine',
+                sieves: [
+                    { name: '3/8"', size: 9.5, c33Lower: 100, c33Upper: 100 },
+                    { name: '#4', size: 4.75, c33Lower: 95, c33Upper: 100 },
+                    { name: '#8', size: 2.36, c33Lower: 80, c33Upper: 100 },
+                    { name: '#16', size: 1.18, c33Lower: 50, c33Upper: 85 },
+                    { name: '#30', size: 0.6, c33Lower: 25, c33Upper: 60 },
+                    { name: '#50', size: 0.3, c33Lower: 5, c33Upper: 30 },
+                    { name: '#100', size: 0.15, c33Lower: 0, c33Upper: 10 },
+                    { name: '#200', size: 0.075, c33Lower: 0, c33Upper: 3 },
+                    { name: 'Pan', size: 0, c33Lower: '-', c33Upper: '-' }
+                ]
+            }
+        };
+
+        // ===== GLOBAL STATE =====
+        let appState = {
+            aggregates: {},
+            savedRecords: [],
+            defaultAggregates: [],
+            activeTests: [],
+            currentView: 'main',
+            selectedAggregate: '',
+            date: new Date().toISOString().split('T')[0],
+            showAddMore: false,
+            showPrintModal: false,
+            error: null,
+            successMessage: null,
+            editingAggregate: null,
+            showAddForm: false,
+            newAggregateName: '',
+            newAggregateType: 'Fine',
+            importFromExisting: '',
+            confirmingDelete: null,
+            showSieveSelector: null,
+            confirmingDeleteRecord: null,
+            filterAggregate: '',
+            filterType: '',
+            filterDateFrom: '',
+            filterDateTo: '',
+            viewingRecord: null,
+            viewingDate: null,
+            showExportOptions: null,
+            selectedDefaults: [],
+            showNoProductionDateRange: false,
+            noProductionStartDate: new Date().toISOString().split('T')[0],
+            noProductionEndDate: new Date().toISOString().split('T')[0],
+            editingRecord: null,
+            showEditModal: false
+        };
+
+        // ===== UTILITY FUNCTIONS =====
+        function formatDateForDisplay(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            const localDate = new Date(year, month - 1, day);
+            return localDate.toLocaleDateString();
+        }
+
+        function loadFromStorage(key, defaultValue) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : defaultValue;
+            } catch (error) {
+                console.error(`Error loading ${key}:`, error);
+                return defaultValue;
+            }
+        }
+
+        function saveToStorage(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (error) {
+                console.error(`Error saving ${key}:`, error);
+            }
+        }
+
+        function calculateTestData(sieveData) {
+            const totalWeight = sieveData.reduce((sum, row) => sum + (parseFloat(row.weightRetained) || 0), 0);
+            let cumulativeRetained = 0;
+            return sieveData.map((row) => {
+                const weight = parseFloat(row.weightRetained) || 0;
+                const percentRetained = totalWeight > 0 ? (weight / totalWeight * 100) : 0;
+                cumulativeRetained += percentRetained;
+                const percentPassing = 100 - cumulativeRetained;
+                return {
+                    ...row,
+                    percentRetained: percentRetained.toFixed(0),
+                    cumulativeRetained: cumulativeRetained.toFixed(0),
+                    percentPassing: percentPassing.toFixed(0)
+                };
+            });
+        }
+
+        function calculateFinenessModulus(aggregateType, sieveData) {
+            if (aggregateType !== 'Fine') return 'N/A';
+            const fmSieves = ['3/8"', '#4', '#8', '#16', '#30', '#50', '#100'];
+            const fmSum = sieveData
+                .filter(row => fmSieves.includes(row.name))
+                .reduce((sum, row) => sum + parseFloat(row.cumulativeRetained || 0), 0);
+            return (fmSum / 100).toFixed(2);
+        }
+
+        function calculateDecant(sieveData, washedWeight) {
+            const totalWeight = sieveData.reduce((sum, row) => sum + (parseFloat(row.weightRetained) || 0), 0);
+            const washed = parseFloat(washedWeight) || 0;
+            if (totalWeight > 0 && washed <= totalWeight) {
+                return ((totalWeight - washed) / totalWeight * 100).toFixed(2);
+            }
+            return '0.00';
+        }
+
+        function prepareChartData(sieveData) {
+            return sieveData
+                .filter(row => row.size > 0)
+                .map(row => {
+                    const data = {
+                        size: row.size,
+                        sieve: row.name,
+                        percentPassing: parseFloat(row.percentPassing)
+                    };
+                    if (row.c33Lower !== '-' && row.c33Lower !== null) data.c33Lower = row.c33Lower;
+                    if (row.c33Upper !== '-' && row.c33Upper !== null) data.c33Upper = row.c33Upper;
+                    return data;
+                })
+                .reverse();
+        }
+
+        function createSimpleChart(container, sieveData) {
+            const chartData = prepareChartData(sieveData);
+            if (chartData.length === 0) return;
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const margin = { top: 20, right: 40, bottom: 60, left: 40 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            container.innerHTML = `
+                <svg class="chart-svg" viewBox="0 0 ${width} ${height}">
+                    <g transform="translate(${margin.left},${margin.top})">
+                        <g class="grid"></g>
+                        <g class="axis-x"></g>
+                        <g class="axis-y"></g>
+                        <g class="lines"></g>
+                        <g class="legend"></g>
+                    </g>
+                </svg>
+            `;
+
+            const svg = container.querySelector('svg g');
+            const xScale = (index) => (index / Math.max(1, chartData.length - 1)) * chartWidth;
+            const yScale = (value) => chartHeight - (value / 100) * chartHeight;
+
+            const grid = svg.querySelector('.grid');
+            for (let i = 0; i <= 10; i++) {
+                const y = (i / 10) * chartHeight;
+                grid.innerHTML += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+            }
+
+            const axisY = svg.querySelector('.axis-y');
+            for (let i = 0; i <= 10; i++) {
+                const value = i * 10;
+                const y = yScale(value);
+                axisY.innerHTML += `<text x="-5" y="${y + 4}" text-anchor="end" font-size="10" fill="#6b7280">${value}%</text>`;
+            }
+
+            const axisX = svg.querySelector('.axis-x');
+            chartData.forEach((point, index) => {
+                if (index % Math.max(1, Math.floor(chartData.length / 6)) === 0) {
+                    const x = xScale(index);
+                    axisX.innerHTML += `<text x="${x}" y="${chartHeight + 15}" text-anchor="middle" font-size="8" fill="#6b7280" transform="rotate(-45, ${x}, ${chartHeight + 15})">${point.sieve}</text>`;
+                }
+            });
+
+            const lines = svg.querySelector('.lines');
+            if (chartData.length > 1) {
+                let pathData = '';
+                chartData.forEach((point, index) => {
+                    const x = xScale(index);
+                    const y = yScale(point.percentPassing);
+                    pathData += index === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+                });
+                lines.innerHTML += `<path d="${pathData}" stroke="#2563eb" stroke-width="2" fill="none"/>`;
+            }
+
+            const lowerPoints = chartData.filter(p => p.c33Lower !== null && p.c33Lower !== undefined);
+            if (lowerPoints.length > 1) {
+                let lowerPath = '';
+                chartData.forEach((point, index) => {
+                    if (point.c33Lower !== null && point.c33Lower !== undefined) {
+                        const x = xScale(index);
+                        const y = yScale(point.c33Lower);
+                        lowerPath += lowerPath === '' ? `M ${x} ${y}` : ` L ${x} ${y}`;
+                    }
+                });
+                if (lowerPath) lines.innerHTML += `<path d="${lowerPath}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,5" fill="none"/>`;
+            }
+
+            const upperPoints = chartData.filter(p => p.c33Upper !== null && p.c33Upper !== undefined);
+            if (upperPoints.length > 1) {
+                let upperPath = '';
+                chartData.forEach((point, index) => {
+                    if (point.c33Upper !== null && point.c33Upper !== undefined) {
+                        const x = xScale(index);
+                        const y = yScale(point.c33Upper);
+                        upperPath += upperPath === '' ? `M ${x} ${y}` : ` L ${x} ${y}`;
+                    }
+                });
+                if (upperPath) lines.innerHTML += `<path d="${upperPath}" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5,5" fill="none"/>`;
+            }
+
+            const legend = svg.querySelector('.legend');
+            legend.innerHTML = `
+                <g transform="translate(10, 10)">
+                    <line x1="0" y1="0" x2="20" y2="0" stroke="#2563eb" stroke-width="2"/>
+                    <text x="25" y="4" font-size="9" fill="#374151">Sample</text>
+                    <line x1="0" y1="15" x2="20" y2="15" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3,3"/>
+                    <text x="25" y="19" font-size="9" fill="#374151">ASTM C-33 Lower</text>
+                    <line x1="0" y1="30" x2="20" y2="30" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3,3"/>
+                    <text x="25" y="34" font-size="9" fill="#374151">ASTM C-33 Upper</text>
+                </g>
+            `;
+        }
+
+        // ===== DATA SERVICE =====
+        const dataService = {
+            saveRecord: (record) => {
+                try {
+                    const repository = loadFromStorage('testRepository', []);
+                    const updatedRepository = [...repository, record];
+                    saveToStorage('testRepository', updatedRepository);
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error saving record:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+            getRepository: () => loadFromStorage('testRepository', []),
+            deleteRecord: (recordId) => {
+                try {
+                    const repository = loadFromStorage('testRepository', []);
+                    const updatedRepository = repository.filter(r => r.id !== recordId);
+                    saveToStorage('testRepository', updatedRepository);
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error deleting record:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+        };
+
+        // ===== EVENT HANDLERS =====
+        function handleWeightKeydown(event) {
+            const target = event.target;
+            const testIndex = parseInt(target.dataset.testIndex, 10);
+            const sieveIndex = parseInt(target.dataset.sieveIndex, 10);
+            let moveDirection = 0;
+
+            if (event.key === 'Enter' || event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey)) {
+                moveDirection = 1;
+            } else if (event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey)) {
+                moveDirection = -1;
+            }
+
+            if (moveDirection !== 0) {
+                event.preventDefault();
+                target.blur(); // Explicitly blur to trigger onchange and save the value.
+
+                if (moveDirection === 1) { // Move to next
+                    const currentTest = appState.activeTests[testIndex];
+                    if (sieveIndex < currentTest.sieveData.length - 1) {
+                        focusOnSieveInput(testIndex, sieveIndex + 1);
+                    } else {
+                        focusOnWashedInput(testIndex);
+                    }
+                } else if (moveDirection === -1) { // Move to previous
+                    if (sieveIndex > 0) {
+                        focusOnSieveInput(testIndex, sieveIndex - 1);
+                    } else if (testIndex > 0) {
+                        focusOnWashedInput(testIndex - 1);
+                    }
+                }
+            }
+        }
+
+        function handleWashedKeydown(event) {
+            const target = event.target;
+            const testIndex = parseInt(target.dataset.washedIndex, 10);
+            let moveDirection = 0;
+
+            if (event.key === 'Enter' || event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey)) {
+                moveDirection = 1;
+            } else if (event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey)) {
+                moveDirection = -1;
+            }
+
+            if (moveDirection !== 0) {
+                event.preventDefault();
+                target.blur(); // Explicitly blur to trigger onchange and save the value.
+
+                if (moveDirection === 1) { // Move to next test's first sieve
+                    if (testIndex < appState.activeTests.length - 1) {
+                        focusOnSieveInput(testIndex + 1, 0);
+                    }
+                } else if (moveDirection === -1) { // Move to current test's last sieve
+                    const currentTest = appState.activeTests[testIndex];
+                    focusOnSieveInput(testIndex, currentTest.sieveData.length - 1);
+                }
+            }
+        }
+
+        function focusOnSieveInput(testIndex, sieveIndex) {
+            setTimeout(() => {
+                const nextInput = document.querySelector(`input[data-test-index="${testIndex}"][data-sieve-index="${sieveIndex}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                }
+            }, 10);
+        }
+
+        function focusOnWashedInput(testIndex) {
+            setTimeout(() => {
+                const washedInput = document.querySelector(`input[data-washed-index="${testIndex}"]`);
+                if (washedInput) {
+                    washedInput.focus();
+                    washedInput.select();
+                }
+            }, 10);
+        }
+
+        function handleWeightChange(testIndex, sieveIndex, value) {
+            const newTests = [...appState.activeTests];
+            newTests[testIndex].sieveData[sieveIndex].weightRetained = value;
+            newTests[testIndex].sieveData = calculateTestData(newTests[testIndex].sieveData);
+            appState.activeTests = newTests;
+            renderApp();
+        }
+
+        function handleWashedWeightChange(testIndex, value) {
+            appState.activeTests[testIndex].washedWeight = value;
+            renderApp();
+        }
+
+        function handleDateChange(testIndex, value) {
+            appState.activeTests[testIndex].date = value;
+            renderApp();
+        }
+
+        function handleRemoveTest(testIndex) {
+            appState.activeTests = appState.activeTests.filter((_, index) => index !== testIndex);
+            renderApp();
+        }
+
+        function handleSubmitTest(testIndex) {
+            const test = appState.activeTests[testIndex];
+            const totalWeight = test.sieveData.reduce((sum, row) => sum + (parseFloat(row.weightRetained) || 0), 0);
+            
+            if (totalWeight === 0) {
+                appState.error = 'Please enter weight retained values';
+                renderApp();
+                setTimeout(() => { appState.error = null; renderApp(); }, 3000);
+                return;
+            }
+
+            try {
+                const newRecord = {
+                    id: Date.now(),
+                    date: test.date,
+                    aggregateName: test.aggregateName,
+                    aggregateType: appState.aggregates[test.aggregateName].type,
+                    finenessModulus: calculateFinenessModulus(appState.aggregates[test.aggregateName].type, test.sieveData),
+                    decant: calculateDecant(test.sieveData, test.washedWeight),
+                    totalWeight: totalWeight.toFixed(1),
+                    washedWeight: (parseFloat(test.washedWeight) || 0).toFixed(1),
+                    sieveResults: {}
+                };
+
+                test.sieveData.forEach(sieve => {
+                    if (sieve.name !== 'Pan') {
+                        newRecord.sieveResults[sieve.name] = parseFloat(sieve.percentPassing);
+                    }
+                });
+
+                const detailedRecord = { ...newRecord, fullSieveData: [...test.sieveData] };
+                dataService.saveRecord(detailedRecord);
+                
+                appState.activeTests[testIndex] = {
+                    ...test,
+                    sieveData: appState.aggregates[test.aggregateName].sieves.map(sieve => ({
+                        ...sieve,
+                        weightRetained: 0, percentRetained: 0, cumulativeRetained: 0, percentPassing: 100
+                    })),
+                    washedWeight: 0
+                };
+                
+                appState.successMessage = `${test.aggregateName} data saved successfully!`;
+                renderApp();
+                setTimeout(() => { appState.successMessage = null; renderApp(); }, 3000);
+            } catch (error) {
+                console.error('Error submitting test:', error);
+                appState.error = 'Error saving test data. Please try again.';
+                renderApp();
+                setTimeout(() => { appState.error = null; renderApp(); }, 3000);
+            }
+        }
+
+        function toggleChart(testIndex) {
+            const chartDiv = document.getElementById(`chart-${testIndex}`);
+            const btnSpan = document.getElementById(`chart-btn-${testIndex}`);
+            if (chartDiv && btnSpan) {
+                if (chartDiv.classList.contains('hidden')) {
+                    chartDiv.classList.remove('hidden');
+                    btnSpan.textContent = 'Hide Chart';
+                    setTimeout(() => createSimpleChart(chartDiv, appState.activeTests[testIndex].sieveData), 10);
+                } else {
+                    chartDiv.classList.add('hidden');
+                    btnSpan.textContent = 'View Chart';
+                }
+            }
+        }
+
+        function handleAddMoreTest() {
+            if (!appState.selectedAggregate || !appState.aggregates[appState.selectedAggregate]) {
+                appState.error = 'Please select an aggregate';
+                renderApp();
+                setTimeout(() => { appState.error = null; renderApp(); }, 3000);
+                return;
+            }
+            
+            const newTest = {
+                id: Date.now(),
+                aggregateName: appState.selectedAggregate,
+                date: appState.date,
+                sieveData: appState.aggregates[appState.selectedAggregate].sieves.map(sieve => ({
+                    ...sieve, weightRetained: '', percentRetained: 0, cumulativeRetained: 0, percentPassing: 100
+                })),
+                washedWeight: 0
+            };
+            
+            appState.activeTests.push(newTest);
+            appState.showAddForm = false;
+            appState.selectedAggregate = '';
+            renderApp();
+        }
+
+        function setAllDatesToToday() {
+            const today = new Date().toISOString().split('T')[0];
+            appState.date = today;
+            appState.activeTests.forEach(test => test.date = today);
+            appState.successMessage = 'All test dates set to today';
+            renderApp();
+            setTimeout(() => { appState.successMessage = null; renderApp(); }, 3000);
+        }
+
+        function applyDateToAll() {
+            appState.activeTests.forEach(test => test.date = appState.date);
+            // Fix date display by using the actual date string instead of Date object conversion
+            const dateObj = new Date(appState.date + 'T00:00:00');
+            appState.successMessage = `All test dates updated to ${dateObj.toLocaleDateString()}`;
+            renderApp();
+            setTimeout(() => { appState.successMessage = null; renderApp(); }, 3000);
+        }
+        
+        function handleDateChange(input) {
+            let dateValue = input.value.trim();
+            
+            // If empty, use today's date
+            if (!dateValue) {
+                const today = new Date();
+                const todayFormatted = formatDateForDisplay(today.toISOString().split('T')[0]);
+                input.value = todayFormatted;
+                appState.date = today.toISOString().split('T')[0];
+                renderApp();
+                return;
+            }
+            
+            // Try to parse and expand different date formats
+            let parsedDate = null;
+            let isoDate = null;
+            
+            // Handle various shortcut formats
+            if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(dateValue)) {
+                // Format: M/D/YY or MM/DD/YY (e.g., "7/3/25" or "12/25/25")
+                const parts = dateValue.split('/');
+                const month = parts[0].padStart(2, '0');
+                const day = parts[1].padStart(2, '0');
+                let year = parts[2];
+                
+                // Convert 2-digit year to 4-digit (assume 20xx for years 00-99)
+                if (year.length === 2) {
+                    const currentYear = new Date().getFullYear();
+                    const currentCentury = Math.floor(currentYear / 100) * 100;
+                    year = currentCentury + parseInt(year);
+                }
+                
+                isoDate = `${year}-${month}-${day}`;
+                parsedDate = new Date(isoDate + 'T00:00:00');
+            }
+            else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+                // Format: M/D/YYYY or MM/DD/YYYY (e.g., "7/3/2025" or "12/25/2025")
+                const parts = dateValue.split('/');
+                const month = parts[0].padStart(2, '0');
+                const day = parts[1].padStart(2, '0');
+                const year = parts[2];
+                
+                isoDate = `${year}-${month}-${day}`;
+                parsedDate = new Date(isoDate + 'T00:00:00');
+            }
+            else if (/^\d{1,2}\/\d{1,2}$/.test(dateValue)) {
+                // Format: M/D or MM/DD (assume current year)
+                const parts = dateValue.split('/');
+                const month = parts[0].padStart(2, '0');
+                const day = parts[1].padStart(2, '0');
+                const year = new Date().getFullYear();
+                
+                isoDate = `${year}-${month}-${day}`;
+                parsedDate = new Date(isoDate + 'T00:00:00');
+            }
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                // Format: YYYY-MM-DD (ISO format)
+                isoDate = dateValue;
+                parsedDate = new Date(dateValue + 'T00:00:00');
+            }
+            
+            // Validate the parsed date
+            if (parsedDate && !isNaN(parsedDate.getTime())) {
+                appState.date = isoDate;
+                input.value = formatDateForDisplay(isoDate); // Display in MM/DD/YYYY format
+                input.style.borderColor = '#d1d5db'; // Reset to normal border
+                input.style.backgroundColor = 'white';
+                renderApp();
+            } else {
+                // Invalid date - show error styling
+                input.style.borderColor = '#ef4444'; // Red border
+                input.style.backgroundColor = '#fef2f2'; // Light red background
+                setTimeout(() => {
+                    input.style.borderColor = '#d1d5db';
+                    input.style.backgroundColor = 'white';
+                }, 2000);
+            }
+        }
+        
+        // Helper function to format date for display (MM/DD/YYYY)
+        function formatDateForDisplay(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            
+            const year = parts[0];
+            const month = parts[1];
+            const day = parts[2];
+            
+            return `${month}/${day}/${year}`;
+        }
+
+        function toggleNoProductionDateRange() {
+            appState.showNoProductionDateRange = !appState.showNoProductionDateRange;
+            renderApp();
+        }
+
+        function addNoProductionRecord() {
+            try {
+                // Validate date range
+                const startDate = new Date(appState.noProductionStartDate);
+                const endDate = new Date(appState.noProductionEndDate);
+                
+                if (endDate < startDate) {
+                    appState.error = 'End date must be after start date.';
+                    renderApp();
+                    setTimeout(() => { appState.error = null; renderApp(); }, 3000);
+                    return;
+                }
+                
+                // Format dates as M/D/YY
+                const formatDate = (date) => {
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    const year = date.getFullYear().toString().slice(-2);
+                    return `${month}/${day}/${year}`;
+                };
+                
+                const startStr = formatDate(startDate);
+                const endStr = formatDate(endDate);
+                const dateRange = startDate.getTime() === endDate.getTime() ? 
+                    `${startStr} - NO PRODUCTION` : 
+                    `${startStr}-${endStr} - NO PRODUCTION`;
+                
+                // Create special no production record
+                const noProductionRecord = {
+                    id: Date.now(),
+                    date: appState.noProductionStartDate, // Use start date for sorting
+                    isNoProduction: true,
+                    weekRange: dateRange,
+                    aggregateName: dateRange,
+                    aggregateType: 'No Production',
+                    finenessModulus: 'N/A',
+                    decant: 'N/A',
+                    totalWeight: 'N/A',
+                    washedWeight: 'N/A',
+                    sieveResults: {}
+                };
+                
+                // Save to repository
+                const repository = loadFromStorage('testRepository', []);
+                repository.push(noProductionRecord);
+                saveToStorage('testRepository', repository);
+                
+                // Hide the date range selector and show success message
+                appState.showNoProductionDateRange = false;
+                appState.successMessage = `No production record added for ${dateRange}`;
+                renderApp();
+                setTimeout(() => { appState.successMessage = null; renderApp(); }, 3000);
+            } catch (error) {
+                console.error('Error adding no production record:', error);
+                appState.error = 'Error adding no production record. Please try again.';
+                renderApp();
+                setTimeout(() => { appState.error = null; renderApp(); }, 3000);
+            }
+        }
+
+        function loadDefaultTests() {
+            const availableDefaults = appState.defaultAggregates.filter(name => appState.aggregates[name]);
+            if (availableDefaults.length === 0) {
+                availableDefaults.push(...Object.keys(appState.aggregates).slice(0, 4));
+            }
+            
+            appState.activeTests = availableDefaults.map((name, index) => ({
+                id: Date.now() + index,
+                aggregateName: name,
+                date: new Date().toISOString().split('T')[0],
+                sieveData: appState.aggregates[name].sieves.map(sieve => ({
+                    ...sieve, weightRetained: '', percentRetained: 0, cumulativeRetained: 0, percentPassing: 100
+                })),
+                washedWeight: 0
+            }));
+            renderApp();
+        }
+
+        function updateActiveTestsForAggregate(aggregateName) {
+            appState.activeTests = appState.activeTests.map(test => {
+                if (test.aggregateName === aggregateName) {
+                    const newSieveData = appState.aggregates[aggregateName].sieves.map(sieve => {
+                        const existingSieve = test.sieveData.find(s => s.name === sieve.name);
+                        return {
+                            ...sieve,
+                            weightRetained: existingSieve ? existingSieve.weightRetained : '',
+                        };
+                    });
+                    return { ...test, sieveData: calculateTestData(newSieveData) };
+                }
+                return test;
+            });
+        }
+
+        // ===== ADMIN FUNCTIONS =====
+        function handleToggleDefault(aggName) {
+            const defaults = new Set(appState.defaultAggregates);
+            if (defaults.has(aggName)) {
+                defaults.delete(aggName);
+            } else {
+                defaults.add(aggName);
+            }
+            appState.defaultAggregates = Array.from(defaults);
+            saveToStorage('defaultTests', appState.defaultAggregates);
+            renderApp();
+        }
+
+        function handleAddAggregate() {
+            if (!appState.newAggregateName.trim()) return alert('Please enter an aggregate name');
+            if (appState.aggregates[appState.newAggregateName]) return alert('An aggregate with this name already exists');
+
+            let newSieves = [];
+            if (appState.importFromExisting && appState.aggregates[appState.importFromExisting]) {
+                newSieves = JSON.parse(JSON.stringify(appState.aggregates[appState.importFromExisting].sieves));
+            } else {
+                newSieves = (appState.newAggregateType === 'Fine' ? DEFAULT_AGGREGATES['Concrete Sand'] : DEFAULT_AGGREGATES['Keystone #7']).sieves;
+            }
+
+            appState.aggregates[appState.newAggregateName] = {
+                type: appState.importFromExisting ? appState.aggregates[appState.importFromExisting].type : appState.newAggregateType,
+                sieves: newSieves
+            };
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            
+            appState.editingAggregate = appState.newAggregateName;
+            appState.showAddForm = false;
+            appState.newAggregateName = '';
+            appState.newAggregateType = 'Fine';
+            appState.importFromExisting = '';
+            renderApp();
+        }
+
+        function handleUpdateSieve(aggName, sieveIndex, field, value) {
+            const val = value.trim();
+            const numVal = parseFloat(val);
+            appState.aggregates[aggName].sieves[sieveIndex][field] = val === '-' || val === '' || isNaN(numVal) ? '-' : numVal;
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            updateActiveTestsForAggregate(aggName);
+            renderApp();
+        }
+
+        function handleDeleteSieve(aggName, sieveIndex) {
+            appState.aggregates[aggName].sieves.splice(sieveIndex, 1);
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            updateActiveTestsForAggregate(aggName);
+            renderApp();
+        }
+
+        function handleUpdateAggregateType(aggName, type) {
+            appState.aggregates[aggName].type = type;
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            updateActiveTestsForAggregate(aggName);
+            renderApp();
+        }
+
+        function handleUpdateMaxDecant(aggName, value) {
+            const val = value.trim();
+            const numVal = parseFloat(val);
+            appState.aggregates[aggName].maxDecant = val === '' || isNaN(numVal) ? null : numVal;
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            renderApp();
+        }
+
+        function handleDeleteAggregate(name) {
+            delete appState.aggregates[name];
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            if (appState.editingAggregate === name) appState.editingAggregate = null;
+            appState.confirmingDelete = null;
+            renderApp();
+        }
+
+        function addSieveToAggregate(aggName, sieveName) {
+            const newSieve = {
+                name: sieveName,
+                size: STANDARD_SIEVES[sieveName],
+                c33Lower: '-',
+                c33Upper: '-'
+            };
+            appState.aggregates[aggName].sieves.push(newSieve);
+            
+            const panSieve = appState.aggregates[aggName].sieves.find(s => s.name === 'Pan');
+            const otherSieves = appState.aggregates[aggName].sieves.filter(s => s.name !== 'Pan');
+            // Make the sort more robust to handle undefined sizes.
+            otherSieves.sort((a, b) => (b.size === undefined ? -1 : b.size) - (a.size === undefined ? -1 : a.size));
+            appState.aggregates[aggName].sieves = panSieve ? [...otherSieves, panSieve] : otherSieves;
+            
+            saveToStorage('aggregateConfigs', appState.aggregates);
+            appState.showSieveSelector = null;
+            updateActiveTestsForAggregate(aggName);
+            renderApp();
+        }
+
+        // ===== REPOSITORY FUNCTIONS =====
+        function handleQuickFilter(filter, value) {
+            appState[filter] = value;
+            if (filter.startsWith('filterDate')) {
+                appState.filterDateTo = value;
+            }
+            renderApp();
+        }
+
+        function handleViewRecord(record) {
+            appState.viewingRecord = record;
+            renderApp();
+        }
+
+        function handleEditRecord(recordId) {
+            const records = loadFromStorage('testRepository', []);
+            const record = records.find(r => r.id === recordId);
+            if (record) {
+                // Create a deep copy for editing
+                appState.editingRecord = JSON.parse(JSON.stringify(record));
+                appState.showEditModal = true;
+                renderApp();
+            }
+        }
+
+        function handleSaveEditedRecord() {
+            if (!appState.editingRecord) return;
+            
+            const records = loadFromStorage('testRepository', []);
+            const index = records.findIndex(r => r.id === appState.editingRecord.id);
+            
+            if (index !== -1) {
+                // Recalculate derived values
+                if (appState.editingRecord.fullSieveData) {
+                    appState.editingRecord.fullSieveData = calculateTestData(appState.editingRecord.fullSieveData);
+                    
+                    // Update sieve results
+                    appState.editingRecord.sieveResults = {};
+                    appState.editingRecord.fullSieveData.forEach(sieve => {
+                        if (sieve.name !== 'Pan') {
+                            appState.editingRecord.sieveResults[sieve.name] = parseFloat(sieve.percentPassing);
+                        }
+                    });
+                    
+                    // Recalculate totals
+                    const totalWeight = appState.editingRecord.fullSieveData.reduce((sum, sieve) => 
+                        sum + (parseFloat(sieve.weightRetained) || 0), 0);
+                    appState.editingRecord.totalWeight = totalWeight.toFixed(1);
+                    
+                    // Recalculate decant
+                    const washedWeight = parseFloat(appState.editingRecord.washedWeight) || 0;
+                    appState.editingRecord.decant = totalWeight > 0 ? 
+                        parseFloat(((totalWeight - washedWeight) / totalWeight * 100).toFixed(2)) : 0;
+                    
+                    // Recalculate fineness modulus for fine aggregates
+                    if (appState.editingRecord.aggregateType === 'Fine') {
+                        const fmSieves = ['#4', '#8', '#16', '#30', '#50', '#100'];
+                        let cumulativePercent = 0;
+                        fmSieves.forEach(sieveName => {
+                            const sieve = appState.editingRecord.fullSieveData.find(s => s.name === sieveName);
+                            if (sieve) {
+                                cumulativePercent += parseFloat(sieve.cumulativeRetained) || 0;
+                            }
+                        });
+                        appState.editingRecord.finenessModulus = parseFloat((cumulativePercent / 100).toFixed(2));
+                    }
+                }
+                
+                records[index] = appState.editingRecord;
+                saveToStorage('testRepository', records);
+                
+                appState.editingRecord = null;
+                appState.showEditModal = false;
+                appState.successMessage = 'Record updated successfully!';
+                renderApp();
+                
+                setTimeout(() => {
+                    appState.successMessage = null;
+                    renderApp();
+                }, 3000);
+            }
+        }
+
+        function handleCancelEdit() {
+            appState.editingRecord = null;
+            appState.showEditModal = false;
+            renderApp();
+        }
+
+        function handlePrintRecord(record) {
+            // A flag to know if the modal was opened just for printing.
+            const modalWasOpenedForPrint = !appState.viewingRecord;
+
+            // Ensure the modal content is available for printing
+            if (modalWasOpenedForPrint) {
+                appState.viewingRecord = record;
+                renderApp();
+            }
+
+            setTimeout(() => {
+                document.body.classList.add('js-printing-record');
+
+                window.addEventListener('afterprint', () => {
+                    document.body.classList.remove('js-printing-record');
+
+                    // If we opened the modal just for printing, close it afterwards.
+                    if (modalWasOpenedForPrint) {
+                        appState.viewingRecord = null;
+                        renderApp();
+                    }
+                }, { once: true });
+
+                window.print();
+            }, 150); // A small delay to ensure the DOM is ready.
+        }
+
+        function handleExportRecord(record) {
+            appState.showExportOptions = appState.showExportOptions === record.id ? null : record.id;
+            renderApp();
+        }
+
+        function exportRecordAsCSV(record) {
+            try {
+                let csv = `Aggregate Gradation Analysis - Individual Record\n`;
+                csv += `Date: ${formatDateForDisplay(record.date)}\n`;
+                csv += `Aggregate: ${record.aggregateName}\n`;
+                csv += `Type: ${record.aggregateType}\n`;
+                csv += `Fineness Modulus: ${record.finenessModulus}\n`;
+                csv += `Decant: ${record.decant}%\n\n`;
+                csv += `Sieve,% Passing\n`;
+                Object.entries(record.sieveResults || {}).forEach(([sieve, passing]) => {
+                    csv += `${sieve},${passing.toFixed(1)}\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${record.aggregateName.replace(/[^a-z0-9]/gi, '')}_${record.date}_gradation.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                appState.showExportOptions = null;
+                renderApp();
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting record. Please try again.');
+            }
+        }
+
+        function getFilteredRecords() {
+            let filtered = dataService.getRepository();
+            if (appState.filterAggregate) filtered = filtered.filter(r => r.aggregateName === appState.filterAggregate);
+            if (appState.filterType) filtered = filtered.filter(r => r.aggregateType === appState.filterType);
+            if (appState.filterDateFrom) filtered = filtered.filter(r => r.date >= appState.filterDateFrom);
+            if (appState.filterDateTo) filtered = filtered.filter(r => r.date <= appState.filterDateTo);
+            return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        function handleDeleteRecord(recordId) {
+            dataService.deleteRecord(recordId);
+            appState.confirmingDeleteRecord = null;
+            renderApp();
+        }
+
+        function exportAllToCSV() {
+            try {
+                const filteredRecords = getFilteredRecords();
+                const allSieveSizes = new Set();
+                Object.values(appState.aggregates).forEach(agg => agg.sieves.forEach(s => s.name !== 'Pan' && allSieveSizes.add(s.name)));
+                const sieveSizes = Array.from(allSieveSizes).sort((a, b) => (STANDARD_SIEVES[b] || 0) - (STANDARD_SIEVES[a] || 0));
+
+                let csv = `Aggregate Gradation Analysis - Summary Report\n`;
+                csv += `Export Date: ${new Date().toLocaleDateString()}\n`;
+                csv += `Total Records: ${filteredRecords.length}\n\n`;
+                csv += `Date,Aggregate,Type,F.M.,${sieveSizes.join(',')},Decant\n`;
+                
+                filteredRecords.forEach(record => {
+                    csv += `${record.date},${record.aggregateName},${record.aggregateType},${record.finenessModulus},`;
+                    csv += sieveSizes.map(size => record.sieveResults && record.sieveResults[size] !== undefined ? record.sieveResults[size].toFixed(1) : '-').join(',');
+                    csv += `,${record.decant}\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gradation_summary_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting forms. Please try again.');
+            }
+        }
+
+        function getStatusIndicator(record) {
+            const aggregateConfig = appState.aggregates[record.aggregateName];
+            if (!aggregateConfig || !record.sieveResults) {
+                return '<span class="font-semibold">N/A</span>';
+            }
+
+            let failed = false;
+            
+            // Check sieve results
+            for (const sieve of aggregateConfig.sieves) {
+                if (sieve.name === 'Pan') continue;
+
+                const lower = sieve.c33Lower;
+                const upper = sieve.c33Upper;
+                const passing = record.sieveResults[sieve.name];
+
+                if (passing === undefined) continue;
+
+                if ((lower !== '-' && passing < lower) || (upper !== '-' && passing > upper)) {
+                    failed = true;
+                    break;
+                }
+            }
+            
+            // Check decant limit
+            if (!failed && aggregateConfig.maxDecant !== null && aggregateConfig.maxDecant !== undefined) {
+                const decantValue = parseFloat(record.decant);
+                if (!isNaN(decantValue) && decantValue > aggregateConfig.maxDecant) {
+                    failed = true;
+                }
+            }
+
+            if (failed) {
+                return '<span class="font-semibold text-red-600">Fail</span>';
+            } else {
+                return '<span class="font-semibold text-green-600">Pass</span>';
+            }
+        }
+
+        // ===== RENDERING FUNCTIONS =====
+        function createSieveEditor(sieve, index, aggName) {
+            return `
+                <div class="grid grid-cols-5 gap-2">
+                    <input type="text" value="${sieve.name}" class="px-2 py-1 border rounded text-sm bg-gray-100" disabled>
+                    <input type="text" value="${sieve.size}" class="px-2 py-1 border rounded text-sm bg-gray-100" disabled>
+                    <input type="text" value="${sieve.c33Lower}" class="px-2 py-1 border rounded text-sm text-center" 
+                           placeholder="Lower" onblur='handleUpdateSieve(${JSON.stringify(aggName)}, ${index}, "c33Lower", this.value)'>
+                    <input type="text" value="${sieve.c33Upper}" class="px-2 py-1 border rounded text-sm text-center" 
+                           placeholder="Upper" onblur='handleUpdateSieve(${JSON.stringify(aggName)}, ${index}, "c33Upper", this.value)'>
+                    ${sieve.name !== 'Pan' ? `<button type="button" onclick='handleDeleteSieve(${JSON.stringify(aggName)}, ${index})' class="px-2 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">X</button>` : '<div></div>'}
+                </div>`;
+        }
+
+        function createTestTable(test, testIndex) {
+            const aggregateConfig = appState.aggregates[test.aggregateName];
+            if (!aggregateConfig) return '';
+
+            const finenessModulus = calculateFinenessModulus(aggregateConfig.type, test.sieveData);
+            const decant = calculateDecant(test.sieveData, test.washedWeight);
+            const totalWeight = test.sieveData.reduce((sum, row) => sum + (parseFloat(row.weightRetained) || 0), 0);
+
+            return `
+                <div class="bg-white rounded-lg shadow-md p-2 h-full">
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 class="text-base font-semibold">${test.aggregateName}</h2>
+                        <div class="flex gap-1">
+                            <input type="date" value="${test.date}" class="px-1 py-0.5 text-xs border border-gray-300 rounded" onchange="handleDateChange(${testIndex}, this.value)">
+                            ${appState.activeTests.length > 1 ? `<button class="px-2 py-0.5 text-xs bg-red-600 text-white rounded hover:bg-red-700" onclick="handleRemoveTest(${testIndex})">Remove</button>` : ''}
+                        </div>
+                    </div>
+                    <div>
+                        <table class="w-full border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border border-gray-300 px-1 py-0.5 text-left text-xs" style="width: 15%;">Sieve</th>
+                                    <th class="border border-gray-300 px-1 py-0.5 text-xs" style="width: 10%;">Weight (g)</th>
+                                    <th class="border border-gray-300 px-1 py-0.5 text-xs" style="width: 21%;">% Ret.</th>
+                                    <th class="border border-gray-300 px-1 py-0.5 text-xs" style="width: 21%;">Cum. %</th>
+                                    <th class="border border-gray-300 px-1 py-0.5 text-xs" style="width: 11%;">Pass %</th>
+                                    <th class="border border-gray-300 px-1 py-0.5 text-xs" style="width: 11%;">Lower</th>
+                                    <th class="border border-gray-300 px-1 py-0.5 text-xs" style="width: 11%;">Upper</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${test.sieveData.map((row, sieveIndex) => `
+                                    <tr class="${sieveIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                                        <td class="border border-gray-300 px-1 py-0 text-xs bg-gray-100">${row.name}</td>
+                                        <td class="border border-gray-300 px-0.5 py-0">
+                                            <input type="number" value="${row.weightRetained}" class="w-full px-0.5 py-0 text-xs border-0 bg-transparent focus:bg-white focus:border focus:border-blue-400 rounded" 
+                                                   step="0.1" min="0" onfocus="this.select();"
+                                                   data-test-index="${testIndex}" data-sieve-index="${sieveIndex}"
+                                                   onkeydown="handleWeightKeydown(event)" 
+                                                   onchange="handleWeightChange(${testIndex}, ${sieveIndex}, this.value)">
+                                        </td>
+                                        <td class="border border-gray-300 px-1 py-0 text-center text-xs bg-gray-100">${row.percentRetained}</td>
+                                        <td class="border border-gray-300 px-1 py-0 text-center text-xs bg-gray-100">${row.cumulativeRetained}</td>
+                                        <td class="border border-gray-300 px-1 py-0 text-center text-xs bg-gray-100">
+                                            ${(() => {
+                                                // Skip color coding if weightRetained is blank/empty
+                                                const hasWeightData = row.weightRetained !== '' && row.weightRetained !== null && row.weightRetained !== undefined;
+                                                if (!hasWeightData) {
+                                                    return row.percentPassing;
+                                                }
+                                                
+                                                const passing = parseFloat(row.percentPassing);
+                                                const lower = row.c33Lower !== '-' ? parseFloat(row.c33Lower) : null;
+                                                const upper = row.c33Upper !== '-' ? parseFloat(row.c33Upper) : null;
+                                                
+                                                let color = '';
+                                                if (lower !== null && upper !== null && !isNaN(passing)) {
+                                                    if (passing >= lower && passing <= upper) {
+                                                        color = 'text-green-600 font-medium';
+                                                    } else {
+                                                        color = 'text-red-600 font-medium';
+                                                    }
+                                                }
+                                                
+                                                return `<span class="${color}">${row.percentPassing}</span>`;
+                                            })()}
+                                        </td>
+                                        <td class="border border-gray-300 px-1 py-0 text-center text-xs bg-gray-100">${row.c33Lower === '-' ? '-' : row.c33Lower}</td>
+                                        <td class="border border-gray-300 px-1 py-0 text-center text-xs bg-gray-100">${row.c33Upper === '-' ? '-' : row.c33Upper}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-yellow-100">
+                                    <td class="border border-gray-300 px-1 py-0.5 font-semibold text-xs bg-gray-100">Total</td>
+                                    <td class="border border-gray-300 px-1 py-0.5 text-center font-semibold text-xs bg-gray-100">${totalWeight.toFixed(1)}</td>
+                                    <td class="border border-gray-300 px-1 py-0.5 bg-gray-100">
+                                        <div class="flex items-center">
+                                            <span class="text-gray-600 text-xs px-1">F.M.:</span>
+                                            <span class="font-bold text-xs flex-grow text-center">${finenessModulus}</span>
+                                        </div>
+                                    </td>
+                                    <td class="border border-gray-300 px-1 py-0.5">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <span class="text-gray-600 text-xs">Washed:</span>
+                                            <input type="number" value="${test.washedWeight}" placeholder="grams" class="px-0.5 text-center text-xs font-semibold border-0 rounded focus:outline-none focus:ring-1 focus:ring-blue-400" 
+                                                   style="width: 6.5em;" step="0.1" min="0" 
+                                                   data-washed-index="${testIndex}"
+                                                   onkeydown="handleWashedKeydown(event)"
+                                                   onchange="handleWashedWeightChange(${testIndex}, this.value)">
+                                            <span class="text-gray-600 text-xs">g</span>
+                                        </div>
+                                    </td>
+                                    <td class="border border-gray-300 px-1 py-0.5 bg-gray-100" colspan="3">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <span class="text-gray-600 text-xs">Decant:</span>
+                                            <span class="font-bold text-xs ${(() => {
+                                                const aggregateConfig = appState.aggregates[test.aggregateName];
+                                                if (aggregateConfig && aggregateConfig.maxDecant !== null && aggregateConfig.maxDecant !== undefined) {
+                                                    const decantValue = parseFloat(decant);
+                                                    if (!isNaN(decantValue)) {
+                                                        return decantValue <= aggregateConfig.maxDecant ? 'text-green-600' : 'text-red-600';
+                                                    }
+                                                }
+                                                return '';
+                                            })()}">${decant}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="mt-1 flex gap-1">
+                        <button onclick="handleSubmitTest(${testIndex})" class="px-2 py-0.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Submit ${test.aggregateName}</button>
+                        <button onclick="toggleChart(${testIndex})" class="px-2 py-0.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                            <span id="chart-btn-${testIndex}">View Chart</span>
+                        </button>
+                    </div>
+                    <div id="chart-${testIndex}" class="chart-container hidden">
+                        <h4 class="text-sm font-semibold mb-1" style="position: absolute; top: 8px; left: 8px; color: #374151;">Gradation Curve - ${test.aggregateName}</h4>
+                    </div>
+                </div>`;
+        }
+
+        function renderMainView() {
+            return `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+                    <h1 class="text-2xl font-bold text-gray-800">Aggregate Gradation Analysis</h1>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="appState.showPrintModal = true; renderApp();" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Print Forms</button>
+                        <button onclick="appState.currentView = 'repository'; renderApp();" class="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm">View Records</button>
+                        <button onclick="appState.currentView = 'admin'; renderApp();" class="px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">Configure</button>
+                    </div>
+                </div>
+                ${appState.activeTests.length > 0 ? `
+                    <div class="bg-white rounded-lg shadow-md p-3 mb-3">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="text-sm font-medium text-gray-700">Set all test dates:</label>
+                                <input type="text" value="${formatDateForDisplay(appState.date)}" placeholder="MM/DD/YYYY (shortcuts: 7/3/25)" class="px-2 py-1 border border-gray-300 rounded text-sm w-44" onchange="handleDateChange(this)" onblur="handleDateChange(this)">
+                                <div class="flex gap-2">
+                                    <button onclick="setAllDatesToToday()" class="px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" title="Set all tests to today's date">Today</button>
+                                    <button onclick="applyDateToAll()" class="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700" title="Apply this date to all active tests">Apply to All</button>
+                                    <button onclick="toggleNoProductionDateRange()" class="px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700" title="Add a no production record for a custom date range">No Production</button>
+                                </div>
+                            </div>
+                            <span class="text-xs text-gray-500">Individual test dates can still be changed below</span>
+                        </div>
+                    </div>` : ''}
+                ${appState.showNoProductionDateRange ? `
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                        <h3 class="text-lg font-semibold text-orange-800 mb-3">Add No Production Record</h3>
+                        <div class="flex flex-wrap items-center gap-3 mb-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                <input type="date" value="${appState.noProductionStartDate}" onchange="appState.noProductionStartDate = this.value; renderApp();" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                <input type="date" value="${appState.noProductionEndDate}" onchange="appState.noProductionEndDate = this.value; renderApp();" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="addNoProductionRecord()" class="px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700">Add Record</button>
+                            <button onclick="appState.showNoProductionDateRange = false; renderApp();" class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600">Cancel</button>
+                        </div>
+                    </div>` : ''}
+                ${appState.error ? `<div class="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-3 text-sm">${appState.error}</div>` : ''}
+                ${appState.successMessage ? `<div class="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded mb-3 text-sm">${appState.successMessage}</div>` : ''}
+                ${appState.activeTests.length === 0 ? `
+                    <div class="bg-white rounded-lg shadow-md p-4 mb-4 text-center">
+                        <p class="text-gray-600 mb-4">No active tests. Configure your default aggregates to get started.</p>
+                        <button onclick="appState.currentView = 'configure-defaults'; renderApp();" class="px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm">Configure Defaults</button>
+                    </div>` : `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">${appState.activeTests.map(createTestTable).join('')}</div>`}
+                <div class="bg-white rounded-lg shadow-md p-4 mb-4 mt-3">
+                    ${!appState.showAddMore ? `<button onclick="appState.showAddMore = true; renderApp();" class="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors text-sm">+ Add More Aggregates</button>` : `
+                        <div>
+                            <h3 class="text-base font-semibold mb-3">Add Another Test</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Aggregate</label>
+                                    <select class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" onchange="appState.selectedAggregate = this.value; renderApp();">
+                                        <option value="">Select an aggregate...</option>
+                                        ${Object.keys(appState.aggregates).map(name => `<option value="${name}" ${appState.selectedAggregate === name ? 'selected' : ''}>${name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                    <input type="date" value="${appState.date}" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" onchange="appState.date = this.value; renderApp();">
+                                </div>
+                                <div class="flex items-end gap-2">
+                                    <button onclick="handleAddMoreTest()" class="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 text-sm">Add</button>
+                                    <button onclick="appState.showAddMore = false; appState.selectedAggregate = ''; renderApp();" class="px-3 py-1.5 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm">Cancel</button>
+                                </div>
+                            </div>
+                        </div>`}
+                </div>`;
+        }
+
+        function renderAdminView() {
+            return `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Configure Aggregates & Defaults</h2>
+                        <button onclick="appState.currentView = 'main'; renderApp();" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Back to Analysis</button>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Aggregate List</h3>
+                                <button onclick="appState.showAddForm = true; renderApp();" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Add New</button>
+                            </div>
+                            ${appState.showAddForm ? `
+                                <div class="mb-4 p-4 border-2 border-green-500 rounded-lg bg-green-50">
+                                    <h4 class="font-semibold mb-3">New Aggregate</h4>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Name</label>
+                                            <input type="text" value="${appState.newAggregateName}" oninput="appState.newAggregateName = this.value" placeholder="e.g., #89, River Sand" class="w-full px-3 py-2 border rounded" autofocus>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Type</label>
+                                            <select onchange="appState.newAggregateType = this.value;" class="w-full px-3 py-2 border rounded">
+                                                <option value="Fine" ${appState.newAggregateType === 'Fine' ? 'selected' : ''}>Fine</option>
+                                                <option value="Coarse" ${appState.newAggregateType === 'Coarse' ? 'selected' : ''}>Coarse</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium mb-1">Copy from existing (optional)</label>
+                                            <select onchange="appState.importFromExisting = this.value" class="w-full px-3 py-2 border rounded">
+                                                <option value="">-- Start with default sieves --</option>
+                                                ${Object.keys(appState.aggregates).map(name => `<option value="${name}">${name}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button onclick="handleAddAggregate()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Create</button>
+                                            <button onclick="appState.showAddForm = false; appState.newAggregateName = ''; appState.newAggregateType = 'Fine'; appState.importFromExisting = ''; renderApp();" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>` : ''}
+                            <div class="space-y-2">
+                                ${Object.entries(appState.aggregates).map(([name, config]) => `
+                                    <div class="border rounded ${appState.editingAggregate === name ? 'border-blue-500 bg-blue-50' : ''}">
+                                        <div class="flex items-center">
+                                            <div class="p-3">
+                                                <input type="checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" title="Set as default test on main page"
+                                                    ${appState.defaultAggregates.includes(name) ? 'checked' : ''}
+                                                    onchange='handleToggleDefault(${JSON.stringify(name)})'>
+                                            </div>
+                                            <div class="flex-grow p-3 cursor-pointer hover:bg-gray-50 transition-colors" onclick='appState.editingAggregate = ${JSON.stringify(name)}; renderApp();'>
+                                                <span class="font-medium">${name}</span>
+                                                <span class="ml-2 text-sm text-gray-500">${config.type}</span>
+                                            </div>
+                                            ${appState.confirmingDelete === name ? `
+                                                <div class="flex"><button onclick='handleDeleteAggregate(${JSON.stringify(name)});' class="px-3 text-white bg-red-600 hover:bg-red-700 transition-colors">Confirm</button><button onclick="appState.confirmingDelete = null; renderApp();" class="px-3 text-gray-600 hover:bg-gray-100 border-l border-gray-300 transition-colors">Cancel</button></div>
+                                            ` : `<button onclick='appState.confirmingDelete = ${JSON.stringify(name)}; renderApp();' class="px-4 py-3 text-red-600 hover:text-white hover:bg-red-600 border-l border-gray-300 transition-colors font-medium">Delete</button>`}
+                                        </div>
+                                    </div>`).join('')}
+                                ${Object.keys(appState.aggregates).length === 0 ? '<p class="text-gray-500 text-center py-4">No aggregates configured. Click "Add New" to create one.</p>' : ''}
+                            </div>
+                        </div>
+                        ${appState.editingAggregate && appState.aggregates[appState.editingAggregate] ? `
+                            <div>
+                                <h3 class="text-lg font-semibold mb-4">Edit: ${appState.editingAggregate}</h3>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-2">Type</label>
+                                    <select onchange='handleUpdateAggregateType(${JSON.stringify(appState.editingAggregate)}, this.value)' class="w-full px-3 py-2 border rounded">
+                                        <option value="Fine" ${appState.aggregates[appState.editingAggregate].type === 'Fine' ? 'selected' : ''}>Fine</option>
+                                        <option value="Coarse" ${appState.aggregates[appState.editingAggregate].type === 'Coarse' ? 'selected' : ''}>Coarse</option>
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-2">Maximum Decant (%)</label>
+                                    <input type="number" value="${appState.aggregates[appState.editingAggregate].maxDecant || ''}" 
+                                           onchange='handleUpdateMaxDecant(${JSON.stringify(appState.editingAggregate)}, this.value)' 
+                                           placeholder="e.g., 3.0" step="0.1" min="0" max="100"
+                                           class="w-full px-3 py-2 border rounded">
+                                    <p class="text-xs text-gray-500 mt-1">Leave blank for no decant limit</p>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="text-sm font-medium">Sieves</label>
+                                        <button onclick='appState.showSieveSelector = ${JSON.stringify(appState.editingAggregate)}; renderApp();' class="px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Add Sieve</button>
+                                    </div>
+                                    ${appState.showSieveSelector === appState.editingAggregate ? `
+                                        <div class="mb-4 p-3 border-2 border-blue-500 rounded-lg bg-blue-50">
+                                            <div class="flex items-center gap-2">
+                                                <label class="text-sm font-medium">Select sieve to add:</label>
+                                                <select class="px-3 py-1 border rounded text-sm" onchange='if(this.value) { addSieveToAggregate(${JSON.stringify(appState.editingAggregate)}, this.value); this.value = ""; }'>
+                                                    <option value="">-- Select a sieve --</option>
+                                                    ${Object.keys(STANDARD_SIEVES)
+                                                        .filter(sieveName => sieveName !== 'Pan' && !appState.aggregates[appState.editingAggregate].sieves.some(s => s.name === sieveName))
+                                                        .sort((a, b) => (STANDARD_SIEVES[b] || 0) - (STANDARD_SIEVES[a] || 0))
+                                                        .map(sieveName => `<option value='${sieveName}'>${sieveName} (${STANDARD_SIEVES[sieveName]}mm)</option>`).join('')}
+                                                </select>
+                                                <button onclick="appState.showSieveSelector = null; renderApp();" class="px-3 py-1 bg-gray-400 text-white text-sm rounded hover:bg-gray-500">Cancel</button>
+                                            </div>
+                                        </div>` : ''}
+                                    <div class="grid grid-cols-5 gap-1 mb-2 text-xs font-medium text-gray-600">
+                                        <div>Name</div><div>Size (mm)</div><div>Lower %</div><div>Upper %</div><div></div>
+                                    </div>
+                                    <div class="space-y-2">${appState.aggregates[appState.editingAggregate].sieves.map((s, i) => createSieveEditor(s, i, appState.editingAggregate)).join('')}</div>
+                                    <div class="mt-4 p-3 bg-gray-100 rounded text-sm">
+                                        <p class="font-semibold mb-1">Tips:</p>
+                                        <ul class="list-disc list-inside text-gray-700 space-y-1">
+                                            <li>Sieves are sorted largest to smallest automatically.</li>
+                                            <li>Pan should always be the last entry with size 0.</li>
+                                            <li>ASTM C-33 limits represent acceptable passing percentages.</li>
+                                            <li>Changes are saved automatically.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>` : ''}
+                    </div>
+                </div>`;
+        }
+
+        function renderRepositoryView() {
+            const filteredRecords = getFilteredRecords();
+            const allSieveSizes = new Set();
+            Object.values(appState.aggregates).forEach(agg => agg.sieves.forEach(s => allSieveSizes.add(s.name)));
+            const sieveSizes = Array.from(allSieveSizes).sort((a, b) => (STANDARD_SIEVES[b] || 0) - (STANDARD_SIEVES[a] || 0));
+
+            return `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Test Records</h2>
+                        <div class="flex gap-2">
+                            ${filteredRecords.length > 0 ? `<button onclick="exportAllToCSV()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Export All (${filteredRecords.length})</button>` : ''}
+                            <button onclick="appState.currentView = 'main'; renderApp();" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Back to Testing</button>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                        <div class="flex flex-wrap gap-4 items-end">
+                            <div class="flex-grow" style="min-width: 180px;">
+                                <label class="block text-xs font-medium mb-1">Aggregate</label>
+                                <select onchange="appState.filterAggregate = this.value; renderApp();" class="w-full px-2 py-1 text-sm border rounded">
+                                    <option value="">All Aggregates</option>
+                                    ${Object.keys(appState.aggregates).map(name => `<option value="${name}" ${appState.filterAggregate === name ? 'selected' : ''}>${name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="flex-grow" style="min-width: 120px;">
+                                <label class="block text-xs font-medium mb-1">Type</label>
+                                <select onchange="appState.filterType = this.value; renderApp();" class="w-full px-2 py-1 text-sm border rounded">
+                                    <option value="">All Types</option>
+                                    <option value="Fine" ${appState.filterType === 'Fine' ? 'selected' : ''}>Fine</option>
+                                    <option value="Coarse" ${appState.filterType === 'Coarse' ? 'selected' : ''}>Coarse</option>
+                                </select>
+                            </div>
+                            <div class="flex-grow" style="min-width: 150px;">
+                                <label class="block text-xs font-medium mb-1">Date From</label>
+                                <input type="date" value="${appState.filterDateFrom}" onchange="appState.filterDateFrom = this.value; renderApp();" class="w-full px-2 py-1 text-sm border rounded">
+                            </div>
+                            <div class="flex-grow" style="min-width: 150px;">
+                                <label class="block text-xs font-medium mb-1">Date To</label>
+                                <input type="date" value="${appState.filterDateTo}" onchange="appState.filterDateTo = this.value; renderApp();" class="w-full px-2 py-1 text-sm border rounded">
+                            </div>
+                            <div>
+                                <button onclick="appState.filterAggregate = ''; appState.filterType = ''; appState.filterDateFrom = ''; appState.filterDateTo = ''; renderApp();" class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    ${filteredRecords.length === 0 ? `<div class="text-center py-8 text-gray-500">No test records found.</div>` : `
+                        <div class="flex justify-end items-center text-xs text-gray-500 mb-2">
+                            <span>Sieve Columns:</span>
+                            <div class="ml-2 text-center border rounded p-1 bg-gray-50" style="line-height: 1.1;">
+                                <div class="font-medium border-b border-gray-300 pb-0.5">% Retained</div>
+                                <div class="font-medium pt-0.5">% Passing</div>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="border border-gray-300 px-2 py-1 sticky left-0 bg-gray-100">Date</th>
+                                        <th class="border border-gray-300 px-2 py-1">Aggregate</th>
+                                        <th class="border border-gray-300 px-2 py-1">Type</th>
+                                        <th class="border border-gray-300 px-2 py-1">F.M.</th>
+                                        ${sieveSizes.map(size => `<th class="border border-gray-300 px-2 py-1">${size}</th>`).join('')}
+                                        <th class="border border-gray-300 px-2 py-1">Decant</th>
+                                        <th class="border border-gray-300 px-2 py-1">Status</th>
+                                        <th class="border border-gray-300 px-2 py-1">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filteredRecords.map((record, index) => {
+                                        // Special handling for no production records
+                                        if (record.isNoProduction) {
+                                            return `<tr class="${index % 2 === 0 ? 'bg-yellow-50' : 'bg-yellow-100'}">
+                                                        <td class="border border-gray-300 px-2 py-1 font-medium text-gray-700" colspan="${6 + sieveSizes.length}">${record.weekRange}</td>
+                                                        <td class="border border-gray-300 px-2 py-1 text-center">
+                                                            ${appState.confirmingDeleteRecord === record.id ? `
+                                                                <button onclick="handleDeleteRecord(${record.id})" class="text-white bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded text-xs">Confirm</button>
+                                                                <button onclick="appState.confirmingDeleteRecord = null; renderApp();" class="text-gray-600 hover:text-gray-800 underline text-xs ml-1">Cancel</button>
+                                                            ` : `<button onclick="appState.confirmingDeleteRecord = ${record.id}; renderApp();" class="text-red-600 hover:text-red-800 underline text-xs">Delete</button>`}
+                                                        </td>
+                                                    </tr>`;
+                                        }
+                                        
+                                        // Regular record rendering
+                                        return `
+                                        <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                                            <td class="border border-gray-300 px-2 py-1 sticky left-0 bg-inherit"><button onclick='handleQuickFilter("filterDateFrom", ${JSON.stringify(record.date)})' class="text-blue-600 hover:text-blue-800 underline text-sm">${formatDateForDisplay(record.date)}</button></td>
+                                            <td class="border border-gray-300 px-2 py-1"><button onclick='handleQuickFilter("filterAggregate", ${JSON.stringify(record.aggregateName)})' class="text-blue-600 hover:text-blue-800 underline text-sm">${record.aggregateName}</button></td>
+                                            <td class="border border-gray-300 px-2 py-1"><button onclick='handleQuickFilter("filterType", ${JSON.stringify(record.aggregateType)})' class="text-blue-600 hover:text-blue-800 underline text-sm">${record.aggregateType}</button></td>
+                                            <td class="border border-gray-300 px-2 py-1 text-center">${record.finenessModulus}</td>
+                                            ${sieveSizes.map((size, index) => {
+                                                const sieveResult = record.fullSieveData ? record.fullSieveData.find(s => s.name === size) : null;
+                                                
+                                                let percentPassing = '-';
+                                                if (sieveResult) {
+                                                    percentPassing = parseFloat(sieveResult.percentPassing).toFixed(0);
+                                                } else if (record.sieveResults && record.sieveResults[size] !== undefined) {
+                                                    percentPassing = record.sieveResults[size].toFixed(0);
+                                                }
+                                                
+                                                let percentRetained = '-';
+                                                if (sieveResult && sieveResult.percentRetained !== undefined) {
+                                                    percentRetained = parseFloat(sieveResult.percentRetained).toFixed(0);
+                                                } else if (record.sieveResults) {
+                                                    // Calculate retained on the fly for older records
+                                                    let priorPassing = 100.0;
+                                                    // Find the next largest sieve size in the master list that has a result
+                                                    for (let i = index - 1; i >= 0; i--) {
+                                                        const priorSieveSize = sieveSizes[i];
+                                                        if (record.sieveResults[priorSieveSize] !== undefined) {
+                                                            priorPassing = record.sieveResults[priorSieveSize];
+                                                            break;
+                                                        }
+                                                    }
+                                                    
+                                                    if (size === 'Pan') {
+                                                        percentRetained = priorPassing.toFixed(0);
+                                                    } else if (record.sieveResults[size] !== undefined) {
+                                                        const currentPassing = record.sieveResults[size];
+                                                        percentRetained = (priorPassing - currentPassing).toFixed(0);
+                                                    }
+                                                }
+
+                                                // Check if this sieve has defined limits for this aggregate
+                                                const aggregateConfig = appState.aggregates[record.aggregateName];
+                                                const sieveConfig = aggregateConfig ? aggregateConfig.sieves.find(s => s.name === size) : null;
+                                                const hasDefinedLimits = sieveConfig && sieveConfig.c33Lower !== '-' && sieveConfig.c33Upper !== '-';
+
+                                                if (size === 'Pan' || !hasDefinedLimits) {
+                                                    percentPassing = '-';
+                                                }
+
+                                                if (percentRetained === '-' && percentPassing === '-') {
+                                                    return `<td class="border border-gray-300 px-2 py-1 text-center">-</td>`;
+                                                }
+
+                                                return `<td class="border border-gray-300 p-0 text-center text-xs align-middle">
+                                                            <div style="line-height: 1;">
+                                                                <div class="border-b border-gray-300 px-1 py-0.5">${percentRetained}</div>
+                                                                <div class="px-1 py-0.5">${(() => {
+                                                                    if (percentPassing === '-') return percentPassing;
+                                                                    
+                                                                    const passing = parseFloat(percentPassing);
+                                                                    const lower = sieveConfig && sieveConfig.c33Lower !== '-' ? parseFloat(sieveConfig.c33Lower) : null;
+                                                                    const upper = sieveConfig && sieveConfig.c33Upper !== '-' ? parseFloat(sieveConfig.c33Upper) : null;
+                                                                    
+                                                                    let color = '';
+                                                                    if (lower !== null && upper !== null && !isNaN(passing)) {
+                                                                        if (passing >= lower && passing <= upper) {
+                                                                            color = 'text-green-600 font-medium';
+                                                                        } else {
+                                                                            color = 'text-red-600 font-medium';
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    return `<span class="${color}">${percentPassing}</span>`;
+                                                                })()}</div>
+                                                            </div>
+                                                        </td>`;
+                                            }).join('')}
+                                            <td class="border border-gray-300 px-2 py-1 text-center">
+                                                ${(() => {
+                                                    const decantDisplay = !isNaN(parseFloat(record.decant)) ? parseFloat(record.decant).toFixed(2) : record.decant;
+                                                    const aggregateConfig = appState.aggregates[record.aggregateName];
+                                                    
+                                                    if (aggregateConfig && aggregateConfig.maxDecant !== null && aggregateConfig.maxDecant !== undefined) {
+                                                        const decantValue = parseFloat(record.decant);
+                                                        if (!isNaN(decantValue)) {
+                                                            const color = decantValue <= aggregateConfig.maxDecant ? 'text-green-600 font-medium' : 'text-red-600 font-medium';
+                                                            return `<span class="${color}">${decantDisplay}</span>`;
+                                                        }
+                                                    }
+                                                    
+                                                    return decantDisplay;
+                                                })()}
+                                            </td>
+                                            <td class="border border-gray-300 px-2 py-1 text-center">${getStatusIndicator(record)}</td>
+                                            <td class="border border-gray-300 px-2 py-1 text-center">
+                                                <div class="flex gap-1 justify-center flex-wrap">
+                                                    <button onclick='handleViewRecord(${JSON.stringify(record)})' class="text-blue-600 hover:text-blue-800 underline text-xs">View</button>
+                                                    <button onclick='handleEditRecord(${record.id})' class="text-orange-600 hover:text-orange-800 underline text-xs">Edit</button>
+                                                    <button onclick='handlePrintRecord(${JSON.stringify(record)})' class="text-green-600 hover:text-green-800 underline text-xs">Print</button>
+                                                    <button onclick='handleExportRecord(${JSON.stringify(record)})' class="text-purple-600 hover:text-purple-800 underline text-xs">Export</button>
+                                                    ${appState.confirmingDeleteRecord === record.id ? `
+                                                        <button onclick="handleDeleteRecord(${record.id})" class="text-white bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded text-xs">Confirm</button>
+                                                        <button onclick="appState.confirmingDeleteRecord = null; renderApp();" class="text-gray-600 hover:text-gray-800 underline text-xs">Cancel</button>
+                                                    ` : `<button onclick="appState.confirmingDeleteRecord = ${record.id}; renderApp();" class="text-red-600 hover:text-red-800 underline text-xs">Delete</button>`}
+                                                    ${appState.showExportOptions === record.id ? `
+                                                        <div class="absolute bg-white border shadow-lg rounded p-2 mt-6 z-10 text-left">
+                                                            <button onclick='exportRecordAsCSV(${JSON.stringify(record)})' class="block w-full text-left px-2 py-1 hover:bg-gray-100 text-xs">Export as Excel/CSV</button>
+                                                            <button onclick='handlePrintRecord(${JSON.stringify(record)})' class="block w-full text-left px-2 py-1 hover:bg-gray-100 text-xs">Export as PDF (Print)</button>
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                            </td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>`}
+                </div>
+                
+                ${appState.showEditModal && appState.editingRecord ? renderEditModal() : ''}`;
+        }
+
+        function renderEditModal() {
+            const record = appState.editingRecord;
+            if (!record) return '';
+
+            const aggregateOptions = Object.keys(appState.aggregates).map(name => 
+                `<option value="${name}" ${name === record.aggregateName ? 'selected' : ''}>${name}</option>`
+            ).join('');
+
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg shadow-lg max-w-4xl max-h-[90vh] overflow-auto p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Edit Test Record</h2>
+                            <button onclick="handleCancelEdit()" class="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm">
+                                Cancel
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Date:</label>
+                                <input type="date" value="${record.date}" 
+                                       onchange="appState.editingRecord.date = this.value; renderApp();"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Aggregate:</label>
+                                <select onchange="appState.editingRecord.aggregateName = this.value; appState.editingRecord.aggregateType = appState.aggregates[this.value].type; renderApp();"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400">
+                                    ${aggregateOptions}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Washed Weight (g):</label>
+                                <input type="number" step="0.1" value="${record.washedWeight}" 
+                                       onchange="appState.editingRecord.washedWeight = this.value; renderApp();"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400">
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <div class="text-sm text-gray-600">Type: ${record.aggregateType}</div>
+                            </div>
+                        </div>
+
+                        ${record.fullSieveData && record.fullSieveData.length > 0 ? `
+                            <h3 class="text-lg font-semibold mb-3">Sieve Data</h3>
+                            <div class="overflow-x-auto mb-4">
+                                <table class="w-full border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-gray-100">
+                                            <th class="border border-gray-300 px-2 py-1">Sieve Size</th>
+                                            <th class="border border-gray-300 px-2 py-1">Weight Retained (g)</th>
+                                            <th class="border border-gray-300 px-2 py-1">% Retained</th>
+                                            <th class="border border-gray-300 px-2 py-1">% Passing</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${record.fullSieveData.map((sieve, index) => `
+                                            <tr>
+                                                <td class="border border-gray-300 px-2 py-1 font-medium">${sieve.name}</td>
+                                                <td class="border border-gray-300 px-2 py-1">
+                                                    <input type="number" step="0.1" value="${sieve.weightRetained || ''}" 
+                                                           onchange="appState.editingRecord.fullSieveData[${index}].weightRetained = parseFloat(this.value) || 0; renderApp();"
+                                                           class="w-full px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-blue-400">
+                                                </td>
+                                                <td class="border border-gray-300 px-2 py-1 text-center">${sieve.percentRetained ? parseFloat(sieve.percentRetained).toFixed(1) : '0.0'}%</td>
+                                                <td class="border border-gray-300 px-2 py-1 text-center">${sieve.name === 'Pan' ? '-' : (sieve.percentPassing ? parseFloat(sieve.percentPassing).toFixed(1) : '100.0') + '%'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : ''}
+
+                        <div class="flex gap-2 pt-4">
+                            <button onclick="handleSaveEditedRecord()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                Save Changes
+                            </button>
+                            <button onclick="handleCancelEdit()" class="flex-1 px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderConfigureDefaults() {
+            return `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Configure Default Aggregates</h2>
+                        <button onclick="appState.currentView = 'main'; renderApp();" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Cancel</button>
+                    </div>
+                    <p class="text-gray-600 mb-4">Select which aggregates should appear on the main page by default. You can select up to 8.</p>
+                    ${Object.keys(appState.aggregates).length === 0 ? `<div class="text-center py-8"><p class="text-gray-500 mb-4">No aggregates configured yet.</p><p class="text-gray-500">Please configure aggregates first before setting defaults.</p></div>` : `
+                        <div class="mb-6">
+                            <div class="text-sm text-gray-500 mb-2">Selected: ${appState.selectedDefaults.length} / 8</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                ${Object.keys(appState.aggregates).sort().map(aggregateName => `
+                                    <label class="border rounded-lg p-3 cursor-pointer transition-colors ${appState.selectedDefaults.includes(aggregateName) ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}" onchange="toggleDefaultAggregate('${aggregateName}')">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" ${appState.selectedDefaults.includes(aggregateName) ? 'checked' : ''} class="mr-3">
+                                            <div>
+                                                <div class="font-medium">${aggregateName}</div>
+                                                <div class="text-sm text-gray-500">${appState.aggregates[aggregateName].type}</div>
+                                            </div>
+                                        </div>
+                                    </label>`).join('')}
+                            </div>
+                        </div>
+                        ${appState.selectedDefaults.length > 0 ? `<div class="mb-6 p-4 bg-gray-50 rounded-lg"><h3 class="font-semibold mb-2">Selected Defaults (in order):</h3><div class="text-sm">${appState.selectedDefaults.map((name, index) => `${index + 1}. ${name}`).join(', ')}</div></div>` : ''}
+                        <div class="flex justify-end gap-2">
+                            <button onclick="appState.currentView = 'main'; renderApp();" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Cancel</button>
+                            <button onclick="saveDefaults()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Defaults</button>
+                        </div>`}
+                </div>`;
+        }
+
+        function renderViewRecordModal(record, sieveData) {
+            if (!record) return '';
+            
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-auto p-4">
+                    <div class="bg-white rounded-lg p-6 max-w-7xl max-h-[90vh] overflow-y-auto w-full">
+                        <div class="flex justify-between items-center mb-4 no-print">
+                            <h3 class="text-xl font-semibold">${record.aggregateName} - ${formatDateForDisplay(record.date)}</h3>
+                            <button onclick="appState.viewingRecord = null; renderApp();" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                        </div>
+                        <div class="print-visible mb-4">
+                            <h3 class="text-xl font-semibold text-center">${record.aggregateName} - ${formatDateForDisplay(record.date)}</h3>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 record-view-grid">
+                            <div>
+                                <h4 class="text-lg font-semibold mb-3">Gradation Results</h4>
+                                <div class="mb-4 text-sm grid grid-cols-2 gap-x-4">
+                                    <p><strong>Type:</strong> ${record.aggregateType}</p>
+                                    <p><strong>Total Weight:</strong> ${record.totalWeight}g</p>
+                                    <p><strong>F.M.:</strong> ${record.finenessModulus}</p>
+                                    <p><strong>Washed Weight:</strong> ${record.washedWeight}g</p>
+                                    <p><strong>Decant:</strong> 
+                                        ${(() => {
+                                            const decantDisplay = !isNaN(parseFloat(record.decant)) ? parseFloat(record.decant).toFixed(2) : record.decant;
+                                            const aggregateConfig = appState.aggregates[record.aggregateName];
+                                            
+                                            if (aggregateConfig && aggregateConfig.maxDecant !== null && aggregateConfig.maxDecant !== undefined) {
+                                                const decantValue = parseFloat(record.decant);
+                                                if (!isNaN(decantValue)) {
+                                                    const color = decantValue <= aggregateConfig.maxDecant ? 'text-green-600 font-medium' : 'text-red-600 font-medium';
+                                                    return `<span class="${color}">${decantDisplay}%</span>`;
+                                                }
+                                            }
+                                            
+                                            return `${decantDisplay}%`;
+                                        })()}
+                                    </p>
+                                </div>
+                                <table class="w-full border-collapse text-xs">
+                                    <thead><tr class="bg-gray-100"><th class="border p-1 text-left">Sieve</th><th class="border p-1">Weight (g)</th><th class="border p-1">% Ret.</th><th class="border p-1">Cum. %</th><th class="border p-1">Pass %</th><th class="border p-1">Lower</th><th class="border p-1">Upper</th></tr></thead>
+                                    <tbody>${(sieveData || []).map((row, i) => `<tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}"><td class="border p-1">${row.name}</td><td class="border p-1">${row.weightRetained}</td><td class="border p-1">${row.percentRetained}</td><td class="border p-1">${row.cumulativeRetained}</td><td class="border p-1">${row.percentPassing}</td><td class="border p-1">${row.c33Lower}</td><td class="border p-1">${row.c33Upper}</td></tr>`).join('')}</tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold mb-3">Gradation Curve</h4>
+                                <div id="viewRecordChart" class="w-full h-96 bg-gray-50 border rounded"></div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex gap-2 justify-end no-print">
+                            <button onclick='handlePrintRecord(${JSON.stringify(record)})' class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Print</button>
+                            <button onclick='exportRecordAsCSV(${JSON.stringify(record)})' class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Export CSV</button>
+                            <button onclick="appState.viewingRecord = null; renderApp();" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Close</button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function renderPrintModal() {
+            if (!appState.showPrintModal) return '';
+
+            const aggregatesToPrint = Object.values(appState.aggregates);
+
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
+                    <div class="bg-white rounded-lg p-6 max-w-xl max-h-[80vh] overflow-y-auto">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">Print Blank Forms</h3>
+                            <button onclick="appState.showPrintModal = false; renderApp();" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                        </div>
+                        <div class="text-gray-600 mb-4">
+                            <p>Ready to print ${appState.activeTests.length} blank test forms.</p>
+                            <p class="text-sm mt-1">This will generate ${Math.ceil(appState.activeTests.length / 5)} ${Math.ceil(appState.activeTests.length / 5) === 1 ? 'page' : 'pages'} with up to 5 forms per page.</p>
+                            ${appState.activeTests.length > 5 ? `<p class="text-sm mt-2 font-medium">Forms to print:</p><ul class="text-sm mt-1 list-disc list-inside max-h-32 overflow-y-auto">${appState.activeTests.map(test => `<li>${test.aggregateName} - ${test.date}</li>`).join('')}</ul>` : ''}
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button onclick="appState.showPrintModal = false; renderApp();" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Cancel</button>
+                            <button onclick="window.print(); appState.showPrintModal = false; renderApp();" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Print Forms</button>
+                        </div>
+                    </div>
+                </div>
+                ${renderPrintContent()}`;
+        }
+
+        function renderPrintContent() {
+            const pagesCount = Math.ceil(appState.activeTests.length / 5);
+            let printContent = '<div class="print-only">';
+            for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) {
+                printContent += '<div class="print-page"><div class="grid grid-cols-5 gap-4">';
+                const testsOnPage = appState.activeTests.slice(pageIndex * 5, (pageIndex + 1) * 5);
+                testsOnPage.forEach(test => {
+                    const aggregate = appState.aggregates[test.aggregateName];
+                    if (!aggregate) return;
+                    printContent += `
+                        <div class="print-form-small border-2 border-gray-800 p-1">
+                            <h4 class="text-xs font-bold text-center mb-1">${test.aggregateName}</h4>
+                            <div class="text-xs text-center mb-2">Date: ${formatDateForDisplay(test.date)}</div>
+                            <table class="w-full border-collapse">
+                                <thead><tr class="bg-gray-200"><th class="border border-gray-800 p-0.5 text-xs">Sieve</th><th class="border border-gray-800 p-0.5 bg-white text-xs">Weight</th></tr></thead>
+                                <tbody>
+                                    ${aggregate.sieves.map(sieve => `<tr><td class="border border-gray-800 p-0.5 text-center text-xs font-medium bg-gray-300">${sieve.name}</td><td class="border border-gray-800 p-2 bg-white"></td></tr>`).join('')}
+                                    <tr><td class="border border-gray-800 p-0.5 font-bold bg-gray-400 text-xs">Washed:</td><td class="border border-gray-800 p-2 bg-white"></td></tr>
+                                </tbody>
+                            </table>
+                        </div>`;
+                });
+                printContent += '</div></div>';
+            }
+            return printContent + '</div>';
+        }
+        
+        // ===== MAIN RENDER FUNCTION =====
+        function renderApp() {
+            const app = document.getElementById('app');
+            app.innerHTML = ''; // Clear previous content
+
+            if (appState.currentView === 'admin') {
+                app.innerHTML = renderAdminView();
+            } else if (appState.currentView === 'repository') {
+                app.innerHTML = renderRepositoryView();
+            } else {
+                app.innerHTML = renderMainView();
+            }
+
+            // Render modals
+            app.innerHTML += renderPrintModal();
+            
+            if (appState.viewingRecord) {
+                const record = appState.viewingRecord;
+                let displayData = record.fullSieveData;
+                const aggregateConfig = appState.aggregates[record.aggregateName];
+
+                // Attempt to repair data for older records that may be missing sieve names/config
+                if (displayData && aggregateConfig && displayData.length === aggregateConfig.sieves.length) {
+                    displayData = displayData.map((sieveResult, index) => {
+                        return { ...aggregateConfig.sieves[index], ...sieveResult };
+                    });
+                }
+
+                if (!displayData && record.sieveResults && aggregateConfig) {
+                    let previousPassing = 100;
+                    displayData = aggregateConfig.sieves.map(sieve => {
+                        const currentPassing = record.sieveResults[sieve.name] !== undefined ? record.sieveResults[sieve.name] : (sieve.name === 'Pan' ? 0 : 100);
+                        const percentRetained = previousPassing - currentPassing;
+                        const cumulativeRetained = 100 - currentPassing;
+                        const weightRetained = (percentRetained / 100) * (parseFloat(record.totalWeight) || 0);
+                        if (sieve.name !== 'Pan') previousPassing = currentPassing;
+                        return { ...sieve, weightRetained: weightRetained.toFixed(1), percentRetained: percentRetained.toFixed(1), cumulativeRetained: cumulativeRetained.toFixed(1), percentPassing: currentPassing.toFixed(1) };
+                    });
+                }
+                
+                app.innerHTML += renderViewRecordModal(record, displayData || []);
+
+                const chartContainer = document.getElementById('viewRecordChart');
+                if (chartContainer && displayData) {
+                    setTimeout(() => createSimpleChart(chartContainer, displayData), 50);
+                }
+            }
+        }
+        
+        // ===== CONFIGURE DEFAULTS FUNCTIONS =====
+        function toggleDefaultAggregate(aggregateName) {
+            if (appState.selectedDefaults.includes(aggregateName)) {
+                appState.selectedDefaults = appState.selectedDefaults.filter(name => name !== aggregateName);
+            } else if (appState.selectedDefaults.length < 8) {
+                appState.selectedDefaults.push(aggregateName);
+            } else {
+                alert('You can select up to 8 default aggregates');
+            }
+            renderApp();
+        }
+
+        function saveDefaults() {
+            appState.defaultAggregates = [...appState.selectedDefaults];
+            saveToStorage('defaultAggregates', appState.defaultAggregates);
+            appState.currentView = 'main';
+            loadDefaultTests();
+            alert(`Default aggregates saved! ${appState.defaultAggregates.length} aggregates will appear on the main page.`);
+        }
+        
+        // ===== PRINT FUNCTIONS =====
+        function exportBlankForms() {
+            try {
+                let csv = `Aggregate Gradation Analysis - Blank Forms\nGenerated: ${new Date().toLocaleDateString()}\n\n`;
+                appState.activeTests.forEach((test, index) => {
+                    csv += `Form ${index + 1}: ${test.aggregateName}\nDate: ${test.date}\nType: ${appState.aggregates[test.aggregateName]?.type}\n\n`;
+                    csv += `Sieve,Size (mm),Weight Retained (g),% Retained,Cumulative % Retained,% Passing,Lower Limit,Upper Limit\n`;
+                    test.sieveData.forEach(sieve => {
+                        csv += `${sieve.name},${sieve.size},,,,${sieve.c33Lower === '-' ? '' : sieve.c33Lower},${sieve.c33Upper === '-' ? '' : sieve.c33Upper}\n`;
+                    });
+                    csv += `\n\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `blank_forms_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting data. Please try again.');
+            }
+        }
+
+        // ===== INITIALIZATION =====
+        function initializeApp() {
+            console.log('Initializing app...');
+            appState.aggregates = loadFromStorage('aggregateConfigs', DEFAULT_AGGREGATES);
+            appState.savedRecords = loadFromStorage('testRepository', []);
+            const loadedDefaults = loadFromStorage('defaultAggregates', ['Keystone #7', 'Kraemer 9/16"', '#9 Gravel (St. Croix)', 'Concrete Sand']);
+            appState.defaultAggregates = loadedDefaults;
+            appState.selectedDefaults = [...loadedDefaults];
+            
+            if (appState.activeTests.length === 0 && Object.keys(appState.aggregates).length > 0 && loadedDefaults.length > 0) {
+                loadDefaultTests();
+            }
+            
+            console.log('App state initialized:', appState);
+            renderApp();
+            console.log('App initialization complete!');
+            
+            // Fix existing records with incorrect F.M. values
+            fixExistingFinenessModulus();
+        }
+        
+        // Function to fix existing records with incorrect F.M. calculations
+        function fixExistingFinenessModulus() {
+            const records = JSON.parse(localStorage.getItem('testRepository') || '[]');
+            let fixedCount = 0;
+            
+            records.forEach(record => {
+                if (record.aggregateType === 'Fine' && record.fullSieveData) {
+                    const currentFM = parseFloat(record.finenessModulus);
+                    
+                    // Check if F.M. is incorrect (greater than 10 indicates likely error)
+                    if (!isNaN(currentFM) && currentFM > 10) {
+                        // Recalculate F.M. using the corrected function
+                        const fmSieves = ['3/8"', '#4', '#8', '#16', '#30', '#50', '#100'];
+                        let cumulativePercent = 0;
+                        
+                        fmSieves.forEach(sieveName => {
+                            const sieve = record.fullSieveData.find(s => s.name === sieveName);
+                            if (sieve) {
+                                cumulativePercent += parseFloat(sieve.cumulativeRetained) || 0;
+                            }
+                        });
+                        
+                        const newFM = parseFloat((cumulativePercent / 100).toFixed(2));
+                        
+                        console.log(`Fixing F.M. for ${record.aggregateName} (${record.date}): ${currentFM} → ${newFM}`);
+                        record.finenessModulus = newFM;
+                        fixedCount++;
+                    }
+                }
+            });
+            
+            if (fixedCount > 0) {
+                localStorage.setItem('testRepository', JSON.stringify(records));
+                console.log(`Fixed ${fixedCount} records with incorrect F.M. values`);
+            }
+        }
+
+        // Start the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+</body>
+</html> 
