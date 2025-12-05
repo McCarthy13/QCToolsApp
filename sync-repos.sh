@@ -1,30 +1,63 @@
 #!/bin/bash
-# Sync script to push changes to both GitHub and Vibecode repositories
+# Automated Repository Sync Script
+# This script ensures changes are synchronized across GitHub, Vibecode, and Firebase
 
-set -e
+set -e  # Exit on error
 
-echo "🔄 Starting repository sync..."
+echo "🔄 Starting repository synchronization..."
 
-# Check for uncommitted changes
+# Color codes for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if there are uncommitted changes
 if [[ -n $(git status -s) ]]; then
-  echo "⚠️  Warning: You have uncommitted changes. Please commit them first."
-  git status -s
-  exit 1
+    echo -e "${YELLOW}⚠️  Warning: Uncommitted changes detected${NC}"
+    echo "Please commit your changes first or use: git add . && git commit -m 'your message'"
+    exit 1
 fi
 
-# Fetch latest from GitHub
-echo "📥 Fetching from GitHub..."
-git fetch origin
+# Get current branch
+CURRENT_BRANCH=$(git branch --show-current)
+echo -e "${BLUE}Current branch: ${CURRENT_BRANCH}${NC}"
 
-# Push to GitHub
-echo "📤 Pushing to GitHub (origin)..."
-git push origin main
+# Verify .env is not being tracked
+if git ls-files --error-unmatch .env 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  WARNING: .env file is tracked by git!${NC}"
+    echo "Removing .env from git tracking..."
+    git rm --cached .env
+    git commit -m "chore: remove .env from git tracking"
+fi
+
+# Push to GitHub (origin)
+echo -e "${BLUE}📤 Pushing to GitHub...${NC}"
+if git push origin "$CURRENT_BRANCH"; then
+    echo -e "${GREEN}✅ Successfully pushed to GitHub${NC}"
+else
+    echo -e "${YELLOW}⚠️  Failed to push to GitHub${NC}"
+    exit 1
+fi
 
 # Push to Vibecode
-echo "📤 Pushing to Vibecode..."
-git push vibecode main
+echo -e "${BLUE}📤 Pushing to Vibecode...${NC}"
+if git push vibecode "$CURRENT_BRANCH" 2>/dev/null; then
+    echo -e "${GREEN}✅ Successfully pushed to Vibecode${NC}"
+else
+    echo -e "${YELLOW}⚠️  Failed to push to Vibecode (this is optional)${NC}"
+fi
 
-echo "✅ Sync complete! All repositories are up to date."
-echo ""
-echo "Repository status:"
-git remote -v
+# Deploy to Firebase (if deploy.js exists)
+if [ -f "deploy.js" ]; then
+    echo -e "${BLUE}🚀 Deploying to Firebase...${NC}"
+    if node deploy.js; then
+        echo -e "${GREEN}✅ Successfully deployed to Firebase${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Failed to deploy to Firebase${NC}"
+    fi
+else
+    echo -e "${YELLOW}ℹ️  deploy.js not found, skipping Firebase deployment${NC}"
+fi
+
+echo -e "${GREEN}✅ Repository synchronization complete!${NC}"
