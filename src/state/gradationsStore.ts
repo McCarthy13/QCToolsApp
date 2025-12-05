@@ -100,6 +100,8 @@ interface GradationsState {
   setError: (error: string | null) => void;
   setSuccessMessage: (message: string | null) => void;
   setShowPrintModal: (show: boolean) => void;
+  setShowAddMore: (show: boolean) => void;
+  setShowNoProductionDateRange: (show: boolean) => void;
   setConfirmingDelete: (name: string | null) => void;
   setConfirmingDeleteRecord: (id: string | null) => void;
   setShowExportOptions: (id: string | null) => void;
@@ -150,6 +152,8 @@ export const useGradationsStore = create<GradationsState>((set, get) => ({
       set({
         selectedAggregate: name,
         activeTests: [{
+          aggregateName: name,
+          date: state.date,
           materialName: '',
           sieveData: aggregate.sieves.map(s => ({ ...s, weightRetained: '' })),
           washedWeight: '',
@@ -169,6 +173,8 @@ export const useGradationsStore = create<GradationsState>((set, get) => ({
     if (!state.selectedAggregate) return;
     const aggregate = state.aggregates[state.selectedAggregate];
     const newTest: ActiveTest = {
+      aggregateName: state.selectedAggregate,
+      date: state.date,
       materialName: '',
       sieveData: aggregate.sieves.map(s => ({ ...s, weightRetained: '' })),
       washedWeight: '',
@@ -531,6 +537,8 @@ export const useGradationsStore = create<GradationsState>((set, get) => ({
   setError: (error) => set({ error }),
   setSuccessMessage: (message) => set({ successMessage: message }),
   setShowPrintModal: (show) => set({ showPrintModal: show }),
+  setShowAddMore: (show) => set({ showAddMore: show }),
+  setShowNoProductionDateRange: (show) => set({ showNoProductionDateRange: show }),
   setConfirmingDelete: (name) => set({ confirmingDelete: name }),
   setConfirmingDeleteRecord: (id) => set({ confirmingDeleteRecord: id }),
   setShowExportOptions: (id) => set({ showExportOptions: id }),
