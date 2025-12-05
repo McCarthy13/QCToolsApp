@@ -193,6 +193,43 @@ The following environment variables are required and should be configured via th
   - Updated PDF generator to include cast pattern information in reports
   - Added validation to ensure both top design and cast patterns are selected together
 
+### Recent Updates (2025-12-05)
+- 🚧 **Aggregate Gradation Tool - Complete Rebuild (IN PROGRESS)**:
+  - **Source**: Exact pixel-perfect recreation of standalone HTML app from https://github.com/McCarthy13/GradationsTool
+  - **Main Features Implemented**:
+    - ✅ Test entry with 2-column grid layout showing multiple aggregates simultaneously
+    - ✅ Real-time calculations (% Retained, Cumulative %, % Passing)
+    - ✅ Keyboard navigation (Enter/Arrow keys) between weight input fields
+    - ✅ ASTM C-33 compliance color coding (green=pass, red=fail)
+    - ✅ Date shortcuts (Today button, Apply to All, custom date formats like "7/3/25")
+    - ✅ Fineness Modulus calculation for fine aggregates
+    - ✅ Decant percentage calculation
+    - ✅ Firebase Firestore storage replacing localStorage
+    - ✅ Print blank forms functionality (expo-print)
+    - ✅ CSV export for test records (expo-sharing)
+    - ✅ Repository view showing all saved test records
+    - ✅ Add/Remove tests dynamically
+    - ✅ Submit test with automatic form reset
+  - **Still To Be Implemented**:
+    - ⏳ Admin panel for aggregate management (add/edit/delete aggregates)
+    - ⏳ Sieve configuration editor
+    - ⏳ Configure default aggregates
+    - ⏳ Record detail view with full data and charts
+    - ⏳ Edit existing test records
+    - ⏳ Delete test records with confirmation
+    - ⏳ Repository filters (by aggregate, type, date range)
+    - ⏳ "No Production" date range batch entry
+    - ⏳ SVG gradation charts (react-native-svg)
+    - ⏳ Batch CSV export
+    - ⏳ View individual record with chart toggle
+  - **Technical Details**:
+    - All calculations match original HTML exactly
+    - State management mirrors original appState structure
+    - Firebase replaces localStorage for cloud sync
+    - Uses expo-print for PDF/print functionality
+    - Uses expo-sharing for CSV exports
+    - Maintains exact feature parity with standalone app
+
 ### Recent Updates (2025-11-21)
 - ✅ **Made all historical records editable across the app**:
   - **Camber Calculator History**: Added Edit button to Results screen that navigates to Calculator with pre-filled data
