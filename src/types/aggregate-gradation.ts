@@ -20,13 +20,26 @@ export interface TestRecord {
   id: string;
   timestamp: number;
   aggregateName: string;
+  aggregateType?: 'Fine' | 'Coarse';
   date: string;
+  materialName?: string;
   sieveData: SieveData[];
-  washedWeight?: number;
+  washedWeight?: number | string;
   finenessModulus?: string;
   decant?: string;
   totalWeight: number;
+  passes?: boolean;
   passC33?: boolean;
+}
+
+export interface ActiveTest {
+  materialName: string;
+  sieveData: SieveData[];
+  washedWeight: string;
+  decant: string;
+  finenessModulus: string;
+  totalWeight: number;
+  passes: boolean;
 }
 
 export interface ChartDataPoint {
@@ -36,3 +49,4 @@ export interface ChartDataPoint {
   c33Lower?: number;
   c33Upper?: number;
 }
+
