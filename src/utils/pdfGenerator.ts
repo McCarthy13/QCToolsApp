@@ -291,6 +291,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         const designStrandNum = coord.designIndex !== undefined ? coord.designIndex + 1 : null;
         const castStrandNum = coord.castIndex !== undefined ? coord.castIndex + 1 : null;
 
+        // Create strand label (B1, B2... or T1, T2...)
+        const strandLabel = castStrandNum !== null ? `${position === 'Bottom' ? 'B' : 'T'}${castStrandNum}` : '-';
+
         // Get slippage values for cast strand
         let e1Value = '-';
         let e2Value = '-';
@@ -305,19 +308,16 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
         return `
           <tr style="border-bottom: 1px solid #e5e7eb;">
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #eff6ff; border-right: 2px solid #2563eb;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #eff6ff; border-right: 1px solid #9ca3af;">
               ${coord.designIndex !== undefined ? `${coord.designSize}"` : '-'}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #eff6ff; border-right: 2px solid #2563eb;">
-              ${coord.designIndex !== undefined ? `(${coord.x}", ${coord.y}")` : '-'}
+            <td style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; background: #f3f4f6; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af;">
+              ${strandLabel}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4; border-right: 1px solid #9ca3af;">
               ${coord.castIndex !== undefined ? `${coord.castSize}"` : '-'}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
-              ${coord.castIndex !== undefined ? `(${coord.x}", ${coord.y}")` : '-'}
-            </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4; border-right: 1px solid #9ca3af;">
               ${e1Value}
             </td>
             <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
@@ -335,19 +335,21 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
             <thead>
               <tr style="background: #f9fafb;">
-                <th colspan="2" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; border-right: 2px solid #2563eb; background: #dbeafe;">
+                <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; border-right: 1px solid #9ca3af; background: #dbeafe;">
                   DESIGN PATTERN
                 </th>
-                <th colspan="4" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; background: #dcfce7;">
+                <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af; background: #e5e7eb;">
+                  STRAND
+                </th>
+                <th colspan="3" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; background: #dcfce7;">
                   CAST PATTERN
                 </th>
               </tr>
               <tr style="background: #f9fafb;">
-                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 2px solid #2563eb;">Size</th>
-                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 2px solid #2563eb;">Location</th>
-                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">Size</th>
-                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">Location</th>
-                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">E1</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af;">Size</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af;">ID</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af;">Size</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af;">E1</th>
                 <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">E2</th>
               </tr>
             </thead>
