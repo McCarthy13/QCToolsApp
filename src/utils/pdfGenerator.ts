@@ -61,6 +61,8 @@ interface PDFGenerationParams {
   designTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
   castStrandSizes?: ('3/8' | '1/2' | '0.6')[];
   castTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  activeStrandIndices?: number[] | null;
+  activeTopStrandIndices?: number[] | null;
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -86,6 +88,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     designTopStrandSizes,
     castStrandSizes,
     castTopStrandSizes,
+    activeStrandIndices,
+    activeTopStrandIndices,
   } = params;
 
   try {
@@ -240,7 +244,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       castCoords?: { x: number; y: number }[],
       designSizes?: ('3/8' | '1/2' | '0.6')[],
       castSizes?: ('3/8' | '1/2' | '0.6')[],
-      strandSlippages?: SlippageData[]
+      strandSlippages?: SlippageData[],
+      activeIndices?: number[] | null
     ): string => {
       if (!designCoords && !castCoords) return '';
 
@@ -280,14 +285,30 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         }
       });
 
+      // Filter by active strands if specified
+      const filteredCoords = activeIndices !== null && activeIndices !== undefined
+        ? allCoords.filter(coord => {
+            // activeIndices are 1-based strand numbers, coord indices are 0-based
+            // Keep if cast strand is active
+            if (coord.castIndex !== undefined) {
+              return activeIndices.includes(coord.castIndex + 1);
+            }
+            // Keep if design strand is active
+            if (coord.designIndex !== undefined) {
+              return activeIndices.includes(coord.designIndex + 1);
+            }
+            return false;
+          })
+        : allCoords;
+
       // Sort: left to right (x ascending), then bottom to top (y ascending)
-      allCoords.sort((a, b) => {
+      filteredCoords.sort((a, b) => {
         if (a.x !== b.x) return a.x - b.x;
         return a.y - b.y;
       });
 
       // Build table rows
-      const rows = allCoords.map((coord, rowIndex) => {
+      const rows = filteredCoords.map((coord, rowIndex) => {
         const designStrandNum = coord.designIndex !== undefined ? coord.designIndex + 1 : null;
         const castStrandNum = coord.castIndex !== undefined ? coord.castIndex + 1 : null;
 
@@ -308,19 +329,19 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
         return `
           <tr style="border-bottom: 1px solid #e5e7eb;">
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #eff6ff; border-right: 1px solid #9ca3af;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
               ${coord.designIndex !== undefined ? `${coord.designSize}"` : '-'}
             </td>
             <td style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; background: #f3f4f6; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af;">
               ${strandLabel}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4; border-right: 1px solid #9ca3af;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
               ${coord.castIndex !== undefined ? `${coord.castSize}"` : '-'}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4; border-right: 1px solid #9ca3af;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
               ${e1Value}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center;">
               ${e2Value}
             </td>
           </tr>
@@ -335,13 +356,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
             <thead>
               <tr style="background: #f9fafb;">
-                <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; border-right: 1px solid #9ca3af; background: #dbeafe;">
+                <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280; border-right: 1px solid #9ca3af;">
                   DESIGN PATTERN
                 </th>
                 <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af; background: #e5e7eb;">
                   STRAND
                 </th>
-                <th colspan="3" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; background: #dcfce7;">
+                <th colspan="3" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280;">
                   CAST PATTERN
                 </th>
               </tr>
@@ -759,8 +780,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           ${(designStrandCoordinates || castStrandCoordinates || designTopStrandCoordinates || castTopStrandCoordinates) ? `
           <div class="section">
             <h2>Design vs Cast Pattern Analysis</h2>
-            ${buildStrandComparisonTable('Bottom', designStrandCoordinates, castStrandCoordinates, designStrandSizes, castStrandSizes, bottomStrands)}
-            ${buildStrandComparisonTable('Top', designTopStrandCoordinates, castTopStrandCoordinates, designTopStrandSizes, castTopStrandSizes, topStrands)}
+            ${buildStrandComparisonTable('Bottom', designStrandCoordinates, castStrandCoordinates, designStrandSizes, castStrandSizes, bottomStrands, activeStrandIndices)}
+            ${buildStrandComparisonTable('Top', designTopStrandCoordinates, castTopStrandCoordinates, designTopStrandSizes, castTopStrandSizes, topStrands, activeTopStrandIndices)}
           </div>
           ` : ''}
 

@@ -307,6 +307,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         designTopStrandSizes: designTopPattern?.strandSizes,
         castStrandSizes: selectedPattern?.strandSizes,
         castTopStrandSizes: selectedTopPattern?.strandSizes,
+        activeStrandIndices,
+        activeTopStrandIndices,
       });
 
       if (filePath) {
@@ -465,6 +467,36 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
     return activeIndices;
   }, [selectedPattern, config.productWidth, config.productSide]);
+
+  // Calculate active top strand indices for the cross-section
+  const activeTopStrandIndices = useMemo(() => {
+    if (!selectedTopPattern || !selectedTopPattern.strandCoordinates || !config.productWidth || !config.productSide) {
+      return null;
+    }
+
+    const { strandCoordinates } = selectedTopPattern;
+    const { productWidth, productSide } = config;
+
+    const minX = Math.min(...strandCoordinates.map(c => c.x));
+    const maxX = Math.max(...strandCoordinates.map(c => c.x));
+    const fullProductWidth = maxX + 2;
+
+    const activeIndices: number[] = [];
+    strandCoordinates.forEach((coord, index) => {
+      let isActive = false;
+      if (productSide === 'L1') {
+        isActive = coord.x <= productWidth;
+      } else if (productSide === 'L2') {
+        const cutPosition = fullProductWidth - productWidth;
+        isActive = coord.x >= cutPosition;
+      }
+      if (isActive) {
+        activeIndices.push(index + 1); // Convert to 1-based
+      }
+    });
+
+    return activeIndices;
+  }, [selectedTopPattern, config.productWidth, config.productSide]);
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
