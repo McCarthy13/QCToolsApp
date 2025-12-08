@@ -315,6 +315,10 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         // Create strand label (B1, B2... or T1, T2...)
         const strandLabel = castStrandNum !== null ? `${position === 'Bottom' ? 'B' : 'T'}${castStrandNum}` : '-';
 
+        // Check if sizes mismatch (including when design has no strand at this location)
+        const hasMismatch = coord.designSize !== coord.castSize;
+        const highlightStyle = hasMismatch ? 'background: #fef08a;' : ''; // Yellow highlighter color
+
         // Get slippage values for cast strand
         let e1Value = '-';
         let e2Value = '-';
@@ -335,7 +339,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             <td style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; background: #f3f4f6; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af;">
               ${strandLabel}
             </td>
-            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af; ${highlightStyle}">
               ${coord.castIndex !== undefined ? `${coord.castSize}"` : '-'}
             </td>
             <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
