@@ -195,10 +195,16 @@ export default function SlippageHistoryScreen() {
                   ? customPatterns.find((p) => p.id === record.config.topStrandPattern)
                   : undefined;
 
-                // Format pattern name with top pattern if present
-                const patternName = pattern && topPattern
-                  ? `${pattern.name} + ${topPattern.name}`
-                  : pattern?.name;
+                // Format pattern name with top pattern if present (strip product type)
+                const stripProductType = (name?: string) => {
+                  if (!name) return undefined;
+                  return name.replace(/\s*\([^)]+\)\s*$/, '').trim();
+                };
+                const bottomName = stripProductType(pattern?.name);
+                const topName = stripProductType(topPattern?.name);
+                const patternName = bottomName && topName
+                  ? `${bottomName} + ${topName}`
+                  : bottomName || topName;
                 const isPublished = "publishedAt" in record;
 
                 return (

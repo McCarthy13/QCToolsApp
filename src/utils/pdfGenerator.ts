@@ -725,28 +725,20 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             <h2>Product Details</h2>
             <div class="info-grid">
               <div class="info-item">
-                <div class="info-label">Project Number</div>
+                <div class="info-label">Pour Date</div>
+                <div class="info-value">${config.pourDate || '-'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Project #</div>
                 <div class="info-value">${config.projectNumber || ''}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Project Name</div>
-                <div class="info-value">${config.projectName || ''}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Mark Number</div>
-                <div class="info-value">${config.markNumber || ''}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">ID Number</div>
-                <div class="info-value">${config.idNumber || ''}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
               </div>
               <div class="info-item">
-                <div class="info-label">Strand Pattern</div>
-                <div class="info-value">${strandPatternName || config.strandPattern}</div>
+                <div class="info-label">Mark #</div>
+                <div class="info-value">${config.markNumber || ''}</div>
               </div>
               ${config.span ? (() => {
                 const spanFormatted = formatSpanForPDF(config.span);
@@ -764,8 +756,20 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               </div>
               `}
               <div class="info-item">
+                <div class="info-label">ID #</div>
+                <div class="info-value">${config.idNumber || ''}</div>
+              </div>
+              <div class="info-item">
                 <div class="info-label">Width${config.productWidth ? ' (Cut)' : ''}</div>
                 <div class="info-value">${config.productWidth ? `${config.productWidth}"` : '-'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Design Pattern</div>
+                <div class="info-value">${strandPatternName || config.strandPattern || '-'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Cast Pattern</div>
+                <div class="info-value">${castStrandPatternName || strandPatternName || config.strandPattern || '-'}</div>
               </div>
             </div>
           </div>

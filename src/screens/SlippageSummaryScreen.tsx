@@ -66,11 +66,21 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   };
 
   // Helper function to format pattern display name with top pattern if present
+  // Removes product type from display (e.g., "77-70 (8048)" becomes "77-70")
   const formatPatternName = (bottomPattern?: { name?: string }, topPattern?: { name?: string }) => {
-    if (!bottomPattern?.name && !topPattern?.name) return undefined;
-    if (!topPattern?.name) return bottomPattern?.name;
-    if (!bottomPattern?.name) return topPattern?.name;
-    return `${bottomPattern.name} + ${topPattern.name}`;
+    const stripProductType = (name?: string) => {
+      if (!name) return undefined;
+      // Remove product type in parentheses (e.g., " (8048)", " (1047)", etc.)
+      return name.replace(/\s*\([^)]+\)\s*$/, '').trim();
+    };
+
+    const bottomName = stripProductType(bottomPattern?.name);
+    const topName = stripProductType(topPattern?.name);
+
+    if (!bottomName && !topName) return undefined;
+    if (!topName) return bottomName;
+    if (!bottomName) return topName;
+    return `${bottomName} + ${topName}`;
   };
 
   // Get the selected strand patterns (bottom and optionally top)
