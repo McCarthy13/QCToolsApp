@@ -421,65 +421,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .cross-section img {
-              max-width: 100%;
-              max-height: 2400px;
-              min-height: 1200px;
+              width: 100%;
               height: auto;
-              width: auto;
               border-radius: 3px;
               display: block;
               margin: 0 auto;
-            }
-
-            /* Print-specific styling for PDFs */
-            @media print {
-              .cross-section {
-                margin: 30px auto;
-                padding: 25px;
-              }
-              .cross-section img {
-                max-height: 2800px;
-                min-height: 1400px;
-                max-width: 100%;
-              }
-            }
-
-            /* Responsive sizing for different devices */
-            @media screen and (min-width: 768px) {
-              /* Tablets and larger - increase cross-section size */
-              .cross-section {
-                padding: 25px;
-              }
-              .cross-section img {
-                max-height: 2400px;
-                min-height: 1200px;
-                max-width: 100%;
-              }
-            }
-
-            @media screen and (min-width: 1024px) {
-              /* Desktop - significantly larger cross-section */
-              .cross-section {
-                padding: 30px;
-              }
-              .cross-section img {
-                max-height: 2800px;
-                min-height: 1400px;
-                max-width: 100%;
-              }
-            }
-
-            @media screen and (max-width: 767px) {
-              /* Mobile devices - ensure cross-section fits with legend */
-              .cross-section {
-                padding: 15px;
-                margin: 15px auto;
-              }
-              .cross-section img {
-                max-height: 1600px;
-                min-height: 800px;
-                max-width: 100%;
-              }
             }
             ` : ''}
 
