@@ -507,17 +507,25 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .section {
               margin-bottom: 4px;
+              page-break-inside: avoid;
             }
 
             .section-large {
               margin: 6px 0;
               padding: 6px 0;
               page-break-inside: avoid;
+              page-break-after: auto;
             }
 
             .page-break {
-              page-break-before: always;
-              break-before: page;
+              page-break-before: always !important;
+              break-before: page !important;
+              margin-top: 0 !important;
+              padding-top: 0 !important;
+            }
+
+            .page-1-content {
+              page-break-after: always;
             }
 
             h2 {
@@ -725,6 +733,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         </head>
         <body>
           <div class="pdf-container">
+
+          <!-- PAGE 1 CONTENT -->
+          <div class="page-1-content">
           <!-- Header -->
           <div class="header">
             <h1>Slippage Report</h1>
@@ -812,6 +823,10 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           </div>
           ` : ''}
 
+          </div>
+          <!-- END PAGE 1 CONTENT -->
+
+          <!-- PAGE 2 CONTENT: STRAND STATISTICS -->
           <!-- Bottom Strand Statistics -->
           ${bottomStrands.length > 0 ? `
           <div class="section page-break" style="page-break-before: always; break-before: page;">
