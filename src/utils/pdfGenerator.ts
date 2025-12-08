@@ -396,7 +396,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <style>
             @page {
               size: letter;
-              margin: 0;
+              margin: 12px 0;
             }
 
             * {
@@ -801,7 +801,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
           <!-- Bottom Strand Statistics -->
           ${bottomStrands.length > 0 ? `
-          <div class="section">
+          <div class="section" style="page-break-before: always;">
             <h2 style="color: #059669;">Bottom Strand Statistics</h2>
             <div class="stats-grid">
               <div class="stat-card">
