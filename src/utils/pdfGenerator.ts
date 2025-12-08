@@ -392,53 +392,67 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 4px auto;
-              padding: 4px;
+              margin: 8px auto;
+              padding: 8px;
               background: #ffffff;
               border-radius: 3px;
               border: 1px solid #e5e7eb;
               display: flex;
               justify-content: center;
               align-items: center;
+              page-break-inside: avoid;
             }
 
             .cross-section img {
-              max-width: 95%;
-              max-height: 300px;
+              max-width: 100%;
+              max-height: 900px;
               height: auto;
+              width: auto;
               border-radius: 2px;
               display: block;
               margin: 0 auto;
+            }
+
+            /* Print-specific styling for PDFs */
+            @media print {
+              .cross-section {
+                margin: 10px auto;
+                padding: 10px;
+              }
+              .cross-section img {
+                max-height: 1000px;
+                max-width: 100%;
+              }
             }
 
             /* Responsive sizing for different devices */
             @media screen and (min-width: 768px) {
               /* Tablets and larger - increase cross-section size */
               .cross-section img {
-                max-height: 400px;
-                max-width: 90%;
+                max-height: 900px;
+                max-width: 100%;
               }
             }
 
             @media screen and (min-width: 1024px) {
               /* Desktop - significantly larger cross-section */
               .cross-section {
-                padding: 8px;
+                padding: 10px;
               }
               .cross-section img {
-                max-height: 600px;
-                max-width: 85%;
+                max-height: 1000px;
+                max-width: 100%;
               }
             }
 
             @media screen and (max-width: 767px) {
               /* Mobile devices - ensure cross-section fits with legend */
               .cross-section {
-                padding: 2px;
-                margin: 2px auto;
+                padding: 4px;
+                margin: 4px auto;
               }
               .cross-section img {
-                max-height: 300px;
+                max-height: 600px;
                 max-width: 100%;
               }
             }
