@@ -724,6 +724,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <div class="section">
             <h2>Product Details</h2>
             <div class="info-grid">
+              <!-- Row 1 -->
               <div class="info-item">
                 <div class="info-label">Pour Date</div>
                 <div class="info-value">${config.pourDate || '-'}</div>
@@ -733,6 +734,10 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-value">${config.projectNumber || ''}</div>
               </div>
               <div class="info-item">
+                <div class="info-label">Project Name</div>
+                <div class="info-value">${config.projectName || ''}</div>
+              </div>
+              <div class="info-item">
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
               </div>
@@ -740,6 +745,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-label">Mark #</div>
                 <div class="info-value">${config.markNumber || ''}</div>
               </div>
+              <!-- Row 2 -->
               ${config.span ? (() => {
                 const spanFormatted = formatSpanForPDF(config.span);
                 return `
