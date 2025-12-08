@@ -337,8 +337,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .section-large {
-              margin: 12px 0;
-              padding: 12px 0;
+              margin: 20px 0;
+              padding: 20px 0;
+              page-break-inside: avoid;
             }
 
             h2 {
@@ -353,11 +354,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             h2.large-heading {
-              font-size: 14px;
-              margin-bottom: 8px;
-              padding-bottom: 4px;
-              border-bottom: 2px solid #2563eb;
+              font-size: 18px;
+              margin-bottom: 12px;
+              padding-bottom: 6px;
+              border-bottom: 3px solid #2563eb;
               font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
             }
 
             .info-grid {
@@ -405,23 +408,25 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 15px auto;
-              padding: 15px;
+              margin: 20px auto;
+              padding: 20px;
               background: #ffffff;
-              border-radius: 4px;
-              border: 2px solid #2563eb;
+              border-radius: 6px;
+              border: 3px solid #2563eb;
               display: flex;
               justify-content: center;
               align-items: center;
               page-break-inside: avoid;
+              width: 100%;
             }
 
             .cross-section img {
               max-width: 100%;
-              max-height: 1400px;
+              max-height: 2400px;
+              min-height: 1200px;
               height: auto;
               width: auto;
-              border-radius: 2px;
+              border-radius: 3px;
               display: block;
               margin: 0 auto;
             }
@@ -429,11 +434,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             /* Print-specific styling for PDFs */
             @media print {
               .cross-section {
-                margin: 20px auto;
-                padding: 20px;
+                margin: 30px auto;
+                padding: 25px;
               }
               .cross-section img {
-                max-height: 1600px;
+                max-height: 2800px;
+                min-height: 1400px;
                 max-width: 100%;
               }
             }
@@ -441,8 +447,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             /* Responsive sizing for different devices */
             @media screen and (min-width: 768px) {
               /* Tablets and larger - increase cross-section size */
+              .cross-section {
+                padding: 25px;
+              }
               .cross-section img {
-                max-height: 1400px;
+                max-height: 2400px;
+                min-height: 1200px;
                 max-width: 100%;
               }
             }
@@ -450,10 +460,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             @media screen and (min-width: 1024px) {
               /* Desktop - significantly larger cross-section */
               .cross-section {
-                padding: 20px;
+                padding: 30px;
               }
               .cross-section img {
-                max-height: 1600px;
+                max-height: 2800px;
+                min-height: 1400px;
                 max-width: 100%;
               }
             }
@@ -461,11 +472,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             @media screen and (max-width: 767px) {
               /* Mobile devices - ensure cross-section fits with legend */
               .cross-section {
-                padding: 10px;
-                margin: 10px auto;
+                padding: 15px;
+                margin: 15px auto;
               }
               .cross-section img {
-                max-height: 900px;
+                max-height: 1600px;
+                min-height: 800px;
                 max-width: 100%;
               }
             }
