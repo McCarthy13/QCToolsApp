@@ -404,7 +404,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .cross-section img {
               max-width: 95%;
-              max-height: 180px;
+              max-height: 300px;
               height: auto;
               border-radius: 2px;
               display: block;
@@ -415,7 +415,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             @media screen and (min-width: 768px) {
               /* Tablets and larger - increase cross-section size */
               .cross-section img {
-                max-height: 300px;
+                max-height: 400px;
                 max-width: 90%;
               }
             }
@@ -426,7 +426,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 padding: 8px;
               }
               .cross-section img {
-                max-height: 500px;
+                max-height: 600px;
                 max-width: 85%;
               }
             }
@@ -438,7 +438,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 margin: 2px auto;
               }
               .cross-section img {
-                max-height: 180px;
+                max-height: 300px;
                 max-width: 100%;
               }
             }

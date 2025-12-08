@@ -48,6 +48,23 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   // Ref for capturing cross-section as image
   const crossSectionRef = useRef<View>(null);
 
+  // Calculate normalized scale factor to make all cross-sections appear the same visual size
+  // Base scale on the tallest product (12" for 1247/1250) to normalize visual size
+  const getUniformScale = (baseScale: number) => {
+    const BASE_HEIGHT = 12; // Use 12" as reference (tallest product)
+    const productHeights: { [key: string]: number } = {
+      '8048': 8,
+      '1047': 10,
+      '1247': 12,
+      '1250': 12,
+      '1648': 16,
+      '1650': 16,
+    };
+    const currentHeight = productHeights[config.productType] || 12;
+    // Scale inversely to height to maintain consistent visual size
+    return baseScale * (BASE_HEIGHT / currentHeight);
+  };
+
   // Get the selected strand patterns (bottom and optionally top)
   // Use CAST patterns if available, otherwise fall back to DESIGN patterns
   const designPattern = customPatterns.find(p => p.id === config.strandPattern);
@@ -481,7 +498,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   </Text>
                   {config.productType === '1047' ? (
                     <CrossSection1047
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -493,7 +510,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1247' ? (
                     <CrossSection1247
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -505,7 +522,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1250' ? (
                     <CrossSection1250
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -517,7 +534,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <CrossSection8048
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -540,7 +557,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   </Text>
                   {config.productType === '1047' ? (
                     <CrossSection1047
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -553,7 +570,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1247' ? (
                     <CrossSection1247
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -566,7 +583,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1250' ? (
                     <CrossSection1250
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -579,7 +596,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <CrossSection8048
-                      scale={5}
+                      scale={getUniformScale(5)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -639,7 +656,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             </Text>
             {config.productType === '1047' ? (
               <CrossSection1047
-                scale={6}
+                scale={getUniformScale(8)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -652,7 +669,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               />
             ) : config.productType === '1247' ? (
               <CrossSection1247
-                scale={6}
+                scale={getUniformScale(8)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -665,7 +682,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               />
             ) : config.productType === '1250' ? (
               <CrossSection1250
-                scale={6}
+                scale={getUniformScale(8)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -678,7 +695,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               />
             ) : (
               <CrossSection8048
-                scale={6}
+                scale={getUniformScale(8)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
