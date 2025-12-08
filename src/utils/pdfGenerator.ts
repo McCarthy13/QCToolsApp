@@ -337,8 +337,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             }
 
             .section-large {
-              margin: 20px 0;
-              padding: 20px 0;
+              margin: 6px 0;
+              padding: 6px 0;
               page-break-inside: avoid;
             }
 
@@ -408,7 +408,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 20px auto;
+              margin: 6px auto;
               page-break-inside: avoid;
               width: 100%;
             }
