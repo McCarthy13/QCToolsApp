@@ -55,6 +55,12 @@ interface PDFGenerationParams {
   topPatternComparison?: StrandPatternComparison | null;
   castStrandCoordinates?: { x: number; y: number }[];
   castTopStrandCoordinates?: { x: number; y: number }[];
+  designStrandCoordinates?: { x: number; y: number }[];
+  designTopStrandCoordinates?: { x: number; y: number }[];
+  designStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  designTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  castStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  castTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -74,6 +80,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     topPatternComparison,
     castStrandCoordinates,
     castTopStrandCoordinates,
+    designStrandCoordinates,
+    designTopStrandCoordinates,
+    designStrandSizes,
+    designTopStrandSizes,
+    castStrandSizes,
+    castTopStrandSizes,
   } = params;
 
   try {
@@ -220,6 +232,132 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     } else {
       console.log('[PDF Generator] No cross-section image provided');
     }
+
+    // Helper function to build two-column strand comparison table
+    const buildStrandComparisonTable = (
+      position: 'Bottom' | 'Top',
+      designCoords?: { x: number; y: number }[],
+      castCoords?: { x: number; y: number }[],
+      designSizes?: ('3/8' | '1/2' | '0.6')[],
+      castSizes?: ('3/8' | '1/2' | '0.6')[],
+      strandSlippages?: SlippageData[]
+    ): string => {
+      if (!designCoords && !castCoords) return '';
+
+      // Combine all unique coordinates from both patterns
+      const allCoords: Array<{
+        x: number;
+        y: number;
+        designIndex?: number;
+        castIndex?: number;
+        designSize?: '3/8' | '1/2' | '0.6';
+        castSize?: '3/8' | '1/2' | '0.6';
+      }> = [];
+
+      // Add design strands
+      designCoords?.forEach((coord, index) => {
+        allCoords.push({
+          x: coord.x,
+          y: coord.y,
+          designIndex: index,
+          designSize: designSizes?.[index],
+        });
+      });
+
+      // Add or match cast strands
+      castCoords?.forEach((coord, index) => {
+        const existing = allCoords.find(c => c.x === coord.x && c.y === coord.y);
+        if (existing) {
+          existing.castIndex = index;
+          existing.castSize = castSizes?.[index];
+        } else {
+          allCoords.push({
+            x: coord.x,
+            y: coord.y,
+            castIndex: index,
+            castSize: castSizes?.[index],
+          });
+        }
+      });
+
+      // Sort: left to right (x ascending), then bottom to top (y ascending)
+      allCoords.sort((a, b) => {
+        if (a.x !== b.x) return a.x - b.x;
+        return a.y - b.y;
+      });
+
+      // Build table rows
+      const rows = allCoords.map((coord, rowIndex) => {
+        const designStrandNum = coord.designIndex !== undefined ? coord.designIndex + 1 : null;
+        const castStrandNum = coord.castIndex !== undefined ? coord.castIndex + 1 : null;
+
+        // Get slippage values for cast strand
+        let e1Value = '-';
+        let e2Value = '-';
+        if (castStrandNum !== null && strandSlippages) {
+          const prefix = position === 'Bottom' ? 'B' : 'T';
+          const slippage = strandSlippages.find(s => s.strandId === `${prefix}${castStrandNum}`);
+          if (slippage) {
+            e1Value = slippage.leftExceedsOne ? '>1.0"' : slippage.leftSlippage;
+            e2Value = slippage.rightExceedsOne ? '>1.0"' : slippage.rightSlippage;
+          }
+        }
+
+        return `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #eff6ff; border-right: 2px solid #2563eb;">
+              ${coord.designIndex !== undefined ? `${coord.designSize}"` : '-'}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #eff6ff; border-right: 2px solid #2563eb;">
+              ${coord.designIndex !== undefined ? `(${coord.x}", ${coord.y}")` : '-'}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+              ${coord.castIndex !== undefined ? `${coord.castSize}"` : '-'}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+              ${coord.castIndex !== undefined ? `(${coord.x}", ${coord.y}")` : '-'}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+              ${e1Value}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; background: #f0fdf4;">
+              ${e2Value}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <div style="margin-bottom: 12px;">
+          <h3 style="font-size: 10px; font-weight: 700; margin-bottom: 6px; color: #374151;">
+            ${position} Strands
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
+            <thead>
+              <tr style="background: #f9fafb;">
+                <th colspan="2" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; border-right: 2px solid #2563eb; background: #dbeafe;">
+                  DESIGN PATTERN
+                </th>
+                <th colspan="4" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #2563eb; background: #dcfce7;">
+                  CAST PATTERN
+                </th>
+              </tr>
+              <tr style="background: #f9fafb;">
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 2px solid #2563eb;">Size</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 2px solid #2563eb;">Location</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">Size</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">Location</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">E1</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">E2</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    };
 
     // Build HTML content for the PDF
     const htmlContent = `
@@ -616,49 +754,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           ` : ''}
 
           <!-- Design vs Cast Pattern Comparison -->
-          ${(bottomPatternComparison || topPatternComparison) ? `
+          ${(designStrandCoordinates || castStrandCoordinates || designTopStrandCoordinates || castTopStrandCoordinates) ? `
           <div class="section">
             <h2>Design vs Cast Pattern Analysis</h2>
-
-            ${bottomPatternComparison ? `
-              <div style="margin-bottom: 6px;">
-                <div style="padding: 5px 6px; border-radius: 4px; background: ${bottomPatternComparison.hasDifferences ? '#FEE2E2' : '#D1FAE5'}; border: 1px solid ${bottomPatternComparison.hasDifferences ? '#FCA5A5' : '#6EE7B7'};">
-                  <div style="font-size: 8px; font-weight: 700; color: ${bottomPatternComparison.hasDifferences ? '#991B1B' : '#047857'}; margin-bottom: 3px;">
-                    Bottom Strands: ${bottomPatternComparison.hasDifferences ? '⚠ DIFFERENCES FOUND' : '✓ PATTERNS MATCH'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 2px;">
-                    <strong>Design:</strong> ${bottomPatternComparison.designPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 3px;">
-                    <strong>Cast:</strong> ${bottomPatternComparison.castPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7.5px; color: ${bottomPatternComparison.hasDifferences ? '#7F1D1D' : '#065F46'}; font-weight: ${bottomPatternComparison.hasDifferences ? '600' : 'normal'};">
-                    ${bottomPatternComparison.summary}
-                  </div>
-                  ${bottomPatternComparison.hasDifferences && bottomPatternComparison.differences.length > 0 ? formatComparisonForPDF(bottomPatternComparison) : ''}
-                </div>
-              </div>
-            ` : ''}
-
-            ${topPatternComparison ? `
-              <div style="margin-bottom: 6px;">
-                <div style="padding: 5px 6px; border-radius: 4px; background: ${topPatternComparison.hasDifferences ? '#FEE2E2' : '#D1FAE5'}; border: 1px solid ${topPatternComparison.hasDifferences ? '#FCA5A5' : '#6EE7B7'};">
-                  <div style="font-size: 8px; font-weight: 700; color: ${topPatternComparison.hasDifferences ? '#991B1B' : '#047857'}; margin-bottom: 3px;">
-                    Top Strands: ${topPatternComparison.hasDifferences ? '⚠ DIFFERENCES FOUND' : '✓ PATTERNS MATCH'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 2px;">
-                    <strong>Design:</strong> ${topPatternComparison.designPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 3px;">
-                    <strong>Cast:</strong> ${topPatternComparison.castPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7.5px; color: ${topPatternComparison.hasDifferences ? '#7F1D1D' : '#065F46'}; font-weight: ${topPatternComparison.hasDifferences ? '600' : 'normal'};">
-                    ${topPatternComparison.summary}
-                  </div>
-                  ${topPatternComparison.hasDifferences && topPatternComparison.differences.length > 0 ? formatComparisonForPDF(topPatternComparison) : ''}
-                </div>
-              </div>
-            ` : ''}
+            ${buildStrandComparisonTable('Bottom', designStrandCoordinates, castStrandCoordinates, designStrandSizes, castStrandSizes, bottomStrands)}
+            ${buildStrandComparisonTable('Top', designTopStrandCoordinates, castTopStrandCoordinates, designTopStrandSizes, castTopStrandSizes, topStrands)}
           </div>
           ` : ''}
 

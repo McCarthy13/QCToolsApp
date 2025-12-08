@@ -301,6 +301,12 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         topPatternComparison,
         castStrandCoordinates: selectedPattern?.strandCoordinates,
         castTopStrandCoordinates: selectedTopPattern?.strandCoordinates,
+        designStrandCoordinates: designPattern?.strandCoordinates,
+        designTopStrandCoordinates: designTopPattern?.strandCoordinates,
+        designStrandSizes: designPattern?.strandSizes,
+        designTopStrandSizes: designTopPattern?.strandSizes,
+        castStrandSizes: selectedPattern?.strandSizes,
+        castTopStrandSizes: selectedTopPattern?.strandSizes,
       });
 
       if (filePath) {
