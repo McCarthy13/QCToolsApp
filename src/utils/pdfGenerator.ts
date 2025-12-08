@@ -405,6 +405,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               box-sizing: border-box;
             }
 
+            /* Force page breaks */
+            @media print {
+              .page-break-before {
+                page-break-before: always;
+                break-before: always;
+              }
+            }
+
             body, .pdf-container {
               font-family: 'Helvetica Neue', Arial, sans-serif;
               padding: 12px 18px;
