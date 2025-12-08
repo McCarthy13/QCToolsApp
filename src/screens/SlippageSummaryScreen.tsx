@@ -490,7 +490,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               <View className="flex-row gap-2">
                 {/* Design Pattern */}
                 <View className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-200">
-                  <Text className="text-blue-900 text-xs font-bold mb-1 text-center">
+                  <Text className="text-blue-900 text-lg font-bold mb-1 text-center">
                     DESIGN PATTERN
                   </Text>
                   <Text className="text-blue-700 text-[10px] mb-2 text-center">
@@ -549,7 +549,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
                 {/* Cast Pattern */}
                 <View className="flex-1 bg-green-50 rounded-lg p-2 border border-green-200">
-                  <Text className="text-green-900 text-xs font-bold mb-1 text-center">
+                  <Text className="text-green-900 text-lg font-bold mb-1 text-center">
                     CAST PATTERN
                   </Text>
                   <Text className="text-green-700 text-[10px] mb-2 text-center">
