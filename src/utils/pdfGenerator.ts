@@ -336,6 +336,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               margin-bottom: 4px;
             }
 
+            .section-large {
+              margin: 12px 0;
+              padding: 12px 0;
+            }
+
             h2 {
               font-size: 9px;
               color: #374151;
@@ -345,6 +350,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               line-height: 1.3;
               letter-spacing: 0.05em;
               word-spacing: 0.2em;
+            }
+
+            h2.large-heading {
+              font-size: 14px;
+              margin-bottom: 8px;
+              padding-bottom: 4px;
+              border-bottom: 2px solid #2563eb;
+              font-weight: 700;
             }
 
             .info-grid {
@@ -392,11 +405,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 8px auto;
-              padding: 8px;
+              margin: 15px auto;
+              padding: 15px;
               background: #ffffff;
-              border-radius: 3px;
-              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              border: 2px solid #2563eb;
               display: flex;
               justify-content: center;
               align-items: center;
@@ -405,7 +418,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .cross-section img {
               max-width: 100%;
-              max-height: 900px;
+              max-height: 1400px;
               height: auto;
               width: auto;
               border-radius: 2px;
@@ -416,11 +429,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             /* Print-specific styling for PDFs */
             @media print {
               .cross-section {
-                margin: 10px auto;
-                padding: 10px;
+                margin: 20px auto;
+                padding: 20px;
               }
               .cross-section img {
-                max-height: 1000px;
+                max-height: 1600px;
                 max-width: 100%;
               }
             }
@@ -429,7 +442,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             @media screen and (min-width: 768px) {
               /* Tablets and larger - increase cross-section size */
               .cross-section img {
-                max-height: 900px;
+                max-height: 1400px;
                 max-width: 100%;
               }
             }
@@ -437,10 +450,10 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             @media screen and (min-width: 1024px) {
               /* Desktop - significantly larger cross-section */
               .cross-section {
-                padding: 10px;
+                padding: 20px;
               }
               .cross-section img {
-                max-height: 1000px;
+                max-height: 1600px;
                 max-width: 100%;
               }
             }
@@ -448,11 +461,11 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             @media screen and (max-width: 767px) {
               /* Mobile devices - ensure cross-section fits with legend */
               .cross-section {
-                padding: 4px;
-                margin: 4px auto;
+                padding: 10px;
+                margin: 10px auto;
               }
               .cross-section img {
-                max-height: 600px;
+                max-height: 900px;
                 max-width: 100%;
               }
             }
@@ -644,8 +657,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
           ${base64Image ? `
           <!-- Cross Section -->
-          <div class="section">
-            <h2>Cross Section with Strand Pattern</h2>
+          <div class="section-large">
+            <h2 class="large-heading">Cross Section with Strand Pattern</h2>
             <div class="cross-section">
               <img src="${base64Image}" alt="Cross Section Diagram" />
             </div>
