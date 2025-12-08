@@ -405,6 +405,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               box-sizing: border-box;
             }
 
+            /* Force page breaks */
+            @media print {
+              .page-break-before {
+                page-break-before: always;
+                break-before: always;
+              }
+            }
+
             body, .pdf-container {
               font-family: 'Helvetica Neue', Arial, sans-serif;
               padding: 12px 18px;
@@ -833,7 +841,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <div class="page-2-content">
           <!-- Bottom Strand Statistics -->
           ${bottomStrands.length > 0 ? `
-          <div class="section">
+          <div class="section" style="page-break-before: always;">
             <h2 style="color: #059669;">Bottom Strand Statistics</h2>
             <div class="stats-grid">
               <div class="stat-card">
