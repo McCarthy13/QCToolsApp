@@ -82,11 +82,25 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     if (!config.topStrandPattern && !config.topCastStrandPattern) {
       return null;
     }
-    // If no cast top pattern specified but there's a design top pattern, patterns match
+
+    // If both design and cast are specified, and cast differs from design, compare them
+    if (config.topStrandPattern && config.topCastStrandPattern &&
+        config.topStrandPattern !== config.topCastStrandPattern) {
+      return compareStrandPatterns(designTopPattern, selectedTopCastPattern, 'Top');
+    }
+
+    // If only design pattern (no cast specified), patterns match (cast defaults to design)
     if (config.topStrandPattern && !config.topCastStrandPattern) {
       return null;
     }
-    return compareStrandPatterns(designTopPattern, selectedTopCastPattern, 'Top');
+
+    // If only cast pattern (no design specified), there's a difference
+    // Design = "None", Cast = specified pattern
+    if (!config.topStrandPattern && config.topCastStrandPattern) {
+      return compareStrandPatterns(undefined, selectedTopCastPattern, 'Top');
+    }
+
+    return null;
   }, [designTopPattern, selectedTopCastPattern, config.topStrandPattern, config.topCastStrandPattern]);
 
   // Helper to get strand size by position
