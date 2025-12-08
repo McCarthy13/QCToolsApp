@@ -65,6 +65,14 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     return baseScale * (BASE_HEIGHT / currentHeight);
   };
 
+  // Helper function to format pattern display name with top pattern if present
+  const formatPatternName = (bottomPattern?: { name?: string }, topPattern?: { name?: string }) => {
+    if (!bottomPattern?.name && !topPattern?.name) return undefined;
+    if (!topPattern?.name) return bottomPattern?.name;
+    if (!bottomPattern?.name) return topPattern?.name;
+    return `${bottomPattern.name} + ${topPattern.name}`;
+  };
+
   // Get the selected strand patterns (bottom and optionally top)
   // Use CAST patterns if available, otherwise fall back to DESIGN patterns
   const designPattern = customPatterns.find(p => p.id === config.strandPattern);
@@ -293,8 +301,8 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         userName,
         crossSectionImageUri,
         getStrandSize,
-        strandPatternName: selectedPattern?.name,
-        castStrandPatternName: selectedCastPattern?.name,
+        strandPatternName: formatPatternName(selectedPattern, selectedTopPattern),
+        castStrandPatternName: formatPatternName(selectedCastPattern, selectedTopCastPattern),
         topStrandPatternName: selectedTopPattern?.name,
         topCastStrandPatternName: selectedTopCastPattern?.name,
         bottomPatternComparison,
@@ -532,7 +540,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     DESIGN PATTERN
                   </Text>
                   <Text className="text-gray-700 text-3xl mb-2 text-center">
-                    {designPattern?.name}
+                    {formatPatternName(designPattern, designTopPattern)}
                   </Text>
                   {config.productType === '1047' ? (
                     <CrossSection1047
@@ -591,7 +599,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     CAST PATTERN
                   </Text>
                   <Text className="text-gray-700 text-3xl mb-2 text-center">
-                    {selectedCastPattern?.name || selectedPattern?.name}
+                    {formatPatternName(selectedCastPattern || selectedPattern, selectedTopCastPattern || selectedTopPattern)}
                   </Text>
                   {config.productType === '1047' ? (
                     <CrossSection1047
