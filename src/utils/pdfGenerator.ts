@@ -528,7 +528,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               page-break-before: always !important;
               display: block;
               margin-top: 0;
-              padding-top: 20px;
+              padding: 12px 0;
             }
 
             h2 {
