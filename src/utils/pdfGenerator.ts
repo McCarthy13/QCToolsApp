@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
 import { StrandPatternComparison, formatComparisonForPDF } from './strandPatternComparison';
+import { uploadPDFToSharePoint, generateFolderName, isSignedInToMicrosoft } from '../services/sharepoint';
 
 // Web-only PDF generation using jsPDF
 let jsPDF: any = null;
@@ -63,6 +64,15 @@ interface PDFGenerationParams {
   castTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
   activeStrandIndices?: number[] | null;
   activeTopStrandIndices?: number[] | null;
+  uploadToSharePoint?: boolean; // New parameter for SharePoint upload
+}
+
+export interface PDFGenerationResult {
+  success: boolean;
+  localUri?: string;
+  sharePointUrl?: string;
+  error?: string;
+  message?: string;
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -1141,12 +1151,54 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           filename = `${filename}-${Date.now()}`;
         }
 
+        // Check if we should upload to SharePoint
+        const shouldUploadToSharePoint = params.uploadToSharePoint &&
+          config.projectNumber &&
+          config.markNumber &&
+          config.idNumber;
+
+        let sharePointUrl: string | undefined;
+
+        if (shouldUploadToSharePoint) {
+          try {
+            console.log('[PDF Generator] Uploading to SharePoint...');
+
+            // Generate folder name: last 4 digits - mark - id
+            const folderName = generateFolderName(
+              config.projectNumber || '',
+              config.markNumber || '',
+              config.idNumber || ''
+            );
+
+            // Convert PDF to Blob
+            const pdfBlob = pdf.output('blob');
+
+            // Upload to SharePoint
+            sharePointUrl = await uploadPDFToSharePoint(
+              pdfBlob,
+              `${filename}.pdf`,
+              folderName
+            );
+
+            console.log('[PDF Generator] Uploaded to SharePoint:', sharePointUrl);
+          } catch (uploadError) {
+            console.error('[PDF Generator] SharePoint upload failed:', uploadError);
+            // Continue with local download even if upload fails
+          }
+        }
+
+        // Always download locally as well
         pdf.save(`${filename}.pdf`);
 
         // Cleanup
         document.body.removeChild(tempDiv);
 
         console.log('[PDF Generator] PDF downloaded successfully');
+
+        // Return special string with SharePoint URL if uploaded
+        if (sharePointUrl) {
+          return `web-pdf-downloaded-sharepoint:${sharePointUrl}`;
+        }
         return 'web-pdf-downloaded';
       } catch (error: any) {
         console.error('[PDF Generator] PDF generation failed:', error);
