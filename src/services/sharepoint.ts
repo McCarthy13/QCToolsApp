@@ -196,11 +196,31 @@ async function getDriveId(siteId: string): Promise<string> {
       .api(`/sites/${siteId}/drives`)
       .get();
 
-    // Find the drive by name
-    const drive = drives.value.find((d: any) => d.name === libraryName);
+    // Log all available drives for debugging
+    console.log('[SharePoint] Available drives:', drives.value.map((d: any) => ({ name: d.name, id: d.id })));
+
+    // Try multiple name variations
+    const possibleNames = [
+      libraryName,
+      'Documents',
+      'Shared Documents',
+      'Documentos compartidos', // Spanish
+      'Documents partagés', // French
+    ];
+
+    // Find the drive by trying different name variations
+    let drive = null;
+    for (const name of possibleNames) {
+      drive = drives.value.find((d: any) => d.name === name);
+      if (drive) {
+        console.log('[SharePoint] Found drive with name:', name);
+        break;
+      }
+    }
 
     if (!drive) {
-      throw new Error(`Document library "${libraryName}" not found`);
+      const availableNames = drives.value.map((d: any) => d.name).join(', ');
+      throw new Error(`Document library "${libraryName}" not found. Available libraries: ${availableNames}`);
     }
 
     return drive.id;
