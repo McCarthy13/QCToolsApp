@@ -111,8 +111,11 @@ export default function LoginScreen({
             <Pressable
               onPress={handleMicrosoftLogin}
               disabled={loading}
-              className="bg-[#2F2F2F] rounded-xl py-4 flex-row items-center justify-center mb-4 active:bg-[#1F1F1F]"
-              style={{ opacity: loading ? 0.6 : 1 }}
+              className="rounded-xl py-4 flex-row items-center justify-center mb-4"
+              style={{
+                backgroundColor: loading ? '#3F3F3F' : '#2F2F2F',
+                opacity: loading ? 0.6 : 1
+              }}
             >
               <Ionicons name="logo-microsoft" size={24} color="#FFFFFF" />
               <Text className="text-white text-base font-semibold ml-3">
