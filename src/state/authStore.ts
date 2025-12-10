@@ -179,10 +179,12 @@ export const useAuthStore = create<AuthState>()(
           // Use sanitized email as the user ID (must match how users are created in AdminApprovalScreen)
           const userId = msAccount.username.toLowerCase().replace(/[^a-z0-9]/g, '_');
           console.log('[AuthStore] loginWithMicrosoft - Generated userId:', userId);
+          alert(`DEBUG: Generated userId: ${userId}`);
 
           // Check if user profile exists in Firestore
           const { user: profile, error: profileError } = await getUserProfile(userId);
           console.log('[AuthStore] loginWithMicrosoft - getUserProfile result:', { profile, profileError });
+          alert(`DEBUG: Profile lookup - found: ${!!profile}, error: ${profileError || 'none'}`);
 
           if (profileError || !profile) {
             // User doesn't exist in our system yet - they need to request access
