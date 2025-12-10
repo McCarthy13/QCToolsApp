@@ -29,7 +29,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'supervisor' | 'user';
   status: 'pending' | 'approved' | 'rejected';
   isTemporaryPassword: boolean;
   createdAt: number;

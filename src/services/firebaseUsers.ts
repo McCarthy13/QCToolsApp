@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'admin' | 'supervisor' | 'user';
 export type UserStatus = 'pending' | 'approved' | 'rejected';
 
 export interface FirebaseUserProfile {

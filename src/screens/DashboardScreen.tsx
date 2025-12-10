@@ -160,6 +160,7 @@ export default function DashboardScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const isAdmin = currentUser?.role === 'admin';
+  const isSupervisorOrAbove = currentUser?.role === 'supervisor' || currentUser?.role === 'admin';
 
   const handleLogout = async () => {
     await logout();

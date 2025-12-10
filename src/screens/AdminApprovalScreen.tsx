@@ -34,7 +34,7 @@ export default function AdminApprovalScreen() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserName, setNewUserName] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"user" | "admin">("user");
+  const [newUserRole, setNewUserRole] = useState<"user" | "supervisor" | "admin">("user");
 
   const getPendingRequests = useAuthStore((state) => state.getPendingRequests);
   const approveRequest = useAuthStore((state) => state.approveRequest);
@@ -368,9 +368,9 @@ export default function AdminApprovalScreen() {
                   {/* Role Selection */}
                   <View className="mb-4">
                     <Text className="text-sm font-semibold text-gray-700 mb-2">
-                      Role
+                      Clearance Level
                     </Text>
-                    <View className="flex-row gap-3">
+                    <View className="flex-row gap-2 mb-3">
                       <Pressable
                         onPress={() => setNewUserRole("user")}
                         className={`flex-1 rounded-xl py-3 border-2 ${
@@ -380,11 +380,27 @@ export default function AdminApprovalScreen() {
                         }`}
                       >
                         <Text
-                          className={`text-center font-semibold ${
+                          className={`text-center font-semibold text-xs ${
                             newUserRole === "user" ? "text-blue-600" : "text-gray-600"
                           }`}
                         >
                           User
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setNewUserRole("supervisor")}
+                        className={`flex-1 rounded-xl py-3 border-2 ${
+                          newUserRole === "supervisor"
+                            ? "bg-blue-50 border-blue-500"
+                            : "bg-gray-50 border-gray-300"
+                        }`}
+                      >
+                        <Text
+                          className={`text-center font-semibold text-xs ${
+                            newUserRole === "supervisor" ? "text-blue-600" : "text-gray-600"
+                          }`}
+                        >
+                          Supervisor
                         </Text>
                       </Pressable>
                       <Pressable
@@ -396,13 +412,20 @@ export default function AdminApprovalScreen() {
                         }`}
                       >
                         <Text
-                          className={`text-center font-semibold ${
+                          className={`text-center font-semibold text-xs ${
                             newUserRole === "admin" ? "text-blue-600" : "text-gray-600"
                           }`}
                         >
                           Admin
                         </Text>
                       </Pressable>
+                    </View>
+                    <View className="bg-gray-50 rounded-lg p-3">
+                      <Text className="text-xs text-gray-600">
+                        {newUserRole === "user" && "• Can use all tools without changing settings"}
+                        {newUserRole === "supervisor" && "• Enhanced permissions (TBD)"}
+                        {newUserRole === "admin" && "• Full access to all features and settings"}
+                      </Text>
                     </View>
                   </View>
 
