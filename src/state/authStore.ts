@@ -176,8 +176,8 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: 'Failed to get email from Microsoft account' };
           }
 
-          // Use Microsoft account ID as the user ID
-          const userId = msAccount.homeAccountId;
+          // Use sanitized email as the user ID (must match how users are created in AdminApprovalScreen)
+          const userId = msAccount.username.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
           // Check if user profile exists in Firestore
           const { user: profile, error: profileError } = await getUserProfile(userId);
