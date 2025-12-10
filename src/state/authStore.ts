@@ -191,11 +191,25 @@ export const useAuthStore = create<AuthState>()(
           console.log('[AuthStore] loginWithMicrosoft - getUserProfile result:', { profile, profileError });
 
           if (profileError || !profile) {
-            // User doesn't exist in our system yet - they need to request access
+            // User doesn't exist - create a pending access request
+            console.log('[AuthStore] loginWithMicrosoft - Creating pending access request for:', msAccount.username);
+
+            const { error: createError } = await createUserProfile(userId, {
+              email: msAccount.username,
+              name: msAccount.name || msAccount.username.split('@')[0],
+              role: 'user',
+              status: 'pending',
+              needsPasswordChange: false,
+            });
+
+            if (createError) {
+              console.error('[AuthStore] loginWithMicrosoft - Failed to create pending request:', createError);
+            }
+
             await signOutFromMicrosoft();
             return {
               success: false,
-              error: 'Your Microsoft account is not registered. Please contact an administrator to request access.'
+              error: 'Access request submitted! An administrator will review your request and notify you once approved.'
             };
           }
 

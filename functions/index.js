@@ -21,8 +21,10 @@ if (fs.existsSync(envPath)) {
 }
 
 const {onRequest} = require("firebase-functions/v2/https");
+const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
+const nodemailer = require("nodemailer");
 
 const app = initializeApp();
 const db = getFirestore(app);
@@ -164,5 +166,77 @@ exports.bootstrapAdminUser = onRequest({
       error: "Internal server error",
       message: error.message,
     });
+  }
+});
+
+/**
+ * Send Access Request Notification
+ * Firestore trigger that sends email to admins when new access requests are created
+ */
+exports.notifyAdminsOfAccessRequest = onDocumentCreated("users/{userId}", async (event) => {
+  try {
+    const userData = event.data.data();
+
+    // Only send notification for pending status
+    if (userData.status !== 'pending') {
+      console.log('[Access Request] Skipping notification - status is not pending');
+      return;
+    }
+
+    console.log('[Access Request] New pending request from:', userData.email);
+
+    // Get all admin users
+    const adminsSnapshot = await db.collection('users')
+      .where('role', '==', 'admin')
+      .where('status', '==', 'approved')
+      .get();
+
+    if (adminsSnapshot.empty) {
+      console.log('[Access Request] No admins found to notify');
+      return;
+    }
+
+    const adminEmails = adminsSnapshot.docs.map(doc => doc.data().email);
+    console.log('[Access Request] Notifying admins:', adminEmails);
+
+    // Configure email transporter (using Gmail as an example)
+    // In production, you should use SendGrid, AWS SES, or similar service
+    const transporter = nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    // Send email to each admin
+    const emailPromises = adminEmails.map(adminEmail => {
+      const mailOptions = {
+        from: process.env.EMAIL_USER || 'noreply@precast-qc-tools.com',
+        to: adminEmail,
+        subject: 'New Access Request - Precast QC Tools',
+        html: `
+          <h2>New Access Request</h2>
+          <p>A new user has requested access to Precast QC Tools:</p>
+          <ul>
+            <li><strong>Name:</strong> ${userData.name}</li>
+            <li><strong>Email:</strong> ${userData.email}</li>
+            <li><strong>Requested:</strong> ${new Date().toLocaleString()}</li>
+          </ul>
+          <p>Please log in to the Admin panel to approve or deny this request:</p>
+          <p><a href="https://precast-qc-tools-web-app.web.app">https://precast-qc-tools-web-app.web.app</a></p>
+          <p>Go to Admin → User Management → Pending Requests</p>
+        `,
+      };
+
+      return transporter.sendMail(mailOptions);
+    });
+
+    await Promise.all(emailPromises);
+    console.log('[Access Request] Email notifications sent successfully');
+
+  } catch (error) {
+    console.error('[Access Request] Error sending notifications:', error);
+    // Don't throw - we don't want to fail the user creation if email fails
   }
 });
