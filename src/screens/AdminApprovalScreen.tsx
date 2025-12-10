@@ -37,7 +37,9 @@ export default function AdminApprovalScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<FirebaseUserProfile | null>(null);
+  const [deletingUser, setDeletingUser] = useState<FirebaseUserProfile | null>(null);
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState<"user" | "supervisor" | "admin">("user");
@@ -133,6 +135,29 @@ export default function AdminApprovalScreen() {
       loadRequests();
     } catch (err) {
       console.error("Error updating user:", err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = (user: FirebaseUserProfile) => {
+    setDeletingUser(user);
+    setShowDeleteUserModal(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return;
+
+    setActionLoading(true);
+    try {
+      const { deleteUserProfile } = await import("../services/firebaseUsers");
+      await deleteUserProfile(deletingUser.uid);
+      setShowDeleteUserModal(false);
+      setDeletingUser(null);
+      loadRequests();
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      setError("Failed to delete user. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -288,12 +313,20 @@ export default function AdminApprovalScreen() {
                     </Text>
                     <Text className="text-gray-600 text-sm">{user.email}</Text>
                   </View>
-                  <Pressable
-                    onPress={() => handleEditUser(user)}
-                    className="bg-blue-50 rounded-full p-2 active:bg-blue-100"
-                  >
-                    <Ionicons name="create-outline" size={20} color="#3B82F6" />
-                  </Pressable>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      onPress={() => handleEditUser(user)}
+                      className="bg-blue-50 rounded-full p-2 active:bg-blue-100"
+                    >
+                      <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDeleteUser(user)}
+                      className="bg-red-50 rounded-full p-2 active:bg-red-100"
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                    </Pressable>
+                  </View>
                 </View>
 
                 {/* Role Badge */}
@@ -818,6 +851,20 @@ export default function AdminApprovalScreen() {
           </Pressable>
         </KeyboardAvoidingView>
       )}
+
+      {/* Delete User Confirmation Modal */}
+      <ConfirmModal
+        visible={showDeleteUserModal}
+        title="Delete User"
+        message={`Are you sure you want to delete ${deletingUser?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmStyle="destructive"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => {
+          setShowDeleteUserModal(false);
+          setDeletingUser(null);
+        }}
+      />
     </View>
   );
 }
