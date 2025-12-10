@@ -156,7 +156,7 @@ async function getGraphClient(): Promise<Client> {
   const accessToken = await getAccessToken();
 
   return Client.init({
-    authProvider: (done) => {
+    authProvider: (done: (error: any, token: string | null) => void) => {
       done(null, accessToken);
     },
   });

@@ -8,20 +8,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore, PendingRequest } from "../state/authStore";
 import { generateTemporaryPassword } from "../utils/passwordValidation";
 import ConfirmModal from "../components/ConfirmModal";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/types";
 
-interface AdminApprovalScreenProps {
-  onBack: () => void;
-}
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AdminApproval'>;
 
-export default function AdminApprovalScreen({
-  onBack,
-}: AdminApprovalScreenProps) {
+export default function AdminApprovalScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,10 @@ export default function AdminApprovalScreen({
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDenyModal, setShowDenyModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"user" | "admin">("user");
 
   const getPendingRequests = useAuthStore((state) => state.getPendingRequests);
   const approveRequest = useAuthStore((state) => state.approveRequest);
@@ -103,24 +108,25 @@ export default function AdminApprovalScreen({
   };
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="px-6 py-4 border-b border-gray-200">
-        <Pressable
-          onPress={onBack}
-          className="flex-row items-center mb-3 active:opacity-70"
-        >
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-          <Text className="text-gray-900 text-base font-medium ml-2">
-            Back
-          </Text>
-        </Pressable>
-        <Text className="text-gray-900 text-2xl font-bold">
-          Access Requests
-        </Text>
-        <Text className="text-gray-600 text-sm mt-1">
-          Review and approve pending access requests
-        </Text>
+      <View className="px-6 py-4 border-b border-gray-200" style={{ paddingTop: insets.top }}>
+        <View className="flex-row items-center justify-between mb-2">
+          <View className="flex-1">
+            <Text className="text-gray-900 text-2xl font-bold">
+              User Management
+            </Text>
+            <Text className="text-gray-600 text-sm mt-1">
+              Add Microsoft 365 users and manage access
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => setShowAddUserModal(true)}
+            className="bg-blue-500 rounded-full p-3 active:bg-blue-600"
+          >
+            <Ionicons name="person-add" size={24} color="white" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Content */}
@@ -292,6 +298,157 @@ export default function AdminApprovalScreen({
         onCancel={() => setShowDenyModal(false)}
         confirmStyle="destructive"
       />
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+        >
+          <Pressable
+            onPress={() => {
+              if (!actionLoading) {
+                Keyboard.dismiss();
+                setShowAddUserModal(false);
+                setNewUserEmail("");
+                setNewUserName("");
+                setNewUserRole("user");
+              }
+            }}
+            className="flex-1"
+          >
+            <View className="flex-1 justify-center px-6">
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <View className="bg-white rounded-2xl p-6 shadow-2xl">
+                  <Text className="text-gray-900 text-xl font-bold mb-4">
+                    Add Microsoft 365 User
+                  </Text>
+
+                  <Text className="text-gray-600 text-sm mb-4">
+                    Add a user by their Microsoft 365 email address. They will be able to sign in immediately using their Microsoft account.
+                  </Text>
+
+                  {/* Name Input */}
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-gray-700 mb-2">
+                      Full Name
+                    </Text>
+                    <TextInput
+                      className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                      placeholder="John Doe"
+                      placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
+                      value={newUserName}
+                      onChangeText={setNewUserName}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                    />
+                  </View>
+
+                  {/* Email Input */}
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-gray-700 mb-2">
+                      Microsoft 365 Email
+                    </Text>
+                    <TextInput
+                      className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-3.5 text-base text-gray-900"
+                      placeholder="user@company.com"
+                      placeholderTextColor="#9CA3AF"
+                      cursorColor="#000000"
+                      value={newUserEmail}
+                      onChangeText={setNewUserEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                    />
+                  </View>
+
+                  {/* Role Selection */}
+                  <View className="mb-4">
+                    <Text className="text-sm font-semibold text-gray-700 mb-2">
+                      Role
+                    </Text>
+                    <View className="flex-row gap-3">
+                      <Pressable
+                        onPress={() => setNewUserRole("user")}
+                        className={`flex-1 rounded-xl py-3 border-2 ${
+                          newUserRole === "user"
+                            ? "bg-blue-50 border-blue-500"
+                            : "bg-gray-50 border-gray-300"
+                        }`}
+                      >
+                        <Text
+                          className={`text-center font-semibold ${
+                            newUserRole === "user" ? "text-blue-600" : "text-gray-600"
+                          }`}
+                        >
+                          User
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setNewUserRole("admin")}
+                        className={`flex-1 rounded-xl py-3 border-2 ${
+                          newUserRole === "admin"
+                            ? "bg-blue-50 border-blue-500"
+                            : "bg-gray-50 border-gray-300"
+                        }`}
+                      >
+                        <Text
+                          className={`text-center font-semibold ${
+                            newUserRole === "admin" ? "text-blue-600" : "text-gray-600"
+                          }`}
+                        >
+                          Admin
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  {/* Buttons */}
+                  <View className="flex-row gap-3">
+                    <Pressable
+                      onPress={() => {
+                        if (!actionLoading) {
+                          setShowAddUserModal(false);
+                          setNewUserEmail("");
+                          setNewUserName("");
+                          setNewUserRole("user");
+                        }
+                      }}
+                      disabled={actionLoading}
+                      className="flex-1 bg-gray-200 rounded-xl py-3 items-center active:bg-gray-300"
+                      style={{ opacity: actionLoading ? 0.5 : 1 }}
+                    >
+                      <Text className="text-gray-900 text-base font-semibold">
+                        Cancel
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        // TODO: Implement add user functionality
+                        console.log("Add user:", newUserEmail, newUserName, newUserRole);
+                        setShowAddUserModal(false);
+                        setNewUserEmail("");
+                        setNewUserName("");
+                        setNewUserRole("user");
+                      }}
+                      disabled={actionLoading || !newUserEmail.trim() || !newUserName.trim()}
+                      className="flex-1 bg-blue-500 rounded-xl py-3 items-center active:bg-blue-600"
+                      style={{ opacity: (actionLoading || !newUserEmail.trim() || !newUserName.trim()) ? 0.5 : 1 }}
+                    >
+                      <Text className="text-white text-base font-semibold">
+                        Add User
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </Pressable>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }

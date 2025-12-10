@@ -17,6 +17,12 @@ import {
   rejectUserAccess,
   FirebaseUserProfile,
 } from '../services/firebaseUsers';
+import {
+  signInToMicrosoft,
+  signOutFromMicrosoft,
+  getCurrentMicrosoftAccount,
+  isSignedInToMicrosoft,
+} from '../services/sharepoint';
 
 export interface User {
   id: string;
@@ -48,6 +54,7 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; requiresPasswordChange?: boolean; error?: string }>;
+  loginWithMicrosoft: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   requestAccess: (data: Omit<PendingRequest, 'id' | 'requestedAt' | 'status'>) => Promise<{ success: boolean; requestId: string; error?: string }>;
   approveRequest: (requestId: string, temporaryPassword: string) => Promise<{ success: boolean; error?: string }>;
@@ -157,6 +164,66 @@ export const useAuthStore = create<AuthState>()(
         set({ currentUser: user });
       },
 
+      loginWithMicrosoft: async () => {
+        try {
+          console.log('[AuthStore] loginWithMicrosoft - Starting Microsoft 365 sign-in...');
+
+          // Sign in with Microsoft
+          const msAccount = await signInToMicrosoft();
+          console.log('[AuthStore] loginWithMicrosoft - Microsoft account:', msAccount.username);
+
+          if (!msAccount.username) {
+            return { success: false, error: 'Failed to get email from Microsoft account' };
+          }
+
+          // Use Microsoft account ID as the user ID
+          const userId = msAccount.homeAccountId;
+
+          // Check if user profile exists in Firestore
+          const { user: profile, error: profileError } = await getUserProfile(userId);
+
+          if (profileError || !profile) {
+            // User doesn't exist in our system yet - they need to request access
+            await signOutFromMicrosoft();
+            return {
+              success: false,
+              error: 'Your Microsoft account is not registered. Please contact an administrator to request access.'
+            };
+          }
+
+          // Check if user is approved
+          if (profile.status === 'pending') {
+            await signOutFromMicrosoft();
+            return {
+              success: false,
+              error: 'Your account is pending approval. Please wait for an administrator to approve your access.'
+            };
+          }
+
+          if (profile.status === 'rejected') {
+            await signOutFromMicrosoft();
+            return {
+              success: false,
+              error: 'Your access request was denied. Please contact an administrator.'
+            };
+          }
+
+          const appUser = firebaseUserToAppUser(profile);
+          console.log('[AuthStore] loginWithMicrosoft - Setting currentUser to:', JSON.stringify(appUser, null, 2));
+
+          set({
+            currentUser: appUser,
+            currentSession: userId,
+          });
+
+          console.log('[AuthStore] loginWithMicrosoft - Login successful');
+          return { success: true };
+        } catch (error: any) {
+          console.error('[AuthStore] loginWithMicrosoft - Error:', error);
+          return { success: false, error: error.message || 'Microsoft login failed' };
+        }
+      },
+
       login: async (email: string, password: string) => {
         try {
           const { user: firebaseUser, error } = await firebaseSignIn(email, password);
@@ -204,7 +271,14 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        await firebaseSignOut();
+        // Sign out from both Firebase and Microsoft
+        await Promise.all([
+          firebaseSignOut(),
+          signOutFromMicrosoft().catch(err => {
+            // Ignore errors if not signed in to Microsoft
+            console.log('[AuthStore] Not signed in to Microsoft, skipping sign out');
+          })
+        ]);
         set({
           currentUser: null,
           currentSession: null,
