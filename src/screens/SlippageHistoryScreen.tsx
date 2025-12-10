@@ -191,6 +191,20 @@ export default function SlippageHistoryScreen() {
               {currentRecords.map((record) => {
                 const { total, hasExceeds } = calculateTotalSlippage(record);
                 const pattern = customPatterns.find((p) => p.id === record.config.strandPattern);
+                const topPattern = record.config.topStrandPattern
+                  ? customPatterns.find((p) => p.id === record.config.topStrandPattern)
+                  : undefined;
+
+                // Format pattern name with top pattern if present (strip product type)
+                const stripProductType = (name?: string) => {
+                  if (!name) return undefined;
+                  return name.replace(/\s*\([^)]+\)\s*$/, '').trim();
+                };
+                const bottomName = stripProductType(pattern?.name);
+                const topName = stripProductType(topPattern?.name);
+                const patternName = bottomName && topName
+                  ? `${bottomName} + ${topName}`
+                  : bottomName || topName;
                 const isPublished = "publishedAt" in record;
 
                 return (
@@ -284,11 +298,11 @@ export default function SlippageHistoryScreen() {
                         )}
                       </View>
 
-                      {pattern && (
+                      {patternName && (
                         <View style={styles.recordDetailLeft}>
                           <Ionicons name="albums-outline" size={16} color="#6B7280" />
                           <Text style={styles.recordDetailText}>
-                            Pattern: {pattern.name}
+                            Pattern: {patternName}
                           </Text>
                         </View>
                       )}

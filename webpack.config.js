@@ -14,6 +14,12 @@ module.exports = async function (env, argv) {
       'process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET),
       'process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
       'process.env.EXPO_PUBLIC_FIREBASE_APP_ID': JSON.stringify(process.env.EXPO_PUBLIC_FIREBASE_APP_ID),
+      // SharePoint / Microsoft 365 Configuration
+      'process.env.EXPO_PUBLIC_MICROSOFT_CLIENT_ID': JSON.stringify(process.env.EXPO_PUBLIC_MICROSOFT_CLIENT_ID),
+      'process.env.EXPO_PUBLIC_MICROSOFT_TENANT_ID': JSON.stringify(process.env.EXPO_PUBLIC_MICROSOFT_TENANT_ID),
+      'process.env.EXPO_PUBLIC_SHAREPOINT_SITE_URL': JSON.stringify(process.env.EXPO_PUBLIC_SHAREPOINT_SITE_URL),
+      'process.env.EXPO_PUBLIC_SHAREPOINT_LIBRARY': JSON.stringify(process.env.EXPO_PUBLIC_SHAREPOINT_LIBRARY),
+      'process.env.EXPO_PUBLIC_SHAREPOINT_FOLDER_PATH': JSON.stringify(process.env.EXPO_PUBLIC_SHAREPOINT_FOLDER_PATH),
     })
   );
 

@@ -348,15 +348,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
       validationErrors.push("Bottom Design Strand Pattern is required");
     }
 
-    // Validate top strand patterns - if either is selected, both must be selected
-    if (topStrandPattern || topCastStrandPattern) {
-      if (!topStrandPattern) {
-        validationErrors.push("Top Design Strand Pattern is required when Top Cast Strand Pattern is selected");
-      }
-      if (!topCastStrandPattern) {
-        validationErrors.push("Top Cast Strand Pattern is required when Top Design Strand Pattern is selected");
-      }
-    }
+    // Top strand patterns are independent - either can exist without the other
 
     // Validate product side if product is cut-width
     if (isCutWidth && !productSide) {
@@ -891,7 +883,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                 Top Design Strand Pattern (Optional)
               </Text>
               <Text className="text-xs text-gray-500 mb-2">
-                If selected, both top design and cast patterns must be specified
+                The strand pattern this piece was designed with (top strands)
               </Text>
               <Pressable
                 className={`bg-white border ${
