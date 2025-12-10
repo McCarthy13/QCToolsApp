@@ -22,11 +22,9 @@ service cloud.firestore {
       // Anyone authenticated can create their own user document during registration
       allow create: if isAuthenticated() && request.auth.uid == userId;
 
-      // Users can read their own profile
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-
-      // Admins can read all users
-      allow read: if isAdmin();
+      // Allow reading user profiles for Microsoft 365 login verification
+      // (Microsoft auth doesn't create Firebase Auth sessions initially)
+      allow read: if true;
 
       // Only admins can update user status and roles
       allow update: if isAdmin() ||
