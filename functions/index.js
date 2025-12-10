@@ -24,7 +24,7 @@ const {onRequest} = require("firebase-functions/v2/https");
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
-const nodemailer = require("nodemailer");
+const sgMail = require('@sendgrid/mail');
 
 const app = initializeApp();
 const db = getFirestore(app);
@@ -199,50 +199,42 @@ exports.notifyAdminsOfAccessRequest = onDocumentCreated("users/{userId}", async 
     const adminEmails = adminsSnapshot.docs.map(doc => doc.data().email);
     console.log('[Access Request] Notifying admins:', adminEmails);
 
-    // Configure email transporter for Microsoft 365 / Outlook
-    const transporter = nodemailer.createTransporter({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER, // Your company email (e.g., noreply@molin.com)
-        pass: process.env.EMAIL_PASSWORD, // Email account password
-      },
-      tls: {
-        ciphers: 'SSLv3',
-      },
-    });
+    // Configure SendGrid API key
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    // Prepare email content
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">New Access Request</h2>
+        <p>A new user has requested access to Precast QC Tools:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${userData.name}</p>
+          <p style="margin: 5px 0;"><strong>Email:</strong> ${userData.email}</p>
+          <p style="margin: 5px 0;"><strong>Requested:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+        <p>Please log in to the Admin panel to approve or deny this request:</p>
+        <p style="margin: 20px 0;">
+          <a href="https://precast-qc-tools-web-app.web.app"
+             style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            Open Admin Panel
+          </a>
+        </p>
+        <p style="color: #6b7280; font-size: 14px;">Navigate to: Admin → User Management → Pending Requests</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p style="color: #9ca3af; font-size: 12px;">This is an automated notification from Precast QC Tools.</p>
+      </div>
+    `;
 
     // Send email to each admin
     const emailPromises = adminEmails.map(adminEmail => {
-      const mailOptions = {
-        from: `Precast QC Tools <${process.env.EMAIL_USER}>`,
+      const msg = {
         to: adminEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@precast-qc-tools.com',
         subject: 'New Access Request - Precast QC Tools',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;">New Access Request</h2>
-            <p>A new user has requested access to Precast QC Tools:</p>
-            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Name:</strong> ${userData.name}</p>
-              <p style="margin: 5px 0;"><strong>Email:</strong> ${userData.email}</p>
-              <p style="margin: 5px 0;"><strong>Requested:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-            <p>Please log in to the Admin panel to approve or deny this request:</p>
-            <p style="margin: 20px 0;">
-              <a href="https://precast-qc-tools-web-app.web.app"
-                 style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Open Admin Panel
-              </a>
-            </p>
-            <p style="color: #6b7280; font-size: 14px;">Navigate to: Admin → User Management → Pending Requests</p>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            <p style="color: #9ca3af; font-size: 12px;">This is an automated notification from Precast QC Tools.</p>
-          </div>
-        `,
+        html: htmlContent,
       };
 
-      return transporter.sendMail(mailOptions);
+      return sgMail.send(msg);
     });
 
     await Promise.all(emailPromises);
