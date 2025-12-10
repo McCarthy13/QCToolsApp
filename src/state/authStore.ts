@@ -168,6 +168,12 @@ export const useAuthStore = create<AuthState>()(
         try {
           console.log('[AuthStore] loginWithMicrosoft - Starting Microsoft 365 sign-in...');
 
+          // Clear any existing Firebase Auth session first
+          await firebaseSignOut().catch(() => {
+            // Ignore errors if not signed in
+            console.log('[AuthStore] No existing Firebase session to clear');
+          });
+
           // Sign in with Microsoft
           const msAccount = await signInToMicrosoft();
           console.log('[AuthStore] loginWithMicrosoft - Microsoft account:', msAccount.username);

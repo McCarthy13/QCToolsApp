@@ -155,12 +155,19 @@ export async function signOutFromMicrosoft(): Promise<void> {
   try {
     const msal = await initializeMSAL();
     const accounts = msal.getAllAccounts();
+
+    // Clear local cache for all accounts silently (no popup)
     if (accounts.length > 0) {
-      await msal.logoutPopup({ account: accounts[0] });
+      for (const account of accounts) {
+        msal.setActiveAccount(null);
+        // Clear the cache for this account
+        await msal.clearCache();
+      }
+      console.log('[SharePoint] Signed out from Microsoft (cleared cache)');
     }
   } catch (error) {
     console.error('[SharePoint] Sign out error:', error);
-    throw error;
+    // Don't throw - sign out should be best effort
   }
 }
 
