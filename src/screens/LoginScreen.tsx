@@ -36,16 +36,19 @@ export default function LoginScreen({
     setError("");
 
     try {
+      console.log('[LoginScreen] Starting Microsoft login...');
       const result = await loginWithMicrosoft();
+      console.log('[LoginScreen] Microsoft login result:', result);
 
       if (result.success) {
         onLoginSuccess(false); // Microsoft users don't need password change
       } else {
         setError(result.error || "Microsoft login failed. Please try again.");
+        setLoading(false);
       }
     } catch (err) {
-      setError("An unexpected error occurred");
-    } finally {
+      console.error('[LoginScreen] Microsoft login error:', err);
+      setError("An unexpected error occurred during Microsoft sign-in");
       setLoading(false);
     }
   };

@@ -15,6 +15,12 @@ const msalConfig = {
     cacheLocation: 'sessionStorage',
     storeAuthStateInCookie: false,
   },
+  system: {
+    allowRedirectInIframe: false,
+    windowHashTimeout: 60000,
+    iframeHashTimeout: 6000,
+    loadFrameTimeout: 0,
+  },
 };
 
 // SharePoint configuration
@@ -74,8 +80,15 @@ export async function signInToMicrosoft(): Promise<AccountInfo> {
       }
     }
 
-    // Interactive login with popup
-    const response = await msal.loginPopup(loginRequest);
+    // Interactive login with popup - use redirect instead to avoid popup issues
+    const response = await msal.loginPopup({
+      ...loginRequest,
+      prompt: 'select_account',
+    });
+
+    // Close the popup explicitly if it's still open
+    console.log('[SharePoint] Login successful, account:', response.account.username);
+
     return response.account;
   } catch (error) {
     console.error('[SharePoint] Sign in error:', error);

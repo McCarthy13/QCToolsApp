@@ -18,7 +18,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
-import { getAllApprovedUsers, updateUserProfile, FirebaseUserProfile } from "../services/firebaseUsers";
+import { getAllApprovedUsers, updateUserProfile, FirebaseUserProfile, createUserProfile } from "../services/firebaseUsers";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AdminApproval'>;
 type TabType = 'pending' | 'users';
@@ -41,6 +41,7 @@ export default function AdminApprovalScreen() {
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserName, setNewUserName] = useState("");
   const [newUserRole, setNewUserRole] = useState<"user" | "supervisor" | "admin">("user");
+  const [error, setError] = useState("");
 
   const getPendingRequests = useAuthStore((state) => state.getPendingRequests);
   const approveRequest = useAuthStore((state) => state.approveRequest);
@@ -132,6 +133,42 @@ export default function AdminApprovalScreen() {
       loadRequests();
     } catch (err) {
       console.error("Error updating user:", err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const confirmAddUser = async () => {
+    if (!newUserEmail.trim() || !newUserName.trim()) return;
+
+    setActionLoading(true);
+    try {
+      // Generate a unique user ID based on email
+      // For Microsoft users, we'll use their email as the UID
+      const userId = newUserEmail.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+      // Create user profile in Firestore
+      const { error } = await createUserProfile(userId, {
+        email: newUserEmail.trim(),
+        name: newUserName.trim(),
+        role: newUserRole,
+        status: 'approved', // Directly approved by admin
+        needsPasswordChange: false, // Microsoft users don't need password
+      });
+
+      if (error) {
+        setError(error);
+        return;
+      }
+
+      setShowAddUserModal(false);
+      setNewUserEmail("");
+      setNewUserName("");
+      setNewUserRole("user");
+      loadRequests(); // Reload to show the new user
+    } catch (err) {
+      console.error("Error adding user:", err);
+      setError("Failed to add user. Please try again.");
     } finally {
       setActionLoading(false);
     }
@@ -579,6 +616,13 @@ export default function AdminApprovalScreen() {
                     </View>
                   </View>
 
+                  {/* Error Message */}
+                  {error ? (
+                    <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                      <Text className="text-red-700 text-sm">{error}</Text>
+                    </View>
+                  ) : null}
+
                   {/* Buttons */}
                   <View className="flex-row gap-3">
                     <Pressable
@@ -588,6 +632,7 @@ export default function AdminApprovalScreen() {
                           setNewUserEmail("");
                           setNewUserName("");
                           setNewUserRole("user");
+                          setError("");
                         }
                       }}
                       disabled={actionLoading}
@@ -599,20 +644,13 @@ export default function AdminApprovalScreen() {
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => {
-                        // TODO: Implement add user functionality
-                        console.log("Add user:", newUserEmail, newUserName, newUserRole);
-                        setShowAddUserModal(false);
-                        setNewUserEmail("");
-                        setNewUserName("");
-                        setNewUserRole("user");
-                      }}
+                      onPress={confirmAddUser}
                       disabled={actionLoading || !newUserEmail.trim() || !newUserName.trim()}
                       className="flex-1 bg-blue-500 rounded-xl py-3 items-center active:bg-blue-600"
                       style={{ opacity: (actionLoading || !newUserEmail.trim() || !newUserName.trim()) ? 0.5 : 1 }}
                     >
                       <Text className="text-white text-base font-semibold">
-                        Add User
+                        {actionLoading ? "Adding..." : "Add User"}
                       </Text>
                     </Pressable>
                   </View>
