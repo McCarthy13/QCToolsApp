@@ -51,6 +51,7 @@ async function addMicrosoftUser() {
 
     // Create user document in Firestore
     const userRef = doc(firestore, 'users', userId);
+    const now = new Date();
     await setDoc(userRef, {
       uid: userId,
       email: email,
@@ -58,8 +59,8 @@ async function addMicrosoftUser() {
       role: role,
       status: 'approved',
       needsPasswordChange: false,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: now,
+      updatedAt: now,
     });
 
     console.log('\n✅ Successfully added Microsoft 365 user!');

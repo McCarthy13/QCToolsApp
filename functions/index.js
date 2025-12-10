@@ -22,8 +22,10 @@ if (fs.existsSync(envPath)) {
 
 const {onRequest} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
+const {getFirestore} = require("firebase-admin/firestore");
 
-initializeApp();
+const app = initializeApp();
+const db = getFirestore(app);
 
 /**
  * Claude Vision Proxy
@@ -91,6 +93,73 @@ exports.claudeVisionProxy = onRequest({
     return res.status(200).json(result);
   } catch (error) {
     console.error("[Claude Vision Proxy] Error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Bootstrap Admin User
+ * Adds a Microsoft 365 user as an admin to Firestore
+ * This function bypasses security rules and should only be used for initial setup
+ *
+ * Usage: POST to this function with body:
+ * {
+ *   "email": "user@example.com",
+ *   "name": "User Name",
+ *   "role": "admin"  // optional, defaults to "admin"
+ * }
+ */
+exports.bootstrapAdminUser = onRequest({
+  cors: true,
+  maxInstances: 1,
+  timeoutSeconds: 30,
+}, async (req, res) => {
+  // Only allow POST requests
+  if (req.method !== "POST") {
+    return res.status(405).json({error: "Method not allowed"});
+  }
+
+  try {
+    const {email, name, role = "admin"} = req.body;
+
+    if (!email || !name) {
+      return res.status(400).json({error: "Missing required fields: email, name"});
+    }
+
+    if (!['admin', 'supervisor', 'user'].includes(role)) {
+      return res.status(400).json({error: "Invalid role. Must be admin, supervisor, or user"});
+    }
+
+    // Generate userId using same logic as the app
+    const userId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+    console.log(`[Bootstrap Admin] Adding user: ${email} (${name}) as ${role}`);
+    console.log(`[Bootstrap Admin] Generated userId: ${userId}`);
+
+    // Create user document in Firestore using Admin SDK (bypasses security rules)
+    await db.collection('users').doc(userId).set({
+      uid: userId,
+      email: email,
+      name: name,
+      role: role,
+      status: 'approved',
+      needsPasswordChange: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log(`[Bootstrap Admin] Successfully added user ${userId}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully added ${email} as ${role}`,
+      userId: userId,
+    });
+  } catch (error) {
+    console.error("[Bootstrap Admin] Error:", error);
     return res.status(500).json({
       error: "Internal server error",
       message: error.message,
