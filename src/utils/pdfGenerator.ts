@@ -1128,17 +1128,21 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             console.log('[PDF Generator] Uploaded to SharePoint:', sharePointUrl);
           } catch (uploadError) {
             console.error('[PDF Generator] SharePoint upload failed:', uploadError);
-            // Continue with local download even if upload fails
+            // Continue with local download if upload fails
+            sharePointUrl = undefined;
           }
         }
 
-        // Always download locally as well
-        pdf.save(`${filename}.pdf`);
+        // Only download locally if SharePoint upload was not requested or failed
+        if (!sharePointUrl) {
+          pdf.save(`${filename}.pdf`);
+          console.log('[PDF Generator] PDF downloaded locally');
+        } else {
+          console.log('[PDF Generator] PDF uploaded to SharePoint, skipping local download');
+        }
 
         // Cleanup
         document.body.removeChild(tempDiv);
-
-        console.log('[PDF Generator] PDF downloaded successfully');
 
         // Return special string with SharePoint URL if uploaded
         if (sharePointUrl) {
