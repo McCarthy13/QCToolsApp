@@ -148,10 +148,15 @@ export const signInForMicrosoftUser = async (
   userId: string
 ): Promise<AuthResult> => {
   try {
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Starting for userId:', userId);
+
     // Use a deterministic password based on the userId
     // This is safe because Microsoft 365 handles the actual authentication
     const email = `${userId}@microsoft-sso.local`;
-    const password = `ms365-${userId}-${process.env.FIREBASE_PROJECT_ID || 'precast'}`;
+    const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'precast';
+    const password = `ms365-${userId}-${projectId}`;
+
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Using email:', email);
 
     // Try to sign in first
     let result = await signIn(email, password);
@@ -160,10 +165,16 @@ export const signInForMicrosoftUser = async (
     if (result.error && result.error.includes('Invalid email or password')) {
       console.log('[FirebaseAuth] Creating Firebase Auth account for Microsoft user:', userId);
       result = await registerUser(email, password);
+      console.log('[FirebaseAuth] Registration result:', result.error ? `Error: ${result.error}` : 'Success');
+    } else if (result.error) {
+      console.error('[FirebaseAuth] Sign in error:', result.error);
+    } else {
+      console.log('[FirebaseAuth] Sign in successful for:', email);
     }
 
     return result;
   } catch (error: any) {
+    console.error('[FirebaseAuth] signInForMicrosoftUser - Exception:', error);
     return { user: null, error: error.message || 'Microsoft Firebase auth failed' };
   }
 };
