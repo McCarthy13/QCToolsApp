@@ -2,6 +2,18 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
+## Recent Fix: Microsoft 365 Login + Record Saving
+
+**Issue**: After switching to Microsoft 365 login, records were not being saved to "My Records" or "Published".
+
+**Root Cause**: Microsoft 365 authentication didn't create a Firebase Auth session. Firestore security rules require `request.auth` to be set, which only happens when logged into Firebase Auth.
+
+**Solution**: Modified the Microsoft 365 login flow to also create a Firebase Auth session using a deterministic email/password combination. This allows Firestore security rules to work properly while Microsoft 365 handles the actual user authentication.
+
+**Files Modified**:
+- `src/services/firebaseAuth.ts` - Added `signInForMicrosoftUser()` function
+- `src/state/authStore.ts` - Updated `loginWithMicrosoft()` to call Firebase Auth after Microsoft login
+
 ## Git Repository Configuration
 
 This project is configured to sync with GitHub as the primary remote repository:

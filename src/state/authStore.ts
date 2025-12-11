@@ -6,7 +6,8 @@ import {
   signOut as firebaseSignOut,
   registerUser as firebaseRegisterUser,
   onAuthStateChange,
-  getCurrentUser as getFirebaseCurrentUser
+  getCurrentUser as getFirebaseCurrentUser,
+  signInForMicrosoftUser
 } from '../services/firebaseAuth';
 import {
   createUserProfile,
@@ -229,6 +230,22 @@ export const useAuthStore = create<AuthState>()(
               error: 'Your access request was denied. Please contact an administrator.'
             };
           }
+
+          // IMPORTANT: Sign in to Firebase Auth so Firestore security rules work
+          // This creates a Firebase Auth session using the sanitized userId
+          console.log('[AuthStore] loginWithMicrosoft - Creating Firebase Auth session for:', userId);
+          const { user: firebaseUser, error: firebaseError } = await signInForMicrosoftUser(userId);
+
+          if (firebaseError || !firebaseUser) {
+            console.error('[AuthStore] loginWithMicrosoft - Failed to create Firebase Auth session:', firebaseError);
+            await signOutFromMicrosoft();
+            return {
+              success: false,
+              error: 'Failed to authenticate with Firebase. Please try again.'
+            };
+          }
+
+          console.log('[AuthStore] loginWithMicrosoft - Firebase Auth session created:', firebaseUser.uid);
 
           const appUser = firebaseUserToAppUser(profile);
           console.log('[AuthStore] loginWithMicrosoft - Setting currentUser to:', JSON.stringify(appUser, null, 2));

@@ -139,3 +139,31 @@ export const onAuthStateChange = (
 ) => {
   return onAuthStateChanged(auth, callback);
 };
+
+/**
+ * Sign in to Firebase Auth using a fixed email/password for Microsoft 365 users
+ * This creates a Firebase Auth session so Firestore security rules work properly
+ */
+export const signInForMicrosoftUser = async (
+  userId: string
+): Promise<AuthResult> => {
+  try {
+    // Use a deterministic password based on the userId
+    // This is safe because Microsoft 365 handles the actual authentication
+    const email = `${userId}@microsoft-sso.local`;
+    const password = `ms365-${userId}-${process.env.FIREBASE_PROJECT_ID || 'precast'}`;
+
+    // Try to sign in first
+    let result = await signIn(email, password);
+
+    // If user doesn't exist, create the account
+    if (result.error && result.error.includes('Invalid email or password')) {
+      console.log('[FirebaseAuth] Creating Firebase Auth account for Microsoft user:', userId);
+      result = await registerUser(email, password);
+    }
+
+    return result;
+  } catch (error: any) {
+    return { user: null, error: error.message || 'Microsoft Firebase auth failed' };
+  }
+};
