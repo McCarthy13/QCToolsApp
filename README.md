@@ -20,15 +20,26 @@ All three environments must stay in sync:
 
 ### Workflow for Every Update
 
-For every code change, you must:
-1. Make changes in Vibecode sandbox
-2. Commit changes to local git repository
-3. Push to GitHub repository (`git push origin main`)
-4. Deploy to Firebase (when ready using `node deploy.js`)
+**CRITICAL**: For every code change, you MUST follow these steps in order:
 
-This ensures all three environments remain synchronized.
+1. **Make changes** in Vibecode sandbox (`/home/user/workspace/`)
+2. **Stage changes** for commit (`git add .` or `git add <specific-files>`)
+3. **Commit changes** to local git repository with descriptive message
+   ```bash
+   git commit -m "descriptive commit message"
+   ```
+4. **Push to GitHub** repository (PRIMARY SOURCE OF TRUTH)
+   ```bash
+   git push origin main
+   ```
+5. **Deploy to Firebase** when ready for production
+   ```bash
+   node deploy.js
+   ```
 
-**Quick Sync Command**: Use `./sync-repos.sh` to automatically push to both GitHub and Vibecode, then deploy to Firebase in one command.
+**IMPORTANT**: Never skip step 4. All changes must be pushed to GitHub to keep environments synchronized.
+
+This ensures all three environments remain synchronized at all times.
 
 ### Security
 
