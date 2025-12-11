@@ -251,7 +251,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   };
 
   // Save and publish handlers
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log('[SlippageSummaryScreen] ========== SAVE BUTTON PRESSED ==========');
     console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
     console.log('[SlippageSummaryScreen] Current user ID:', currentUser?.id);
@@ -278,13 +278,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
     console.log('[SlippageSummaryScreen] Created record with userId:', record.userId);
     console.log('[SlippageSummaryScreen] Full record:', JSON.stringify(record, null, 2));
-    addUserRecord(record);
-    setSaveSuccess(true);
-    setShowSaveModal(false);
-    setTimeout(() => setSaveSuccess(false), 3000);
+
+    try {
+      await addUserRecord(record);
+      console.log('[SlippageSummaryScreen] ✅ Record saved successfully!');
+      setSaveSuccess(true);
+      setShowSaveModal(false);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('[SlippageSummaryScreen] ❌ Failed to save record:', error);
+      alert(`Failed to save record: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     console.log('[SlippageSummaryScreen] ========== PUBLISH BUTTON PRESSED ==========');
     console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
     console.log('[SlippageSummaryScreen] Current user ID:', currentUser?.id);
@@ -304,11 +311,19 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       createdBy: currentUser?.email || 'Unknown',
       userId: currentUser?.id || '',
     };
+
     console.log('[SlippageSummaryScreen] Publishing record with userId:', record.userId);
-    publishRecord(record, currentUser?.email || 'Unknown');
-    setPublishSuccess(true);
-    setShowPublishModal(false);
-    setTimeout(() => setPublishSuccess(false), 3000);
+
+    try {
+      await publishRecord(record, currentUser?.email || 'Unknown');
+      console.log('[SlippageSummaryScreen] ✅ Record published successfully!');
+      setPublishSuccess(true);
+      setShowPublishModal(false);
+      setTimeout(() => setPublishSuccess(false), 3000);
+    } catch (error) {
+      console.error('[SlippageSummaryScreen] ❌ Failed to publish record:', error);
+      alert(`Failed to publish record: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleGeneratePDFReport = async () => {

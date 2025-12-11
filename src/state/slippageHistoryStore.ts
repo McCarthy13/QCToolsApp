@@ -80,30 +80,49 @@ export const useSlippageHistoryStore = create<SlippageHistoryState>()(
       isSyncing: false,
 
       addUserRecord: async (record) => {
-        console.log('[SlippageHistoryStore] Adding user record:', {
-          id: record.id,
-          userId: record.userId,
-          timestamp: record.timestamp,
-          hasSlippages: record.slippages?.length > 0,
-        });
+        console.log('[SlippageHistoryStore] ========== ADD USER RECORD CALLED ==========');
+        console.log('[SlippageHistoryStore] Record ID:', record.id);
+        console.log('[SlippageHistoryStore] Record userId:', record.userId);
+        console.log('[SlippageHistoryStore] Record userId type:', typeof record.userId);
+        console.log('[SlippageHistoryStore] Record userId length:', record.userId?.length);
+        console.log('[SlippageHistoryStore] Record timestamp:', record.timestamp);
+        console.log('[SlippageHistoryStore] Has slippages:', record.slippages?.length > 0);
+        console.log('[SlippageHistoryStore] Full record:', JSON.stringify(record, null, 2));
+
+        // Validate userId before saving
+        if (!record.userId || record.userId.trim() === '') {
+          console.error('[SlippageHistoryStore] ERROR: Cannot save record - userId is empty or missing!');
+          console.error('[SlippageHistoryStore] Record:', record);
+          throw new Error('Cannot save record: User ID is missing. Please sign out and sign back in.');
+        }
 
         // Add to local state
         set((state) => ({
           userRecords: [record, ...state.userRecords].slice(0, 100),
         }));
+        console.log('[SlippageHistoryStore] Added to local state');
 
         // Sync to Firebase
         try {
-          console.log('[SlippageHistoryStore] Syncing to Firebase...');
+          console.log('[SlippageHistoryStore] Syncing to Firebase with record:', {
+            id: record.id,
+            userId: record.userId,
+            timestamp: record.timestamp,
+          });
           await userRecordsSync.set(record.id, record);
-          console.log('[SlippageHistoryStore] Successfully synced to Firebase');
+          console.log('[SlippageHistoryStore] ✅ Successfully synced to Firebase');
         } catch (error) {
-          console.error('[SlippageHistoryStore] Failed to sync user record to Firebase:', error);
+          console.error('[SlippageHistoryStore] ❌ Failed to sync user record to Firebase:', error);
           // Show more detailed error information
           if (error instanceof Error) {
             console.error('[SlippageHistoryStore] Error message:', error.message);
             console.error('[SlippageHistoryStore] Error stack:', error.stack);
           }
+          // Remove from local state if Firebase sync fails
+          set((state) => ({
+            userRecords: state.userRecords.filter(r => r.id !== record.id),
+          }));
+          throw error; // Re-throw so the UI can show an error
         }
       },
 
@@ -131,22 +150,47 @@ export const useSlippageHistoryStore = create<SlippageHistoryState>()(
       clearUserRecords: () => set({ userRecords: [] }),
 
       publishRecord: async (record, publishedBy) => {
+        console.log('[SlippageHistoryStore] ========== PUBLISH RECORD CALLED ==========');
+        console.log('[SlippageHistoryStore] Record ID:', record.id);
+        console.log('[SlippageHistoryStore] Record userId:', record.userId);
+        console.log('[SlippageHistoryStore] Published by:', publishedBy);
+
+        // Validate userId before publishing
+        if (!record.userId || record.userId.trim() === '') {
+          console.error('[SlippageHistoryStore] ERROR: Cannot publish record - userId is empty or missing!');
+          throw new Error('Cannot publish record: User ID is missing. Please sign out and sign back in.');
+        }
+
         const publishedRecord: PublishedSlippageRecord = {
           ...record,
           publishedAt: Date.now(),
           publishedBy,
         };
 
+        console.log('[SlippageHistoryStore] Created published record:', JSON.stringify(publishedRecord, null, 2));
+
         // Add to local state
         set((state) => ({
           publishedRecords: [publishedRecord, ...state.publishedRecords].slice(0, 200),
         }));
+        console.log('[SlippageHistoryStore] Added to local published records');
 
         // Sync to Firebase
         try {
+          console.log('[SlippageHistoryStore] Syncing published record to Firebase...');
           await publishedRecordsSync.set(publishedRecord.id, publishedRecord);
+          console.log('[SlippageHistoryStore] ✅ Successfully published to Firebase');
         } catch (error) {
-          console.error('Failed to publish record to Firebase:', error);
+          console.error('[SlippageHistoryStore] ❌ Failed to publish record to Firebase:', error);
+          if (error instanceof Error) {
+            console.error('[SlippageHistoryStore] Error message:', error.message);
+            console.error('[SlippageHistoryStore] Error stack:', error.stack);
+          }
+          // Remove from local state if Firebase sync fails
+          set((state) => ({
+            publishedRecords: state.publishedRecords.filter(r => r.id !== publishedRecord.id),
+          }));
+          throw error; // Re-throw so the UI can show an error
         }
       },
 
