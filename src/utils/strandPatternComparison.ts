@@ -47,19 +47,64 @@ export function compareStrandPatterns(
     summary: '',
   };
 
-  // If both patterns are missing or identical, no comparison needed
+  // If both patterns are missing, no comparison needed
   if (!designPattern && !castPattern) {
     result.summary = `No ${position.toLowerCase()} strand pattern specified`;
     return result;
   }
 
-  if (!designPattern) {
-    result.summary = `No design pattern specified for ${position.toLowerCase()} strands`;
+  // If no design pattern but there's a cast pattern, all cast strands are "extra"
+  if (!designPattern && castPattern) {
+    const castSizes = castPattern.strandSizes || [];
+    const castCoords = castPattern.strandCoordinates || [];
+
+    castCoords.forEach((castCoord, castIndex) => {
+      const castSize = castSizes[castIndex];
+      const castStrandNum = castIndex + 1;
+
+      result.differences.push({
+        castStrandIndex: castStrandNum,
+        position,
+        issueType: 'extra_in_cast',
+        castSize: `${castSize}"`,
+        location: castCoord,
+        description: `Extra ${castSize}" strand in cast at (${castCoord.x}", ${castCoord.y}") - no design pattern specified`,
+      });
+    });
+
+    result.hasDifferences = true;
+    result.summary = `${result.differences.length} strand(s) in cast but no design pattern specified`;
     return result;
   }
 
-  if (!castPattern) {
-    result.summary = `No cast pattern specified for ${position.toLowerCase()} strands`;
+  // If design pattern but no cast pattern, all design strands are "missing"
+  if (designPattern && !castPattern) {
+    const designSizes = designPattern.strandSizes || [];
+    const designCoords = designPattern.strandCoordinates || [];
+
+    designCoords.forEach((designCoord, designIndex) => {
+      const designSize = designSizes[designIndex];
+      const designStrandNum = designIndex + 1;
+
+      result.differences.push({
+        designStrandIndex: designStrandNum,
+        position,
+        issueType: 'missing_in_cast',
+        designSize: `${designSize}"`,
+        location: designCoord,
+        description: `Missing ${designSize}" strand at (${designCoord.x}", ${designCoord.y}") - in design but no cast pattern specified`,
+      });
+    });
+
+    result.hasDifferences = true;
+    result.summary = `${result.differences.length} strand(s) in design but no cast pattern specified`;
+    return result;
+  }
+
+  // At this point, both designPattern and castPattern are defined (TypeScript needs assurance)
+  if (!designPattern || !castPattern) {
+    // This should never happen due to checks above, but TypeScript needs this
+    result.summary = 'Unexpected state in pattern comparison';
     return result;
   }
 

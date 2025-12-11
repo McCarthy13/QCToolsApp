@@ -209,7 +209,7 @@ export default function App() {
             </View>
           )}
           {currentScreen === "adminApproval" && (
-            <AdminApprovalScreen onBack={() => setCurrentScreen("login")} />
+            <AdminApprovalScreen />
           )}
           <StatusBar style="light" />
         </SafeAreaProvider>
@@ -806,6 +806,18 @@ export default function App() {
               name="YardSearch"
               component={YardSearchScreen}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="AdminApproval"
+              component={AdminApprovalScreen}
+              options={({ navigation }) => ({
+                title: "User Management",
+                headerRight: () => (
+                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                    <Ionicons name="home-outline" size={24} color="#111827" />
+                  </Pressable>
+                ),
+              })}
             />
           </Stack.Navigator>
           <StatusBar style="auto" />

@@ -17,6 +17,14 @@ import CrossSection1247 from "../components/CrossSection1247";
 import CrossSection1250 from "../components/CrossSection1250";
 import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
 import { captureRef } from "react-native-view-shot";
+import {
+  signInToMicrosoft,
+  isSignedInToMicrosoft,
+  getCurrentMicrosoftAccount,
+  signOutFromMicrosoft,
+  getSharePointFolderUrl,
+  generateFolderName,
+} from "../services/sharepoint";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -44,9 +52,92 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSharePointSignedIn, setIsSharePointSignedIn] = useState(false);
+  const [microsoftAccount, setMicrosoftAccount] = useState<{ name?: string; username?: string } | null>(null);
+  const [uploadToSharePoint, setUploadToSharePoint] = useState(true); // Auto-upload by default when signed in
 
   // Ref for capturing cross-section as image
   const crossSectionRef = useRef<View>(null);
+
+  // Check SharePoint sign-in status on mount
+  React.useEffect(() => {
+    if (Platform.OS === 'web') {
+      checkSharePointStatus();
+    }
+  }, []);
+
+  const checkSharePointStatus = async () => {
+    try {
+      const signedIn = await isSignedInToMicrosoft();
+      setIsSharePointSignedIn(signedIn);
+      if (signedIn) {
+        const account = await getCurrentMicrosoftAccount();
+        setMicrosoftAccount(account);
+      }
+    } catch (error) {
+      console.error('[SharePoint] Error checking sign-in status:', error);
+    }
+  };
+
+  const handleSharePointSignIn = async () => {
+    try {
+      const account = await signInToMicrosoft();
+      setIsSharePointSignedIn(true);
+      setMicrosoftAccount(account);
+      Alert.alert('Success', `Signed in as ${account.name || account.username}`);
+    } catch (error) {
+      console.error('[SharePoint] Sign-in error:', error);
+      Alert.alert('Error', `Failed to sign in: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleSharePointSignOut = async () => {
+    try {
+      await signOutFromMicrosoft();
+      setIsSharePointSignedIn(false);
+      setMicrosoftAccount(null);
+      setUploadToSharePoint(false);
+      Alert.alert('Success', 'Signed out from Microsoft 365');
+    } catch (error) {
+      console.error('[SharePoint] Sign-out error:', error);
+      Alert.alert('Error', 'Failed to sign out');
+    }
+  };
+
+  // Calculate normalized scale factor to make all cross-sections appear the same visual size
+  // Base scale on the tallest product (12" for 1247/1250) to normalize visual size
+  const getUniformScale = (baseScale: number) => {
+    const BASE_HEIGHT = 12; // Use 12" as reference (tallest product)
+    const productHeights: { [key: string]: number } = {
+      '8048': 8,
+      '1047': 10,
+      '1247': 12,
+      '1250': 12,
+      '1648': 16,
+      '1650': 16,
+    };
+    const currentHeight = productHeights[config.productType] || 12;
+    // Scale inversely to height to maintain consistent visual size
+    return baseScale * (BASE_HEIGHT / currentHeight);
+  };
+
+  // Helper function to format pattern display name with top pattern if present
+  // Removes product type from display (e.g., "77-70 (8048)" becomes "77-70")
+  const formatPatternName = (bottomPattern?: { name?: string }, topPattern?: { name?: string }) => {
+    const stripProductType = (name?: string) => {
+      if (!name) return undefined;
+      // Remove product type in parentheses (e.g., " (8048)", " (1047)", etc.)
+      return name.replace(/\s*\([^)]+\)\s*$/, '').trim();
+    };
+
+    const bottomName = stripProductType(bottomPattern?.name);
+    const topName = stripProductType(topPattern?.name);
+
+    if (!bottomName && !topName) return undefined;
+    if (!topName) return bottomName;
+    if (!bottomName) return topName;
+    return `${bottomName} + ${topName}`;
+  };
 
   // Get the selected strand patterns (bottom and optionally top)
   // Use CAST patterns if available, otherwise fall back to DESIGN patterns
@@ -82,11 +173,25 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     if (!config.topStrandPattern && !config.topCastStrandPattern) {
       return null;
     }
-    // If no cast top pattern specified but there's a design top pattern, patterns match
+
+    // If both design and cast are specified, and cast differs from design, compare them
+    if (config.topStrandPattern && config.topCastStrandPattern &&
+        config.topStrandPattern !== config.topCastStrandPattern) {
+      return compareStrandPatterns(designTopPattern, selectedTopCastPattern, 'Top');
+    }
+
+    // If only design pattern (no cast specified), patterns match (cast defaults to design)
     if (config.topStrandPattern && !config.topCastStrandPattern) {
       return null;
     }
-    return compareStrandPatterns(designTopPattern, selectedTopCastPattern, 'Top');
+
+    // If only cast pattern (no design specified), there's a difference
+    // Design = "None", Cast = specified pattern
+    if (!config.topStrandPattern && config.topCastStrandPattern) {
+      return compareStrandPatterns(undefined, selectedTopCastPattern, 'Top');
+    }
+
+    return null;
   }, [designTopPattern, selectedTopCastPattern, config.topStrandPattern, config.topCastStrandPattern]);
 
   // Helper to get strand size by position
@@ -234,7 +339,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             // On native, use captureRef
             crossSectionImageUri = await captureRef(crossSectionRef, {
               format: 'png',
-              quality: 0.8,
+              quality: 1.0,
             });
             console.log('[PDF] Cross-section captured successfully via captureRef');
           }
@@ -262,21 +367,58 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         userName,
         crossSectionImageUri,
         getStrandSize,
-        strandPatternName: selectedPattern?.name,
-        castStrandPatternName: selectedCastPattern?.name,
+        strandPatternName: formatPatternName(selectedPattern, selectedTopPattern),
+        castStrandPatternName: formatPatternName(selectedCastPattern, selectedTopCastPattern),
         topStrandPatternName: selectedTopPattern?.name,
         topCastStrandPatternName: selectedTopCastPattern?.name,
         bottomPatternComparison,
         topPatternComparison,
         castStrandCoordinates: selectedPattern?.strandCoordinates,
         castTopStrandCoordinates: selectedTopPattern?.strandCoordinates,
+        designStrandCoordinates: designPattern?.strandCoordinates,
+        designTopStrandCoordinates: designTopPattern?.strandCoordinates,
+        designStrandSizes: designPattern?.strandSizes,
+        designTopStrandSizes: designTopPattern?.strandSizes,
+        castStrandSizes: selectedPattern?.strandSizes,
+        castTopStrandSizes: selectedTopPattern?.strandSizes,
+        activeStrandIndices,
+        activeTopStrandIndices,
+        uploadToSharePoint: isSharePointSignedIn && uploadToSharePoint && Platform.OS === 'web',
       });
 
       if (filePath) {
         console.log('[PDF] PDF generated successfully:', filePath);
 
         // Handle different web responses
-        if (filePath === 'web-pdf-downloaded') {
+        if (filePath.startsWith('web-pdf-downloaded-sharepoint:')) {
+          // Extract SharePoint URL
+          const sharePointUrl = filePath.replace('web-pdf-downloaded-sharepoint:', '');
+          console.log('[PDF] PDF uploaded to SharePoint:', sharePointUrl);
+
+          // Generate folder URL for easier navigation
+          const folderName = generateFolderName(
+            config.projectNumber || '',
+            config.markNumber || '',
+            config.idNumber || ''
+          );
+          const folderUrl = getSharePointFolderUrl(folderName);
+
+          Alert.alert(
+            'PDF Saved Successfully',
+            `The slippage report has been:\n\n✓ Downloaded to your computer\n✓ Uploaded to SharePoint folder: ${folderName}\n\nWould you like to open the SharePoint folder?`,
+            [
+              { text: 'Not Now', style: 'cancel' },
+              {
+                text: 'Open Folder',
+                onPress: () => {
+                  if (Platform.OS === 'web') {
+                    window.open(folderUrl, '_blank');
+                  }
+                },
+              },
+            ]
+          );
+        } else if (filePath === 'web-pdf-downloaded') {
           console.log('[PDF] PDF downloaded successfully on web');
           Alert.alert(
             'PDF Downloaded',
@@ -429,6 +571,36 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     return activeIndices;
   }, [selectedPattern, config.productWidth, config.productSide]);
 
+  // Calculate active top strand indices for the cross-section
+  const activeTopStrandIndices = useMemo(() => {
+    if (!selectedTopPattern || !selectedTopPattern.strandCoordinates || !config.productWidth || !config.productSide) {
+      return null;
+    }
+
+    const { strandCoordinates } = selectedTopPattern;
+    const { productWidth, productSide } = config;
+
+    const minX = Math.min(...strandCoordinates.map(c => c.x));
+    const maxX = Math.max(...strandCoordinates.map(c => c.x));
+    const fullProductWidth = maxX + 2;
+
+    const activeIndices: number[] = [];
+    strandCoordinates.forEach((coord, index) => {
+      let isActive = false;
+      if (productSide === 'L1') {
+        isActive = coord.x <= productWidth;
+      } else if (productSide === 'L2') {
+        const cutPosition = fullProductWidth - productWidth;
+        isActive = coord.x >= cutPosition;
+      }
+      if (isActive) {
+        activeIndices.push(index + 1); // Convert to 1-based
+      }
+    });
+
+    return activeIndices;
+  }, [selectedTopPattern, config.productWidth, config.productSide]);
+
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <ScrollView
@@ -458,16 +630,16 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             >
               <View className="flex-row gap-2">
                 {/* Design Pattern */}
-                <View className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-200">
-                  <Text className="text-blue-900 text-xs font-bold mb-1 text-center">
+                <View className="flex-1 bg-gray-50 rounded-lg p-2 border border-gray-200">
+                  <Text className="text-gray-900 text-4xl font-bold mb-1 text-center">
                     DESIGN PATTERN
                   </Text>
-                  <Text className="text-blue-700 text-[10px] mb-2 text-center">
-                    {designPattern?.name}
+                  <Text className="text-gray-700 text-3xl mb-2 text-center">
+                    {formatPatternName(designPattern, designTopPattern)}
                   </Text>
                   {config.productType === '1047' ? (
                     <CrossSection1047
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -479,7 +651,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1247' ? (
                     <CrossSection1247
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -491,7 +663,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1250' ? (
                     <CrossSection1250
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -503,7 +675,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <CrossSection8048
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
@@ -517,21 +689,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                 </View>
 
                 {/* Cast Pattern */}
-                <View className="flex-1 bg-green-50 rounded-lg p-2 border border-green-200">
-                  <Text className="text-green-900 text-xs font-bold mb-1 text-center">
+                <View className="flex-1 bg-gray-50 rounded-lg p-2 border border-gray-200">
+                  <Text className="text-gray-900 text-4xl font-bold mb-1 text-center">
                     CAST PATTERN
                   </Text>
-                  <Text className="text-green-700 text-[10px] mb-2 text-center">
-                    {selectedCastPattern?.name || selectedPattern?.name}
+                  <Text className="text-gray-700 text-3xl mb-2 text-center">
+                    {formatPatternName(selectedCastPattern || selectedPattern, selectedTopCastPattern || selectedTopPattern)}
                   </Text>
                   {config.productType === '1047' ? (
                     <CrossSection1047
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
-                      slippages={slippages}
-                      showSlippageValues={true}
+                      showSlippageValues={false}
                       strandCoordinates={selectedPattern?.strandCoordinates}
                       bottomStrandSizes={selectedPattern?.strandSizes}
                       topStrandCoordinates={selectedTopPattern?.strandCoordinates}
@@ -539,12 +710,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1247' ? (
                     <CrossSection1247
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
-                      slippages={slippages}
-                      showSlippageValues={true}
+                      showSlippageValues={false}
                       strandCoordinates={selectedPattern?.strandCoordinates}
                       bottomStrandSizes={selectedPattern?.strandSizes}
                       topStrandCoordinates={selectedTopPattern?.strandCoordinates}
@@ -552,12 +722,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : config.productType === '1250' ? (
                     <CrossSection1250
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
-                      slippages={slippages}
-                      showSlippageValues={true}
+                      showSlippageValues={false}
                       strandCoordinates={selectedPattern?.strandCoordinates}
                       bottomStrandSizes={selectedPattern?.strandSizes}
                       topStrandCoordinates={selectedTopPattern?.strandCoordinates}
@@ -565,12 +734,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <CrossSection8048
-                      scale={5}
+                      scale={getUniformScale(10)}
                       activeStrands={activeStrandIndices || undefined}
                       productSide={config.productSide || null}
                       productWidth={config.productWidth}
-                      slippages={slippages}
-                      showSlippageValues={true}
+                      showSlippageValues={false}
                       strandCoordinates={selectedPattern?.strandCoordinates}
                       bottomStrandSizes={selectedPattern?.strandSizes}
                       topStrandCoordinates={selectedTopPattern?.strandCoordinates}
@@ -625,7 +793,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
             </Text>
             {config.productType === '1047' ? (
               <CrossSection1047
-                scale={6}
+                scale={getUniformScale(12)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -638,7 +806,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               />
             ) : config.productType === '1247' ? (
               <CrossSection1247
-                scale={6}
+                scale={getUniformScale(12)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -651,7 +819,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               />
             ) : config.productType === '1250' ? (
               <CrossSection1250
-                scale={6}
+                scale={getUniformScale(12)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -664,7 +832,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               />
             ) : (
               <CrossSection8048
-                scale={6}
+                scale={getUniformScale(12)}
                 activeStrands={activeStrandIndices || undefined}
                 productSide={config.productSide || null}
                 productWidth={config.productWidth}
@@ -981,6 +1149,69 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               </View>
             </Pressable>
           </View>
+
+          {/* SharePoint Integration (Web Only) */}
+          {Platform.OS === 'web' && (
+            <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-3">
+              <View className="flex-row items-center mb-3">
+                <Ionicons name="cloud-outline" size={20} color="#6B7280" />
+                <Text className="text-gray-700 text-sm font-semibold ml-2">
+                  SharePoint Integration
+                </Text>
+              </View>
+
+              {!isSharePointSignedIn ? (
+                <Pressable
+                  className="bg-blue-600 rounded-lg py-3 items-center active:bg-blue-700"
+                  onPress={handleSharePointSignIn}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons name="log-in-outline" size={18} color="white" />
+                    <Text className="text-white text-sm font-semibold ml-2">
+                      Sign in with Microsoft 365
+                    </Text>
+                  </View>
+                </Pressable>
+              ) : (
+                <>
+                  <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                    <View className="flex-row items-center mb-1">
+                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                      <Text className="text-green-700 text-xs font-semibold ml-2">
+                        Signed in as {microsoftAccount?.name || microsoftAccount?.username}
+                      </Text>
+                    </View>
+                    <Text className="text-green-600 text-xs ml-6">
+                      PDFs will auto-upload to SharePoint
+                    </Text>
+                  </View>
+
+                  <View className="flex-row items-center justify-between mb-2">
+                    <Text className="text-gray-600 text-xs">Auto-upload to SharePoint</Text>
+                    <Pressable
+                      onPress={() => setUploadToSharePoint(!uploadToSharePoint)}
+                      className={`w-12 h-6 rounded-full ${uploadToSharePoint ? 'bg-blue-500' : 'bg-gray-300'} justify-center`}
+                    >
+                      <View className={`w-5 h-5 bg-white rounded-full ${uploadToSharePoint ? 'ml-6' : 'ml-1'}`} />
+                    </Pressable>
+                  </View>
+
+                  {config.projectNumber && config.markNumber && config.idNumber && (
+                    <Text className="text-gray-500 text-xs mb-2">
+                      📁 Folder: {generateFolderName(config.projectNumber, config.markNumber, config.idNumber)}
+                    </Text>
+                  )}
+
+                  <Pressable
+                    className="border border-gray-300 rounded-lg py-2 items-center active:bg-gray-100"
+                    onPress={handleSharePointSignOut}
+                  >
+                    <Text className="text-gray-600 text-xs font-medium">Sign Out</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          )}
 
           <Pressable
             className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mb-3"

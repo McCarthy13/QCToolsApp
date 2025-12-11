@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
 import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
 import { StrandPatternComparison, formatComparisonForPDF } from './strandPatternComparison';
+import { uploadPDFToSharePoint, generateFolderName, isSignedInToMicrosoft } from '../services/sharepoint';
 
 // Web-only PDF generation using jsPDF
 let jsPDF: any = null;
@@ -55,6 +56,23 @@ interface PDFGenerationParams {
   topPatternComparison?: StrandPatternComparison | null;
   castStrandCoordinates?: { x: number; y: number }[];
   castTopStrandCoordinates?: { x: number; y: number }[];
+  designStrandCoordinates?: { x: number; y: number }[];
+  designTopStrandCoordinates?: { x: number; y: number }[];
+  designStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  designTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  castStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  castTopStrandSizes?: ('3/8' | '1/2' | '0.6')[];
+  activeStrandIndices?: number[] | null;
+  activeTopStrandIndices?: number[] | null;
+  uploadToSharePoint?: boolean; // New parameter for SharePoint upload
+}
+
+export interface PDFGenerationResult {
+  success: boolean;
+  localUri?: string;
+  sharePointUrl?: string;
+  error?: string;
+  message?: string;
 }
 
 export async function generateSlippagePDF(params: PDFGenerationParams): Promise<string | null> {
@@ -74,6 +92,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     topPatternComparison,
     castStrandCoordinates,
     castTopStrandCoordinates,
+    designStrandCoordinates,
+    designTopStrandCoordinates,
+    designStrandSizes,
+    designTopStrandSizes,
+    castStrandSizes,
+    castTopStrandSizes,
+    activeStrandIndices,
+    activeTopStrandIndices,
   } = params;
 
   try {
@@ -221,6 +247,155 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       console.log('[PDF Generator] No cross-section image provided');
     }
 
+    // Helper function to build two-column strand comparison table
+    const buildStrandComparisonTable = (
+      position: 'Bottom' | 'Top',
+      designCoords?: { x: number; y: number }[],
+      castCoords?: { x: number; y: number }[],
+      designSizes?: ('3/8' | '1/2' | '0.6')[],
+      castSizes?: ('3/8' | '1/2' | '0.6')[],
+      strandSlippages?: SlippageData[],
+      activeIndices?: number[] | null
+    ): string => {
+      if (!designCoords && !castCoords) return '';
+
+      // Combine all unique coordinates from both patterns
+      const allCoords: Array<{
+        x: number;
+        y: number;
+        designIndex?: number;
+        castIndex?: number;
+        designSize?: '3/8' | '1/2' | '0.6';
+        castSize?: '3/8' | '1/2' | '0.6';
+      }> = [];
+
+      // Add design strands
+      designCoords?.forEach((coord, index) => {
+        allCoords.push({
+          x: coord.x,
+          y: coord.y,
+          designIndex: index,
+          designSize: designSizes?.[index],
+        });
+      });
+
+      // Add or match cast strands
+      castCoords?.forEach((coord, index) => {
+        const existing = allCoords.find(c => c.x === coord.x && c.y === coord.y);
+        if (existing) {
+          existing.castIndex = index;
+          existing.castSize = castSizes?.[index];
+        } else {
+          allCoords.push({
+            x: coord.x,
+            y: coord.y,
+            castIndex: index,
+            castSize: castSizes?.[index],
+          });
+        }
+      });
+
+      // Filter by active strands if specified
+      const filteredCoords = activeIndices !== null && activeIndices !== undefined
+        ? allCoords.filter(coord => {
+            // activeIndices are 1-based strand numbers, coord indices are 0-based
+            // Keep if cast strand is active
+            if (coord.castIndex !== undefined) {
+              return activeIndices.includes(coord.castIndex + 1);
+            }
+            // Keep if design strand is active
+            if (coord.designIndex !== undefined) {
+              return activeIndices.includes(coord.designIndex + 1);
+            }
+            return false;
+          })
+        : allCoords;
+
+      // Sort: left to right (x ascending), then bottom to top (y ascending)
+      filteredCoords.sort((a, b) => {
+        if (a.x !== b.x) return a.x - b.x;
+        return a.y - b.y;
+      });
+
+      // Build table rows
+      const rows = filteredCoords.map((coord, rowIndex) => {
+        const designStrandNum = coord.designIndex !== undefined ? coord.designIndex + 1 : null;
+        const castStrandNum = coord.castIndex !== undefined ? coord.castIndex + 1 : null;
+
+        // Create strand label (B1, B2... or T1, T2...)
+        const strandLabel = castStrandNum !== null ? `${position === 'Bottom' ? 'B' : 'T'}${castStrandNum}` : '-';
+
+        // Check if sizes mismatch (including when design has no strand at this location)
+        const hasMismatch = coord.designSize !== coord.castSize;
+        const highlightStyle = hasMismatch ? 'background: #fef08a;' : ''; // Yellow highlighter color
+
+        // Get slippage values for cast strand
+        let e1Value = '-';
+        let e2Value = '-';
+        if (castStrandNum !== null && strandSlippages) {
+          const prefix = position === 'Bottom' ? 'B' : 'T';
+          const slippage = strandSlippages.find(s => s.strandId === `${prefix}${castStrandNum}`);
+          if (slippage) {
+            e1Value = slippage.leftExceedsOne ? '>1.0"' : slippage.leftSlippage;
+            e2Value = slippage.rightExceedsOne ? '>1.0"' : slippage.rightSlippage;
+          }
+        }
+
+        return `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
+              ${coord.designIndex !== undefined ? `${coord.designSize}"` : '-'}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; background: #f3f4f6; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af;">
+              ${strandLabel}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af; ${highlightStyle}">
+              ${coord.castIndex !== undefined ? `${coord.castSize}"` : '-'}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center; border-right: 1px solid #9ca3af;">
+              ${e1Value}
+            </td>
+            <td style="padding: 4px 6px; font-size: 7px; text-align: center;">
+              ${e2Value}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <div style="margin-bottom: 12px;">
+          <h3 style="font-size: 10px; font-weight: 700; margin-bottom: 6px; color: #374151;">
+            ${position} Strands
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #d1d5db;">
+            <thead>
+              <tr style="background: #f9fafb;">
+                <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280; border-right: 1px solid #9ca3af;">
+                  DESIGN PATTERN
+                </th>
+                <th style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af; background: #e5e7eb;">
+                  STRAND
+                </th>
+                <th colspan="3" style="padding: 6px; font-size: 8px; font-weight: 700; text-align: center; border-bottom: 2px solid #6b7280;">
+                  CAST PATTERN
+                </th>
+              </tr>
+              <tr style="background: #f9fafb;">
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af;">Size</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af; border-left: 1px solid #9ca3af;">ID</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af;">Size</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db; border-right: 1px solid #9ca3af;">E1</th>
+                <th style="padding: 4px 6px; font-size: 7px; font-weight: 600; text-align: center; border-bottom: 1px solid #d1d5db;">E2</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    };
+
     // Build HTML content for the PDF
     const htmlContent = `
       <!DOCTYPE html>
@@ -342,6 +517,36 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
             .section {
               margin-bottom: 4px;
+              page-break-inside: avoid;
+            }
+
+            .section-large {
+              margin: 6px 0;
+              padding: 6px 0;
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+
+            .page-break {
+              page-break-before: always !important;
+              break-before: page !important;
+              margin-top: 0 !important;
+              padding-top: 0 !important;
+            }
+
+            .page-1-content {
+              min-height: 750px;
+              max-height: 750px;
+              height: 750px;
+              page-break-after: always !important;
+              display: block;
+            }
+
+            .page-2-content {
+              page-break-before: always !important;
+              display: block;
+              margin-top: 0;
+              padding: 12px 0;
             }
 
             h2 {
@@ -353,6 +558,16 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               line-height: 1.3;
               letter-spacing: 0.05em;
               word-spacing: 0.2em;
+            }
+
+            h2.large-heading {
+              font-size: 18px;
+              margin-bottom: 12px;
+              padding-bottom: 6px;
+              border-bottom: 3px solid #2563eb;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
             }
 
             .info-grid {
@@ -400,55 +615,16 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
             ${crossSectionImageUri ? `
             .cross-section {
               text-align: center;
-              margin: 4px auto;
-              padding: 4px;
-              background: #ffffff;
-              border-radius: 3px;
-              border: 1px solid #e5e7eb;
-              display: flex;
-              justify-content: center;
-              align-items: center;
+              margin: 6px auto;
+              page-break-inside: avoid;
+              width: 100%;
             }
 
             .cross-section img {
-              max-width: 95%;
-              max-height: 180px;
+              width: 100%;
               height: auto;
-              border-radius: 2px;
               display: block;
               margin: 0 auto;
-            }
-
-            /* Responsive sizing for different devices */
-            @media screen and (min-width: 768px) {
-              /* Tablets and larger - increase cross-section size */
-              .cross-section img {
-                max-height: 300px;
-                max-width: 90%;
-              }
-            }
-
-            @media screen and (min-width: 1024px) {
-              /* Desktop - significantly larger cross-section */
-              .cross-section {
-                padding: 8px;
-              }
-              .cross-section img {
-                max-height: 500px;
-                max-width: 85%;
-              }
-            }
-
-            @media screen and (max-width: 767px) {
-              /* Mobile devices - ensure cross-section fits with legend */
-              .cross-section {
-                padding: 2px;
-                margin: 2px auto;
-              }
-              .cross-section img {
-                max-height: 180px;
-                max-width: 100%;
-              }
             }
             ` : ''}
 
@@ -578,6 +754,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         </head>
         <body>
           <div class="pdf-container">
+
+          <!-- PAGE 1 CONTENT -->
+          <div class="page-1-content">
           <!-- Header -->
           <div class="header">
             <h1>Slippage Report</h1>
@@ -590,8 +769,13 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           <div class="section">
             <h2>Product Details</h2>
             <div class="info-grid">
+              <!-- Row 1 -->
               <div class="info-item">
-                <div class="info-label">Project Number</div>
+                <div class="info-label">Pour Date</div>
+                <div class="info-value">${config.pourDate || '-'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Project #</div>
                 <div class="info-value">${config.projectNumber || ''}</div>
               </div>
               <div class="info-item">
@@ -599,21 +783,14 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
                 <div class="info-value">${config.projectName || ''}</div>
               </div>
               <div class="info-item">
-                <div class="info-label">Mark Number</div>
-                <div class="info-value">${config.markNumber || ''}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">ID Number</div>
-                <div class="info-value">${config.idNumber || ''}</div>
-              </div>
-              <div class="info-item">
                 <div class="info-label">Product Type</div>
                 <div class="info-value">${config.productType}</div>
               </div>
               <div class="info-item">
-                <div class="info-label">Strand Pattern</div>
-                <div class="info-value">${strandPatternName || config.strandPattern}</div>
+                <div class="info-label">Mark #</div>
+                <div class="info-value">${config.markNumber || ''}</div>
               </div>
+              <!-- Row 2 -->
               ${config.span ? (() => {
                 const spanFormatted = formatSpanForPDF(config.span);
                 return `
@@ -630,16 +807,28 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               </div>
               `}
               <div class="info-item">
+                <div class="info-label">ID #</div>
+                <div class="info-value">${config.idNumber || ''}</div>
+              </div>
+              <div class="info-item">
                 <div class="info-label">Width${config.productWidth ? ' (Cut)' : ''}</div>
                 <div class="info-value">${config.productWidth ? `${config.productWidth}"` : '-'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Design Pattern</div>
+                <div class="info-value">${strandPatternName || config.strandPattern || '-'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Cast Pattern</div>
+                <div class="info-value">${castStrandPatternName || strandPatternName || config.strandPattern || '-'}</div>
               </div>
             </div>
           </div>
 
           ${base64Image ? `
           <!-- Cross Section -->
-          <div class="section">
-            <h2>Cross Section with Strand Pattern</h2>
+          <div class="section-large">
+            <h2 class="large-heading">Cross Section with Strand Pattern</h2>
             <div class="cross-section">
               <img src="${base64Image}" alt="Cross Section Diagram" />
             </div>
@@ -647,52 +836,19 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           ` : ''}
 
           <!-- Design vs Cast Pattern Comparison -->
-          ${(bottomPatternComparison || topPatternComparison) ? `
+          ${(designStrandCoordinates || castStrandCoordinates || designTopStrandCoordinates || castTopStrandCoordinates) ? `
           <div class="section">
             <h2>Design vs Cast Pattern Analysis</h2>
-
-            ${bottomPatternComparison ? `
-              <div style="margin-bottom: 6px;">
-                <div style="padding: 5px 6px; border-radius: 4px; background: ${bottomPatternComparison.hasDifferences ? '#FEE2E2' : '#D1FAE5'}; border: 1px solid ${bottomPatternComparison.hasDifferences ? '#FCA5A5' : '#6EE7B7'};">
-                  <div style="font-size: 8px; font-weight: 700; color: ${bottomPatternComparison.hasDifferences ? '#991B1B' : '#047857'}; margin-bottom: 3px;">
-                    Bottom Strands: ${bottomPatternComparison.hasDifferences ? '⚠ DIFFERENCES FOUND' : '✓ PATTERNS MATCH'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 2px;">
-                    <strong>Design:</strong> ${bottomPatternComparison.designPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 3px;">
-                    <strong>Cast:</strong> ${bottomPatternComparison.castPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7.5px; color: ${bottomPatternComparison.hasDifferences ? '#7F1D1D' : '#065F46'}; font-weight: ${bottomPatternComparison.hasDifferences ? '600' : 'normal'};">
-                    ${bottomPatternComparison.summary}
-                  </div>
-                  ${bottomPatternComparison.hasDifferences && bottomPatternComparison.differences.length > 0 ? formatComparisonForPDF(bottomPatternComparison) : ''}
-                </div>
-              </div>
-            ` : ''}
-
-            ${topPatternComparison ? `
-              <div style="margin-bottom: 6px;">
-                <div style="padding: 5px 6px; border-radius: 4px; background: ${topPatternComparison.hasDifferences ? '#FEE2E2' : '#D1FAE5'}; border: 1px solid ${topPatternComparison.hasDifferences ? '#FCA5A5' : '#6EE7B7'};">
-                  <div style="font-size: 8px; font-weight: 700; color: ${topPatternComparison.hasDifferences ? '#991B1B' : '#047857'}; margin-bottom: 3px;">
-                    Top Strands: ${topPatternComparison.hasDifferences ? '⚠ DIFFERENCES FOUND' : '✓ PATTERNS MATCH'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 2px;">
-                    <strong>Design:</strong> ${topPatternComparison.designPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7px; color: #4B5563; margin-bottom: 3px;">
-                    <strong>Cast:</strong> ${topPatternComparison.castPatternName || 'Not specified'}
-                  </div>
-                  <div style="font-size: 7.5px; color: ${topPatternComparison.hasDifferences ? '#7F1D1D' : '#065F46'}; font-weight: ${topPatternComparison.hasDifferences ? '600' : 'normal'};">
-                    ${topPatternComparison.summary}
-                  </div>
-                  ${topPatternComparison.hasDifferences && topPatternComparison.differences.length > 0 ? formatComparisonForPDF(topPatternComparison) : ''}
-                </div>
-              </div>
-            ` : ''}
+            ${buildStrandComparisonTable('Bottom', designStrandCoordinates, castStrandCoordinates, designStrandSizes, castStrandSizes, bottomStrands, activeStrandIndices)}
+            ${buildStrandComparisonTable('Top', designTopStrandCoordinates, castTopStrandCoordinates, designTopStrandSizes, castTopStrandSizes, topStrands, activeTopStrandIndices)}
           </div>
           ` : ''}
 
+          </div>
+          <!-- END PAGE 1 CONTENT -->
+
+          <!-- PAGE 2 CONTENT: STRAND STATISTICS -->
+          <div class="page-2-content">
           <!-- Bottom Strand Statistics -->
           ${bottomStrands.length > 0 ? `
           <div class="section" style="page-break-before: always;">
@@ -829,166 +985,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           </div>
           ` : ''}
 
-          <!-- Individual Strand Data -->
-          <div class="section">
-            <h2>Slippage by Strand</h2>
-
-            ${slippages.some(s => s.strandId.startsWith('B')) ? `
-              <h3 style="font-size: 13px; color: #059669; margin: 10px 0 5px 0; font-weight: 600;">Bottom Strands</h3>
-              <table class="strand-table">
-                <thead>
-                  <tr>
-                    <th>Strand</th>
-                    <th>END 1</th>
-                    <th>END 2</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${slippages.filter(s => s.strandId.startsWith('B')).map((strand) => {
-                    const end1Value = parseMeasurementInput(strand.leftSlippage);
-                    const end2Value = parseMeasurementInput(strand.rightSlippage);
-                    // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
-                    const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
-                    const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
-                    const strandTotal = e1 + e2;
-                    const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-                    const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
-                    const strandNum = strand.strandId.substring(1);
-                    const castIndex = parseInt(strandNum) - 1;
-
-                    // Get cast strand location from the provided coordinates
-                    const castCoord = castStrandCoordinates?.[castIndex];
-
-                    // Find differences that apply to THIS strand's location
-                    const locationTolerance = 0.5;
-                    const strandDiffs = bottomPatternComparison?.differences.filter(diff => {
-                      if (!castCoord) return false;
-                      const distance = Math.sqrt(
-                        Math.pow(diff.location.x - castCoord.x, 2) +
-                        Math.pow(diff.location.y - castCoord.y, 2)
-                      );
-                      return distance <= locationTolerance;
-                    }) || [];
-
-                    return `
-                      <tr>
-                        <td style="font-weight: 700; color: #059669;">
-                          Bottom Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
-                          ${strandDiffs.length > 0 ? `
-                            <div style="margin-top: 3px; padding: 3px 4px; background: #FEF3C7; border-left: 2px solid #F59E0B; font-size: 6px; font-weight: normal; color: #92400E; line-height: 1.3;">
-                              <strong style="font-size: 6.5px;">⚠ Design vs Cast:</strong><br/>
-                              ${strandDiffs.map(diff => `• ${diff.description}`).join('<br/>')}
-                            </div>
-                          ` : ''}
-                        </td>
-                        <td>
-                          <span style="color: #111827; font-weight: 600;">
-                            ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
-                          </span>
-                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                            (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
-                          </span>
-                        </td>
-                        <td>
-                          <span style="color: #111827; font-weight: 600;">
-                            ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
-                          </span>
-                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                            (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
-                          </span>
-                        </td>
-                        <td class="strand-total">
-                          ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
-                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                            (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
-                          </span>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            ` : ''}
-
-            ${slippages.some(s => s.strandId.startsWith('T')) ? `
-              <h3 style="font-size: 13px; color: #2563eb; margin: 15px 0 5px 0; font-weight: 600;">Top Strands</h3>
-              <table class="strand-table">
-                <thead>
-                  <tr>
-                    <th>Strand</th>
-                    <th>END 1</th>
-                    <th>END 2</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${slippages.filter(s => s.strandId.startsWith('T')).map((strand) => {
-                    const end1Value = parseMeasurementInput(strand.leftSlippage);
-                    const end2Value = parseMeasurementInput(strand.rightSlippage);
-                    // Use adjusted values: 1.0 if exceeds, otherwise use parsed value
-                    const e1 = strand.leftExceedsOne ? 1.0 : (end1Value ?? 0);
-                    const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
-                    const strandTotal = e1 + e2;
-                    const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-                    const strandSize = getStrandSize ? getStrandSize(strand.strandId) : '';
-                    const strandNum = strand.strandId.substring(1);
-                    const castIndex = parseInt(strandNum) - 1;
-
-                    // Get cast top strand location from the provided coordinates
-                    const castCoord = castTopStrandCoordinates?.[castIndex];
-
-                    // Find differences that apply to THIS strand's location
-                    const locationTolerance = 0.5;
-                    const strandDiffs = topPatternComparison?.differences.filter(diff => {
-                      if (!castCoord) return false;
-                      const distance = Math.sqrt(
-                        Math.pow(diff.location.x - castCoord.x, 2) +
-                        Math.pow(diff.location.y - castCoord.y, 2)
-                      );
-                      return distance <= locationTolerance;
-                    }) || [];
-
-                    return `
-                      <tr>
-                        <td style="font-weight: 700; color: #2563eb;">
-                          Top Strand ${strandNum}${strandSize ? ` (${strandSize})` : ''}
-                          ${strandDiffs.length > 0 ? `
-                            <div style="margin-top: 3px; padding: 3px 4px; background: #FEF3C7; border-left: 2px solid #F59E0B; font-size: 6px; font-weight: normal; color: #92400E; line-height: 1.3;">
-                              <strong style="font-size: 6.5px;">⚠ Design vs Cast:</strong><br/>
-                              ${strandDiffs.map(diff => `• ${diff.description}`).join('<br/>')}
-                            </div>
-                          ` : ''}
-                        </td>
-                        <td>
-                          <span style="color: #111827; font-weight: 600;">
-                            ${strand.leftExceedsOne ? '>1.000' : (end1Value !== null ? end1Value.toFixed(3) : '0.000')}"
-                          </span>
-                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                            (≈${strand.leftExceedsOne ? '>1' : (end1Value !== null ? decimalToFraction(end1Value) : '0')})
-                          </span>
-                        </td>
-                        <td>
-                          <span style="color: #111827; font-weight: 600;">
-                            ${strand.rightExceedsOne ? '>1.000' : (end2Value !== null ? end2Value.toFixed(3) : '0.000')}"
-                          </span>
-                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                            (≈${strand.rightExceedsOne ? '>1' : (end2Value !== null ? decimalToFraction(end2Value) : '0')})
-                          </span>
-                        </td>
-                        <td class="strand-total">
-                          ${hasExceeds ? '>' : ''}${strandTotal.toFixed(3)}"
-                          <span style="color: #6b7280; font-size: 11px; margin-left: 5px;">
-                            (≈${hasExceeds ? '>' : ''}${decimalToFraction(strandTotal)})
-                          </span>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            ` : ''}
           </div>
+          <!-- END PAGE 2 CONTENT -->
 
           <!-- Footer -->
           <div class="footer">
@@ -1004,6 +1002,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
     // Generate PDF
     console.log('[PDF Generator] Generating PDF...');
     console.log('[PDF Generator] Platform:', Platform.OS);
+    console.log('[PDF Generator] HTML contains page-1-content:', htmlContent.includes('page-1-content'));
+    console.log('[PDF Generator] HTML contains page-2-content:', htmlContent.includes('page-2-content'));
+    console.log('[PDF Generator] HTML contains Bottom Strand Statistics:', htmlContent.includes('Bottom Strand Statistics'));
 
     // Check if we're on web
     const isWeb = Platform.OS === 'web';
@@ -1150,12 +1151,54 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
           filename = `${filename}-${Date.now()}`;
         }
 
+        // Check if we should upload to SharePoint
+        const shouldUploadToSharePoint = params.uploadToSharePoint &&
+          config.projectNumber &&
+          config.markNumber &&
+          config.idNumber;
+
+        let sharePointUrl: string | undefined;
+
+        if (shouldUploadToSharePoint) {
+          try {
+            console.log('[PDF Generator] Uploading to SharePoint...');
+
+            // Generate folder name: last 4 digits - mark - id
+            const folderName = generateFolderName(
+              config.projectNumber || '',
+              config.markNumber || '',
+              config.idNumber || ''
+            );
+
+            // Convert PDF to Blob
+            const pdfBlob = pdf.output('blob');
+
+            // Upload to SharePoint
+            sharePointUrl = await uploadPDFToSharePoint(
+              pdfBlob,
+              `${filename}.pdf`,
+              folderName
+            );
+
+            console.log('[PDF Generator] Uploaded to SharePoint:', sharePointUrl);
+          } catch (uploadError) {
+            console.error('[PDF Generator] SharePoint upload failed:', uploadError);
+            // Continue with local download even if upload fails
+          }
+        }
+
+        // Always download locally as well
         pdf.save(`${filename}.pdf`);
 
         // Cleanup
         document.body.removeChild(tempDiv);
 
         console.log('[PDF Generator] PDF downloaded successfully');
+
+        // Return special string with SharePoint URL if uploaded
+        if (sharePointUrl) {
+          return `web-pdf-downloaded-sharepoint:${sharePointUrl}`;
+        }
         return 'web-pdf-downloaded';
       } catch (error: any) {
         console.error('[PDF Generator] PDF generation failed:', error);

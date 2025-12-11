@@ -160,6 +160,7 @@ export default function DashboardScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const isAdmin = currentUser?.role === 'admin';
+  const isSupervisorOrAbove = currentUser?.role === 'supervisor' || currentUser?.role === 'admin';
 
   const handleLogout = async () => {
     await logout();
@@ -223,12 +224,20 @@ export default function DashboardScreen() {
               </Text>
               <View className="flex-row gap-2">
                 {isAdmin && (
-                  <Pressable
-                    onPress={() => setShowDataImport(true)}
-                    className="bg-green-600 rounded-full p-3 active:bg-green-700"
-                  >
-                    <Ionicons name="cloud-upload" size={24} color="white" />
-                  </Pressable>
+                  <>
+                    <Pressable
+                      onPress={() => navigation.navigate('AdminApproval')}
+                      className="bg-purple-600 rounded-full p-3 active:bg-purple-700"
+                    >
+                      <Ionicons name="people" size={24} color="white" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setShowDataImport(true)}
+                      className="bg-green-600 rounded-full p-3 active:bg-green-700"
+                    >
+                      <Ionicons name="cloud-upload" size={24} color="white" />
+                    </Pressable>
+                  </>
                 )}
                 <Pressable
                   onPress={() => setShowSearch(true)}

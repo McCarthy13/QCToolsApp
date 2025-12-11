@@ -28,8 +28,11 @@ node_modules/
 # Expo
 .expo/
 dist/
-web-build/  # Contains bundled code that may expose secrets
+web-build/
 expo-env.d.ts
+
+# Additional security - git credentials stored in remote URL
+.git/config
 
 # Native
 .kotlin/
