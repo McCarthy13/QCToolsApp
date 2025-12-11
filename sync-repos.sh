@@ -41,11 +41,15 @@ else
 fi
 
 # Push to Vibecode
-echo -e "${BLUE}📤 Pushing to Vibecode...${NC}"
-if git push vibecode "$CURRENT_BRANCH" 2>/dev/null; then
-    echo -e "${GREEN}✅ Successfully pushed to Vibecode${NC}"
+echo -e "${BLUE}📤 Pushing to Vibecode sandbox...${NC}"
+if git remote get-url vibecode >/dev/null 2>&1; then
+    if git push vibecode "$CURRENT_BRANCH" 2>/dev/null; then
+        echo -e "${GREEN}✅ Successfully pushed to Vibecode${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Failed to push to Vibecode (this is optional)${NC}"
+    fi
 else
-    echo -e "${YELLOW}⚠️  Failed to push to Vibecode (this is optional)${NC}"
+    echo -e "${YELLOW}ℹ️  Vibecode remote not configured, skipping${NC}"
 fi
 
 # Deploy to Firebase (if deploy.js exists)
