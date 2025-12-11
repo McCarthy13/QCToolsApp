@@ -402,7 +402,7 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       <html>
         <head>
           <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="viewport" content="width=612, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           <style>
             @page {
               size: letter;
@@ -432,64 +432,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               font-size: 9px;
               word-spacing: 0.2em;
               letter-spacing: 0.02em;
+              width: 612px; /* Fixed width: 8.5" at 72dpi */
               max-width: 612px;
               overflow: hidden;
-            }
-
-            /* Responsive font and layout sizing */
-            @media screen and (min-width: 768px) {
-              /* Tablets - slightly larger text */
-              body, .pdf-container {
-                font-size: 10px;
-                padding: 16px 24px;
-              }
-              h1 {
-                font-size: 16px !important;
-              }
-              h2 {
-                font-size: 11px !important;
-              }
-              .strand-table th {
-                font-size: 8px !important;
-              }
-              .strand-table td {
-                font-size: 8.5px !important;
-              }
-            }
-
-            @media screen and (min-width: 1024px) {
-              /* Desktop - much larger text for readability */
-              body, .pdf-container {
-                font-size: 12px;
-                padding: 20px 30px;
-                max-width: 800px;
-              }
-              h1 {
-                font-size: 20px !important;
-              }
-              h2 {
-                font-size: 14px !important;
-              }
-              .strand-table th {
-                font-size: 10px !important;
-                padding: 5px 6px !important;
-              }
-              .strand-table td {
-                font-size: 11px !important;
-                padding: 5px 6px !important;
-              }
-              .info-label {
-                font-size: 8px !important;
-              }
-              .info-value {
-                font-size: 10px !important;
-              }
-              .stat-label {
-                font-size: 8px !important;
-              }
-              .stat-value {
-                font-size: 11px !important;
-              }
             }
 
             .header {
@@ -1239,8 +1184,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
       // First attempt: try with image if available
       const result = await Print.printToFileAsync({
         html: htmlContent,
-        width: 612, // 8.5 inches in points
-        height: 792, // 11 inches in points
+        width: 612, // Fixed: 8.5" at 72dpi (letter size)
+        height: 792, // Fixed: 11" at 72dpi (letter size)
       });
       uri = result.uri;
       console.log('[PDF Generator] PDF created successfully at:', uri);
@@ -1274,8 +1219,8 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         try {
           const retryResult = await Print.printToFileAsync({
             html: htmlWithoutImage,
-            width: 612,
-            height: 792,
+            width: 612, // Fixed: 8.5" at 72dpi (letter size)
+            height: 792, // Fixed: 11" at 72dpi (letter size)
           });
           uri = retryResult.uri;
           console.log('[PDF Generator] PDF created successfully without image at:', uri);
