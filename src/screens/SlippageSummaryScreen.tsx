@@ -252,9 +252,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
   // Save and publish handlers
   const handleSave = () => {
+    console.log('[SlippageSummaryScreen] ========== SAVE BUTTON PRESSED ==========');
     console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
     console.log('[SlippageSummaryScreen] Current user ID:', currentUser?.id);
+    console.log('[SlippageSummaryScreen] Current user ID type:', typeof currentUser?.id);
     console.log('[SlippageSummaryScreen] Current user email:', currentUser?.email);
+    console.log('[SlippageSummaryScreen] Is user ID defined?:', currentUser?.id !== undefined);
+    console.log('[SlippageSummaryScreen] Is user ID empty string?:', currentUser?.id === '');
+
+    if (!currentUser || !currentUser.id || currentUser.id === '') {
+      console.error('[SlippageSummaryScreen] ERROR: Cannot save - user ID is missing or empty!');
+      console.error('[SlippageSummaryScreen] currentUser:', currentUser);
+      alert('Error: User not logged in properly. Please sign out and sign back in.');
+      return;
+    }
 
     const record: SlippageRecord = {
       id: `slippage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -266,6 +277,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     };
 
     console.log('[SlippageSummaryScreen] Created record with userId:', record.userId);
+    console.log('[SlippageSummaryScreen] Full record:', JSON.stringify(record, null, 2));
     addUserRecord(record);
     setSaveSuccess(true);
     setShowSaveModal(false);
@@ -273,6 +285,17 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   };
 
   const handlePublish = () => {
+    console.log('[SlippageSummaryScreen] ========== PUBLISH BUTTON PRESSED ==========');
+    console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
+    console.log('[SlippageSummaryScreen] Current user ID:', currentUser?.id);
+    console.log('[SlippageSummaryScreen] Current user email:', currentUser?.email);
+
+    if (!currentUser || !currentUser.id || currentUser.id === '') {
+      console.error('[SlippageSummaryScreen] ERROR: Cannot publish - user ID is missing or empty!');
+      alert('Error: User not logged in properly. Please sign out and sign back in.');
+      return;
+    }
+
     const record: SlippageRecord = {
       id: `slippage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: Date.now(),
@@ -281,6 +304,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       createdBy: currentUser?.email || 'Unknown',
       userId: currentUser?.id || '',
     };
+    console.log('[SlippageSummaryScreen] Publishing record with userId:', record.userId);
     publishRecord(record, currentUser?.email || 'Unknown');
     setPublishSuccess(true);
     setShowPublishModal(false);
