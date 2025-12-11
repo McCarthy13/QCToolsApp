@@ -2,7 +2,7 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
-## Recent Fix: Microsoft 365 Login + Record Saving
+## Recent Fix: Microsoft 365 Login + Record Saving ✅
 
 **Issue**: After switching to Microsoft 365 login, records were not being saved to "My Records" or "Published".
 
@@ -11,8 +11,12 @@ A comprehensive mobile app for precast concrete quality management, built with R
 **Solution**: Modified the Microsoft 365 login flow to also create a Firebase Auth session using a deterministic email/password combination. This allows Firestore security rules to work properly while Microsoft 365 handles the actual user authentication.
 
 **Files Modified**:
-- `src/services/firebaseAuth.ts` - Added `signInForMicrosoftUser()` function
+- `src/services/firebaseAuth.ts` - Added `signInForMicrosoftUser()` function with proper logging
 - `src/state/authStore.ts` - Updated `loginWithMicrosoft()` to call Firebase Auth after Microsoft login
+
+**Deployed**: Successfully deployed to Firebase Hosting on 2025-12-11
+- Live at: https://precast-qc-tools-web-app.web.app
+- Commit: 5cce2a8
 
 ## Git Repository Configuration
 
