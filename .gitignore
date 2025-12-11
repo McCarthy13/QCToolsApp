@@ -21,6 +21,7 @@ CREDENTIALS.md
 
 # Git credentials
 .git-credentials
+.git/config  # May contain tokens in remote URLs
 
 # dependencies
 node_modules/
