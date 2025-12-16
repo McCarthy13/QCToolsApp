@@ -20,12 +20,13 @@ A comprehensive mobile app for precast concrete quality management, built with R
 
 ## Git Repository Configuration ✅
 
-This project is now configured with GitHub as the primary remote repository:
+This project is configured with dual git remotes for automatic synchronization:
 
-- **Remote Origin**: https://github.com/McCarthy13/QCToolsApp
-- **Authentication**: Secure credential storage (Personal Access Token configured)
-- **Status**: Successfully synchronized and ready for continuous deployment
-- Git credentials stored securely in `~/.git-credentials` (not committed to repo)
+**Remotes:**
+- `origin` → https://github.com/McCarthy13/QCToolsApp (PRIMARY - GitHub)
+- `vibecode` → Vibecode sandbox internal repository
+
+**Authentication**: Personal Access Token configured in remote URL (git-ignored via .git/config exclusion)
 
 ### Three-Way Synchronization ⚠️ CRITICAL
 
@@ -35,7 +36,7 @@ All three environments MUST stay in sync at all times:
 2. **Vibecode Sandbox** (/home/user/workspace/) - Development environment
 3. **Firebase Hosting** (https://precast-qc-tools-web-app.web.app) - Production deployment
 
-**Last Synchronized**: 2025-12-15 (all environments now in sync)
+**Last Synchronized**: 2025-12-16 (all environments now in sync)
 
 ### Workflow for Every Update
 
@@ -47,16 +48,17 @@ All three environments MUST stay in sync at all times:
    ```bash
    git commit -m "descriptive commit message"
    ```
-4. **Push to GitHub** repository (PRIMARY SOURCE OF TRUTH)
+4. **Push to BOTH remotes** to keep all environments synchronized:
    ```bash
-   git push origin main
+   git push origin main      # Push to GitHub (primary)
+   git push vibecode main    # Push to Vibecode sandbox
    ```
 5. **Deploy to Firebase** when ready for production
    ```bash
    node deploy.js
    ```
 
-**IMPORTANT**: Never skip step 4. All changes must be pushed to GitHub to keep environments synchronized.
+**IMPORTANT**: Never skip step 4. All changes must be pushed to both GitHub and Vibecode remotes to keep environments synchronized.
 
 This ensures all three environments remain synchronized at all times.
 
