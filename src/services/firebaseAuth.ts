@@ -23,13 +23,17 @@ export const registerUser = async (
   password: string
 ): Promise<AuthResult> => {
   try {
+    console.log('[FirebaseAuth] registerUser - Attempting to register:', email);
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
+    console.log('[FirebaseAuth] registerUser - Success, uid:', userCredential.user.uid);
     return { user: userCredential.user, error: null };
   } catch (error: any) {
+    console.error('[FirebaseAuth] registerUser - Error code:', error.code);
+    console.error('[FirebaseAuth] registerUser - Error message:', error.message);
     return { user: null, error: error.message || 'Registration failed' };
   }
 };
