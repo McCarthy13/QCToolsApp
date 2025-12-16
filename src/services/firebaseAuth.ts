@@ -6,6 +6,7 @@ import {
   updatePassword,
   User as FirebaseUser,
   onAuthStateChanged,
+  signInAnonymously,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
@@ -141,8 +142,9 @@ export const onAuthStateChange = (
 };
 
 /**
- * Sign in to Firebase Auth using a fixed email/password for Microsoft 365 users
+ * Sign in to Firebase Auth for Microsoft 365 users using anonymous authentication
  * This creates a Firebase Auth session so Firestore security rules work properly
+ * The actual user identity is managed via Microsoft SSO and stored in Firestore
  */
 export const signInForMicrosoftUser = async (
   userId: string
@@ -150,31 +152,25 @@ export const signInForMicrosoftUser = async (
   try {
     console.log('[FirebaseAuth] signInForMicrosoftUser - Starting for userId:', userId);
 
-    // Use a deterministic password based on the userId
-    // This is safe because Microsoft 365 handles the actual authentication
-    const email = `${userId}@microsoft-sso.local`;
-    const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'precast';
-    const password = `ms365-${userId}-${projectId}`;
+    // Use anonymous authentication for Microsoft SSO users
+    // This allows Firebase Auth to work without requiring a real email
+    // The actual user identity comes from Microsoft SSO and is stored in Firestore
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Using anonymous authentication');
 
-    console.log('[FirebaseAuth] signInForMicrosoftUser - Using email:', email);
+    const userCredential = await signInAnonymously(auth);
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Anonymous sign in successful, uid:', userCredential.user.uid);
 
-    // Try to sign in first
-    let result = await signIn(email, password);
-
-    // If user doesn't exist, create the account
-    if (result.error && result.error.includes('Invalid email or password')) {
-      console.log('[FirebaseAuth] Creating Firebase Auth account for Microsoft user:', userId);
-      result = await registerUser(email, password);
-      console.log('[FirebaseAuth] Registration result:', result.error ? `Error: ${result.error}` : 'Success');
-    } else if (result.error) {
-      console.error('[FirebaseAuth] Sign in error:', result.error);
-    } else {
-      console.log('[FirebaseAuth] Sign in successful for:', email);
-    }
-
-    return result;
+    return { user: userCredential.user, error: null };
   } catch (error: any) {
     console.error('[FirebaseAuth] signInForMicrosoftUser - Exception:', error);
-    return { user: null, error: error.message || 'Microsoft Firebase auth failed' };
+    console.error('[FirebaseAuth] signInForMicrosoftUser - Error code:', error.code);
+    console.error('[FirebaseAuth] signInForMicrosoftUser - Error message:', error.message);
+
+    let errorMessage = 'Microsoft Firebase auth failed';
+    if (error.code === 'auth/operation-not-allowed') {
+      errorMessage = 'Anonymous authentication is not enabled in Firebase. Please enable it in the Firebase Console.';
+    }
+
+    return { user: null, error: errorMessage };
   }
 };
