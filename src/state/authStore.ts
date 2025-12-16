@@ -118,7 +118,21 @@ export const useAuthStore = create<AuthState>()(
         onAuthStateChange(async (firebaseUser) => {
           console.log('[AuthStore] onAuthStateChange - Firebase user:', firebaseUser?.uid, firebaseUser?.email);
           if (firebaseUser) {
-            // User is signed in, try to fetch their profile
+            // For anonymous auth (Microsoft SSO), the currentUser is already set by loginWithMicrosoft
+            // Don't overwrite it by trying to fetch profile with the anonymous UID
+            const currentState = get();
+            if (currentState.currentUser && currentState.currentSession) {
+              console.log('[AuthStore] onAuthStateChange - User already logged in via Microsoft SSO, keeping existing session');
+              return;
+            }
+
+            // For regular email/password auth, try to fetch their profile
+            // Skip this for anonymous users (they don't have an email)
+            if (firebaseUser.isAnonymous) {
+              console.log('[AuthStore] onAuthStateChange - Anonymous user detected, skipping profile fetch');
+              return;
+            }
+
             try {
               const { user: profile, error } = await getUserProfile(firebaseUser.uid);
               console.log('[AuthStore] onAuthStateChange - Profile fetched:', profile?.uid, profile?.email);
@@ -150,11 +164,14 @@ export const useAuthStore = create<AuthState>()(
               });
             }
           } else {
-            // User is signed out
-            set({
-              currentUser: null,
-              currentSession: null,
-            });
+            // User is signed out - but only clear state if we don't have a Microsoft session
+            const currentState = get();
+            if (!currentState.currentUser) {
+              set({
+                currentUser: null,
+                currentSession: null,
+              });
+            }
           }
         });
 
