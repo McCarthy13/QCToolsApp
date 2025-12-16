@@ -22,13 +22,17 @@ export const registerUser = async (
   password: string
 ): Promise<AuthResult> => {
   try {
+    console.log('[FirebaseAuth] registerUser - Attempting to register:', email);
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
+    console.log('[FirebaseAuth] registerUser - Success, uid:', userCredential.user.uid);
     return { user: userCredential.user, error: null };
   } catch (error: any) {
+    console.error('[FirebaseAuth] registerUser - Error code:', error.code);
+    console.error('[FirebaseAuth] registerUser - Error message:', error.message);
     return { user: null, error: error.message || 'Registration failed' };
   }
 };
@@ -157,24 +161,41 @@ export const signInForMicrosoftUser = async (
     const password = `ms365-${userId}-${projectId}`;
 
     console.log('[FirebaseAuth] signInForMicrosoftUser - Using email:', email);
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Project ID:', projectId);
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Password length:', password.length);
 
     // Try to sign in first
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Attempting sign in...');
     let result = await signIn(email, password);
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Sign in result:', result.error ? `Error: ${result.error}` : 'Success');
 
     // If user doesn't exist, create the account
     if (result.error && result.error.includes('Invalid email or password')) {
       console.log('[FirebaseAuth] Creating Firebase Auth account for Microsoft user:', userId);
       result = await registerUser(email, password);
       console.log('[FirebaseAuth] Registration result:', result.error ? `Error: ${result.error}` : 'Success');
+
+      // If registration failed, log detailed error
+      if (result.error) {
+        console.error('[FirebaseAuth] Registration failed with error:', result.error);
+      }
     } else if (result.error) {
       console.error('[FirebaseAuth] Sign in error:', result.error);
     } else {
       console.log('[FirebaseAuth] Sign in successful for:', email);
     }
 
+    console.log('[FirebaseAuth] signInForMicrosoftUser - Final result:', {
+      hasUser: !!result.user,
+      userUid: result.user?.uid,
+      error: result.error
+    });
+
     return result;
   } catch (error: any) {
     console.error('[FirebaseAuth] signInForMicrosoftUser - Exception:', error);
+    console.error('[FirebaseAuth] signInForMicrosoftUser - Exception message:', error.message);
+    console.error('[FirebaseAuth] signInForMicrosoftUser - Exception code:', error.code);
     return { user: null, error: error.message || 'Microsoft Firebase auth failed' };
   }
 };
