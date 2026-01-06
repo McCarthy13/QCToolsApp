@@ -3,501 +3,382 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   QualityLogEntry,
-  QualityIssue,
-  IssueCode,
-  Department,
-  DepartmentType,
-  ProductionItem,
-  QualityMetrics,
-  IssueStatus,
-  IssueSeverity,
+  QualityCode,
+  ImportBatch,
+  Disposition,
+  ProductType,
+  BedNumber,
+  getStatusFromDisposition,
+  shouldSetApprovalDate,
 } from '../types/quality-log';
+import { firestore, auth } from '../config/firebase';
+import {
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  Unsubscribe,
+} from 'firebase/firestore';
 
 interface QualityLogState {
   // Data
-  logs: QualityLogEntry[];
-  issueCodes: IssueCode[];
-  departments: Department[];
-  
-  // Quality Log Operations
-  addLog: (log: Omit<QualityLogEntry, 'id' | 'createdAt' | 'updatedAt'>) => string;
-  updateLog: (id: string, updates: Partial<QualityLogEntry>) => void;
-  deleteLog: (id: string) => void;
-  getLog: (id: string) => QualityLogEntry | undefined;
-  getLogsByDepartment: (department: DepartmentType) => QualityLogEntry[];
-  getLogsByDateRange: (startDate: number, endDate: number, department?: DepartmentType) => QualityLogEntry[];
-  
-  // Issue Operations
-  addIssueToLog: (logId: string, issue: Omit<QualityIssue, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateIssue: (logId: string, issueId: string, updates: Partial<QualityIssue>) => void;
-  deleteIssue: (logId: string, issueId: string) => void;
-  resolveIssue: (logId: string, issueId: string, resolvedBy: string, actionTaken: string) => void;
-  
-  // Production Item Operations
-  addProductionItem: (logId: string, item: Omit<ProductionItem, 'id'>) => void;
-  updateProductionItem: (logId: string, itemId: string, updates: Partial<ProductionItem>) => void;
-  deleteProductionItem: (logId: string, itemId: string) => void;
-  
-  // Issue Code Library Operations
-  addIssueCode: (code: Omit<IssueCode, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateIssueCode: (id: string, updates: Partial<IssueCode>) => void;
-  deleteIssueCode: (id: string) => void;
-  getIssueCodeByCode: (code: number) => IssueCode | undefined;
-  getIssueCodesByDepartment: (department?: DepartmentType) => IssueCode[];
-  
-  // Department Operations
-  addDepartment: (name: DepartmentType) => void;
-  toggleDepartmentActive: (id: string) => void;
-  getActiveDepartments: () => Department[];
-  
-  // Analytics/Metrics
-  getMetrics: (department: DepartmentType, startDate: number, endDate: number) => QualityMetrics;
-  
+  entries: QualityLogEntry[];
+  issueCodes: QualityCode[];
+  rejectCodes: QualityCode[];
+  importBatches: ImportBatch[];
+  isLoading: boolean;
+
+  // Firebase subscriptions
+  unsubscribeEntries: Unsubscribe | null;
+  unsubscribeIssueCodes: Unsubscribe | null;
+  unsubscribeRejectCodes: Unsubscribe | null;
+
+  // Initialize Firebase listeners
+  initialize: () => void;
+  cleanup: () => void;
+
+  // Entry operations
+  addEntry: (entry: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>) => Promise<string>;
+  addEntries: (entries: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>[]) => Promise<string[]>;
+  updateEntry: (id: string, updates: Partial<QualityLogEntry>, skipConfirmation?: boolean) => Promise<void>;
+  deleteEntry: (id: string) => Promise<void>;
+  getEntryByIdNumber: (idNumber: string) => QualityLogEntry | undefined;
+
+  // Disposition change (handles auto-status and auto-date)
+  setDisposition: (id: string, disposition: Disposition) => Promise<void>;
+
+  // Issue/Reject code operations
+  addIssueCode: (code: Omit<QualityCode, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateIssueCode: (id: string, updates: Partial<QualityCode>) => Promise<void>;
+  deleteIssueCode: (id: string) => Promise<void>;
+
+  addRejectCode: (code: Omit<QualityCode, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateRejectCode: (id: string, updates: Partial<QualityCode>) => Promise<void>;
+  deleteRejectCode: (id: string) => Promise<void>;
+
+  // Import batch tracking
+  addImportBatch: (batch: Omit<ImportBatch, 'id' | 'importedAt'>) => Promise<string>;
+
   // Utility
-  clearAllData: () => void;
-  initializeDefaultData: () => void;
+  clearAllEntries: () => Promise<void>;
+  initializeDefaultCodes: () => Promise<void>;
 }
+
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+const formatDate = (date: Date): string => {
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};
 
 export const useQualityLogStore = create<QualityLogState>()(
   persist(
     (set, get) => ({
-      logs: [],
+      entries: [],
       issueCodes: [],
-      departments: [],
-      
-      // Quality Log Operations
-      addLog: (log) => {
-        const id = `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newLog: QualityLogEntry = {
-          ...log,
+      rejectCodes: [],
+      importBatches: [],
+      isLoading: false,
+      unsubscribeEntries: null,
+      unsubscribeIssueCodes: null,
+      unsubscribeRejectCodes: null,
+
+      initialize: () => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          console.log('[QualityLogStore] No user logged in, skipping initialization');
+          return;
+        }
+
+        // Subscribe to entries
+        const entriesQuery = query(
+          collection(firestore, 'qualityLogEntries'),
+          orderBy('pourDate', 'desc')
+        );
+        const unsubEntries = onSnapshot(entriesQuery, (snapshot) => {
+          const entries: QualityLogEntry[] = [];
+          snapshot.forEach((doc) => {
+            entries.push({ id: doc.id, ...doc.data() } as QualityLogEntry);
+          });
+          set({ entries });
+        }, (error) => {
+          console.error('[QualityLogStore] Entries subscription error:', error);
+        });
+
+        // Subscribe to issue codes
+        const issueCodesQuery = query(
+          collection(firestore, 'qualityIssueCodes'),
+          orderBy('code')
+        );
+        const unsubIssueCodes = onSnapshot(issueCodesQuery, (snapshot) => {
+          const codes: QualityCode[] = [];
+          snapshot.forEach((doc) => {
+            codes.push({ id: doc.id, ...doc.data() } as QualityCode);
+          });
+          set({ issueCodes: codes });
+        }, (error) => {
+          console.error('[QualityLogStore] Issue codes subscription error:', error);
+        });
+
+        // Subscribe to reject codes
+        const rejectCodesQuery = query(
+          collection(firestore, 'qualityRejectCodes'),
+          orderBy('code')
+        );
+        const unsubRejectCodes = onSnapshot(rejectCodesQuery, (snapshot) => {
+          const codes: QualityCode[] = [];
+          snapshot.forEach((doc) => {
+            codes.push({ id: doc.id, ...doc.data() } as QualityCode);
+          });
+          set({ rejectCodes: codes });
+        }, (error) => {
+          console.error('[QualityLogStore] Reject codes subscription error:', error);
+        });
+
+        set({
+          unsubscribeEntries: unsubEntries,
+          unsubscribeIssueCodes: unsubIssueCodes,
+          unsubscribeRejectCodes: unsubRejectCodes,
+        });
+
+        // Initialize default codes if needed
+        get().initializeDefaultCodes();
+      },
+
+      cleanup: () => {
+        const { unsubscribeEntries, unsubscribeIssueCodes, unsubscribeRejectCodes } = get();
+        if (unsubscribeEntries) unsubscribeEntries();
+        if (unsubscribeIssueCodes) unsubscribeIssueCodes();
+        if (unsubscribeRejectCodes) unsubscribeRejectCodes();
+        set({
+          unsubscribeEntries: null,
+          unsubscribeIssueCodes: null,
+          unsubscribeRejectCodes: null,
+        });
+      },
+
+      addEntry: async (entry) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error('User not logged in');
+
+        const id = generateId();
+        const now = Date.now();
+        const newEntry: QualityLogEntry = {
+          ...entry,
           id,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+          importedAt: now,
+          updatedAt: now,
+          importedBy: currentUser.email || 'unknown',
+          issueCodes: entry.issueCodes || [],
+          rejectCodes: entry.rejectCodes || [],
         };
-        
-        set((state) => ({
-          logs: [...state.logs, newLog],
-        }));
-        
+
+        await setDoc(doc(firestore, 'qualityLogEntries', id), newEntry);
         return id;
       },
-      
-      updateLog: (id, updates) => {
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === id
-              ? { ...log, ...updates, updatedAt: Date.now() }
-              : log
-          ),
-        }));
+
+      addEntries: async (entries) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error('User not logged in');
+
+        const ids: string[] = [];
+        const now = Date.now();
+
+        for (const entry of entries) {
+          // Check for duplicate ID number
+          const existing = get().getEntryByIdNumber(entry.idNumber);
+          if (existing) {
+            console.log(`[QualityLogStore] Skipping duplicate ID #: ${entry.idNumber}`);
+            continue;
+          }
+
+          const id = generateId();
+          ids.push(id);
+          const newEntry: QualityLogEntry = {
+            ...entry,
+            id,
+            importedAt: now,
+            updatedAt: now,
+            importedBy: currentUser.email || 'unknown',
+            issueCodes: entry.issueCodes || [],
+            rejectCodes: entry.rejectCodes || [],
+          };
+
+          await setDoc(doc(firestore, 'qualityLogEntries', id), newEntry);
+        }
+
+        return ids;
       },
-      
-      deleteLog: (id) => {
-        set((state) => ({
-          logs: state.logs.filter((log) => log.id !== id),
-        }));
-      },
-      
-      getLog: (id) => {
-        return get().logs.find((log) => log.id === id);
-      },
-      
-      getLogsByDepartment: (department) => {
-        return get().logs.filter((log) => log.department === department)
-          .sort((a, b) => b.date - a.date);
-      },
-      
-      getLogsByDateRange: (startDate, endDate, department) => {
-        return get().logs.filter((log) => {
-          const inRange = log.date >= startDate && log.date <= endDate;
-          const inDepartment = department ? log.department === department : true;
-          return inRange && inDepartment;
-        }).sort((a, b) => b.date - a.date);
-      },
-      
-      // Issue Operations
-      addIssueToLog: (logId, issue) => {
-        const issueId = `issue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newIssue: QualityIssue = {
-          ...issue,
-          id: issueId,
-          createdAt: Date.now(),
+
+      updateEntry: async (id, updates) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error('User not logged in');
+
+        const entry = get().entries.find((e) => e.id === id);
+        if (!entry) throw new Error('Entry not found');
+
+        const updatedEntry = {
+          ...entry,
+          ...updates,
           updatedAt: Date.now(),
+          updatedBy: currentUser.email || 'unknown',
         };
-        
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  issues: [...(log.issues || []), newIssue],
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
+
+        await setDoc(doc(firestore, 'qualityLogEntries', id), updatedEntry);
       },
-      
-      updateIssue: (logId, issueId, updates) => {
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  issues: (log.issues || []).map((issue) =>
-                    issue.id === issueId
-                      ? { ...issue, ...updates, updatedAt: Date.now() }
-                      : issue
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
+
+      deleteEntry: async (id) => {
+        await deleteDoc(doc(firestore, 'qualityLogEntries', id));
       },
-      
-      deleteIssue: (logId, issueId) => {
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  issues: (log.issues || []).filter((issue) => issue.id !== issueId),
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
+
+      getEntryByIdNumber: (idNumber) => {
+        return get().entries.find((e) => e.idNumber === idNumber);
       },
-      
-      resolveIssue: (logId, issueId, resolvedBy, actionTaken) => {
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  issues: (log.issues || []).map((issue) =>
-                    issue.id === issueId
-                      ? {
-                          ...issue,
-                          status: 'Resolved' as IssueStatus,
-                          resolvedBy,
-                          resolvedAt: Date.now(),
-                          actionTaken,
-                          updatedAt: Date.now(),
-                        }
-                      : issue
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
-      },
-      
-      // Production Item Operations
-      addProductionItem: (logId, item) => {
-        const itemId = `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newItem: ProductionItem = {
-          ...item,
-          id: itemId,
+
+      setDisposition: async (id, disposition) => {
+        const entry = get().entries.find((e) => e.id === id);
+        if (!entry) throw new Error('Entry not found');
+
+        const { status, color } = getStatusFromDisposition(disposition);
+        const updates: Partial<QualityLogEntry> = {
+          disposition,
+          status,
         };
-        
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  productionItems: [...(log.productionItems || []), newItem],
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
+
+        // Set approval/rejection date if needed
+        if (shouldSetApprovalDate(disposition)) {
+          updates.approvalRejectionDate = formatDate(new Date());
+        }
+
+        await get().updateEntry(id, updates);
       },
-      
-      updateProductionItem: (logId, itemId, updates) => {
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  productionItems: (log.productionItems || []).map((item) =>
-                    item.id === itemId ? { ...item, ...updates } : item
-                  ),
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
-      },
-      
-      deleteProductionItem: (logId, itemId) => {
-        set((state) => ({
-          logs: state.logs.map((log) =>
-            log.id === logId
-              ? {
-                  ...log,
-                  productionItems: (log.productionItems || []).filter((item) => item.id !== itemId),
-                  updatedAt: Date.now(),
-                }
-              : log
-          ),
-        }));
-      },
-      
-      // Issue Code Library Operations
-      addIssueCode: (code) => {
-        const id = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newCode: IssueCode = {
+
+      // Issue code operations
+      addIssueCode: async (code) => {
+        const id = generateId();
+        const now = Date.now();
+        const newCode: QualityCode = {
           ...code,
           id,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+          createdAt: now,
+          updatedAt: now,
         };
-        
-        set((state) => ({
-          issueCodes: [...state.issueCodes, newCode],
-        }));
+        await setDoc(doc(firestore, 'qualityIssueCodes', id), newCode);
       },
-      
-      updateIssueCode: (id, updates) => {
-        set((state) => ({
-          issueCodes: state.issueCodes.map((code) =>
-            code.id === id
-              ? { ...code, ...updates, updatedAt: Date.now() }
-              : code
-          ),
-        }));
+
+      updateIssueCode: async (id, updates) => {
+        const code = get().issueCodes.find((c) => c.id === id);
+        if (!code) throw new Error('Issue code not found');
+        await setDoc(doc(firestore, 'qualityIssueCodes', id), {
+          ...code,
+          ...updates,
+          updatedAt: Date.now(),
+        });
       },
-      
-      deleteIssueCode: (id) => {
-        set((state) => ({
-          issueCodes: state.issueCodes.filter((code) => code.id !== id),
-        }));
+
+      deleteIssueCode: async (id) => {
+        await deleteDoc(doc(firestore, 'qualityIssueCodes', id));
       },
-      
-      getIssueCodeByCode: (code) => {
-        return get().issueCodes.find((ic) => ic.code === code);
-      },
-      
-      getIssueCodesByDepartment: (department) => {
-        if (!department) {
-          return get().issueCodes;
-        }
-        return get().issueCodes.filter(
-          (code) => !code.department || code.department === department
-        );
-      },
-      
-      // Department Operations
-      addDepartment: (name) => {
-        const id = `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newDept: Department = {
+
+      // Reject code operations
+      addRejectCode: async (code) => {
+        const id = generateId();
+        const now = Date.now();
+        const newCode: QualityCode = {
+          ...code,
           id,
-          name,
-          isActive: true,
-          createdAt: Date.now(),
+          createdAt: now,
+          updatedAt: now,
+        };
+        await setDoc(doc(firestore, 'qualityRejectCodes', id), newCode);
+      },
+
+      updateRejectCode: async (id, updates) => {
+        const code = get().rejectCodes.find((c) => c.id === id);
+        if (!code) throw new Error('Reject code not found');
+        await setDoc(doc(firestore, 'qualityRejectCodes', id), {
+          ...code,
+          ...updates,
           updatedAt: Date.now(),
+        });
+      },
+
+      deleteRejectCode: async (id) => {
+        await deleteDoc(doc(firestore, 'qualityRejectCodes', id));
+      },
+
+      // Import batch tracking
+      addImportBatch: async (batch) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error('User not logged in');
+
+        const id = generateId();
+        const newBatch: ImportBatch = {
+          ...batch,
+          id,
+          importedAt: Date.now(),
+          importedBy: currentUser.email || 'unknown',
         };
-        
+
         set((state) => ({
-          departments: [...state.departments, newDept],
+          importBatches: [...state.importBatches, newBatch],
         }));
+
+        return id;
       },
-      
-      toggleDepartmentActive: (id) => {
-        set((state) => ({
-          departments: state.departments.map((dept) =>
-            dept.id === id
-              ? { ...dept, isActive: !dept.isActive, updatedAt: Date.now() }
-              : dept
-          ),
-        }));
-      },
-      
-      getActiveDepartments: () => {
-        return get().departments.filter((dept) => dept.isActive);
-      },
-      
-      // Analytics/Metrics
-      getMetrics: (department, startDate, endDate) => {
-        const logs = get().getLogsByDateRange(startDate, endDate, department);
-        
-        const totalLogs = logs.length;
-        const allIssues = logs.flatMap((log) => log.issues || []);
-        const totalIssues = allIssues.length;
-        
-        // Issues by status
-        const issuesByStatus: Record<IssueStatus, number> = {
-          'Open': 0,
-          'In Progress': 0,
-          'Resolved': 0,
-          'Deferred': 0,
-          'Rejected': 0,
-        };
-        
-        allIssues.forEach((issue) => {
-          if (issue) issuesByStatus[issue.status]++;
-        });
-        
-        // Issues by severity
-        const issuesBySeverity: Record<IssueSeverity, number> = {
-          'Critical': 0,
-          'Major': 0,
-          'Minor': 0,
-          'Observation': 0,
-        };
-        
-        allIssues.forEach((issue) => {
-          if (issue) issuesBySeverity[issue.severity]++;
-        });
-        
-        // Issues by code
-        const codeCount: Record<number, { title: string; count: number }> = {};
-        allIssues.forEach((issue) => {
-          if (issue && issue.issueCode) {
-            if (!codeCount[issue.issueCode]) {
-              codeCount[issue.issueCode] = { title: issue.issueTitle, count: 0 };
-            }
-            codeCount[issue.issueCode].count++;
-          }
-        });
-        
-        const issuesByCode = Object.entries(codeCount)
-          .map(([code, data]) => ({
-            code: parseInt(code),
-            title: data.title,
-            count: data.count,
-          }))
-          .sort((a, b) => b.count - a.count);
-        
-        // Calculate metrics
-        const averageIssuesPerLog = totalLogs > 0 ? totalIssues / totalLogs : 0;
-        const criticalIssueCount = issuesBySeverity['Critical'];
-        const resolutionRate = totalIssues > 0
-          ? (issuesByStatus['Resolved'] / totalIssues) * 100
-          : 0;
-        
-        return {
-          department,
-          startDate,
-          endDate,
-          totalLogs,
-          totalIssues,
-          issuesByStatus,
-          issuesBySeverity,
-          issuesByCode,
-          averageIssuesPerLog,
-          criticalIssueCount,
-          resolutionRate,
-        };
-      },
-      
-      // Utility
-      clearAllData: () => {
-        set({
-          logs: [],
-          issueCodes: [],
-          departments: [],
-        });
-      },
-      
-      initializeDefaultData: () => {
-        const state = get();
-        
-        // Initialize departments if none exist
-        if (state.departments.length === 0) {
-          const defaultDepartments: DepartmentType[] = ['Flexicore', 'Wall Panels', 'Extruded', 'Precast'];
-          defaultDepartments.forEach((name) => {
-            state.addDepartment(name);
-          });
+
+      clearAllEntries: async () => {
+        const entries = get().entries;
+        for (const entry of entries) {
+          await deleteDoc(doc(firestore, 'qualityLogEntries', entry.id));
         }
-        
-        // Initialize common issue codes if none exist
-        if (state.issueCodes.length === 0) {
-          const defaultCodes = [
-            { 
-              code: 101, 
-              title: 'Concrete Segregation', 
-              severity: 'Major' as IssueSeverity, 
-              description: 'Separation of coarse aggregates from concrete mix',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
-            },
-            { 
-              code: 102, 
-              title: 'Surface Defects', 
-              severity: 'Minor' as IssueSeverity, 
-              description: 'Minor surface imperfections or blemishes',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
-            },
-            { 
-              code: 103, 
-              title: 'Honeycomb', 
-              severity: 'Critical' as IssueSeverity, 
-              description: 'Voids in concrete due to incomplete consolidation',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Columns', 'Wall Panels'] as any[]
-            },
-            { 
-              code: 201, 
-              title: 'Dimensional Variance', 
-              severity: 'Major' as IssueSeverity, 
-              description: 'Product dimensions outside tolerance',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
-            },
-            { 
-              code: 202, 
-              title: 'Cracking', 
-              severity: 'Critical' as IssueSeverity, 
-              description: 'Structural or surface cracks in product',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
-            },
-            { 
-              code: 203, 
-              title: 'Spalling', 
-              severity: 'Major' as IssueSeverity, 
-              description: 'Flaking or chipping of concrete surface',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Columns', 'Wall Panels'] as any[]
-            },
-            { 
-              code: 301, 
-              title: 'Color Variation', 
-              severity: 'Minor' as IssueSeverity, 
-              description: 'Inconsistent coloring in finished product',
-              applicableProducts: ['Wall Panels'] as any[]
-            },
-            { 
-              code: 302, 
-              title: 'Embedded Items Misplaced', 
-              severity: 'Major' as IssueSeverity, 
-              description: 'Inserts, anchors, or embeds not in correct position',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Columns', 'Wall Panels'] as any[]
-            },
-            { 
-              code: 401, 
-              title: 'Form Damage', 
-              severity: 'Observation' as IssueSeverity, 
-              description: 'Mold or form showing signs of wear or damage',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
-            },
-            { 
-              code: 402, 
-              title: 'Release Agent Issue', 
-              severity: 'Minor' as IssueSeverity, 
-              description: 'Problem with form release application',
-              applicableProducts: ['Beams', 'Hollow Core Slabs', 'Solid Slabs', 'Stadia', 'Columns', 'Wall Panels', 'Stairs'] as any[]
-            },
+      },
+
+      initializeDefaultCodes: async () => {
+        const { issueCodes, rejectCodes } = get();
+
+        // Initialize default issue codes if none exist
+        if (issueCodes.length === 0) {
+          const defaultIssueCodes = [
+            { code: '1', description: 'Surface Defect', isActive: true },
+            { code: '2', description: 'Dimensional Issue', isActive: true },
+            { code: '3', description: 'Strand Slippage', isActive: true },
+            { code: '4', description: 'Concrete Quality', isActive: true },
+            { code: '5', description: 'Embedded Item Issue', isActive: true },
           ];
-          
-          defaultCodes.forEach((codeData) => {
-            state.addIssueCode(codeData);
-          });
+
+          for (const code of defaultIssueCodes) {
+            await get().addIssueCode(code);
+          }
+        }
+
+        // Initialize default reject codes if none exist
+        if (rejectCodes.length === 0) {
+          const defaultRejectCodes = [
+            { code: 'R1', description: 'Critical Surface Defect', isActive: true },
+            { code: 'R2', description: 'Out of Tolerance', isActive: true },
+            { code: 'R3', description: 'Structural Issue', isActive: true },
+            { code: 'R4', description: 'Wrong Strand Pattern', isActive: true },
+            { code: 'R5', description: 'Concrete Failure', isActive: true },
+          ];
+
+          for (const code of defaultRejectCodes) {
+            await get().addRejectCode(code);
+          }
         }
       },
     }),
     {
-      name: 'quality-log-storage',
+      name: 'quality-log-storage-v2',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        importBatches: state.importBatches,
+      }),
     }
   )
 );

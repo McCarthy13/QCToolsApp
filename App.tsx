@@ -36,12 +36,9 @@ import ContactsScreen from "./src/screens/ContactsScreen";
 import ContactDetailScreen from "./src/screens/ContactDetailScreen";
 import ContactAddEditScreen from "./src/screens/ContactAddEditScreen";
 import QualityLogDashboardScreen from "./src/screens/QualityLogDashboardScreen";
-import QualityLogListScreen from "./src/screens/QualityLogListScreen";
 import QualityLogDetailScreen from "./src/screens/QualityLogDetailScreen";
-import QualityLogAddEditScreen from "./src/screens/QualityLogAddEditScreen";
-import QualityLogMetricsScreen from "./src/screens/QualityLogMetricsScreen";
-import QualityLogSearchScreen from "./src/screens/QualityLogSearchScreen";
-import IssueCodeLibraryScreen from "./src/screens/IssueCodeLibraryScreen";
+import QualityLogImportScreen from "./src/screens/QualityLogImportScreen";
+import QualityLogAdminScreen from "./src/screens/QualityLogAdminScreen";
 import ProductLibraryScreen from "./src/screens/ProductLibraryScreen";
 import ProjectLibraryScreen from "./src/screens/ProjectLibraryScreen";
 import ProjectLibraryDetailScreen from "./src/screens/ProjectLibraryDetailScreen";
@@ -629,74 +626,22 @@ export default function App() {
             <Stack.Screen
               name="QualityLogDashboard"
               component={QualityLogDashboardScreen}
-              options={({ navigation }) => ({
-                title: "Quality Logs",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
-            />
-            <Stack.Screen
-              name="QualityLogList"
-              component={QualityLogListScreen}
-              options={({ navigation, route }) => ({
-                title: `${route.params?.department} Logs`,
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="QualityLogDetail"
               component={QualityLogDetailScreen}
-              options={({ navigation }) => ({
-                title: "Log Details",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
-            />
-            <Stack.Screen
-              name="QualityLogAddEdit"
-              component={QualityLogAddEditScreen}
-              options={({ route }) => ({
-                title: route.params?.logId ? "Edit Log Entry" : "New Log Entry",
-              })}
-            />
-            <Stack.Screen
-              name="QualityLogMetrics"
-              component={QualityLogMetricsScreen}
-              options={({ navigation }) => ({
-                title: "Quality Metrics",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
-            />
-            <Stack.Screen
-              name="QualityLogSearch"
-              component={QualityLogSearchScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen
-              name="IssueCodeLibrary"
-              component={IssueCodeLibraryScreen}
-              options={({ navigation }) => ({
-                title: "Issue Code Library",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              name="QualityLogImport"
+              component={QualityLogImportScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="QualityLogAdmin"
+              component={QualityLogAdminScreen}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="ProductLibrary"

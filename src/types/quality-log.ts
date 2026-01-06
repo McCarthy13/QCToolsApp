@@ -1,156 +1,145 @@
-// Quality Log Types for Department-Specific Logging
+// Quality Log Types - New Table-Based System
 
-import { ProductType } from './product-library';
+// Product types for extruded pieces
+export type ProductType = '8048' | '1047' | '1247' | '1250' | '1647' | '1648';
 
-export type DepartmentType = 'Flexicore' | 'Wall Panels' | 'Extruded' | 'Precast';
+// Disposition options
+export type Disposition = 'Ok to Ship' | 'Eng' | 'WIP' | 'Yard Cut' | 'Not Cast' | 'Repour';
 
-export type IssueStatus = 'Open' | 'In Progress' | 'Resolved' | 'Deferred' | 'Rejected';
+// Status codes (auto-set based on disposition)
+export type StatusCode = '40' | '50' | '90';
 
-export type IssueSeverity = 'Critical' | 'Major' | 'Minor' | 'Observation';
+// Bed numbers
+export type BedNumber = '1' | '2' | '3' | '4' | '5' | '6';
 
-export type AttachmentType = 'photo' | 'document' | 'slippage' | 'note';
-
-// Department Configuration (Admin-managed)
-export interface Department {
+// Issue/Reject code definition
+export interface QualityCode {
   id: string;
-  name: DepartmentType;
+  code: string; // e.g., "1", "2", "A", etc.
+  description: string;
   isActive: boolean;
   createdAt: number;
   updatedAt: number;
 }
 
-// Issue Code Library
-export interface IssueCode {
-  id: string;
-  code: number; // e.g., 101, 205, etc.
-  title: string; // e.g., "Concrete Segregation", "Surface Defect"
-  description: string;
-  department?: DepartmentType; // Optional: specific to department or global
-  severity: IssueSeverity;
-  applicableProducts: ProductType[]; // Product types this issue applies to
-  createdAt: number;
-  updatedAt: number;
-}
-
-// Attachment for quality log entries
-export interface QualityLogAttachment {
-  id: string;
-  type: AttachmentType;
-  title?: string;
-  description?: string;
-  uri?: string; // For photos/documents
-  slippageData?: any; // Slippage identifier results
-  createdAt: number;
-}
-
-// Extruded Department Specific Entry
-export interface ExtrudedQualityEntry {
-  id: string;
-  jobNumber: string;
-  jobName?: string; // Auto-populated from job number
-  markNumber: string;
-  idNumber: string;
-  issueCodeId?: string;
-  issueCode?: number;
-  issueTitle?: string;
-  issueDescription: string;
-  attachments: QualityLogAttachment[];
-  createdAt: number;
-  updatedAt: number;
-}
-
-// Quality Log Entry (Main record)
+// Main Quality Log Entry
 export interface QualityLogEntry {
   id: string;
-  department: DepartmentType;
-  date: number; // Date of the log entry
-  
-  // Department-specific entries
-  extrudedEntries?: ExtrudedQualityEntry[]; // For Extruded department
-  // We can add more department-specific arrays as needed:
-  // flexicoreEntries?: FlexicoreQualityEntry[];
-  // wallPanelEntries?: WallPanelQualityEntry[];
-  // precastEntries?: PrecastQualityEntry[];
-  
-  // Overall status/summary
-  overallStatus: 'Good' | 'Issues Found' | 'Critical Issues';
-  notes?: string;
-  
-  // Legacy support - these properties may exist in older logs
-  productionItems?: ProductionItem[];
-  issues?: QualityIssue[];
-  
-  // Metadata
-  createdBy: string; // User email
-  createdAt: number;
-  updatedAt: number;
-  
-  // General attachments for the entire log
-  attachments?: QualityLogAttachment[];
-}
 
-// Legacy support - keep old interface for backward compatibility
-export interface ProductionItem {
-  id: string;
-  jobName: string;
-  jobNumber?: string;
-  pieceNumber?: string;
-  markNumber?: string;
-  quantity?: number;
-  productType?: string;
-  pourDate: number; // Timestamp
-  department: DepartmentType;
-}
-
-export interface QualityIssue {
-  id: string;
-  issueCodeId: string; // References IssueCode
-  issueCode: number; // Denormalized for quick display
-  issueTitle: string; // Denormalized for quick display
-  issueDescription: string; // User's detailed explanation
-  
-  // Which production item this affects
-  productionItemId?: string;
-  
-  // Issue details
-  status: IssueStatus;
-  severity: IssueSeverity;
-  location?: string; // Where in the plant/piece
-  
-  // Resolution
-  actionTaken?: string;
-  resolvedBy?: string;
-  resolvedAt?: number;
-  
-  // Photos specific to this issue
-  photoUris?: string[];
-  
-  createdAt: number;
-  updatedAt: number;
-}
-
-// Metrics/Analytics
-export interface QualityMetrics {
-  department: DepartmentType;
-  startDate: number;
-  endDate: number;
-  
-  totalLogs: number;
-  totalIssues: number;
-  issuesByStatus: Record<IssueStatus, number>;
-  issuesBySeverity: Record<IssueSeverity, number>;
-  issuesByCode: Array<{ code: number; title: string; count: number }>;
-  
-  // Trends
-  averageIssuesPerLog: number;
-  criticalIssueCount: number;
-  resolutionRate: number; // % of issues resolved
-}
-
-// Job lookup database (mock for now - could be real API later)
-export interface JobLookup {
+  // Imported from PDF scan
+  pourDate: string; // Format: "MM/DD/YYYY"
+  productType?: ProductType;
   jobNumber: string;
-  jobName: string;
-  customer?: string;
-  location?: string;
+  markNumber: string;
+  idNumber: string; // Unique identifier
+  length: string; // Format: "24'-3.75\""
+  width: number; // In inches
+  thickness: number; // In inches (used for product type inference)
+  bed?: BedNumber;
+
+  // Auto-calculated based on disposition
+  disposition?: Disposition;
+  status?: StatusCode;
+  approvalRejectionDate?: string; // Auto-set when disposition changes
+
+  // Manual entry fields
+  qualityComments?: string;
+  engineer?: string;
+  engineerFeedback?: string;
+  issueCodes: string[]; // Array of code IDs
+  rejectCodes: string[]; // Array of code IDs
+
+  // Metadata
+  importedAt: number;
+  importedBy: string;
+  updatedAt: number;
+  updatedBy?: string;
 }
+
+// For tracking import batches
+export interface ImportBatch {
+  id: string;
+  fileName: string;
+  pourDate: string;
+  bed?: BedNumber;
+  productType?: ProductType;
+  entryCount: number;
+  importedAt: number;
+  importedBy: string;
+}
+
+// Status/color mapping helper
+export const getStatusFromDisposition = (disposition: Disposition): { status: StatusCode; color: string } => {
+  switch (disposition) {
+    case 'Eng':
+    case 'WIP':
+    case 'Yard Cut':
+      return { status: '40', color: '#FFFF00' }; // Yellow
+    case 'Ok to Ship':
+      return { status: '50', color: '#00FF00' }; // Green
+    case 'Not Cast':
+    case 'Repour':
+      return { status: '90', color: '#FF0000' }; // Red
+    default:
+      return { status: '40', color: '#FFFFFF' }; // White (no disposition)
+  }
+};
+
+// Check if disposition triggers approval/rejection date
+export const shouldSetApprovalDate = (disposition: Disposition): boolean => {
+  return ['Ok to Ship', 'Not Cast', 'Repour'].includes(disposition);
+};
+
+// Product type inference from thickness
+export const inferProductTypeFromThickness = (thickness: number): ProductType | 'ambiguous' | null => {
+  switch (thickness) {
+    case 8:
+      return '8048';
+    case 10:
+      return '1047';
+    case 12:
+      return 'ambiguous'; // Could be 1247 or 1250
+    case 16:
+      return 'ambiguous'; // Could be 1647 or 1648
+    default:
+      return null;
+  }
+};
+
+// Get ambiguous product type options
+export const getAmbiguousProductTypes = (thickness: number): ProductType[] => {
+  switch (thickness) {
+    case 12:
+      return ['1247', '1250'];
+    case 16:
+      return ['1647', '1648'];
+    default:
+      return [];
+  }
+};
+
+// All disposition options for dropdown
+export const DISPOSITION_OPTIONS: Disposition[] = [
+  'Ok to Ship',
+  'Eng',
+  'WIP',
+  'Yard Cut',
+  'Not Cast',
+  'Repour',
+];
+
+// All product type options for dropdown
+export const PRODUCT_TYPE_OPTIONS: ProductType[] = [
+  '8048',
+  '1047',
+  '1247',
+  '1250',
+  '1647',
+  '1648',
+];
+
+// All bed options for dropdown
+export const BED_OPTIONS: BedNumber[] = ['1', '2', '3', '4', '5', '6'];
+
+// All status options (for display only - auto-set)
+export const STATUS_OPTIONS: StatusCode[] = ['40', '50', '90'];

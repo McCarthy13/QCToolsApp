@@ -1,435 +1,614 @@
-import { View, Text, Pressable, ScrollView, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../navigation/types";
-import { useQualityLogStore } from "../state/qualityLogStore";
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Alert,
+  Modal,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
+import { useQualityLogStore } from '../state/qualityLogStore';
+import {
+  QualityLogEntry,
+  Disposition,
+  ProductType,
+  BedNumber,
+  getStatusFromDisposition,
+  DISPOSITION_OPTIONS,
+  PRODUCT_TYPE_OPTIONS,
+  BED_OPTIONS,
+} from '../types/quality-log';
 
-type Props = NativeStackScreenProps<RootStackParamList, "QualityLogDetail">;
+type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDetail'>;
 
 export default function QualityLogDetailScreen({ navigation, route }: Props) {
   const { logId } = route.params;
-  const getLog = useQualityLogStore((s) => s.getLog);
-  const deleteLog = useQualityLogStore((s) => s.deleteLog);
-  const resolveIssue = useQualityLogStore((s) => s.resolveIssue);
-  const [showOptions, setShowOptions] = useState(false);
+  const entryId = logId; // Support both param names
 
-  const log = getLog(logId);
+  const entries = useQualityLogStore((s) => s.entries);
+  const updateEntry = useQualityLogStore((s) => s.updateEntry);
+  const deleteEntry = useQualityLogStore((s) => s.deleteEntry);
+  const setDisposition = useQualityLogStore((s) => s.setDisposition);
+  const issueCodes = useQualityLogStore((s) => s.issueCodes);
+  const rejectCodes = useQualityLogStore((s) => s.rejectCodes);
 
-  if (!log) {
+  const entry = entries.find((e) => e.id === entryId);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedEntry, setEditedEntry] = useState<Partial<QualityLogEntry>>({});
+  const [showDispositionPicker, setShowDispositionPicker] = useState(false);
+  const [showProductTypePicker, setShowProductTypePicker] = useState(false);
+  const [showBedPicker, setShowBedPicker] = useState(false);
+  const [showIssueCodePicker, setShowIssueCodePicker] = useState(false);
+  const [showRejectCodePicker, setShowRejectCodePicker] = useState(false);
+  const [issueCodeInput, setIssueCodeInput] = useState('');
+  const [rejectCodeInput, setRejectCodeInput] = useState('');
+
+  useEffect(() => {
+    if (entry) {
+      setEditedEntry(entry);
+    }
+  }, [entry]);
+
+  if (!entry) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <Ionicons name="alert-circle-outline" size={64} color="#9CA3AF" />
-          <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827", marginTop: 16 }}>
-            Log Not Found
-          </Text>
-          <Text style={{ fontSize: 14, color: "#6B7280", marginTop: 8, textAlign: "center" }}>
-            The quality log you are looking for does not exist.
-          </Text>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={{
-              marginTop: 24,
-              backgroundColor: "#3B82F6",
-              paddingHorizontal: 24,
-              paddingVertical: 12,
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>Go Back</Text>
-          </Pressable>
-        </View>
+      <SafeAreaView className="flex-1 bg-gray-100 justify-center items-center">
+        <Text className="text-gray-500">Entry not found</Text>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
+        >
+          <Text className="text-white">Go Back</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+  const getRowColor = (): string => {
+    if (!entry.disposition) return '#FFFFFF';
+    const { color } = getStatusFromDisposition(entry.disposition);
+    return color;
   };
 
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Open":
-        return { bg: "#FEF3C7", text: "#92400E" };
-      case "In Progress":
-        return { bg: "#DBEAFE", text: "#1E40AF" };
-      case "Resolved":
-        return { bg: "#D1FAE5", text: "#065F46" };
-      case "Deferred":
-        return { bg: "#E5E7EB", text: "#374151" };
-      case "Rejected":
-        return { bg: "#FEE2E2", text: "#991B1B" };
-      default:
-        return { bg: "#F3F4F6", text: "#6B7280" };
-    }
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "Critical":
-        return { bg: "#FEE2E2", text: "#991B1B", icon: "#EF4444" };
-      case "Major":
-        return { bg: "#FED7AA", text: "#9A3412", icon: "#F97316" };
-      case "Minor":
-        return { bg: "#FEF3C7", text: "#92400E", icon: "#F59E0B" };
-      case "Observation":
-        return { bg: "#E0E7FF", text: "#3730A3", icon: "#6366F1" };
-      default:
-        return { bg: "#F3F4F6", text: "#6B7280", icon: "#9CA3AF" };
+  const handleSave = async () => {
+    try {
+      await updateEntry(entry.id, editedEntry);
+      setIsEditing(false);
+      Alert.alert('Success', 'Entry updated successfully');
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      Alert.alert('Error', 'Failed to update entry');
     }
   };
 
   const handleDelete = () => {
     Alert.alert(
-      "Delete Log Entry",
-      "Are you sure you want to delete this log entry? This action cannot be undone.",
+      'Delete Entry',
+      'Are you sure you want to delete this entry? This cannot be undone.',
       [
-        { text: "Cancel", style: "cancel" },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            deleteLog(logId);
-            navigation.goBack();
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEntry(entry.id);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Error deleting entry:', error);
+              Alert.alert('Error', 'Failed to delete entry');
+            }
           },
         },
       ]
     );
   };
 
-  const overallStatusColor = {
-    Good: { bg: "#D1FAE5", text: "#065F46" },
-    "Issues Found": { bg: "#FED7AA", text: "#9A3412" },
-    "Critical Issues": { bg: "#FEE2E2", text: "#991B1B" },
-  }[log.overallStatus] || { bg: "#F3F4F6", text: "#6B7280" };
+  const handleDispositionSelect = async (disposition: Disposition) => {
+    setShowDispositionPicker(false);
+    try {
+      await setDisposition(entry.id, disposition);
+    } catch (error) {
+      console.error('Error setting disposition:', error);
+      Alert.alert('Error', 'Failed to update disposition');
+    }
+  };
+
+  const toggleIssueCode = (code: string) => {
+    const currentCodes = editedEntry.issueCodes || [];
+    if (currentCodes.includes(code)) {
+      setEditedEntry((prev) => ({
+        ...prev,
+        issueCodes: currentCodes.filter((c) => c !== code),
+      }));
+    } else {
+      setEditedEntry((prev) => ({
+        ...prev,
+        issueCodes: [...currentCodes, code],
+      }));
+    }
+  };
+
+  const toggleRejectCode = (code: string) => {
+    const currentCodes = editedEntry.rejectCodes || [];
+    if (currentCodes.includes(code)) {
+      setEditedEntry((prev) => ({
+        ...prev,
+        rejectCodes: currentCodes.filter((c) => c !== code),
+      }));
+    } else {
+      setEditedEntry((prev) => ({
+        ...prev,
+        rejectCodes: [...currentCodes, code],
+      }));
+    }
+  };
+
+  const addIssueCodeByInput = () => {
+    if (issueCodeInput.trim()) {
+      const code = issueCodes.find(
+        (c) => c.code.toLowerCase() === issueCodeInput.trim().toLowerCase()
+      );
+      if (code) {
+        toggleIssueCode(code.code);
+      }
+      setIssueCodeInput('');
+    }
+  };
+
+  const addRejectCodeByInput = () => {
+    if (rejectCodeInput.trim()) {
+      const code = rejectCodes.find(
+        (c) => c.code.toLowerCase() === rejectCodeInput.trim().toLowerCase()
+      );
+      if (code) {
+        toggleRejectCode(code.code);
+      }
+      setRejectCodeInput('');
+    }
+  };
+
+  const DetailRow = ({
+    label,
+    value,
+    editable = false,
+    onPress,
+  }: {
+    label: string;
+    value: string;
+    editable?: boolean;
+    onPress?: () => void;
+  }) => (
+    <Pressable
+      onPress={editable ? onPress : undefined}
+      className={`flex-row justify-between py-3 border-b border-gray-100 ${
+        editable ? 'active:bg-gray-50' : ''
+      }`}
+    >
+      <Text className="text-gray-500 text-sm">{label}</Text>
+      <View className="flex-row items-center">
+        <Text className="text-gray-900 text-sm font-medium">{value || '-'}</Text>
+        {editable && <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />}
+      </View>
+    </Pressable>
+  );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 24 }}>
-          {/* Header with Date and Status */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <Text style={{ fontSize: 28, fontWeight: "700", color: "#111827" }}>
-                {log.department}
-              </Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
+    <SafeAreaView className="flex-1 bg-gray-100">
+      {/* Header */}
+      <View
+        className="px-4 py-3 border-b border-gray-200"
+        style={{ backgroundColor: getRowColor() }}
+      >
+        <View className="flex-row items-center justify-between">
+          <Pressable onPress={() => navigation.goBack()} className="p-1">
+            <Ionicons name="arrow-back" size={24} color="#374151" />
+          </Pressable>
+          <Text className="text-lg font-bold text-gray-900">ID # {entry.idNumber}</Text>
+          <View className="flex-row gap-2">
+            {isEditing ? (
+              <>
                 <Pressable
-                  onPress={() => navigation.navigate("QualityLogAddEdit", { logId })}
-                  style={{
-                    backgroundColor: "#DBEAFE",
-                    padding: 8,
-                    borderRadius: 8,
+                  onPress={() => {
+                    setIsEditing(false);
+                    setEditedEntry(entry);
                   }}
+                  className="p-2"
                 >
-                  <Ionicons name="create-outline" size={20} color="#1E40AF" />
+                  <Ionicons name="close" size={24} color="#EF4444" />
                 </Pressable>
-                <Pressable
-                  onPress={handleDelete}
-                  style={{
-                    backgroundColor: "#FEE2E2",
-                    padding: 8,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={20} color="#991B1B" />
+                <Pressable onPress={handleSave} className="p-2">
+                  <Ionicons name="checkmark" size={24} color="#10B981" />
                 </Pressable>
-              </View>
-            </View>
-            <Text style={{ fontSize: 16, color: "#6B7280", marginBottom: 12 }}>
-              {formatDate(log.date)}
-            </Text>
-            <View
-              style={{
-                backgroundColor: overallStatusColor.bg,
-                alignSelf: "flex-start",
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 12,
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: "600", color: overallStatusColor.text }}>
-                {log.overallStatus}
-              </Text>
-            </View>
-          </View>
-
-          {/* Production Items */}
-          {log.productionItems && log.productionItems.length > 0 && (
-            <View style={{ marginBottom: 24 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
-                  Production Items
-                </Text>
-                <View
-                  style={{
-                    backgroundColor: "#EFF6FF",
-                    paddingHorizontal: 12,
-                    paddingVertical: 4,
-                    borderRadius: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#1E40AF" }}>
-                    {log.productionItems.length}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ gap: 12 }}>
-                {log.productionItems.map((item) => (
-                  <View
-                    key={item.id}
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 12,
-                      padding: 16,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <Ionicons name="cube-outline" size={20} color="#3B82F6" />
-                      <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827" }}>
-                        {item.jobName}
-                      </Text>
-                    </View>
-                    {item.jobNumber && (
-                      <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Text style={{ fontSize: 12, color: "#6B7280" }}>Job #:</Text>
-                          <Text style={{ fontSize: 12, fontWeight: "500", color: "#111827" }}>
-                            {item.jobNumber}
-                          </Text>
-                        </View>
-                        {item.pieceNumber && (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                            <Text style={{ fontSize: 12, color: "#6B7280" }}>Piece:</Text>
-                            <Text style={{ fontSize: 12, fontWeight: "500", color: "#111827" }}>
-                              {item.pieceNumber}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    )}
-                    {item.productType && (
-                      <View style={{ marginTop: 8 }}>
-                        <Text style={{ fontSize: 12, color: "#6B7280" }}>Type: {item.productType}</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Issues */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827" }}>
-                Quality Issues
-              </Text>
-              <View
-                style={{
-                  backgroundColor: (log.issues?.length ?? 0) === 0 ? "#D1FAE5" : "#FED7AA",
-                  paddingHorizontal: 12,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "600",
-                    color: (log.issues?.length ?? 0) === 0 ? "#065F46" : "#9A3412",
-                  }}
-                >
-                  {log.issues?.length ?? 0}
-                </Text>
-              </View>
-            </View>
-
-            {(log.issues?.length ?? 0) === 0 ? (
-              <View
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 24,
-                  alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                }}
-              >
-                <Ionicons name="checkmark-circle" size={48} color="#10B981" />
-                <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginTop: 12 }}>
-                  No Issues Reported
-                </Text>
-                <Text style={{ fontSize: 14, color: "#6B7280", marginTop: 4 }}>
-                  All production items passed quality checks
-                </Text>
-              </View>
+              </>
             ) : (
-              <View style={{ gap: 12 }}>
-                {log.issues?.map((issue) => {
-                  const statusColor = getStatusColor(issue.status);
-                  const severityColor = getSeverityColor(issue.severity);
-
-                  return (
-                    <View
-                      key={issue.id}
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 12,
-                        padding: 16,
-                        borderWidth: 1,
-                        borderColor: "#E5E7EB",
-                      }}
-                    >
-                      {/* Issue Header */}
-                      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                        <View style={{ flex: 1 }}>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                            <View
-                              style={{
-                                backgroundColor: severityColor.bg,
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                                borderRadius: 6,
-                              }}
-                            >
-                              <Text style={{ fontSize: 11, fontWeight: "600", color: severityColor.text }}>
-                                {issue.severity}
-                              </Text>
-                            </View>
-                            <View
-                              style={{
-                                backgroundColor: "#F3F4F6",
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                                borderRadius: 6,
-                              }}
-                            >
-                              <Text style={{ fontSize: 11, fontWeight: "600", color: "#4B5563" }}>
-                                #{issue.issueCode}
-                              </Text>
-                            </View>
-                          </View>
-                          <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginTop: 4 }}>
-                            {issue.issueTitle}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            backgroundColor: statusColor.bg,
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            borderRadius: 8,
-                          }}
-                        >
-                          <Text style={{ fontSize: 12, fontWeight: "600", color: statusColor.text }}>
-                            {issue.status}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Issue Description */}
-                      <Text style={{ fontSize: 14, color: "#4B5563", marginBottom: 12, lineHeight: 20 }}>
-                        {issue.issueDescription}
-                      </Text>
-
-                      {/* Location */}
-                      {issue.location && (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                          <Ionicons name="location-outline" size={16} color="#6B7280" />
-                          <Text style={{ fontSize: 13, color: "#6B7280" }}>{issue.location}</Text>
-                        </View>
-                      )}
-
-                      {/* Resolution Info */}
-                      {issue.status === "Resolved" && issue.actionTaken && (
-                        <View
-                          style={{
-                            backgroundColor: "#F0FDF4",
-                            borderRadius: 8,
-                            padding: 12,
-                            marginTop: 12,
-                            borderWidth: 1,
-                            borderColor: "#BBF7D0",
-                          }}
-                        >
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                            <Ionicons name="checkmark-circle" size={16} color="#16A34A" />
-                            <Text style={{ fontSize: 12, fontWeight: "600", color: "#16A34A" }}>
-                              Resolved
-                            </Text>
-                          </View>
-                          <Text style={{ fontSize: 13, color: "#166534", marginBottom: 4 }}>
-                            {issue.actionTaken}
-                          </Text>
-                          {issue.resolvedBy && (
-                            <Text style={{ fontSize: 11, color: "#4D7C0F" }}>
-                              By {issue.resolvedBy} • {formatTime(issue.resolvedAt || issue.updatedAt)}
-                            </Text>
-                          )}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-
-          {/* Notes */}
-          {log.notes && (
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ fontSize: 20, fontWeight: "600", color: "#111827", marginBottom: 12 }}>
-                Notes
-              </Text>
-              <View
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                }}
-              >
-                <Text style={{ fontSize: 14, color: "#4B5563", lineHeight: 20 }}>{log.notes}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Metadata */}
-          <View style={{ paddingTop: 16, borderTopWidth: 1, borderTopColor: "#E5E7EB" }}>
-            <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
-              Created by {log.createdBy}
-            </Text>
-            <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
-              {formatDate(log.createdAt)} at {formatTime(log.createdAt)}
-            </Text>
-            {log.updatedAt !== log.createdAt && (
-              <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
-                Last updated: {formatDate(log.updatedAt)} at {formatTime(log.updatedAt)}
-              </Text>
+              <>
+                <Pressable onPress={() => setIsEditing(true)} className="p-2">
+                  <Ionicons name="pencil" size={22} color="#374151" />
+                </Pressable>
+                <Pressable onPress={handleDelete} className="p-2">
+                  <Ionicons name="trash-outline" size={22} color="#EF4444" />
+                </Pressable>
+              </>
             )}
           </View>
         </View>
+      </View>
+
+      <ScrollView className="flex-1">
+        {/* Status Section */}
+        <View className="bg-white mx-4 mt-4 rounded-xl p-4">
+          <Text className="text-base font-semibold text-gray-900 mb-3">Status</Text>
+          <DetailRow label="Status Code" value={entry.status || 'Not Set'} />
+          <Pressable
+            onPress={() => setShowDispositionPicker(true)}
+            className="flex-row justify-between py-3 border-b border-gray-100 active:bg-gray-50"
+          >
+            <Text className="text-gray-500 text-sm">Disposition</Text>
+            <View className="flex-row items-center">
+              <Text className="text-gray-900 text-sm font-medium">
+                {entry.disposition || 'Not Set'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+            </View>
+          </Pressable>
+          <DetailRow
+            label="Approval/Rejection Date"
+            value={entry.approvalRejectionDate || 'Not Set'}
+          />
+        </View>
+
+        {/* Product Information */}
+        <View className="bg-white mx-4 mt-4 rounded-xl p-4">
+          <Text className="text-base font-semibold text-gray-900 mb-3">Product Information</Text>
+          <DetailRow label="Pour Date" value={entry.pourDate} />
+          <DetailRow
+            label="Product Type"
+            value={entry.productType || 'Not Set'}
+            editable={isEditing}
+            onPress={() => setShowProductTypePicker(true)}
+          />
+          <DetailRow label="Job #" value={entry.jobNumber} />
+          <DetailRow label="Mark #" value={entry.markNumber} />
+          <DetailRow label="ID #" value={entry.idNumber} />
+          <DetailRow label="Length" value={entry.length} />
+          <DetailRow label="Width" value={`${entry.width}"`} />
+          <DetailRow label="Thickness" value={`${entry.thickness}"`} />
+          <DetailRow
+            label="Bed"
+            value={entry.bed ? `Bed ${entry.bed}` : 'Not Set'}
+            editable={isEditing}
+            onPress={() => setShowBedPicker(true)}
+          />
+        </View>
+
+        {/* Quality Information */}
+        <View className="bg-white mx-4 mt-4 rounded-xl p-4">
+          <Text className="text-base font-semibold text-gray-900 mb-3">Quality Information</Text>
+
+          {/* Engineer */}
+          <View className="py-3 border-b border-gray-100">
+            <Text className="text-gray-500 text-sm mb-1">Engineer</Text>
+            {isEditing ? (
+              <TextInput
+                value={editedEntry.engineer || ''}
+                onChangeText={(text) => setEditedEntry((prev) => ({ ...prev, engineer: text }))}
+                placeholder="Enter engineer name"
+                className="text-gray-900 text-sm bg-gray-50 rounded-lg px-3 py-2"
+              />
+            ) : (
+              <Text className="text-gray-900 text-sm">{entry.engineer || '-'}</Text>
+            )}
+          </View>
+
+          {/* Engineer Feedback */}
+          <View className="py-3 border-b border-gray-100">
+            <Text className="text-gray-500 text-sm mb-1">Engineer Feedback</Text>
+            {isEditing ? (
+              <TextInput
+                value={editedEntry.engineerFeedback || ''}
+                onChangeText={(text) =>
+                  setEditedEntry((prev) => ({ ...prev, engineerFeedback: text }))
+                }
+                placeholder="Enter engineer feedback"
+                multiline
+                numberOfLines={3}
+                className="text-gray-900 text-sm bg-gray-50 rounded-lg px-3 py-2"
+              />
+            ) : (
+              <Text className="text-gray-900 text-sm">{entry.engineerFeedback || '-'}</Text>
+            )}
+          </View>
+
+          {/* Quality Comments */}
+          <View className="py-3 border-b border-gray-100">
+            <Text className="text-gray-500 text-sm mb-1">Quality Comments</Text>
+            {isEditing ? (
+              <TextInput
+                value={editedEntry.qualityComments || ''}
+                onChangeText={(text) =>
+                  setEditedEntry((prev) => ({ ...prev, qualityComments: text }))
+                }
+                placeholder="Enter quality comments"
+                multiline
+                numberOfLines={3}
+                className="text-gray-900 text-sm bg-gray-50 rounded-lg px-3 py-2"
+              />
+            ) : (
+              <Text className="text-gray-900 text-sm">{entry.qualityComments || '-'}</Text>
+            )}
+          </View>
+
+          {/* Issue Codes */}
+          <View className="py-3 border-b border-gray-100">
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-gray-500 text-sm">Issue Codes</Text>
+              {isEditing && (
+                <Pressable
+                  onPress={() => setShowIssueCodePicker(true)}
+                  className="bg-blue-100 px-2 py-1 rounded"
+                >
+                  <Text className="text-blue-600 text-xs">Add Code</Text>
+                </Pressable>
+              )}
+            </View>
+            {isEditing && (
+              <View className="flex-row mb-2">
+                <TextInput
+                  value={issueCodeInput}
+                  onChangeText={setIssueCodeInput}
+                  onSubmitEditing={addIssueCodeByInput}
+                  placeholder="Type code & press enter"
+                  className="flex-1 text-sm bg-gray-50 rounded-lg px-3 py-2 mr-2"
+                />
+              </View>
+            )}
+            <View className="flex-row flex-wrap gap-1">
+              {(isEditing ? editedEntry.issueCodes : entry.issueCodes)?.map((code) => (
+                <View
+                  key={code}
+                  className="bg-orange-100 px-2 py-1 rounded flex-row items-center"
+                >
+                  <Text className="text-orange-700 text-xs">{code}</Text>
+                  {isEditing && (
+                    <Pressable onPress={() => toggleIssueCode(code)} className="ml-1">
+                      <Ionicons name="close" size={12} color="#C2410C" />
+                    </Pressable>
+                  )}
+                </View>
+              ))}
+              {((isEditing ? editedEntry.issueCodes : entry.issueCodes)?.length || 0) === 0 && (
+                <Text className="text-gray-400 text-sm">No issue codes</Text>
+              )}
+            </View>
+          </View>
+
+          {/* Reject Codes */}
+          <View className="py-3">
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-gray-500 text-sm">Reject Codes</Text>
+              {isEditing && (
+                <Pressable
+                  onPress={() => setShowRejectCodePicker(true)}
+                  className="bg-red-100 px-2 py-1 rounded"
+                >
+                  <Text className="text-red-600 text-xs">Add Code</Text>
+                </Pressable>
+              )}
+            </View>
+            {isEditing && (
+              <View className="flex-row mb-2">
+                <TextInput
+                  value={rejectCodeInput}
+                  onChangeText={setRejectCodeInput}
+                  onSubmitEditing={addRejectCodeByInput}
+                  placeholder="Type code & press enter"
+                  className="flex-1 text-sm bg-gray-50 rounded-lg px-3 py-2 mr-2"
+                />
+              </View>
+            )}
+            <View className="flex-row flex-wrap gap-1">
+              {(isEditing ? editedEntry.rejectCodes : entry.rejectCodes)?.map((code) => (
+                <View key={code} className="bg-red-100 px-2 py-1 rounded flex-row items-center">
+                  <Text className="text-red-700 text-xs">{code}</Text>
+                  {isEditing && (
+                    <Pressable onPress={() => toggleRejectCode(code)} className="ml-1">
+                      <Ionicons name="close" size={12} color="#B91C1C" />
+                    </Pressable>
+                  )}
+                </View>
+              ))}
+              {((isEditing ? editedEntry.rejectCodes : entry.rejectCodes)?.length || 0) === 0 && (
+                <Text className="text-gray-400 text-sm">No reject codes</Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Metadata */}
+        <View className="bg-white mx-4 mt-4 mb-6 rounded-xl p-4">
+          <Text className="text-base font-semibold text-gray-900 mb-3">Metadata</Text>
+          <DetailRow
+            label="Imported"
+            value={new Date(entry.importedAt).toLocaleString()}
+          />
+          <DetailRow label="Imported By" value={entry.importedBy} />
+          <DetailRow
+            label="Last Updated"
+            value={new Date(entry.updatedAt).toLocaleString()}
+          />
+          {entry.updatedBy && <DetailRow label="Updated By" value={entry.updatedBy} />}
+        </View>
       </ScrollView>
+
+      {/* Disposition Picker Modal */}
+      <Modal visible={showDispositionPicker} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowDispositionPicker(false)}
+        >
+          <View className="bg-white rounded-t-2xl p-4">
+            <Text className="text-lg font-semibold text-center mb-4">Select Disposition</Text>
+            {DISPOSITION_OPTIONS.map((disposition) => (
+              <Pressable
+                key={disposition}
+                onPress={() => handleDispositionSelect(disposition)}
+                className="py-3 border-b border-gray-100 active:bg-gray-50"
+              >
+                <Text className="text-center text-base text-gray-900">{disposition}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setShowDispositionPicker(false)}
+              className="py-3 mt-2"
+            >
+              <Text className="text-center text-base text-red-600">Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Product Type Picker Modal */}
+      <Modal visible={showProductTypePicker} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowProductTypePicker(false)}
+        >
+          <View className="bg-white rounded-t-2xl p-4">
+            <Text className="text-lg font-semibold text-center mb-4">Select Product Type</Text>
+            {PRODUCT_TYPE_OPTIONS.map((type) => (
+              <Pressable
+                key={type}
+                onPress={() => {
+                  setEditedEntry((prev) => ({ ...prev, productType: type }));
+                  setShowProductTypePicker(false);
+                }}
+                className="py-3 border-b border-gray-100 active:bg-gray-50"
+              >
+                <Text className="text-center text-base text-gray-900">{type}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setShowProductTypePicker(false)}
+              className="py-3 mt-2"
+            >
+              <Text className="text-center text-base text-red-600">Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Bed Picker Modal */}
+      <Modal visible={showBedPicker} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowBedPicker(false)}
+        >
+          <View className="bg-white rounded-t-2xl p-4">
+            <Text className="text-lg font-semibold text-center mb-4">Select Bed</Text>
+            {BED_OPTIONS.map((bed) => (
+              <Pressable
+                key={bed}
+                onPress={() => {
+                  setEditedEntry((prev) => ({ ...prev, bed }));
+                  setShowBedPicker(false);
+                }}
+                className="py-3 border-b border-gray-100 active:bg-gray-50"
+              >
+                <Text className="text-center text-base text-gray-900">Bed {bed}</Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setShowBedPicker(false)} className="py-3 mt-2">
+              <Text className="text-center text-base text-red-600">Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Issue Code Picker Modal */}
+      <Modal visible={showIssueCodePicker} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowIssueCodePicker(false)}
+        >
+          <View className="bg-white rounded-t-2xl p-4 max-h-96">
+            <Text className="text-lg font-semibold text-center mb-4">Select Issue Codes</Text>
+            <ScrollView>
+              {issueCodes
+                .filter((c) => c.isActive)
+                .map((code) => {
+                  const isSelected = editedEntry.issueCodes?.includes(code.code);
+                  return (
+                    <Pressable
+                      key={code.id}
+                      onPress={() => toggleIssueCode(code.code)}
+                      className={`py-3 px-4 border-b border-gray-100 flex-row justify-between items-center ${
+                        isSelected ? 'bg-orange-50' : ''
+                      }`}
+                    >
+                      <View>
+                        <Text className="text-base text-gray-900 font-medium">{code.code}</Text>
+                        <Text className="text-sm text-gray-500">{code.description}</Text>
+                      </View>
+                      {isSelected && <Ionicons name="checkmark" size={20} color="#EA580C" />}
+                    </Pressable>
+                  );
+                })}
+            </ScrollView>
+            <Pressable
+              onPress={() => setShowIssueCodePicker(false)}
+              className="py-3 mt-2"
+            >
+              <Text className="text-center text-base text-blue-600">Done</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Reject Code Picker Modal */}
+      <Modal visible={showRejectCodePicker} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowRejectCodePicker(false)}
+        >
+          <View className="bg-white rounded-t-2xl p-4 max-h-96">
+            <Text className="text-lg font-semibold text-center mb-4">Select Reject Codes</Text>
+            <ScrollView>
+              {rejectCodes
+                .filter((c) => c.isActive)
+                .map((code) => {
+                  const isSelected = editedEntry.rejectCodes?.includes(code.code);
+                  return (
+                    <Pressable
+                      key={code.id}
+                      onPress={() => toggleRejectCode(code.code)}
+                      className={`py-3 px-4 border-b border-gray-100 flex-row justify-between items-center ${
+                        isSelected ? 'bg-red-50' : ''
+                      }`}
+                    >
+                      <View>
+                        <Text className="text-base text-gray-900 font-medium">{code.code}</Text>
+                        <Text className="text-sm text-gray-500">{code.description}</Text>
+                      </View>
+                      {isSelected && <Ionicons name="checkmark" size={20} color="#DC2626" />}
+                    </Pressable>
+                  );
+                })}
+            </ScrollView>
+            <Pressable
+              onPress={() => setShowRejectCodePicker(false)}
+              className="py-3 mt-2"
+            >
+              <Text className="text-center text-base text-blue-600">Done</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
