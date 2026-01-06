@@ -72,29 +72,48 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
   const handlePickDocument = async () => {
     try {
+      console.log('[QualityLogImport] Opening document picker...');
+
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
         copyToCacheDirectory: true,
       });
 
+      console.log('[QualityLogImport] Picker result:', JSON.stringify(result, null, 2));
+
       if (result.canceled) {
+        console.log('[QualityLogImport] User canceled picker');
         return;
       }
 
-      const file = result.assets[0];
-      if (!file) return;
+      const file = result.assets?.[0];
+      if (!file) {
+        console.log('[QualityLogImport] No file in assets');
+        Alert.alert('Error', 'No file was selected. Please try again.');
+        return;
+      }
+
+      console.log('[QualityLogImport] Selected file:', {
+        name: file.name,
+        uri: file.uri,
+        mimeType: file.mimeType,
+        size: file.size,
+      });
 
       setIsLoading(true);
       setLoadingMessage('Reading file...');
 
       // Read file as base64
+      console.log('[QualityLogImport] Reading file as base64...');
       const base64 = await FileSystem.readAsStringAsync(file.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
 
       setLoadingMessage('Extracting data from schedule...');
 
       // Call Cloud Function to parse the PDF/image
+      console.log('[QualityLogImport] Calling parseSchedulePDF Cloud Function...');
       const functions = getFunctions();
       const parseSchedule = httpsCallable<
         { fileBase64: string; fileName: string; mimeType: string },
