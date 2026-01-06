@@ -150,6 +150,23 @@ The following environment variables are required and should be configured via th
 
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
 
+### Recent Updates (2026-01-06)
+- ✅ **New Table-Based Quality Log System**:
+  - Completely rebuilt Quality Log with table-based data entry
+  - **PDF Schedule Import**: Upload scanned pour schedules for automatic data extraction
+  - **Claude Vision OCR**: Extracts Pour Date, Job #, Mark #, ID #, Width, Length, Bed, Thickness
+  - **Auto-Status Assignment**: Status 40/50/90 based on Disposition selection
+  - **Color-Coded Rows**: Yellow (40), Green (50), Red (90) for visual tracking
+  - **Disposition Options**: Ok to Ship, Eng, WIP, Yard Cut, Not Cast, Repour
+  - **Auto-Date Tracking**: Approval/Rejection Date auto-set for certain dispositions
+  - **Product Type Inference**: Auto-assigns from thickness with user confirmation for ambiguous cases (12"→1247/1250, 16"→1647/1648)
+  - **Duplicate Detection**: Prevents importing entries with existing ID #s
+  - **Admin Screen**: Manage Issue Codes and Reject Codes with active/inactive toggles
+  - **Typeable Dropdowns**: Type code value and press enter, or select from dropdown
+  - **Edit Protection**: Confirmation dialogs for changing imported fields
+  - **Cloud Functions**: parseSchedulePDF function for server-side OCR processing
+  - **Data Structure**: Columns include Pour Date, Disposition, Approval/Rejection Date, Status, Product Type, Job #, Mark #, ID #, Length, Width, Bed, Quality Comments, Engineer, Engineer Feedback, Issue Codes, Reject Codes
+
 ### Recent Updates (2025-12-05)
 - ✅ **Complete Aggregate Gradations Tool Integration**:
   - Integrated standalone Gradations Tool (https://github.com/McCarthy13/GradationsTool) as native mobile experience
