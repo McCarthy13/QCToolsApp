@@ -65,3 +65,4 @@ android/
 
 # GitHub tokens and deployment scripts with embedded keys
 .github/workflows/*deploy*.yml
+.env.prod

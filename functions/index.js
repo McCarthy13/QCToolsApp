@@ -244,15 +244,23 @@ Return a JSON object with this exact structure:
 Return ONLY valid JSON, no other text.`;
 
     // Make request to Anthropic API with vision
+    // For PDFs, we need the pdfs-2024-09-25 beta and newer API version
+    const headers = {
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    };
+
+    // Add beta header for PDF support
+    if (mediaType === 'application/pdf') {
+      headers["anthropic-beta"] = "pdfs-2024-09-25";
+    }
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 16000,
         temperature: 0,
         messages: [
