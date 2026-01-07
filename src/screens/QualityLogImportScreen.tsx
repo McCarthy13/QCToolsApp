@@ -71,15 +71,27 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
 
   const handlePickDocument = async () => {
+    console.log('[QualityLogImport] handlePickDocument called');
     try {
       console.log('[QualityLogImport] Opening document picker...');
 
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*'],
-        copyToCacheDirectory: true,
-      });
+      let result;
+      try {
+        result = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf', 'image/*'],
+          copyToCacheDirectory: true,
+        });
+        console.log('[QualityLogImport] Picker returned');
+      } catch (pickerError: any) {
+        console.log('[QualityLogImport] Picker threw error:', pickerError?.message || pickerError);
+        Alert.alert('Picker Error', `Document picker failed: ${pickerError?.message || 'Unknown error'}`);
+        return;
+      }
 
-      console.log('[QualityLogImport] Picker result:', JSON.stringify(result, null, 2));
+      console.log('[QualityLogImport] Picker result type:', typeof result);
+      console.log('[QualityLogImport] Picker result canceled:', result?.canceled);
+      console.log('[QualityLogImport] Picker result assets:', result?.assets?.length);
+      console.log('[QualityLogImport] Picker result full:', JSON.stringify(result, null, 2));
 
       if (result.canceled) {
         console.log('[QualityLogImport] User canceled picker');
@@ -105,10 +117,18 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       // Read file as base64
       console.log('[QualityLogImport] Reading file as base64...');
-      const base64 = await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
+      let base64;
+      try {
+        base64 = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
+      } catch (fileError: any) {
+        console.log('[QualityLogImport] File read error:', fileError?.message || fileError);
+        Alert.alert('File Read Error', `Could not read file: ${fileError?.message || 'Unknown error'}`);
+        setIsLoading(false);
+        return;
+      }
 
       setLoadingMessage('Extracting data from schedule...');
 
