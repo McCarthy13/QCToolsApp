@@ -335,10 +335,12 @@ exports.parseSchedulePDF = onCall({
       }
 
       // Find header row to identify columns
+      // The schedule typically has a header row with "Label", "ID", "Design Length" (with Ft/In sub-columns), "Width"
       let headerRowIndex = -1;
       let columnMap = {};
 
-      for (let i = 0; i < Math.min(3, tableData.length); i++) {
+      // First, look at the first few rows for headers - may span multiple rows
+      for (let i = 0; i < Math.min(5, tableData.length); i++) {
         const row = tableData[i];
         const rowText = row.join(" ").toLowerCase();
 
@@ -356,16 +358,31 @@ exports.parseSchedulePDF = onCall({
               columnMap.width = j;
             } else if (header.includes("thk") || header.includes("thick")) {
               columnMap.thickness = j;
-            } else if (header.includes("ft") || header.includes("feet")) {
+            } else if (header === "ft" || header === "feet" || header.includes("ft.")) {
               columnMap.lengthFeet = j;
-            } else if (header.includes("in") && !header.includes("min") && !header.includes("design")) {
+            } else if ((header === "in" || header === "in." || header === "inches") && !header.includes("min") && !header.includes("design")) {
               columnMap.lengthInches = j;
             } else if (header.includes("design") && header.includes("length")) {
               // Design Length might be a parent column with Ft and In sub-columns
               columnMap.designLength = j;
             }
           }
-          break;
+        }
+
+        // Also check if this row has Ft/In sub-headers (often row after main header)
+        if (headerRowIndex >= 0 && i === headerRowIndex + 1) {
+          for (let j = 0; j < row.length; j++) {
+            const header = row[j].toLowerCase().trim();
+            if (header === "ft" || header === "ft." || header === "feet") {
+              columnMap.lengthFeet = j;
+            } else if (header === "in" || header === "in." || header === "inches") {
+              columnMap.lengthInches = j;
+            }
+          }
+          // If we found sub-headers, update header row to skip this row too
+          if (columnMap.lengthFeet !== undefined || columnMap.lengthInches !== undefined) {
+            headerRowIndex = i;
+          }
         }
       }
 
@@ -518,6 +535,25 @@ exports.parseSchedulePDF = onCall({
           }
         }
 
+        // If still no length found, look for Design Length area by checking columns
+        // Design Length often has Ft and In as sub-columns, which might be adjacent cells
+        if (!lengthFeet && !lengthInches) {
+          // Look for patterns like two adjacent numeric cells (feet then inches)
+          // Feet are typically 10-50, inches are 0-11.99
+          for (let j = 0; j < row.length - 1; j++) {
+            const val1 = parseFloat(row[j]);
+            const val2 = parseFloat(row[j + 1]);
+            // Skip if this is the width or ID column
+            if (j === columnMap.width || j === columnMap.id) continue;
+            if (val1 >= 5 && val1 <= 60 && val2 >= 0 && val2 < 12) {
+              // This looks like feet and inches
+              lengthFeet = val1;
+              lengthInches = val2;
+              break;
+            }
+          }
+        }
+
         // Extract thickness from row if available
         let rowThickness = thickness;
         if (columnMap.thickness !== undefined) {
@@ -525,7 +561,14 @@ exports.parseSchedulePDF = onCall({
         }
 
         // Format length as "XX'-YY.YY""
-        const formattedLength = `${lengthFeet}'-${lengthInches}"`;
+        // Handle decimals properly - if inches has decimal, format it nicely
+        let formattedLength = "";
+        if (lengthFeet || lengthInches) {
+          const inchesStr = lengthInches % 1 === 0
+            ? lengthInches.toString()
+            : lengthInches.toFixed(2).replace(/\.?0+$/, '');
+          formattedLength = `${lengthFeet}'-${inchesStr}"`;
+        }
 
         // Only add if we have minimum required data (ID is required, job is strongly preferred)
         if (idNumber) {

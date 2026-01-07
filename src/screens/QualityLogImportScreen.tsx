@@ -392,54 +392,92 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               </View>
             )}
 
-            {/* Entry List Preview */}
+            {/* Entry List Preview - Horizontal scrolling table */}
             <View className="border border-gray-200 rounded-lg overflow-hidden">
-              <View className="flex-row bg-gray-100 py-2 px-3">
-                <Text className="flex-1 text-xs font-semibold text-gray-600">ID #</Text>
-                <Text className="flex-1 text-xs font-semibold text-gray-600">Job-Mark</Text>
-                <Text className="w-20 text-xs font-semibold text-gray-600 text-right">Size</Text>
-              </View>
-              <ScrollView style={{ maxHeight: 300 }}>
-                {extractedEntries.slice(0, 20).map((entry, index) => {
-                  const isDuplicate = duplicateIds.includes(entry.idNumber);
-                  return (
-                    <View
-                      key={entry.idNumber}
-                      className={`flex-row py-2 px-3 border-t border-gray-100 ${
-                        isDuplicate ? 'bg-red-50' : ''
-                      }`}
-                    >
-                      <Text
-                        className={`flex-1 text-sm ${
-                          isDuplicate ? 'text-red-400 line-through' : 'text-gray-900'
-                        }`}
-                      >
-                        {entry.idNumber}
-                      </Text>
-                      <Text
-                        className={`flex-1 text-sm ${
-                          isDuplicate ? 'text-red-400' : 'text-gray-600'
-                        }`}
-                      >
-                        {entry.jobNumber}-{entry.markNumber}
-                      </Text>
-                      <Text
-                        className={`w-20 text-sm text-right ${
-                          isDuplicate ? 'text-red-400' : 'text-gray-600'
-                        }`}
-                      >
-                        {entry.length}
-                      </Text>
-                    </View>
-                  );
-                })}
-                {extractedEntries.length > 20 && (
-                  <View className="py-2 px-3 bg-gray-50">
-                    <Text className="text-xs text-gray-500 text-center">
-                      And {extractedEntries.length - 20} more entries...
-                    </Text>
+              {/* Header Row */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                <View>
+                  <View className="flex-row bg-gray-100 py-2 px-2">
+                    <Text className="w-24 text-xs font-semibold text-gray-600 px-1">Pour Date</Text>
+                    <Text className="w-20 text-xs font-semibold text-gray-600 px-1">Job #</Text>
+                    <Text className="w-16 text-xs font-semibold text-gray-600 px-1">Mark #</Text>
+                    <Text className="w-20 text-xs font-semibold text-gray-600 px-1">ID #</Text>
+                    <Text className="w-24 text-xs font-semibold text-gray-600 px-1">Length</Text>
+                    <Text className="w-16 text-xs font-semibold text-gray-600 px-1">Width</Text>
+                    <Text className="w-12 text-xs font-semibold text-gray-600 px-1">Bed</Text>
                   </View>
-                )}
+                  {/* Data Rows */}
+                  <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled={true}>
+                    {extractedEntries.slice(0, 30).map((entry, index) => {
+                      const isDuplicate = duplicateIds.includes(entry.idNumber);
+                      return (
+                        <View
+                          key={entry.idNumber || index}
+                          className={`flex-row py-2 px-2 border-t border-gray-100 ${
+                            isDuplicate ? 'bg-red-50' : ''
+                          }`}
+                        >
+                          <Text
+                            className={`w-24 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400' : 'text-gray-900'
+                            }`}
+                          >
+                            {pourDate || entry.pourDate || '-'}
+                          </Text>
+                          <Text
+                            className={`w-20 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400' : 'text-gray-900'
+                            }`}
+                          >
+                            {entry.jobNumber || '-'}
+                          </Text>
+                          <Text
+                            className={`w-16 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400' : 'text-gray-900'
+                            }`}
+                          >
+                            {entry.markNumber || '-'}
+                          </Text>
+                          <Text
+                            className={`w-20 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400 line-through' : 'text-gray-900 font-medium'
+                            }`}
+                          >
+                            {entry.idNumber}
+                          </Text>
+                          <Text
+                            className={`w-24 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400' : 'text-gray-600'
+                            }`}
+                          >
+                            {entry.length || '-'}
+                          </Text>
+                          <Text
+                            className={`w-16 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400' : 'text-gray-600'
+                            }`}
+                          >
+                            {entry.width ? `${entry.width}"` : '-'}
+                          </Text>
+                          <Text
+                            className={`w-12 text-xs px-1 ${
+                              isDuplicate ? 'text-red-400' : 'text-gray-600'
+                            }`}
+                          >
+                            {detectedBed || entry.bed || '-'}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                    {extractedEntries.length > 30 && (
+                      <View className="py-2 px-3 bg-gray-50">
+                        <Text className="text-xs text-gray-500 text-center">
+                          And {extractedEntries.length - 30} more entries...
+                        </Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
               </ScrollView>
             </View>
           </View>
