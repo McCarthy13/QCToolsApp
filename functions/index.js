@@ -169,8 +169,8 @@ exports.bootstrapAdminUser = onRequest({
 
 /**
  * Parse Schedule PDF
- * Uses Claude Vision API to extract production schedule data from scanned PDFs
- * Falls back to standard document analysis if needed
+ * Uses Azure Document Intelligence to extract production schedule data from scanned PDFs
+ * Azure's Layout API provides highly accurate table extraction
  */
 exports.parseSchedulePDF = onCall({
   maxInstances: 10,
@@ -184,159 +184,305 @@ exports.parseSchedulePDF = onCall({
       return {success: false, error: "Missing file data"};
     }
 
-    // Get API key from environment variable
-    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    // Get Azure credentials from environment
+    const AZURE_ENDPOINT = process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
+    const AZURE_KEY = process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY;
 
-    if (!ANTHROPIC_API_KEY) {
-      console.error("[Parse Schedule] Missing Anthropic API key");
-      return {success: false, error: "API key not configured"};
+    if (!AZURE_ENDPOINT || !AZURE_KEY) {
+      console.error("[Parse Schedule] Missing Azure Document Intelligence credentials");
+      return {success: false, error: "Azure credentials not configured"};
     }
 
     console.log(`[Parse Schedule] Processing file: ${fileName} (${mimeType})`);
+    console.log(`[Parse Schedule] Using Azure Document Intelligence`);
 
-    // Determine media type for Claude
-    let mediaType = mimeType;
-    if (mimeType === 'application/pdf') {
-      // Claude can handle PDFs directly
-      mediaType = 'application/pdf';
-    } else if (!mimeType.startsWith('image/')) {
-      mediaType = 'image/png'; // Default fallback
-    }
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(fileBase64, 'base64');
+    console.log(`[Parse Schedule] File size: ${fileBuffer.length} bytes`);
 
-    // Build the prompt for schedule extraction
-    const extractionPrompt = `You are analyzing a scanned production schedule for precast concrete pieces.
+    // Call Azure Document Intelligence Layout API
+    // Using the prebuilt-layout model which is excellent for tables
+    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
 
-CRITICAL: Extract data with 100% accuracy. Every character matters, especially ID numbers.
+    console.log(`[Parse Schedule] Calling Azure API: ${analyzeUrl}`);
 
-Look for and extract:
-1. **Casting Date / Pour Date** - Usually at top, format like "Casting Date: MM/DD/YYYY"
-2. **Bed Number** - Often a handwritten circled number at the top of the page
-3. **Thickness (Thk)** - Column showing piece thickness in inches (e.g., 12)
-4. **Table rows** with these columns:
-   - Label: Contains Job#-Mark# (e.g., "255158-H307"). May span two lines.
-   - ID#: 7-digit unique identifier (e.g., 1369814)
-   - Width: Width in inches (e.g., 48)
-   - Design Length: Feet and Inches columns (e.g., 24 feet, 7 inches = "24'-7\\"")
-
-IMPORTANT RULES:
-- The Label column may have Job#-Mark# split across TWO lines. Combine them.
-- Job# is BEFORE the hyphen, Mark# is AFTER the hyphen
-- Length should be formatted as: feet'-inches" (e.g., "24'-7.75\\"")
-- All ID#s should be exactly as shown - do not guess or interpolate
-
-Return a JSON object with this exact structure:
-{
-  "pourDate": "MM/DD/YYYY",
-  "bed": "1" to "6" or null if not visible,
-  "thickness": number (inches) or null,
-  "entries": [
-    {
-      "jobNumber": "255158",
-      "markNumber": "H307",
-      "idNumber": "1369814",
-      "width": 48,
-      "lengthFeet": 24,
-      "lengthInches": 7.75
-    }
-  ]
-}
-
-Return ONLY valid JSON, no other text.`;
-
-    // Make request to Anthropic API with vision
-    // For PDFs, we need the pdfs-2024-09-25 beta and newer API version
-    const headers = {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    };
-
-    // Add beta header for PDF support
-    if (mediaType === 'application/pdf') {
-      headers["anthropic-beta"] = "pdfs-2024-09-25";
-    }
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const analyzeResponse = await fetch(analyzeUrl, {
       method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 16000,
-        temperature: 0,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: mediaType === 'application/pdf' ? 'document' : 'image',
-                source: {
-                  type: "base64",
-                  media_type: mediaType,
-                  data: fileBase64,
-                },
-              },
-              {
-                type: "text",
-                text: extractionPrompt,
-              },
-            ],
-          },
-        ],
-      }),
+      headers: {
+        "Ocp-Apim-Subscription-Key": AZURE_KEY,
+        "Content-Type": mimeType || "application/pdf",
+      },
+      body: fileBuffer,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Parse Schedule] API Error:", response.status, errorText);
-      return {success: false, error: `API error: ${response.status}`};
+    if (!analyzeResponse.ok) {
+      const errorText = await analyzeResponse.text();
+      console.error("[Parse Schedule] Azure API Error:", analyzeResponse.status, errorText);
+      return {success: false, error: `Azure API error: ${analyzeResponse.status} - ${errorText}`};
     }
 
-    const result = await response.json();
-    console.log("[Parse Schedule] Got response from Claude");
-
-    // Extract the text content from Claude's response
-    const textContent = result.content?.find(c => c.type === 'text')?.text;
-    if (!textContent) {
-      console.error("[Parse Schedule] No text content in response");
-      return {success: false, error: "No response from vision API"};
+    // Get the operation location for polling
+    const operationLocation = analyzeResponse.headers.get("Operation-Location");
+    if (!operationLocation) {
+      console.error("[Parse Schedule] No operation location returned");
+      return {success: false, error: "Azure API did not return operation location"};
     }
 
-    // Parse the JSON from Claude's response
-    let parsedData;
-    try {
-      // Try to extract JSON from the response (Claude sometimes adds markdown)
-      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsedData = JSON.parse(jsonMatch[0]);
-      } else {
-        parsedData = JSON.parse(textContent);
+    console.log(`[Parse Schedule] Operation started: ${operationLocation}`);
+
+    // Poll for results (Azure processes async)
+    let result = null;
+    let attempts = 0;
+    const maxAttempts = 30; // 30 seconds max wait
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+
+      const pollResponse = await fetch(operationLocation, {
+        headers: {
+          "Ocp-Apim-Subscription-Key": AZURE_KEY,
+        },
+      });
+
+      if (!pollResponse.ok) {
+        const errorText = await pollResponse.text();
+        console.error("[Parse Schedule] Poll error:", pollResponse.status, errorText);
+        return {success: false, error: `Azure poll error: ${pollResponse.status}`};
       }
-    } catch (parseError) {
-      console.error("[Parse Schedule] JSON parse error:", parseError);
-      console.log("[Parse Schedule] Raw response:", textContent.substring(0, 500));
-      return {success: false, error: "Failed to parse extracted data"};
+
+      result = await pollResponse.json();
+      console.log(`[Parse Schedule] Poll attempt ${attempts + 1}, status: ${result.status}`);
+
+      if (result.status === "succeeded") {
+        break;
+      } else if (result.status === "failed") {
+        console.error("[Parse Schedule] Azure analysis failed:", result.error);
+        return {success: false, error: "Document analysis failed"};
+      }
+
+      attempts++;
     }
 
-    // Validate and transform the data
-    const entries = (parsedData.entries || []).map(entry => ({
-      pourDate: parsedData.pourDate || "",
-      jobNumber: String(entry.jobNumber || "").trim(),
-      markNumber: String(entry.markNumber || "").trim(),
-      idNumber: String(entry.idNumber || "").trim(),
-      width: Number(entry.width) || 0,
-      thickness: Number(parsedData.thickness) || 0,
-      length: `${entry.lengthFeet || 0}'-${entry.lengthInches || 0}"`,
-      bed: parsedData.bed || undefined,
-    })).filter(entry => entry.idNumber && entry.jobNumber); // Filter out invalid entries
+    if (!result || result.status !== "succeeded") {
+      return {success: false, error: "Document analysis timed out"};
+    }
+
+    console.log("[Parse Schedule] Azure analysis succeeded");
+
+    // Extract data from Azure response
+    const analyzeResult = result.analyzeResult;
+
+    // Get all text content for searching
+    const fullText = analyzeResult.content || "";
+    console.log(`[Parse Schedule] Extracted ${fullText.length} characters of text`);
+
+    // Extract pour date - look for patterns like "Casting Date: MM/DD/YYYY" or just dates
+    let pourDate = "";
+    const datePatterns = [
+      /Casting\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      /Pour\s*Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      /Date[:\s]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+    ];
+    for (const pattern of datePatterns) {
+      const match = fullText.match(pattern);
+      if (match) {
+        pourDate = match[1];
+        break;
+      }
+    }
+    console.log(`[Parse Schedule] Detected pour date: ${pourDate}`);
+
+    // Extract bed number - look for "Bed" followed by number
+    let bed = null;
+    const bedMatch = fullText.match(/Bed\s*[#:]?\s*(\d)/i);
+    if (bedMatch) {
+      bed = bedMatch[1];
+    }
+    console.log(`[Parse Schedule] Detected bed: ${bed}`);
+
+    // Extract thickness - look for "Thk" or "Thickness" column values
+    let thickness = null;
+    const thicknessMatch = fullText.match(/(?:Thk|Thickness)[:\s]*(\d+(?:\.\d+)?)/i);
+    if (thicknessMatch) {
+      thickness = parseFloat(thicknessMatch[1]);
+    }
+    console.log(`[Parse Schedule] Detected thickness: ${thickness}`);
+
+    // Process tables from Azure response
+    const tables = analyzeResult.tables || [];
+    console.log(`[Parse Schedule] Found ${tables.length} tables`);
+
+    const entries = [];
+
+    for (const table of tables) {
+      console.log(`[Parse Schedule] Processing table with ${table.rowCount} rows, ${table.columnCount} columns`);
+
+      // Build a 2D array from the table cells
+      const tableData = [];
+      for (let i = 0; i < table.rowCount; i++) {
+        tableData[i] = new Array(table.columnCount).fill("");
+      }
+
+      for (const cell of table.cells) {
+        tableData[cell.rowIndex][cell.columnIndex] = cell.content || "";
+      }
+
+      // Find header row to identify columns
+      let headerRowIndex = -1;
+      let columnMap = {};
+
+      for (let i = 0; i < Math.min(3, tableData.length); i++) {
+        const row = tableData[i];
+        const rowText = row.join(" ").toLowerCase();
+
+        // Look for key column headers
+        if (rowText.includes("id") || rowText.includes("label") || rowText.includes("mark")) {
+          headerRowIndex = i;
+
+          for (let j = 0; j < row.length; j++) {
+            const header = row[j].toLowerCase().trim();
+            if (header.includes("label") || header.includes("job") || header.includes("mark")) {
+              columnMap.label = j;
+            } else if (header.includes("id") && !header.includes("width")) {
+              columnMap.id = j;
+            } else if (header.includes("width") || header === "w") {
+              columnMap.width = j;
+            } else if (header.includes("thk") || header.includes("thick")) {
+              columnMap.thickness = j;
+            } else if (header.includes("ft") || header.includes("feet") || header.includes("length")) {
+              columnMap.lengthFeet = j;
+            } else if (header.includes("in") && !header.includes("min")) {
+              columnMap.lengthInches = j;
+            }
+          }
+          break;
+        }
+      }
+
+      console.log(`[Parse Schedule] Header row: ${headerRowIndex}, Column map:`, columnMap);
+
+      // If we couldn't find headers, try to infer from data patterns
+      if (headerRowIndex === -1) {
+        // Look for rows with 7-digit numbers (ID numbers)
+        for (let i = 0; i < tableData.length; i++) {
+          const row = tableData[i];
+          for (let j = 0; j < row.length; j++) {
+            if (/^\d{7}$/.test(row[j].trim())) {
+              columnMap.id = j;
+              headerRowIndex = i - 1; // Assume header is row before first data
+              break;
+            }
+          }
+          if (columnMap.id !== undefined) break;
+        }
+      }
+
+      // Process data rows
+      const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
+
+      for (let i = startRow; i < tableData.length; i++) {
+        const row = tableData[i];
+
+        // Try to extract ID number (7-digit number)
+        let idNumber = "";
+        if (columnMap.id !== undefined) {
+          idNumber = row[columnMap.id]?.trim() || "";
+        }
+
+        // If no ID from column map, search the row for 7-digit number
+        if (!idNumber || !/^\d{7}$/.test(idNumber)) {
+          for (const cell of row) {
+            const match = cell.match(/\b(\d{7})\b/);
+            if (match) {
+              idNumber = match[1];
+              break;
+            }
+          }
+        }
+
+        // Skip rows without valid ID
+        if (!idNumber || !/^\d{7}$/.test(idNumber)) {
+          continue;
+        }
+
+        // Extract job and mark number from label
+        let jobNumber = "";
+        let markNumber = "";
+
+        if (columnMap.label !== undefined) {
+          const label = row[columnMap.label]?.trim() || "";
+          const labelMatch = label.match(/(\d+)\s*[-–]\s*([A-Za-z0-9]+)/);
+          if (labelMatch) {
+            jobNumber = labelMatch[1];
+            markNumber = labelMatch[2];
+          }
+        }
+
+        // If no label column, search the row
+        if (!jobNumber) {
+          for (const cell of row) {
+            const match = cell.match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
+            if (match) {
+              jobNumber = match[1];
+              markNumber = match[2];
+              break;
+            }
+          }
+        }
+
+        // Extract width
+        let width = 0;
+        if (columnMap.width !== undefined) {
+          width = parseFloat(row[columnMap.width]) || 0;
+        }
+
+        // Extract length
+        let lengthFeet = 0;
+        let lengthInches = 0;
+
+        if (columnMap.lengthFeet !== undefined) {
+          lengthFeet = parseFloat(row[columnMap.lengthFeet]) || 0;
+        }
+        if (columnMap.lengthInches !== undefined) {
+          lengthInches = parseFloat(row[columnMap.lengthInches]) || 0;
+        }
+
+        // Extract thickness from row if available
+        let rowThickness = thickness;
+        if (columnMap.thickness !== undefined) {
+          rowThickness = parseFloat(row[columnMap.thickness]) || thickness;
+        }
+
+        // Only add if we have minimum required data
+        if (idNumber && jobNumber) {
+          entries.push({
+            pourDate: pourDate,
+            jobNumber: jobNumber,
+            markNumber: markNumber,
+            idNumber: idNumber,
+            width: width,
+            thickness: rowThickness || 0,
+            length: `${lengthFeet}'-${lengthInches}"`,
+            bed: bed || undefined,
+          });
+        }
+      }
+    }
 
     console.log(`[Parse Schedule] Extracted ${entries.length} entries`);
+
+    // Log the entries for debugging
+    if (entries.length > 0) {
+      console.log("[Parse Schedule] First entry:", JSON.stringify(entries[0]));
+      console.log("[Parse Schedule] Last entry:", JSON.stringify(entries[entries.length - 1]));
+    }
 
     return {
       success: true,
       entries,
-      pourDate: parsedData.pourDate || "",
-      bed: parsedData.bed || undefined,
-      thickness: parsedData.thickness || undefined,
+      pourDate: pourDate,
+      bed: bed || undefined,
+      thickness: thickness || undefined,
     };
 
   } catch (error) {
