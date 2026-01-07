@@ -119,10 +119,30 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       console.log('[QualityLogImport] Reading file as base64...');
       let base64;
       try {
-        base64 = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
+        // On web, we need to fetch the blob and convert it manually
+        // expo-file-system doesn't work with blob URLs on web
+        if (Platform.OS === 'web') {
+          console.log('[QualityLogImport] Using web-specific file reading...');
+          const response = await fetch(file.uri);
+          const blob = await response.blob();
+          base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+              const base64Data = result.split(',')[1];
+              resolve(base64Data);
+            };
+            reader.onerror = () => reject(new Error('FileReader failed'));
+            reader.readAsDataURL(blob);
+          });
+          console.log('[QualityLogImport] Web file read successfully, base64 length:', base64.length);
+        } else {
+          base64 = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
+        }
       } catch (fileError: any) {
         console.log('[QualityLogImport] File read error:', fileError?.message || fileError);
         Alert.alert('File Read Error', `Could not read file: ${fileError?.message || 'Unknown error'}`);
