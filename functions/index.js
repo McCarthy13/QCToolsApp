@@ -317,14 +317,21 @@ exports.parseSchedulePDF = onCall({
     for (const table of tables) {
       console.log(`[Parse Schedule] Processing table with ${table.rowCount} rows, ${table.columnCount} columns`);
 
-      // Build a 2D array from the table cells
+      // Build a 2D array from the table cells, tracking row spans
       const tableData = [];
+      const rowSpans = []; // Track which cells span multiple rows
+
       for (let i = 0; i < table.rowCount; i++) {
         tableData[i] = new Array(table.columnCount).fill("");
+        rowSpans[i] = new Array(table.columnCount).fill(1);
       }
 
       for (const cell of table.cells) {
         tableData[cell.rowIndex][cell.columnIndex] = cell.content || "";
+        // Track row span for multi-line cells
+        if (cell.rowSpan && cell.rowSpan > 1) {
+          rowSpans[cell.rowIndex][cell.columnIndex] = cell.rowSpan;
+        }
       }
 
       // Find header row to identify columns
@@ -349,10 +356,13 @@ exports.parseSchedulePDF = onCall({
               columnMap.width = j;
             } else if (header.includes("thk") || header.includes("thick")) {
               columnMap.thickness = j;
-            } else if (header.includes("ft") || header.includes("feet") || header.includes("length")) {
+            } else if (header.includes("ft") || header.includes("feet")) {
               columnMap.lengthFeet = j;
-            } else if (header.includes("in") && !header.includes("min")) {
+            } else if (header.includes("in") && !header.includes("min") && !header.includes("design")) {
               columnMap.lengthInches = j;
+            } else if (header.includes("design") && header.includes("length")) {
+              // Design Length might be a parent column with Ft and In sub-columns
+              columnMap.designLength = j;
             }
           }
           break;
@@ -377,19 +387,19 @@ exports.parseSchedulePDF = onCall({
         }
       }
 
-      // Process data rows
+      // Process data rows - collect all rows first to handle multi-line labels
       const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
 
+      // First pass: identify rows with ID numbers (these are primary data rows)
+      const primaryRows = [];
       for (let i = startRow; i < tableData.length; i++) {
         const row = tableData[i];
-
-        // Try to extract ID number (7-digit number)
         let idNumber = "";
+
+        // Look for 7-digit ID in the row
         if (columnMap.id !== undefined) {
           idNumber = row[columnMap.id]?.trim() || "";
         }
-
-        // If no ID from column map, search the row for 7-digit number
         if (!idNumber || !/^\d{7}$/.test(idNumber)) {
           for (const cell of row) {
             const match = cell.match(/\b(\d{7})\b/);
@@ -400,25 +410,66 @@ exports.parseSchedulePDF = onCall({
           }
         }
 
-        // Skip rows without valid ID
-        if (!idNumber || !/^\d{7}$/.test(idNumber)) {
-          continue;
+        if (idNumber && /^\d{7}$/.test(idNumber)) {
+          primaryRows.push({ rowIndex: i, idNumber });
         }
+      }
 
-        // Extract job and mark number from label
+      console.log(`[Parse Schedule] Found ${primaryRows.length} primary data rows with IDs`);
+
+      // Second pass: extract data, looking at previous row for multi-line labels
+      for (let idx = 0; idx < primaryRows.length; idx++) {
+        const { rowIndex, idNumber } = primaryRows[idx];
+        const row = tableData[rowIndex];
+
+        // Extract job and mark number from label column
         let jobNumber = "";
         let markNumber = "";
+        let labelText = "";
 
         if (columnMap.label !== undefined) {
-          const label = row[columnMap.label]?.trim() || "";
-          const labelMatch = label.match(/(\d+)\s*[-–]\s*([A-Za-z0-9]+)/);
+          labelText = row[columnMap.label]?.trim() || "";
+
+          // Check if previous row might be a continuation (multi-line label)
+          // A continuation row is one that doesn't have its own ID and comes right before this row
+          const prevRowIndex = rowIndex - 1;
+          if (prevRowIndex >= startRow) {
+            const prevRow = tableData[prevRowIndex];
+            // Check if prev row has no ID (making it a continuation)
+            let prevHasId = false;
+            if (columnMap.id !== undefined) {
+              prevHasId = /^\d{7}$/.test(prevRow[columnMap.id]?.trim() || "");
+            }
+            if (!prevHasId) {
+              // Check if any cell in prev row has a 7-digit number
+              for (const cell of prevRow) {
+                if (/\b\d{7}\b/.test(cell)) {
+                  prevHasId = true;
+                  break;
+                }
+              }
+            }
+
+            if (!prevHasId && prevRow[columnMap.label]) {
+              // Prepend the previous row's label content
+              const prevLabel = prevRow[columnMap.label]?.trim() || "";
+              if (prevLabel) {
+                labelText = prevLabel + " " + labelText;
+                console.log(`[Parse Schedule] Merged multi-line label for ID ${idNumber}: "${labelText}"`);
+              }
+            }
+          }
+
+          // Now extract job and mark from the combined label
+          // Pattern: Job# - Mark# (e.g., "255158 - H307" or "255158-H307")
+          const labelMatch = labelText.match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
           if (labelMatch) {
             jobNumber = labelMatch[1];
             markNumber = labelMatch[2];
           }
         }
 
-        // If no label column, search the row
+        // If no label column found job/mark, search the entire row
         if (!jobNumber) {
           for (const cell of row) {
             const match = cell.match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
@@ -435,8 +486,18 @@ exports.parseSchedulePDF = onCall({
         if (columnMap.width !== undefined) {
           width = parseFloat(row[columnMap.width]) || 0;
         }
+        // If width not found in mapped column, search for reasonable width value (typically 48-120)
+        if (!width) {
+          for (const cell of row) {
+            const val = parseFloat(cell);
+            if (val >= 24 && val <= 144 && Number.isInteger(val)) {
+              width = val;
+              break;
+            }
+          }
+        }
 
-        // Extract length
+        // Extract length (feet and inches)
         let lengthFeet = 0;
         let lengthInches = 0;
 
@@ -447,22 +508,37 @@ exports.parseSchedulePDF = onCall({
           lengthInches = parseFloat(row[columnMap.lengthInches]) || 0;
         }
 
+        // If we have a design length column but no separate ft/in, try to parse it
+        if ((!lengthFeet && !lengthInches) && columnMap.designLength !== undefined) {
+          const lengthCell = row[columnMap.designLength] || "";
+          const lengthMatch = lengthCell.match(/(\d+)['\s-]+(\d+(?:\.\d+)?)/);
+          if (lengthMatch) {
+            lengthFeet = parseFloat(lengthMatch[1]) || 0;
+            lengthInches = parseFloat(lengthMatch[2]) || 0;
+          }
+        }
+
         // Extract thickness from row if available
         let rowThickness = thickness;
         if (columnMap.thickness !== undefined) {
           rowThickness = parseFloat(row[columnMap.thickness]) || thickness;
         }
 
-        // Only add if we have minimum required data
-        if (idNumber && jobNumber) {
+        // Format length as "XX'-YY.YY""
+        const formattedLength = `${lengthFeet}'-${lengthInches}"`;
+
+        // Only add if we have minimum required data (ID is required, job is strongly preferred)
+        if (idNumber) {
           entries.push({
             pourDate: pourDate,
-            jobNumber: jobNumber,
-            markNumber: markNumber,
+            jobNumber: jobNumber || "",
+            markNumber: markNumber || "",
             idNumber: idNumber,
             width: width,
             thickness: rowThickness || 0,
-            length: `${lengthFeet}'-${lengthInches}"`,
+            length: formattedLength,
+            lengthFeet: lengthFeet,
+            lengthInches: lengthInches,
             bed: bed || undefined,
           });
         }

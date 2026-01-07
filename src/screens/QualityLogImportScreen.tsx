@@ -20,15 +20,14 @@ import {
   QualityLogEntry,
   ProductType,
   BedNumber,
-  inferProductTypeFromThickness,
-  getAmbiguousProductTypes,
-  PRODUCT_TYPE_OPTIONS,
-  BED_OPTIONS,
 } from '../types/quality-log';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../config/firebase';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogImport'>;
+
+// All product type options for selection
+const ALL_PRODUCT_TYPES: ProductType[] = ['8048', '1047', '1247', '1250', '1647', '1648'];
 
 interface ExtractedEntry {
   pourDate: string;
@@ -61,11 +60,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [detectedThickness, setDetectedThickness] = useState<number | null>(null);
   const [detectedBed, setDetectedBed] = useState<BedNumber | undefined>();
 
-  // Product type selection state
+  // Product type selection state - always prompt user to select
   const [showProductTypePrompt, setShowProductTypePrompt] = useState(false);
-  const [productTypeOptions, setProductTypeOptions] = useState<ProductType[]>([]);
-  const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
-  const [manualProductType, setManualProductType] = useState(false);
+  const [selectedProductType, setSelectedProductType] = useState<ProductType | 'Mixed' | null>(null);
 
   // Review state
   const [showReview, setShowReview] = useState(false);
@@ -195,27 +192,8 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           .filter((id) => getEntryByIdNumber(id) !== undefined);
         setDuplicateIds(duplicates);
 
-        // Determine if we need to prompt for product type
-        if (thickness) {
-          const inferred = inferProductTypeFromThickness(thickness);
-          if (inferred === 'ambiguous') {
-            // Need user to select between options
-            setProductTypeOptions(getAmbiguousProductTypes(thickness));
-            setShowProductTypePrompt(true);
-          } else if (inferred) {
-            // Auto-assign
-            setSelectedProductType(inferred);
-            setShowReview(true);
-          } else {
-            // Unknown thickness, manual entry needed
-            setManualProductType(true);
-            setShowReview(true);
-          }
-        } else {
-          // No thickness detected, manual entry needed
-          setManualProductType(true);
-          setShowReview(true);
-        }
+        // Always prompt user to select product type after extraction
+        setShowProductTypePrompt(true);
 
         setIsLoading(false);
       } catch (cloudFunctionError: any) {
@@ -237,15 +215,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     }
   };
 
-  const handleProductTypeSelect = (type: ProductType | 'manual') => {
+  const handleProductTypeSelect = (type: ProductType | 'Mixed') => {
     setShowProductTypePrompt(false);
-    if (type === 'manual') {
-      setManualProductType(true);
-      setSelectedProductType(null);
-    } else {
-      setSelectedProductType(type);
-      setManualProductType(false);
-    }
+    setSelectedProductType(type);
     setShowReview(true);
   };
 
@@ -266,6 +238,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       }
 
       // Create full entries with product type
+      // If "Mixed" was selected, don't set a product type (user will set individually)
       const fullEntries: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>[] = entriesToImport.map((entry) => ({
         pourDate: pourDate || entry.pourDate,
         jobNumber: entry.jobNumber,
@@ -275,7 +248,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         width: entry.width,
         thickness: entry.thickness,
         bed: detectedBed || entry.bed,
-        productType: manualProductType ? undefined : selectedProductType || undefined,
+        productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as ProductType) || undefined,
         issueCodes: [],
         rejectCodes: [],
         importedBy: '', // Will be set by store
@@ -312,7 +285,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     setDetectedThickness(null);
     setDetectedBed(undefined);
     setSelectedProductType(null);
-    setManualProductType(false);
     setShowReview(false);
     setDuplicateIds([]);
   };
@@ -385,7 +357,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               <View className="flex-1 min-w-[120px]">
                 <Text className="text-xs text-gray-500">Product Type</Text>
                 <Text className="text-base font-semibold text-gray-900">
-                  {manualProductType ? 'Manual Entry' : selectedProductType || 'Unknown'}
+                  {selectedProductType === 'Mixed' ? 'Mixed/Manual' : selectedProductType || 'Unknown'}
                 </Text>
               </View>
               <View className="flex-1 min-w-[120px]">
@@ -511,11 +483,11 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               Select Product Type
             </Text>
             <Text className="text-gray-600 text-center mb-6">
-              Detected {detectedThickness}" thickness. Please select the product type:
+              {extractedEntries.length} entries extracted. Please select the product type for this batch:
             </Text>
 
             <View className="gap-3">
-              {productTypeOptions.map((type) => (
+              {ALL_PRODUCT_TYPES.map((type: ProductType) => (
                 <Pressable
                   key={type}
                   onPress={() => handleProductTypeSelect(type)}
@@ -526,10 +498,10 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               ))}
 
               <Pressable
-                onPress={() => handleProductTypeSelect('manual')}
+                onPress={() => handleProductTypeSelect('Mixed')}
                 className="bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300 mt-2"
               >
-                <Text className="text-gray-700 font-semibold">Manual Entry</Text>
+                <Text className="text-gray-700 font-semibold">Mixed/Manual</Text>
                 <Text className="text-gray-500 text-xs">
                   Mixed product types - enter individually
                 </Text>
