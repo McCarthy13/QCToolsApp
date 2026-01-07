@@ -26,6 +26,7 @@ import {
   BED_OPTIONS,
 } from '../types/quality-log';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '../config/firebase';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogImport'>;
 
@@ -154,64 +155,81 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       // Call Cloud Function to parse the PDF/image
       console.log('[QualityLogImport] Calling parseSchedulePDF Cloud Function...');
-      const functions = getFunctions();
-      const parseSchedule = httpsCallable<
-        { fileBase64: string; fileName: string; mimeType: string },
-        ParsedScheduleResult
-      >(functions, 'parseSchedulePDF');
+      console.log('[QualityLogImport] File size (base64 length):', base64.length);
 
-      const response = await parseSchedule({
-        fileBase64: base64,
-        fileName: file.name,
-        mimeType: file.mimeType || 'application/pdf',
-      });
+      try {
+        const functions = getFunctions(app);
+        const parseSchedule = httpsCallable<
+          { fileBase64: string; fileName: string; mimeType: string },
+          ParsedScheduleResult
+        >(functions, 'parseSchedulePDF');
 
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to parse schedule');
-      }
+        console.log('[QualityLogImport] Sending request to Cloud Function...');
+        const response = await parseSchedule({
+          fileBase64: base64,
+          fileName: file.name,
+          mimeType: file.mimeType || 'application/pdf',
+        });
+        console.log('[QualityLogImport] Cloud Function response received:', JSON.stringify(response.data, null, 2));
 
-      const { entries, pourDate: extractedPourDate, bed, thickness } = response.data;
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Failed to parse schedule');
+        }
 
-      if (entries.length === 0) {
-        Alert.alert('No Data Found', 'Could not extract any entries from the schedule. Please try a clearer scan.');
-        setIsLoading(false);
-        return;
-      }
+        const { entries, pourDate: extractedPourDate, bed, thickness } = response.data;
 
-      setExtractedEntries(entries);
-      setPourDate(extractedPourDate);
-      setDetectedBed(bed as BedNumber | undefined);
-      setDetectedThickness(thickness || null);
+        if (entries.length === 0) {
+          Alert.alert('No Data Found', 'Could not extract any entries from the schedule. Please try a clearer scan.');
+          setIsLoading(false);
+          return;
+        }
 
-      // Check for duplicate IDs
-      const duplicates = entries
-        .map((e) => e.idNumber)
-        .filter((id) => getEntryByIdNumber(id) !== undefined);
-      setDuplicateIds(duplicates);
+        setExtractedEntries(entries);
+        setPourDate(extractedPourDate);
+        setDetectedBed(bed as BedNumber | undefined);
+        setDetectedThickness(thickness || null);
 
-      // Determine if we need to prompt for product type
-      if (thickness) {
-        const inferred = inferProductTypeFromThickness(thickness);
-        if (inferred === 'ambiguous') {
-          // Need user to select between options
-          setProductTypeOptions(getAmbiguousProductTypes(thickness));
-          setShowProductTypePrompt(true);
-        } else if (inferred) {
-          // Auto-assign
-          setSelectedProductType(inferred);
-          setShowReview(true);
+        // Check for duplicate IDs
+        const duplicates = entries
+          .map((e) => e.idNumber)
+          .filter((id) => getEntryByIdNumber(id) !== undefined);
+        setDuplicateIds(duplicates);
+
+        // Determine if we need to prompt for product type
+        if (thickness) {
+          const inferred = inferProductTypeFromThickness(thickness);
+          if (inferred === 'ambiguous') {
+            // Need user to select between options
+            setProductTypeOptions(getAmbiguousProductTypes(thickness));
+            setShowProductTypePrompt(true);
+          } else if (inferred) {
+            // Auto-assign
+            setSelectedProductType(inferred);
+            setShowReview(true);
+          } else {
+            // Unknown thickness, manual entry needed
+            setManualProductType(true);
+            setShowReview(true);
+          }
         } else {
-          // Unknown thickness, manual entry needed
+          // No thickness detected, manual entry needed
           setManualProductType(true);
           setShowReview(true);
         }
-      } else {
-        // No thickness detected, manual entry needed
-        setManualProductType(true);
-        setShowReview(true);
-      }
 
-      setIsLoading(false);
+        setIsLoading(false);
+      } catch (cloudFunctionError: any) {
+        console.error('[QualityLogImport] Cloud Function error:', cloudFunctionError);
+        console.error('[QualityLogImport] Error code:', cloudFunctionError?.code);
+        console.error('[QualityLogImport] Error message:', cloudFunctionError?.message);
+        console.error('[QualityLogImport] Error details:', cloudFunctionError?.details);
+        setIsLoading(false);
+        Alert.alert(
+          'Import Error',
+          `Failed to process schedule: ${cloudFunctionError?.message || 'Unknown error'}. Please try again.`
+        );
+        return;
+      }
     } catch (error: any) {
       console.error('Error importing schedule:', error);
       setIsLoading(false);
