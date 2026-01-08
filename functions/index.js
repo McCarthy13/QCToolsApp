@@ -352,92 +352,62 @@ exports.parseSchedulePDF = onCall({
         console.log(`[Parse Schedule] Row ${i}: ${JSON.stringify(tableData[i])}`);
       }
 
-      // Find header row to identify columns
-      // The schedule typically has a header row with "Label", "ID", "Design Length" (with Ft/In sub-columns), "Width"
+      // Find header row by looking for "ID" or "ID#" in cells
       let headerRowIndex = -1;
       let columnMap = {};
 
-      // First, look at the first few rows for headers - may span multiple rows
+      // Search first few rows for header indicators
       for (let i = 0; i < Math.min(5, tableData.length); i++) {
         const row = tableData[i];
-        const rowText = row.join(" ").toLowerCase();
 
-        // Look for key column headers
-        if (rowText.includes("id") || rowText.includes("label") || rowText.includes("mark")) {
-          headerRowIndex = i;
+        for (let j = 0; j < row.length; j++) {
+          const cellText = (row[j] || "").toLowerCase().replace(/\n/g, ' ').trim();
 
-          for (let j = 0; j < row.length; j++) {
-            const header = row[j].toLowerCase().trim();
-            if (header.includes("label") || header.includes("job") || header.includes("mark")) {
-              columnMap.label = j;
-            } else if (header.includes("id") && !header.includes("width")) {
-              columnMap.id = j;
-            } else if (header.includes("width") || header === "w") {
-              columnMap.width = j;
-            } else if (header.includes("thk") || header.includes("thick")) {
-              columnMap.thickness = j;
-            } else if (header === "ft" || header === "feet" || header.includes("ft.")) {
-              columnMap.lengthFeet = j;
-            } else if ((header === "in" || header === "in." || header === "inches") && !header.includes("min") && !header.includes("design")) {
-              columnMap.lengthInches = j;
-            } else if (header.includes("design") && header.includes("length")) {
-              // Design Length might be a parent column with Ft and In sub-columns
-              columnMap.designLength = j;
-            }
-          }
-        }
-
-        // Also check if this row has Ft/In sub-headers (often row after main header)
-        if (headerRowIndex >= 0 && i === headerRowIndex + 1) {
-          for (let j = 0; j < row.length; j++) {
-            const header = row[j].toLowerCase().trim();
-            if (header === "ft" || header === "ft." || header === "feet") {
-              columnMap.lengthFeet = j;
-            } else if (header === "in" || header === "in." || header === "inches") {
-              columnMap.lengthInches = j;
-            }
-          }
-          // If we found sub-headers, update header row to skip this row too
-          if (columnMap.lengthFeet !== undefined || columnMap.lengthInches !== undefined) {
+          // Map columns based on header text
+          if (cellText === "id#" || cellText === "id" || cellText === "id #") {
+            columnMap.id = j;
             headerRowIndex = i;
+          } else if (cellText === "label" || cellText.includes("job") || (cellText.includes("mark") && !cellText.includes("remark"))) {
+            columnMap.label = j;
+          } else if (cellText === "width" || cellText === "w") {
+            columnMap.width = j;
+          } else if (cellText === "thk" || cellText.includes("thick")) {
+            columnMap.thickness = j;
+          } else if (cellText === "b" || cellText === "bed") {
+            columnMap.bed = j;
+          } else if (cellText.includes("design") && cellText.includes("feet")) {
+            columnMap.lengthFeet = j;
+          } else if (cellText.includes("length") && cellText.includes("inch")) {
+            columnMap.lengthInches = j;
+          } else if (cellText === "feet" || cellText === "ft") {
+            columnMap.lengthFeet = j;
+          } else if (cellText === "inches" || cellText === "in") {
+            columnMap.lengthInches = j;
           }
         }
+
+        if (headerRowIndex >= 0) break;
       }
 
-      console.log(`[Parse Schedule] Header row: ${headerRowIndex}, Column map:`, columnMap);
+      console.log(`[Parse Schedule] Header row: ${headerRowIndex}, Column map:`, JSON.stringify(columnMap));
 
-      // If we couldn't find headers, try to infer from data patterns
-      if (headerRowIndex === -1) {
-        // Look for rows with 7-digit numbers (ID numbers)
-        for (let i = 0; i < tableData.length; i++) {
-          const row = tableData[i];
-          for (let j = 0; j < row.length; j++) {
-            if (/^\d{7}$/.test(row[j].trim())) {
-              columnMap.id = j;
-              headerRowIndex = i - 1; // Assume header is row before first data
-              break;
-            }
-          }
-          if (columnMap.id !== undefined) break;
-        }
-      }
-
-      // Process data rows - collect all rows first to handle multi-line labels
+      // Process ALL data rows after header - simpler approach
       const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
+      console.log(`[Parse Schedule] Processing rows ${startRow} to ${tableData.length - 1}`);
 
-      // First pass: identify rows with ID numbers (these are primary data rows)
-      const primaryRows = [];
       for (let i = startRow; i < tableData.length; i++) {
         const row = tableData[i];
-        let idNumber = "";
 
-        // Look for 7-digit ID in the row
+        // Get ID from mapped column or search for 7-digit number
+        let idNumber = "";
         if (columnMap.id !== undefined) {
-          idNumber = row[columnMap.id]?.trim() || "";
+          idNumber = (row[columnMap.id] || "").trim();
         }
+
+        // If not found in mapped column, search entire row for 7-digit number
         if (!idNumber || !/^\d{7}$/.test(idNumber)) {
           for (const cell of row) {
-            const match = cell.match(/\b(\d{7})\b/);
+            const match = (cell || "").match(/\b(\d{7})\b/);
             if (match) {
               idNumber = match[1];
               break;
@@ -445,69 +415,30 @@ exports.parseSchedulePDF = onCall({
           }
         }
 
-        if (idNumber && /^\d{7}$/.test(idNumber)) {
-          primaryRows.push({ rowIndex: i, idNumber });
+        // Skip rows without valid ID
+        if (!idNumber || !/^\d{7}$/.test(idNumber)) {
+          console.log(`[Parse Schedule] Row ${i} skipped - no valid ID found. Row data: ${JSON.stringify(row)}`);
+          continue;
         }
-      }
 
-      console.log(`[Parse Schedule] Found ${primaryRows.length} primary data rows with IDs`);
+        console.log(`[Parse Schedule] Row ${i} has ID: ${idNumber}`);
 
-      // Second pass: extract data, looking at previous row for multi-line labels
-      for (let idx = 0; idx < primaryRows.length; idx++) {
-        const { rowIndex, idNumber } = primaryRows[idx];
-        const row = tableData[rowIndex];
-
-        // Extract job and mark number from label column
+        // Extract label (job-mark)
         let jobNumber = "";
         let markNumber = "";
-        let labelText = "";
+        let labelText = columnMap.label !== undefined ? (row[columnMap.label] || "").trim() : "";
 
-        if (columnMap.label !== undefined) {
-          labelText = row[columnMap.label]?.trim() || "";
-
-          // Check if previous row might be a continuation (multi-line label)
-          // A continuation row is one that doesn't have its own ID and comes right before this row
-          const prevRowIndex = rowIndex - 1;
-          if (prevRowIndex >= startRow) {
-            const prevRow = tableData[prevRowIndex];
-            // Check if prev row has no ID (making it a continuation)
-            let prevHasId = false;
-            if (columnMap.id !== undefined) {
-              prevHasId = /^\d{7}$/.test(prevRow[columnMap.id]?.trim() || "");
-            }
-            if (!prevHasId) {
-              // Check if any cell in prev row has a 7-digit number
-              for (const cell of prevRow) {
-                if (/\b\d{7}\b/.test(cell)) {
-                  prevHasId = true;
-                  break;
-                }
-              }
-            }
-
-            if (!prevHasId && prevRow[columnMap.label]) {
-              // Prepend the previous row's label content
-              const prevLabel = prevRow[columnMap.label]?.trim() || "";
-              if (prevLabel) {
-                labelText = prevLabel + " " + labelText;
-                console.log(`[Parse Schedule] Merged multi-line label for ID ${idNumber}: "${labelText}"`);
-              }
-            }
-          }
-
-          // Now extract job and mark from the combined label
-          // Pattern: Job# - Mark# (e.g., "255158 - H307" or "255158-H307")
-          const labelMatch = labelText.match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
-          if (labelMatch) {
-            jobNumber = labelMatch[1];
-            markNumber = labelMatch[2];
-          }
+        // Parse job-mark from label
+        const labelMatch = labelText.match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
+        if (labelMatch) {
+          jobNumber = labelMatch[1];
+          markNumber = labelMatch[2];
         }
 
-        // If no label column found job/mark, search the entire row
+        // If not found in label column, search entire row
         if (!jobNumber) {
           for (const cell of row) {
-            const match = cell.match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
+            const match = (cell || "").match(/(\d{5,6})\s*[-–]\s*([A-Za-z0-9]+)/);
             if (match) {
               jobNumber = match[1];
               markNumber = match[2];
@@ -521,14 +452,19 @@ exports.parseSchedulePDF = onCall({
         if (columnMap.width !== undefined) {
           width = parseFloat(row[columnMap.width]) || 0;
         }
-        // If width not found in mapped column, search for reasonable width value (typically 48-120)
-        if (!width) {
-          for (const cell of row) {
-            const val = parseFloat(cell);
-            if (val >= 24 && val <= 144 && Number.isInteger(val)) {
-              width = val;
-              break;
-            }
+
+        // Extract thickness
+        let rowThickness = thickness;
+        if (columnMap.thickness !== undefined) {
+          rowThickness = parseFloat(row[columnMap.thickness]) || thickness;
+        }
+
+        // Extract bed
+        let rowBed = bed;
+        if (columnMap.bed !== undefined) {
+          const bedVal = (row[columnMap.bed] || "").trim();
+          if (/^[1-6]$/.test(bedVal)) {
+            rowBed = bedVal;
           }
         }
 
@@ -543,43 +479,7 @@ exports.parseSchedulePDF = onCall({
           lengthInches = parseFloat(row[columnMap.lengthInches]) || 0;
         }
 
-        // If we have a design length column but no separate ft/in, try to parse it
-        if ((!lengthFeet && !lengthInches) && columnMap.designLength !== undefined) {
-          const lengthCell = row[columnMap.designLength] || "";
-          const lengthMatch = lengthCell.match(/(\d+)['\s-]+(\d+(?:\.\d+)?)/);
-          if (lengthMatch) {
-            lengthFeet = parseFloat(lengthMatch[1]) || 0;
-            lengthInches = parseFloat(lengthMatch[2]) || 0;
-          }
-        }
-
-        // If still no length found, look for Design Length area by checking columns
-        // Design Length often has Ft and In as sub-columns, which might be adjacent cells
-        if (!lengthFeet && !lengthInches) {
-          // Look for patterns like two adjacent numeric cells (feet then inches)
-          // Feet are typically 10-50, inches are 0-11.99
-          for (let j = 0; j < row.length - 1; j++) {
-            const val1 = parseFloat(row[j]);
-            const val2 = parseFloat(row[j + 1]);
-            // Skip if this is the width or ID column
-            if (j === columnMap.width || j === columnMap.id) continue;
-            if (val1 >= 5 && val1 <= 60 && val2 >= 0 && val2 < 12) {
-              // This looks like feet and inches
-              lengthFeet = val1;
-              lengthInches = val2;
-              break;
-            }
-          }
-        }
-
-        // Extract thickness from row if available
-        let rowThickness = thickness;
-        if (columnMap.thickness !== undefined) {
-          rowThickness = parseFloat(row[columnMap.thickness]) || thickness;
-        }
-
-        // Format length as "XX'-YY.YY""
-        // Handle decimals properly - if inches has decimal, format it nicely
+        // Format length
         let formattedLength = "";
         if (lengthFeet || lengthInches) {
           const inchesStr = lengthInches % 1 === 0
@@ -588,21 +488,18 @@ exports.parseSchedulePDF = onCall({
           formattedLength = `${lengthFeet}'-${inchesStr}"`;
         }
 
-        // Only add if we have minimum required data (ID is required, job is strongly preferred)
-        if (idNumber) {
-          entries.push({
-            pourDate: pourDate,
-            jobNumber: jobNumber || "",
-            markNumber: markNumber || "",
-            idNumber: idNumber,
-            width: width,
-            thickness: rowThickness || 0,
-            length: formattedLength,
-            lengthFeet: lengthFeet,
-            lengthInches: lengthInches,
-            bed: bed || undefined,
-          });
-        }
+        entries.push({
+          pourDate: pourDate,
+          jobNumber: jobNumber || "",
+          markNumber: markNumber || "",
+          idNumber: idNumber,
+          width: width,
+          thickness: rowThickness || 0,
+          length: formattedLength,
+          lengthFeet: lengthFeet,
+          lengthInches: lengthInches,
+          bed: rowBed || undefined,
+        });
       }
     }
 
