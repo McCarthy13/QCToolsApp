@@ -312,6 +312,18 @@ exports.parseSchedulePDF = onCall({
     const tables = analyzeResult.tables || [];
     console.log(`[Parse Schedule] Found ${tables.length} tables`);
 
+    // DEBUG: Log raw table data from Azure
+    for (let t = 0; t < tables.length; t++) {
+      console.log(`[Parse Schedule] === RAW TABLE ${t} ===`);
+      console.log(`[Parse Schedule] Rows: ${tables[t].rowCount}, Cols: ${tables[t].columnCount}`);
+      console.log(`[Parse Schedule] Total cells: ${tables[t].cells?.length}`);
+
+      // Log each cell
+      for (const cell of (tables[t].cells || [])) {
+        console.log(`[Parse Schedule] Cell [${cell.rowIndex},${cell.columnIndex}]: "${cell.content}" (rowSpan: ${cell.rowSpan || 1}, colSpan: ${cell.columnSpan || 1})`);
+      }
+    }
+
     const entries = [];
 
     for (const table of tables) {
@@ -332,6 +344,12 @@ exports.parseSchedulePDF = onCall({
         if (cell.rowSpan && cell.rowSpan > 1) {
           rowSpans[cell.rowIndex][cell.columnIndex] = cell.rowSpan;
         }
+      }
+
+      // DEBUG: Log the built table data
+      console.log(`[Parse Schedule] === BUILT TABLE DATA ===`);
+      for (let i = 0; i < tableData.length; i++) {
+        console.log(`[Parse Schedule] Row ${i}: ${JSON.stringify(tableData[i])}`);
       }
 
       // Find header row to identify columns
