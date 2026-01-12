@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
   BED_OPTIONS,
   ISSUE_CODE_OPTIONS,
   REJECT_CODE_OPTIONS,
+  STATUS_OPTIONS,
   isValidLocation,
   Disposition,
   ProductType,
@@ -31,6 +32,31 @@ import {
 } from '../types/quality-log';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
+
+// Column filter types
+type ColumnFilterType = 'pourDate' | 'disposition' | 'status' | 'approvalDate' | 'productType' |
+  'jobNumber' | 'markNumber' | 'idNumber' | 'length' | 'width' | 'bed' | 'location' |
+  'qualityComments' | 'engineer' | 'engineerFeedback' | 'issueCodes' | 'rejectCodes';
+
+interface ColumnFilters {
+  pourDate: string;
+  disposition: string;
+  status: string;
+  approvalDate: string;
+  productType: string;
+  jobNumber: string;
+  markNumber: string;
+  idNumber: string;
+  length: string;
+  width: string;
+  bed: string;
+  location: string;
+  qualityComments: string;
+  engineer: string;
+  engineerFeedback: string;
+  issueCodes: string;
+  rejectCodes: string;
+}
 
 export default function QualityLogDashboardScreen({ navigation }: Props) {
   const entries = useQualityLogStore((s) => s.entries);
@@ -42,8 +68,31 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [filterBed, setFilterBed] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+  // Column filters state
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
+    pourDate: '',
+    disposition: '',
+    status: '',
+    approvalDate: '',
+    productType: '',
+    jobNumber: '',
+    markNumber: '',
+    idNumber: '',
+    length: '',
+    width: '',
+    bed: '',
+    location: '',
+    qualityComments: '',
+    engineer: '',
+    engineerFeedback: '',
+    issueCodes: '',
+    rejectCodes: '',
+  });
+
+  // Filter modal state
+  const [showFilterModal, setShowFilterModal] = useState<ColumnFilterType | null>(null);
+  const [filterInputValue, setFilterInputValue] = useState('');
 
   // Inline editing state
   const [editingCell, setEditingCell] = useState<{ entryId: string; field: string } | null>(null);
@@ -64,9 +113,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     setTimeout(() => setRefreshing(false), 1000);
   }, [initialize]);
 
-  // Filter entries based on search and filters
+  // Filter entries based on search and column filters
   const filteredEntries = entries.filter((entry) => {
-    // Search filter
+    // Global search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch =
@@ -78,11 +127,24 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       if (!matchesSearch) return false;
     }
 
-    // Bed filter
-    if (filterBed && entry.bed !== filterBed) return false;
-
-    // Status filter
-    if (filterStatus && entry.status !== filterStatus) return false;
+    // Column filters
+    if (columnFilters.pourDate && !entry.pourDate?.toLowerCase().includes(columnFilters.pourDate.toLowerCase())) return false;
+    if (columnFilters.disposition && entry.disposition !== columnFilters.disposition) return false;
+    if (columnFilters.status && entry.status !== columnFilters.status) return false;
+    if (columnFilters.approvalDate && !entry.approvalRejectionDate?.toLowerCase().includes(columnFilters.approvalDate.toLowerCase())) return false;
+    if (columnFilters.productType && entry.productType !== columnFilters.productType) return false;
+    if (columnFilters.jobNumber && !entry.jobNumber?.toLowerCase().includes(columnFilters.jobNumber.toLowerCase())) return false;
+    if (columnFilters.markNumber && !entry.markNumber?.toLowerCase().includes(columnFilters.markNumber.toLowerCase())) return false;
+    if (columnFilters.idNumber && !entry.idNumber?.toLowerCase().includes(columnFilters.idNumber.toLowerCase())) return false;
+    if (columnFilters.length && !entry.length?.toLowerCase().includes(columnFilters.length.toLowerCase())) return false;
+    if (columnFilters.width && entry.width?.toString() !== columnFilters.width) return false;
+    if (columnFilters.bed && entry.bed !== columnFilters.bed) return false;
+    if (columnFilters.location && !entry.location?.toLowerCase().includes(columnFilters.location.toLowerCase())) return false;
+    if (columnFilters.qualityComments && !entry.qualityComments?.toLowerCase().includes(columnFilters.qualityComments.toLowerCase())) return false;
+    if (columnFilters.engineer && !entry.engineer?.toLowerCase().includes(columnFilters.engineer.toLowerCase())) return false;
+    if (columnFilters.engineerFeedback && !entry.engineerFeedback?.toLowerCase().includes(columnFilters.engineerFeedback.toLowerCase())) return false;
+    if (columnFilters.issueCodes && !entry.issueCodes.some(code => code.includes(columnFilters.issueCodes))) return false;
+    if (columnFilters.rejectCodes && !entry.rejectCodes.some(code => code.includes(columnFilters.rejectCodes))) return false;
 
     return true;
   });
@@ -337,6 +399,60 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   const isMultiSelect = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes';
 
+  // Get filter options for dropdown columns
+  const getFilterOptions = (column: ColumnFilterType): string[] => {
+    switch (column) {
+      case 'disposition':
+        return ['', ...DISPOSITION_OPTIONS];
+      case 'status':
+        return ['', ...STATUS_OPTIONS];
+      case 'productType':
+        return ['', ...PRODUCT_TYPE_OPTIONS];
+      case 'bed':
+        return ['', ...BED_OPTIONS];
+      default:
+        return [];
+    }
+  };
+
+  // Check if column uses dropdown filter
+  const isDropdownFilter = (column: ColumnFilterType): boolean => {
+    return ['disposition', 'status', 'productType', 'bed'].includes(column);
+  };
+
+  // Open filter modal
+  const openFilterModal = (column: ColumnFilterType) => {
+    setFilterInputValue(columnFilters[column]);
+    setShowFilterModal(column);
+  };
+
+  // Apply filter
+  const applyFilter = (value: string) => {
+    if (showFilterModal) {
+      setColumnFilters(prev => ({ ...prev, [showFilterModal]: value }));
+    }
+    setShowFilterModal(null);
+    setFilterInputValue('');
+  };
+
+  // Render filterable header cell
+  const renderFilterableHeader = (column: ColumnFilterType, label: string, width: number) => {
+    const hasFilter = columnFilters[column] !== '';
+    return (
+      <Pressable
+        onPress={() => openFilterModal(column)}
+        style={{ width, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <Text className="text-xs font-semibold text-white flex-1" numberOfLines={1}>{label}</Text>
+        <Ionicons
+          name={hasFilter ? 'funnel' : 'funnel-outline'}
+          size={10}
+          color={hasFilter ? '#60a5fa' : '#9CA3AF'}
+        />
+      </Pressable>
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       {/* Header */}
@@ -399,53 +515,38 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {/* Filter Row */}
-      <View className="bg-white px-4 py-2 border-b border-gray-200 flex-row gap-2">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Pressable
-            onPress={() => setFilterBed(null)}
-            className={`px-3 py-1 rounded-full mr-2 ${!filterBed ? 'bg-blue-600' : 'bg-gray-200'}`}
-          >
-            <Text className={`text-sm ${!filterBed ? 'text-white' : 'text-gray-700'}`}>All Beds</Text>
-          </Pressable>
-          {BED_OPTIONS.map((bed) => (
+      {/* Active Filters Row */}
+      {Object.values(columnFilters).some(v => v !== '') && (
+        <View className="bg-white px-4 py-2 border-b border-gray-200">
+          <View className="flex-row items-center flex-wrap gap-2">
+            <Text className="text-xs text-gray-500 mr-1">Filters:</Text>
+            {Object.entries(columnFilters).map(([key, value]) => {
+              if (!value) return null;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setColumnFilters(prev => ({ ...prev, [key]: '' }))}
+                  className="flex-row items-center bg-blue-100 rounded-full px-2 py-1"
+                >
+                  <Text className="text-xs text-blue-800 mr-1">{key}: {value}</Text>
+                  <Ionicons name="close-circle" size={14} color="#1e40af" />
+                </Pressable>
+              );
+            })}
             <Pressable
-              key={bed}
-              onPress={() => setFilterBed(filterBed === bed ? null : bed)}
-              className={`px-3 py-1 rounded-full mr-2 ${filterBed === bed ? 'bg-blue-600' : 'bg-gray-200'}`}
+              onPress={() => setColumnFilters({
+                pourDate: '', disposition: '', status: '', approvalDate: '', productType: '',
+                jobNumber: '', markNumber: '', idNumber: '', length: '', width: '', bed: '',
+                location: '', qualityComments: '', engineer: '', engineerFeedback: '',
+                issueCodes: '', rejectCodes: '',
+              })}
+              className="ml-2"
             >
-              <Text className={`text-sm ${filterBed === bed ? 'text-white' : 'text-gray-700'}`}>
-                Bed {bed}
-              </Text>
+              <Text className="text-xs text-red-600">Clear All</Text>
             </Pressable>
-          ))}
-          <View className="w-2" />
-          <Pressable
-            onPress={() => setFilterStatus(null)}
-            className={`px-3 py-1 rounded-full mr-2 ${!filterStatus ? 'bg-blue-600' : 'bg-gray-200'}`}
-          >
-            <Text className={`text-sm ${!filterStatus ? 'text-white' : 'text-gray-700'}`}>All Status</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setFilterStatus(filterStatus === '40' ? null : '40')}
-            className={`px-3 py-1 rounded-full mr-2 ${filterStatus === '40' ? 'bg-yellow-500' : 'bg-gray-200'}`}
-          >
-            <Text className={`text-sm ${filterStatus === '40' ? 'text-white' : 'text-gray-700'}`}>40</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setFilterStatus(filterStatus === '50' ? null : '50')}
-            className={`px-3 py-1 rounded-full mr-2 ${filterStatus === '50' ? 'bg-green-500' : 'bg-gray-200'}`}
-          >
-            <Text className={`text-sm ${filterStatus === '50' ? 'text-white' : 'text-gray-700'}`}>50</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setFilterStatus(filterStatus === '90' ? null : '90')}
-            className={`px-3 py-1 rounded-full mr-2 ${filterStatus === '90' ? 'bg-red-500' : 'bg-gray-200'}`}
-          >
-            <Text className={`text-sm ${filterStatus === '90' ? 'text-white' : 'text-gray-700'}`}>90</Text>
-          </Pressable>
-        </ScrollView>
-      </View>
+          </View>
+        </View>
+      )}
 
       {/* Editing hint */}
       <View className="bg-blue-50 px-4 py-2 border-b border-blue-100">
@@ -466,30 +567,30 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           <View style={{ minWidth: '100%' }}>
             <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
               <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4 }} className="text-xs font-semibold text-white"></Text>
-              <Text style={{ width: COLUMN_WIDTHS.pourDate, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Pour Date</Text>
-              <Text style={{ width: COLUMN_WIDTHS.disposition, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Disposition</Text>
-              <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Status</Text>
-              <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Approval Date</Text>
-              <Text style={{ width: COLUMN_WIDTHS.productType, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Type</Text>
-              <Text style={{ width: COLUMN_WIDTHS.jobNumber, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Job #</Text>
-              <Text style={{ width: COLUMN_WIDTHS.markNumber, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Mark #</Text>
-              <Text style={{ width: COLUMN_WIDTHS.idNumber, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">ID #</Text>
-              <Text style={{ width: COLUMN_WIDTHS.length, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Length</Text>
-              <Text style={{ width: COLUMN_WIDTHS.width, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Width</Text>
-              <Text style={{ width: COLUMN_WIDTHS.bed, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Bed</Text>
-              <Text style={{ width: COLUMN_WIDTHS.location, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Location</Text>
-              <Text style={{ width: COLUMN_WIDTHS.qualityComments, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Quality Comments</Text>
-              <Text style={{ width: COLUMN_WIDTHS.engineer, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Engineer</Text>
-              <Text style={{ width: COLUMN_WIDTHS.engineerFeedback, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Engineer Feedback</Text>
-              <Text style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Issue Codes</Text>
-              <Text style={{ width: COLUMN_WIDTHS.rejectCodes, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Reject Codes</Text>
+              {renderFilterableHeader('pourDate', 'Pour Date', COLUMN_WIDTHS.pourDate)}
+              {renderFilterableHeader('disposition', 'Disposition', COLUMN_WIDTHS.disposition)}
+              {renderFilterableHeader('status', 'Status', COLUMN_WIDTHS.status)}
+              {renderFilterableHeader('approvalDate', 'Approval Date', COLUMN_WIDTHS.approvalDate)}
+              {renderFilterableHeader('productType', 'Type', COLUMN_WIDTHS.productType)}
+              {renderFilterableHeader('jobNumber', 'Job #', COLUMN_WIDTHS.jobNumber)}
+              {renderFilterableHeader('markNumber', 'Mark #', COLUMN_WIDTHS.markNumber)}
+              {renderFilterableHeader('idNumber', 'ID #', COLUMN_WIDTHS.idNumber)}
+              {renderFilterableHeader('length', 'Length', COLUMN_WIDTHS.length)}
+              {renderFilterableHeader('width', 'Width', COLUMN_WIDTHS.width)}
+              {renderFilterableHeader('bed', 'Bed', COLUMN_WIDTHS.bed)}
+              {renderFilterableHeader('location', 'Location', COLUMN_WIDTHS.location)}
+              {renderFilterableHeader('qualityComments', 'Quality Comments', COLUMN_WIDTHS.qualityComments)}
+              {renderFilterableHeader('engineer', 'Engineer', COLUMN_WIDTHS.engineer)}
+              {renderFilterableHeader('engineerFeedback', 'Engineer Feedback', COLUMN_WIDTHS.engineerFeedback)}
+              {renderFilterableHeader('issueCodes', 'Issue Codes', COLUMN_WIDTHS.issueCodes)}
+              {renderFilterableHeader('rejectCodes', 'Reject Codes', COLUMN_WIDTHS.rejectCodes)}
             </View>
 
             {/* Table Rows */}
             {sortedEntries.length === 0 ? (
               <View className="py-12 px-4" style={{ minWidth: '100%' }}>
                 <Text className="text-gray-500 text-center">
-                  {searchQuery || filterBed || filterStatus
+                  {searchQuery || Object.values(columnFilters).some(v => v !== '')
                     ? 'No entries match your filters'
                     : 'No entries yet. Tap + to import a schedule.'}
                 </Text>
@@ -614,6 +715,80 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               onPress={() => {
                 setShowPickerModal(null);
                 setSelectedCodes([]);
+              }}
+              className="py-3 mt-2"
+            >
+              <Text className="text-center text-base text-red-600">Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Column Filter Modal */}
+      <Modal visible={!!showFilterModal} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => {
+            setShowFilterModal(null);
+            setFilterInputValue('');
+          }}
+        >
+          <Pressable className="bg-white rounded-t-2xl p-4" onPress={(e) => e.stopPropagation()}>
+            <Text className="text-lg font-semibold text-center mb-4">
+              Filter by {showFilterModal?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+            </Text>
+
+            {showFilterModal && isDropdownFilter(showFilterModal) ? (
+              // Dropdown filter for predefined options
+              <ScrollView className="max-h-80">
+                {getFilterOptions(showFilterModal).map((option) => (
+                  <Pressable
+                    key={option || 'all'}
+                    onPress={() => applyFilter(option)}
+                    className={`py-3 px-4 border-b border-gray-100 ${
+                      columnFilters[showFilterModal] === option ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <Text className={`text-base ${
+                      columnFilters[showFilterModal] === option ? 'text-blue-600 font-semibold' : 'text-gray-900'
+                    }`}>
+                      {option || 'All (No Filter)'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              // Text input filter for free-text columns
+              <View>
+                <TextInput
+                  value={filterInputValue}
+                  onChangeText={setFilterInputValue}
+                  placeholder="Enter filter value..."
+                  className="border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 mb-4"
+                  placeholderTextColor="#9CA3AF"
+                  autoFocus
+                />
+                <View className="flex-row gap-3">
+                  <Pressable
+                    onPress={() => applyFilter('')}
+                    className="flex-1 py-3 bg-gray-200 rounded-lg"
+                  >
+                    <Text className="text-center text-base text-gray-700">Clear</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => applyFilter(filterInputValue)}
+                    className="flex-1 py-3 bg-blue-600 rounded-lg"
+                  >
+                    <Text className="text-center text-base text-white font-semibold">Apply</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+
+            <Pressable
+              onPress={() => {
+                setShowFilterModal(null);
+                setFilterInputValue('');
               }}
               className="py-3 mt-2"
             >
