@@ -527,3 +527,226 @@ exports.parseSchedulePDF = onCall({
     };
   }
 });
+
+/**
+ * Parse Piece Tickets PDF
+ * Uses Azure Document Intelligence to extract Job No and Mark No from piece ticket PDFs
+ * Each page of the PDF is a separate piece ticket
+ */
+exports.parsePieceTickets = onCall({
+  maxInstances: 10,
+  timeoutSeconds: 300,
+  memory: "2GiB",
+}, async (request) => {
+  try {
+    const {fileBase64, fileName, mimeType} = request.data;
+
+    if (!fileBase64) {
+      return {success: false, error: "Missing file data"};
+    }
+
+    // Get Azure credentials from environment
+    const AZURE_ENDPOINT = process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
+    const AZURE_KEY = process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY;
+
+    if (!AZURE_ENDPOINT || !AZURE_KEY) {
+      console.error("[Parse Piece Tickets] Missing Azure Document Intelligence credentials");
+      return {success: false, error: "Azure credentials not configured"};
+    }
+
+    console.log(`[Parse Piece Tickets] Processing file: ${fileName} (${mimeType})`);
+    console.log(`[Parse Piece Tickets] Using Azure Document Intelligence`);
+
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(fileBase64, 'base64');
+    console.log(`[Parse Piece Tickets] File size: ${fileBuffer.length} bytes`);
+
+    // Call Azure Document Intelligence Layout API
+    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
+
+    console.log(`[Parse Piece Tickets] Calling Azure API: ${analyzeUrl}`);
+
+    const analyzeResponse = await fetch(analyzeUrl, {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": AZURE_KEY,
+        "Content-Type": mimeType || "application/pdf",
+      },
+      body: fileBuffer,
+    });
+
+    if (!analyzeResponse.ok) {
+      const errorText = await analyzeResponse.text();
+      console.error("[Parse Piece Tickets] Azure API Error:", analyzeResponse.status, errorText);
+      return {success: false, error: `Azure API error: ${analyzeResponse.status} - ${errorText}`};
+    }
+
+    // Get the operation location for polling
+    const operationLocation = analyzeResponse.headers.get("Operation-Location");
+    if (!operationLocation) {
+      console.error("[Parse Piece Tickets] No operation location returned");
+      return {success: false, error: "Azure API did not return operation location"};
+    }
+
+    console.log(`[Parse Piece Tickets] Operation started: ${operationLocation}`);
+
+    // Poll for results (Azure processes async)
+    let result = null;
+    let attempts = 0;
+    const maxAttempts = 60; // 60 seconds max wait for multi-page PDFs
+
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+
+      const pollResponse = await fetch(operationLocation, {
+        headers: {
+          "Ocp-Apim-Subscription-Key": AZURE_KEY,
+        },
+      });
+
+      if (!pollResponse.ok) {
+        const errorText = await pollResponse.text();
+        console.error("[Parse Piece Tickets] Poll error:", pollResponse.status, errorText);
+        return {success: false, error: `Azure poll error: ${pollResponse.status}`};
+      }
+
+      result = await pollResponse.json();
+      console.log(`[Parse Piece Tickets] Poll attempt ${attempts + 1}, status: ${result.status}`);
+
+      if (result.status === "succeeded") {
+        break;
+      } else if (result.status === "failed") {
+        console.error("[Parse Piece Tickets] Azure analysis failed:", result.error);
+        return {success: false, error: "Document analysis failed"};
+      }
+
+      attempts++;
+    }
+
+    if (!result || result.status !== "succeeded") {
+      return {success: false, error: "Document analysis timed out"};
+    }
+
+    console.log("[Parse Piece Tickets] Azure analysis succeeded");
+
+    // Extract data from Azure response
+    const analyzeResult = result.analyzeResult;
+    const pages = analyzeResult.pages || [];
+
+    console.log(`[Parse Piece Tickets] Found ${pages.length} pages`);
+
+    const tickets = [];
+
+    // Process each page to extract Job No and Mark No
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+      const page = pages[pageIndex];
+      const pageNumber = pageIndex + 1;
+
+      console.log(`[Parse Piece Tickets] Processing page ${pageNumber}`);
+
+      // Get all text content for this page
+      // Azure provides text organized by lines within each page
+      let pageText = "";
+      const pageLines = page.lines || [];
+
+      for (const line of pageLines) {
+        pageText += (line.content || "") + "\n";
+      }
+
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} text length: ${pageText.length}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} raw text:\n${pageText.substring(0, 500)}...`);
+
+      // Extract JOB NO - look for patterns like "JOB NO" followed by a number
+      // The job number is typically 4-6 digits
+      let jobNo = null;
+      const jobPatterns = [
+        /JOB\s*NO\.?\s*[:\s]*(\d{4,6})/i,
+        /JOB\s*#?\s*[:\s]*(\d{4,6})/i,
+        /JOB\s*NUMBER\s*[:\s]*(\d{4,6})/i,
+      ];
+
+      for (const pattern of jobPatterns) {
+        const match = pageText.match(pattern);
+        if (match) {
+          jobNo = match[1];
+          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No: ${jobNo}`);
+          break;
+        }
+      }
+
+      // Extract MARK NO - look for patterns like "MARK NO" followed by alphanumeric
+      // The mark number is typically like "H201", "B101", etc.
+      let markNo = null;
+      const markPatterns = [
+        /MARK\s*NO\.?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+)/i,
+        /MARK\s*#?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+)/i,
+        /MARK\s*NUMBER\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+)/i,
+        /MARK\s*NO\.?\s*[:\s]*([A-Za-z0-9]+)/i,
+      ];
+
+      for (const pattern of markPatterns) {
+        const match = pageText.match(pattern);
+        if (match) {
+          markNo = match[1];
+          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No: ${markNo}`);
+          break;
+        }
+      }
+
+      // Also try to find them in a more structured way using key-value pairs
+      // Sometimes the text comes as "JOB NO\n5201" on separate lines
+      if (!jobNo) {
+        const lines = pageText.split('\n');
+        for (let i = 0; i < lines.length - 1; i++) {
+          if (/JOB\s*NO/i.test(lines[i])) {
+            // Check next line for the value
+            const nextLine = lines[i + 1]?.trim();
+            if (nextLine && /^\d{4,6}$/.test(nextLine)) {
+              jobNo = nextLine;
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No (multi-line): ${jobNo}`);
+              break;
+            }
+          }
+        }
+      }
+
+      if (!markNo) {
+        const lines = pageText.split('\n');
+        for (let i = 0; i < lines.length - 1; i++) {
+          if (/MARK\s*NO/i.test(lines[i])) {
+            // Check next line for the value
+            const nextLine = lines[i + 1]?.trim();
+            if (nextLine && /^[A-Za-z0-9]+$/.test(nextLine)) {
+              markNo = nextLine;
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No (multi-line): ${markNo}`);
+              break;
+            }
+          }
+        }
+      }
+
+      tickets.push({
+        page: pageNumber,
+        jobNo: jobNo || null,
+        markNo: markNo || null,
+      });
+
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} result: Job=${jobNo}, Mark=${markNo}`);
+    }
+
+    console.log(`[Parse Piece Tickets] Extracted ${tickets.length} piece tickets`);
+
+    return {
+      success: true,
+      tickets: tickets,
+      pageCount: tickets.length,
+    };
+
+  } catch (error) {
+    console.error("[Parse Piece Tickets] Error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to process piece tickets",
+    };
+  }
+});

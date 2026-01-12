@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -285,6 +286,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     productType: 60,
     jobNumber: 75,
     markNumber: 90,
+    pieceTicket: 32,
     idNumber: 90,
     length: 90,
     width: 60,
@@ -574,6 +576,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('productType', 'Type', COLUMN_WIDTHS.productType)}
               {renderFilterableHeader('jobNumber', 'Job #', COLUMN_WIDTHS.jobNumber)}
               {renderFilterableHeader('markNumber', 'Mark #', COLUMN_WIDTHS.markNumber)}
+              <Text style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4 }} className="text-xs font-semibold text-white"></Text>
               {renderFilterableHeader('idNumber', 'ID #', COLUMN_WIDTHS.idNumber)}
               {renderFilterableHeader('length', 'Length', COLUMN_WIDTHS.length)}
               {renderFilterableHeader('width', 'Width', COLUMN_WIDTHS.width)}
@@ -622,6 +625,22 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderPickerCell(entry, 'productType', entry.productType, COLUMN_WIDTHS.productType)}
                   {renderEditableTextCell(entry, 'jobNumber', entry.jobNumber, COLUMN_WIDTHS.jobNumber)}
                   {renderEditableTextCell(entry, 'markNumber', entry.markNumber, COLUMN_WIDTHS.markNumber)}
+                  {/* Piece Ticket PDF Icon */}
+                  <Pressable
+                    onPress={() => {
+                      if (entry.pieceTicketUrl) {
+                        Linking.openURL(entry.pieceTicketUrl);
+                      }
+                    }}
+                    style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' }}
+                    disabled={!entry.pieceTicketUrl}
+                  >
+                    {entry.pieceTicketUrl ? (
+                      <Ionicons name="document-text" size={16} color="#3B82F6" />
+                    ) : (
+                      <View style={{ width: 16, height: 16 }} />
+                    )}
+                  </Pressable>
                   {renderEditableTextCell(entry, 'idNumber', entry.idNumber, COLUMN_WIDTHS.idNumber)}
                   {renderEditableTextCell(entry, 'length', entry.length, COLUMN_WIDTHS.length)}
                   {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', COLUMN_WIDTHS.width)}

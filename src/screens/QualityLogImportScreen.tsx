@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   TextInput,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ import {
   BED_OPTIONS,
 } from '../types/quality-log';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from '../config/firebase';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogImport'>;
@@ -51,9 +53,31 @@ interface ParsedScheduleResult {
   error?: string;
 }
 
+// Piece ticket types
+interface PieceTicket {
+  page: number;
+  jobNo: string | null;
+  markNo: string | null;
+}
+
+interface ParsedPieceTicketsResult {
+  success: boolean;
+  tickets: PieceTicket[];
+  pageCount: number;
+  error?: string;
+}
+
+interface MatchedTicket extends PieceTicket {
+  matchedEntryId: string | null;
+  matchedJobNumber: string | null;
+  matchedMarkNumber: string | null;
+}
+
 export default function QualityLogImportScreen({ navigation }: Props) {
   const addEntries = useQualityLogStore((s) => s.addEntries);
   const getEntryByIdNumber = useQualityLogStore((s) => s.getEntryByIdNumber);
+  const entries = useQualityLogStore((s) => s.entries);
+  const updateEntry = useQualityLogStore((s) => s.updateEntry);
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -66,6 +90,12 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [showProductTypePrompt, setShowProductTypePrompt] = useState(false);
   const [showMissingValuesPrompt, setShowMissingValuesPrompt] = useState(false);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | 'Mixed' | null>(null);
+
+  // Piece ticket state
+  const [importMode, setImportMode] = useState<'schedule' | 'pieceTickets' | null>(null);
+  const [pieceTicketFile, setPieceTicketFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
+  const [matchedTickets, setMatchedTickets] = useState<MatchedTicket[]>([]);
+  const [showPieceTicketReview, setShowPieceTicketReview] = useState(false);
 
   // Review state
   const [showReview, setShowReview] = useState(false);
@@ -344,6 +374,187 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     setDuplicateIds([]);
     setEditingCell(null);
     setEditValue('');
+    setImportMode(null);
+    setPieceTicketFile(null);
+    setMatchedTickets([]);
+    setShowPieceTicketReview(false);
+  };
+
+  // Handle piece ticket import
+  const handlePickPieceTickets = async () => {
+    console.log('[QualityLogImport] handlePickPieceTickets called');
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        console.log('[QualityLogImport] User canceled picker');
+        return;
+      }
+
+      const file = result.assets?.[0];
+      if (!file) {
+        Alert.alert('Error', 'No file was selected. Please try again.');
+        return;
+      }
+
+      console.log('[QualityLogImport] Selected piece ticket file:', file.name);
+
+      setIsLoading(true);
+      setLoadingMessage('Reading file...');
+      setImportMode('pieceTickets');
+
+      // Read file as base64
+      let base64: string;
+      if (Platform.OS === 'web') {
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            const base64Data = result.split(',')[1];
+            resolve(base64Data);
+          };
+          reader.onerror = () => reject(new Error('FileReader failed'));
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        base64 = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+
+      setPieceTicketFile({ base64, name: file.name, mimeType: file.mimeType || 'application/pdf' });
+
+      setLoadingMessage('Extracting Job # and Mark # from piece tickets...');
+
+      // Call Cloud Function to parse piece tickets
+      const functions = getFunctions(app);
+      const parsePieceTickets = httpsCallable<
+        { fileBase64: string; fileName: string; mimeType: string },
+        ParsedPieceTicketsResult
+      >(functions, 'parsePieceTickets');
+
+      const response = await parsePieceTickets({
+        fileBase64: base64,
+        fileName: file.name,
+        mimeType: file.mimeType || 'application/pdf',
+      });
+
+      console.log('[QualityLogImport] Piece tickets response:', response.data);
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to parse piece tickets');
+      }
+
+      const { tickets } = response.data;
+
+      if (tickets.length === 0) {
+        Alert.alert('No Data Found', 'Could not extract any piece tickets from the PDF.');
+        setIsLoading(false);
+        resetImport();
+        return;
+      }
+
+      // Match tickets to existing entries
+      const matched: MatchedTicket[] = tickets.map((ticket) => {
+        // Find matching entry by Job # and Mark #
+        // Job # might be partial (e.g., "5201" matches "255201")
+        let matchedEntry: QualityLogEntry | undefined;
+
+        if (ticket.jobNo && ticket.markNo) {
+          matchedEntry = entries.find((entry) => {
+            const entryJobEnds = entry.jobNumber?.endsWith(ticket.jobNo || '');
+            const entryJobEquals = entry.jobNumber === ticket.jobNo;
+            const markMatches = entry.markNumber?.toUpperCase() === ticket.markNo?.toUpperCase();
+            return (entryJobEnds || entryJobEquals) && markMatches;
+          });
+        }
+
+        return {
+          ...ticket,
+          matchedEntryId: matchedEntry?.id || null,
+          matchedJobNumber: matchedEntry?.jobNumber || null,
+          matchedMarkNumber: matchedEntry?.markNumber || null,
+        };
+      });
+
+      setMatchedTickets(matched);
+      setIsLoading(false);
+      setShowPieceTicketReview(true);
+
+    } catch (error: any) {
+      console.error('Error importing piece tickets:', error);
+      setIsLoading(false);
+      Alert.alert('Import Error', error.message || 'Failed to import piece tickets.');
+      resetImport();
+    }
+  };
+
+  // Upload individual PDF page to Firebase Storage and link to entry
+  const handleLinkPieceTickets = async () => {
+    if (!pieceTicketFile) return;
+
+    const ticketsToLink = matchedTickets.filter((t) => t.matchedEntryId);
+
+    if (ticketsToLink.length === 0) {
+      Alert.alert('No Matches', 'No piece tickets matched any existing entries.');
+      return;
+    }
+
+    setIsLoading(true);
+    setLoadingMessage(`Linking ${ticketsToLink.length} piece tickets...`);
+
+    try {
+      const storage = getStorage(app);
+      let linkedCount = 0;
+
+      for (const ticket of ticketsToLink) {
+        if (!ticket.matchedEntryId) continue;
+
+        setLoadingMessage(`Uploading page ${ticket.page} of ${matchedTickets.length}...`);
+
+        // Upload the full PDF to storage with a reference to the page number
+        // The viewer will use the page number to navigate
+        const timestamp = Date.now();
+        const storagePath = `piece-tickets/${ticket.matchedEntryId}/page-${ticket.page}-${timestamp}.pdf`;
+        const storageRef = ref(storage, storagePath);
+
+        // Convert base64 to blob for upload
+        const byteCharacters = atob(pieceTicketFile.base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+        await uploadBytes(storageRef, blob);
+        const downloadUrl = await getDownloadURL(storageRef);
+
+        // Add page number to URL for navigation
+        const urlWithPage = `${downloadUrl}#page=${ticket.page}`;
+
+        // Update the entry with the piece ticket URL
+        await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: urlWithPage });
+        linkedCount++;
+      }
+
+      setIsLoading(false);
+      Alert.alert(
+        'Import Complete',
+        `Successfully linked ${linkedCount} piece ticket${linkedCount !== 1 ? 's' : ''} to entries.`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+
+    } catch (error: any) {
+      console.error('Error linking piece tickets:', error);
+      setIsLoading(false);
+      Alert.alert('Error', 'Failed to link piece tickets. Please try again.');
+    }
   };
 
   // Start editing a cell
@@ -435,7 +646,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           <Pressable onPress={() => navigation.goBack()} className="p-1">
             <Ionicons name="arrow-back" size={24} color="#374151" />
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900">Import Schedule</Text>
+          <Text className="text-lg font-bold text-gray-900">Import</Text>
           <View className="w-8" />
         </View>
       </View>
@@ -448,34 +659,163 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* Initial State - Upload Button */}
-      {!isLoading && !showReview && !showBedPrompt && !showProductTypePrompt && !showMissingValuesPrompt && (
-        <View className="flex-1 justify-center items-center px-6">
-          <View className="bg-white rounded-2xl p-8 shadow-sm items-center max-w-md w-full">
-            <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
-              <Ionicons name="document-text-outline" size={40} color="#3B82F6" />
+      {/* Initial State - Two Options */}
+      {!isLoading && !showReview && !showBedPrompt && !showProductTypePrompt && !showMissingValuesPrompt && !showPieceTicketReview && (
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, gap: 16 }}>
+          {/* Import Pour Schedule */}
+          <View className="bg-white rounded-2xl p-6 shadow-sm">
+            <View className="flex-row items-center mb-4">
+              <View className="w-14 h-14 bg-blue-100 rounded-full items-center justify-center mr-4">
+                <Ionicons name="document-text-outline" size={28} color="#3B82F6" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-bold text-gray-900">Import Pour Schedule</Text>
+                <Text className="text-sm text-gray-500">Extract piece info from schedule PDF</Text>
+              </View>
             </View>
-            <Text className="text-xl font-bold text-gray-900 mb-2 text-center">
-              Import Pour Schedule
-            </Text>
-            <Text className="text-gray-600 text-center mb-6">
-              Upload a scanned PDF or photo of your pour schedule. The app will extract piece information automatically.
+            <Text className="text-gray-600 text-sm mb-4">
+              Upload a scanned PDF or photo of your pour schedule. The app will automatically extract job numbers, mark numbers, dimensions, and other piece information.
             </Text>
             <Pressable
               onPress={handlePickDocument}
-              className="bg-blue-600 px-6 py-3 rounded-xl flex-row items-center active:bg-blue-700"
+              className="bg-blue-600 px-6 py-3 rounded-xl flex-row items-center justify-center active:bg-blue-700"
             >
               <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
-              <Text className="text-white font-semibold ml-2">Select File</Text>
+              <Text className="text-white font-semibold ml-2">Select Schedule File</Text>
             </Pressable>
-            <Text className="text-xs text-gray-400 mt-4 text-center">
+            <Text className="text-xs text-gray-400 mt-3 text-center">
               Supports PDF and image files (JPG, PNG)
             </Text>
           </View>
-        </View>
+
+          {/* Import Piece Tickets */}
+          <View className="bg-white rounded-2xl p-6 shadow-sm">
+            <View className="flex-row items-center mb-4">
+              <View className="w-14 h-14 bg-green-100 rounded-full items-center justify-center mr-4">
+                <Ionicons name="documents-outline" size={28} color="#16A34A" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-bold text-gray-900">Import Piece Tickets</Text>
+                <Text className="text-sm text-gray-500">Link piece tickets to existing entries</Text>
+              </View>
+            </View>
+            <Text className="text-gray-600 text-sm mb-4">
+              Upload a multi-page PDF containing piece tickets. Each page will be matched to existing entries by Job # and Mark #, and linked as an attachment.
+            </Text>
+            <Pressable
+              onPress={handlePickPieceTickets}
+              className="bg-green-600 px-6 py-3 rounded-xl flex-row items-center justify-center active:bg-green-700"
+            >
+              <Ionicons name="link-outline" size={20} color="#FFFFFF" />
+              <Text className="text-white font-semibold ml-2">Select Piece Tickets PDF</Text>
+            </Pressable>
+            <Text className="text-xs text-gray-400 mt-3 text-center">
+              PDF only - each page = one piece ticket
+            </Text>
+          </View>
+        </ScrollView>
       )}
 
-      {/* Review State */}
+      {/* Piece Ticket Review State */}
+      {!isLoading && showPieceTicketReview && (
+        <ScrollView className="flex-1">
+          {/* Summary Card */}
+          <View className="bg-white rounded-xl p-4 mt-4 mx-4">
+            <Text className="text-lg font-bold text-gray-900 mb-3">Piece Ticket Matching</Text>
+            <View className="flex-row gap-4">
+              <View className="flex-1 bg-gray-50 rounded-lg p-3">
+                <Text className="text-xs text-gray-500">Total Pages</Text>
+                <Text className="text-xl font-bold text-gray-900">{matchedTickets.length}</Text>
+              </View>
+              <View className="flex-1 bg-green-50 rounded-lg p-3">
+                <Text className="text-xs text-gray-500">Matched</Text>
+                <Text className="text-xl font-bold text-green-600">
+                  {matchedTickets.filter((t) => t.matchedEntryId).length}
+                </Text>
+              </View>
+              <View className="flex-1 bg-red-50 rounded-lg p-3">
+                <Text className="text-xs text-gray-500">Unmatched</Text>
+                <Text className="text-xl font-bold text-red-600">
+                  {matchedTickets.filter((t) => !t.matchedEntryId).length}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Matched Tickets List */}
+          <View className="px-4 mt-4">
+            <Text className="text-base font-semibold text-gray-900 mb-2">Extracted Tickets</Text>
+
+            {/* Table Header */}
+            <View className="flex-row bg-gray-800 py-2 px-2 rounded-t-lg">
+              <Text className="w-12 text-xs font-semibold text-white">Page</Text>
+              <Text className="w-20 text-xs font-semibold text-white">Job #</Text>
+              <Text className="w-20 text-xs font-semibold text-white">Mark #</Text>
+              <Text className="flex-1 text-xs font-semibold text-white">Match Status</Text>
+            </View>
+
+            {/* Table Rows */}
+            {matchedTickets.map((ticket, index) => (
+              <View
+                key={index}
+                className={`flex-row py-3 px-2 border-b border-gray-200 ${
+                  ticket.matchedEntryId ? 'bg-green-50' : 'bg-red-50'
+                }`}
+              >
+                <Text className="w-12 text-xs text-gray-900">{ticket.page}</Text>
+                <Text className="w-20 text-xs text-gray-900">{ticket.jobNo || '-'}</Text>
+                <Text className="w-20 text-xs text-gray-900">{ticket.markNo || '-'}</Text>
+                <View className="flex-1 flex-row items-center">
+                  {ticket.matchedEntryId ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                      <Text className="text-xs text-green-700 ml-1">
+                        Matched: {ticket.matchedJobNumber}-{ticket.matchedMarkNumber}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="close-circle" size={14} color="#DC2626" />
+                      <Text className="text-xs text-red-700 ml-1">No match found</Text>
+                    </>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Action Buttons */}
+          <View className="flex-row gap-3 mt-6 mb-8 px-4">
+            <Pressable
+              onPress={resetImport}
+              className="flex-1 bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300"
+            >
+              <Text className="text-gray-700 font-semibold">Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleLinkPieceTickets}
+              disabled={matchedTickets.filter((t) => t.matchedEntryId).length === 0}
+              className={`flex-1 py-4 rounded-xl items-center ${
+                matchedTickets.filter((t) => t.matchedEntryId).length > 0
+                  ? 'bg-green-600 active:bg-green-700'
+                  : 'bg-gray-300'
+              }`}
+            >
+              <Text
+                className={`font-semibold ${
+                  matchedTickets.filter((t) => t.matchedEntryId).length > 0
+                    ? 'text-white'
+                    : 'text-gray-500'
+                }`}
+              >
+                Link {matchedTickets.filter((t) => t.matchedEntryId).length} Tickets
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Schedule Review State */}
       {!isLoading && showReview && (
         <ScrollView className="flex-1">
           {/* Summary Card */}

@@ -38,6 +38,9 @@ export interface QualityLogEntry {
   bed?: BedNumber;
   location?: string; // Format: "1-80" (1-4)-(1-80)
 
+  // Piece ticket attachment
+  pieceTicketUrl?: string; // URL to the piece ticket PDF page in Firebase Storage
+
   // Auto-calculated based on disposition
   disposition?: Disposition;
   status?: StatusCode;
