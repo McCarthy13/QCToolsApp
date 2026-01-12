@@ -212,44 +212,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     return size ? `${size}"` : '';
   };
 
-  // Helper to get strand differences for individual strands based on LOCATION
-  const getStrandDifferences = (strandId: string) => {
-    const isTopStrand = strandId.startsWith('T');
-    const comparison = isTopStrand ? topPatternComparison : bottomPatternComparison;
-
-    if (!comparison || !comparison.hasDifferences) {
-      return null;
-    }
-
-    // Get the strand's index in the CAST pattern (what we're measuring)
-    const numericId = strandId.substring(1);
-    const castIndex = parseInt(numericId) - 1;
-
-    // Get the cast strand's location
-    const castPattern = isTopStrand ? selectedTopPattern : selectedPattern;
-    const castCoord = castPattern?.strandCoordinates?.[castIndex];
-
-    if (!castCoord) {
-      return null;
-    }
-
-    // Find differences that apply to this location
-    const locationTolerance = 0.5;
-    const strandDiffs = comparison.differences.filter(diff => {
-      const distance = Math.sqrt(
-        Math.pow(diff.location.x - castCoord.x, 2) +
-        Math.pow(diff.location.y - castCoord.y, 2)
-      );
-      return distance <= locationTolerance;
-    });
-
-    if (strandDiffs.length === 0) {
-      return null;
-    }
-
-    return strandDiffs;
-  };
-
   // Save and publish handlers
   const handleSave = async () => {
     console.log('[SlippageSummaryScreen] ========== SAVE BUTTON PRESSED ==========');
@@ -788,34 +750,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               </View>
             </View>
 
-            {/* Pattern Differences Summary */}
-            {bottomPatternComparison?.hasDifferences && (
-              <View className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                <Text className="text-red-900 text-xs font-bold mb-2">
-                  ⚠ Bottom Strand Differences
-                </Text>
-                {bottomPatternComparison.differences.map((diff, idx) => (
-                  <View key={idx} className="flex-row items-start mb-1">
-                    <Text className="text-red-600 text-xs mr-1">•</Text>
-                    <Text className="text-xs text-red-800 flex-1">{diff.description}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {topPatternComparison?.hasDifferences && (
-              <View className="mt-2 bg-red-50 border border-red-200 rounded-lg p-3">
-                <Text className="text-red-900 text-xs font-bold mb-2">
-                  ⚠ Top Strand Differences
-                </Text>
-                {topPatternComparison.differences.map((diff, idx) => (
-                  <View key={idx} className="flex-row items-start mb-1">
-                    <Text className="text-red-600 text-xs mr-1">•</Text>
-                    <Text className="text-xs text-red-800 flex-1">{diff.description}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
           </View>
         ) : (
           /* Single cross-section when patterns match */
@@ -994,7 +928,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
                   const strandTotal = e1 + e2;
                   const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-                  const strandDiffs = getStrandDifferences(strand.strandId);
 
                   return (
                     <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
@@ -1021,23 +954,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                           </Text>
                         </View>
                       </View>
-
-                      {/* Pattern Differences Annotation */}
-                      {strandDiffs && strandDiffs.length > 0 && (
-                        <View className="ml-6 mb-1.5 bg-amber-50 border border-amber-300 rounded px-2 py-1">
-                          <View className="flex-row items-center">
-                            <Ionicons name="warning" size={12} color="#F59E0B" />
-                            <Text className="text-amber-900 text-[10px] font-semibold ml-1">
-                              Design vs Cast:
-                            </Text>
-                          </View>
-                          {strandDiffs.map((diff, idx) => (
-                            <Text key={idx} className="text-amber-800 text-[10px] ml-4 mt-0.5">
-                              • {diff.description}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
 
                       {/* END 1 & END 2 - inline */}
                       <View className="flex-row gap-2 ml-6">
@@ -1075,7 +991,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                   const e2 = strand.rightExceedsOne ? 1.0 : (end2Value ?? 0);
                   const strandTotal = e1 + e2;
                   const hasExceeds = strand.leftExceedsOne || strand.rightExceedsOne;
-                  const strandDiffs = getStrandDifferences(strand.strandId);
 
                   return (
                     <View key={strand.strandId} className="mb-2 pb-2 border-b border-gray-300 last:border-b-0">
@@ -1102,23 +1017,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
                           </Text>
                         </View>
                       </View>
-
-                      {/* Pattern Differences Annotation */}
-                      {strandDiffs && strandDiffs.length > 0 && (
-                        <View className="ml-6 mb-1.5 bg-amber-50 border border-amber-300 rounded px-2 py-1">
-                          <View className="flex-row items-center">
-                            <Ionicons name="warning" size={12} color="#F59E0B" />
-                            <Text className="text-amber-900 text-[10px] font-semibold ml-1">
-                              Design vs Cast:
-                            </Text>
-                          </View>
-                          {strandDiffs.map((diff, idx) => (
-                            <Text key={idx} className="text-amber-800 text-[10px] ml-4 mt-0.5">
-                              • {diff.description}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
 
                       {/* END 1 & END 2 - inline */}
                       <View className="flex-row gap-2 ml-6">
