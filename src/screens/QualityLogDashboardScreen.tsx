@@ -219,9 +219,13 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Table Header */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-          <View>
-            <View className="flex-row bg-gray-800 py-2">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={true}
+          contentContainerStyle={{ minWidth: '100%' }}
+        >
+          <View style={{ minWidth: '100%' }}>
+            <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Pour Date</Text>
               <Text className="w-20 px-2 text-xs font-semibold text-white">Status</Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Disposition</Text>
@@ -236,12 +240,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               <Text className="w-48 px-2 text-xs font-semibold text-white">Comments</Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Issue Codes</Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Reject Codes</Text>
-              <Text className="w-28 px-2 text-xs font-semibold text-white">Approval Date</Text>
+              <Text className="flex-1 min-w-[112px] px-2 text-xs font-semibold text-white">Approval Date</Text>
             </View>
 
             {/* Table Rows */}
             {sortedEntries.length === 0 ? (
-              <View className="py-12 px-4">
+              <View className="py-12 px-4" style={{ minWidth: '100%' }}>
                 <Text className="text-gray-500 text-center">
                   {searchQuery || filterBed || filterStatus
                     ? 'No entries match your filters'
@@ -254,7 +258,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   key={entry.id}
                   onPress={() => navigation.navigate('QualityLogDetail' as any, { entryId: entry.id })}
                   className="flex-row border-b border-gray-200 active:opacity-70"
-                  style={{ backgroundColor: getRowColor(entry) }}
+                  style={{ backgroundColor: getRowColor(entry), minWidth: '100%' }}
                 >
                   <Text className="w-24 px-2 py-3 text-xs text-gray-900">{entry.pourDate}</Text>
                   <Text className="w-20 px-2 py-3 text-xs font-bold text-gray-900">
@@ -286,7 +290,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   <Text className="w-24 px-2 py-3 text-xs text-gray-900">
                     {entry.rejectCodes.length > 0 ? entry.rejectCodes.join(', ') : '-'}
                   </Text>
-                  <Text className="w-28 px-2 py-3 text-xs text-gray-900">
+                  <Text className="flex-1 min-w-[112px] px-2 py-3 text-xs text-gray-900">
                     {entry.approvalRejectionDate || '-'}
                   </Text>
                 </Pressable>
