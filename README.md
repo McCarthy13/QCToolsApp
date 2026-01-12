@@ -2,6 +2,22 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
+## Recent Feature: Piece Ticket Import ✅
+
+**Feature**: Import piece tickets from multi-page PDFs and link them to quality log entries.
+
+**How it works**:
+1. Upload a multi-page PDF containing piece tickets
+2. Azure Document Intelligence extracts Job # and Mark # from each page
+3. Tickets are matched to existing entries by Job # and Mark #
+4. Linked tickets show a PDF icon in the dashboard - click to view
+
+**Files Modified**:
+- `functions/index.js` - Added `parsePieceTickets` Cloud Function
+- `src/screens/QualityLogImportScreen.tsx` - Added Import Piece Tickets button
+- `src/screens/QualityLogDashboardScreen.tsx` - Added PDF icon column
+- `src/types/quality-log.ts` - Added `pieceTicketUrl` field
+
 ## Recent Fix: Microsoft 365 Login + Record Saving ✅
 
 **Issue**: After switching to Microsoft 365 login, records were not being saved to "My Records" or "Published".
