@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import {
   QualityLogEntry,
   ProductType,
   BedNumber,
+  BED_OPTIONS,
 } from '../types/quality-log';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../config/firebase';
@@ -57,16 +59,50 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [extractedEntries, setExtractedEntries] = useState<ExtractedEntry[]>([]);
   const [pourDate, setPourDate] = useState<string>('');
-  const [detectedThickness, setDetectedThickness] = useState<number | null>(null);
-  const [detectedBed, setDetectedBed] = useState<BedNumber | undefined>();
+  const [selectedBed, setSelectedBed] = useState<BedNumber | undefined>();
 
-  // Product type selection state - always prompt user to select
+  // Selection flow state
+  const [showBedPrompt, setShowBedPrompt] = useState(false);
   const [showProductTypePrompt, setShowProductTypePrompt] = useState(false);
+  const [showMissingValuesPrompt, setShowMissingValuesPrompt] = useState(false);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | 'Mixed' | null>(null);
 
   // Review state
   const [showReview, setShowReview] = useState(false);
   const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
+
+  // Editing state
+  const [editingCell, setEditingCell] = useState<{ index: number; field: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  // Calculate missing values
+  const missingValuesInfo = useMemo(() => {
+    const missing: { field: string; count: number; indices: number[] }[] = [];
+
+    const fieldsToCheck = [
+      { key: 'jobNumber', label: 'Job #' },
+      { key: 'markNumber', label: 'Mark #' },
+      { key: 'idNumber', label: 'ID #' },
+      { key: 'length', label: 'Length' },
+      { key: 'width', label: 'Width' },
+      { key: 'thickness', label: 'Thickness' },
+    ];
+
+    for (const field of fieldsToCheck) {
+      const indices: number[] = [];
+      extractedEntries.forEach((entry, idx) => {
+        const value = entry[field.key as keyof ExtractedEntry];
+        if (value === undefined || value === null || value === '' || value === 0) {
+          indices.push(idx);
+        }
+      });
+      if (indices.length > 0) {
+        missing.push({ field: field.label, count: indices.length, indices });
+      }
+    }
+
+    return missing;
+  }, [extractedEntries]);
 
   const handlePickDocument = async () => {
     console.log('[QualityLogImport] handlePickDocument called');
@@ -173,7 +209,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           throw new Error(response.data.error || 'Failed to parse schedule');
         }
 
-        const { entries, pourDate: extractedPourDate, bed, thickness } = response.data;
+        const { entries, pourDate: extractedPourDate } = response.data;
 
         if (entries.length === 0) {
           Alert.alert('No Data Found', 'Could not extract any entries from the schedule. Please try a clearer scan.');
@@ -183,8 +219,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
         setExtractedEntries(entries);
         setPourDate(extractedPourDate);
-        setDetectedBed(bed as BedNumber | undefined);
-        setDetectedThickness(thickness || null);
 
         // Check for duplicate IDs
         const duplicates = entries
@@ -192,10 +226,11 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           .filter((id) => getEntryByIdNumber(id) !== undefined);
         setDuplicateIds(duplicates);
 
-        // Always prompt user to select product type after extraction
-        setShowProductTypePrompt(true);
-
         setIsLoading(false);
+
+        // Start the selection flow - first ask for bed number
+        setShowBedPrompt(true);
+
       } catch (cloudFunctionError: any) {
         console.error('[QualityLogImport] Cloud Function error:', cloudFunctionError);
         console.error('[QualityLogImport] Error code:', cloudFunctionError?.code);
@@ -215,9 +250,27 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     }
   };
 
+  const handleBedSelect = (bed: BedNumber) => {
+    setSelectedBed(bed);
+    setShowBedPrompt(false);
+    // Next, ask for product type
+    setShowProductTypePrompt(true);
+  };
+
   const handleProductTypeSelect = (type: ProductType | 'Mixed') => {
     setShowProductTypePrompt(false);
     setSelectedProductType(type);
+
+    // Check if there are missing values - if so, show warning
+    if (missingValuesInfo.length > 0) {
+      setShowMissingValuesPrompt(true);
+    } else {
+      setShowReview(true);
+    }
+  };
+
+  const handleMissingValuesAcknowledged = () => {
+    setShowMissingValuesPrompt(false);
     setShowReview(true);
   };
 
@@ -237,7 +290,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         return;
       }
 
-      // Create full entries with product type
+      // Create full entries with product type and bed
       // If "Mixed" was selected, don't set a product type (user will set individually)
       const fullEntries: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>[] = entriesToImport.map((entry) => ({
         pourDate: pourDate || entry.pourDate,
@@ -247,7 +300,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         length: entry.length,
         width: entry.width,
         thickness: entry.thickness,
-        bed: detectedBed || entry.bed,
+        bed: selectedBed, // Use user-selected bed for all entries
         productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as ProductType) || undefined,
         issueCodes: [],
         rejectCodes: [],
@@ -282,11 +335,96 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const resetImport = () => {
     setExtractedEntries([]);
     setPourDate('');
-    setDetectedThickness(null);
-    setDetectedBed(undefined);
+    setSelectedBed(undefined);
     setSelectedProductType(null);
     setShowReview(false);
+    setShowBedPrompt(false);
+    setShowProductTypePrompt(false);
+    setShowMissingValuesPrompt(false);
     setDuplicateIds([]);
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  // Start editing a cell
+  const startEditing = (index: number, field: string, currentValue: string | number) => {
+    setEditingCell({ index, field });
+    setEditValue(String(currentValue ?? ''));
+  };
+
+  // Save edited value
+  const saveEdit = () => {
+    if (!editingCell) return;
+
+    const { index, field } = editingCell;
+    const updatedEntries = [...extractedEntries];
+    const entry = { ...updatedEntries[index] };
+
+    // Update the field based on type
+    if (field === 'width' || field === 'thickness') {
+      entry[field] = parseFloat(editValue) || 0;
+    } else {
+      (entry as any)[field] = editValue;
+    }
+
+    updatedEntries[index] = entry;
+    setExtractedEntries(updatedEntries);
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  // Cancel editing
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  // Render an editable cell
+  const renderEditableCell = (
+    index: number,
+    field: string,
+    value: string | number | undefined,
+    className: string,
+    isDuplicate: boolean
+  ) => {
+    const isEditing = editingCell?.index === index && editingCell?.field === field;
+    const displayValue = value ?? '-';
+    const isMissing = value === undefined || value === null || value === '' || value === 0;
+
+    if (isEditing) {
+      return (
+        <View className={className}>
+          <TextInput
+            value={editValue}
+            onChangeText={setEditValue}
+            onBlur={saveEdit}
+            onSubmitEditing={saveEdit}
+            autoFocus
+            className="text-xs bg-blue-50 border border-blue-300 rounded px-1 py-0.5 text-gray-900"
+            style={{ minHeight: 20 }}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => !isDuplicate && startEditing(index, field, value ?? '')}
+        className={className}
+      >
+        <Text
+          className={`text-xs ${
+            isDuplicate
+              ? 'text-red-400'
+              : isMissing
+              ? 'text-orange-500 italic'
+              : 'text-gray-900'
+          }`}
+        >
+          {isMissing ? '(tap to edit)' : displayValue}
+        </Text>
+      </Pressable>
+    );
   };
 
   return (
@@ -311,7 +449,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       )}
 
       {/* Initial State - Upload Button */}
-      {!isLoading && !showReview && (
+      {!isLoading && !showReview && !showBedPrompt && !showProductTypePrompt && !showMissingValuesPrompt && (
         <View className="flex-1 justify-center items-center px-6">
           <View className="bg-white rounded-2xl p-8 shadow-sm items-center max-w-md w-full">
             <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
@@ -351,7 +489,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               <View className="flex-1 min-w-[120px]">
                 <Text className="text-xs text-gray-500">Bed</Text>
                 <Text className="text-base font-semibold text-gray-900">
-                  {detectedBed ? `Bed ${detectedBed}` : 'Not Detected'}
+                  {selectedBed ? `Bed ${selectedBed}` : 'Not Set'}
                 </Text>
               </View>
               <View className="flex-1 min-w-[120px]">
@@ -361,9 +499,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 </Text>
               </View>
               <View className="flex-1 min-w-[120px]">
-                <Text className="text-xs text-gray-500">Thickness</Text>
+                <Text className="text-xs text-gray-500">Entries</Text>
                 <Text className="text-base font-semibold text-gray-900">
-                  {detectedThickness ? `${detectedThickness}"` : 'Unknown'}
+                  {extractedEntries.length}
                 </Text>
               </View>
             </View>
@@ -373,9 +511,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           <View className="px-4 mt-4">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-lg font-bold text-gray-900">Extracted Entries</Text>
-              <View className="bg-blue-100 px-3 py-1 rounded-full">
-                <Text className="text-blue-700 font-semibold">{extractedEntries.length}</Text>
-              </View>
+              <Text className="text-xs text-gray-500">Tap cells to edit</Text>
             </View>
 
             {duplicateIds.length > 0 && (
@@ -388,6 +524,20 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 </View>
                 <Text className="text-yellow-600 text-xs mt-1">
                   IDs: {duplicateIds.join(', ')}
+                </Text>
+              </View>
+            )}
+
+            {missingValuesInfo.length > 0 && (
+              <View className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                <View className="flex-row items-center">
+                  <Ionicons name="alert-circle" size={18} color="#EA580C" />
+                  <Text className="text-orange-700 ml-2 font-medium">
+                    Some values could not be extracted
+                  </Text>
+                </View>
+                <Text className="text-orange-600 text-xs mt-1">
+                  {missingValuesInfo.map((m) => `${m.field}: ${m.count}`).join(', ')}
                 </Text>
               </View>
             )}
@@ -408,6 +558,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 <Text className="w-24 text-xs font-semibold text-white px-1">ID #</Text>
                 <Text className="w-24 text-xs font-semibold text-white px-1">Length</Text>
                 <Text className="w-16 text-xs font-semibold text-white px-1">Width</Text>
+                <Text className="w-16 text-xs font-semibold text-white px-1">Thk</Text>
                 <Text className="flex-1 min-w-[48px] text-xs font-semibold text-white px-1">Bed</Text>
               </View>
               {/* Data Rows */}
@@ -420,55 +571,18 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                       isDuplicate ? 'bg-red-50' : 'bg-white'
                     }`}
                   >
-                    <Text
-                      className={`w-24 text-xs px-1 ${
-                        isDuplicate ? 'text-red-400' : 'text-gray-900'
-                      }`}
-                    >
-                      {pourDate || entry.pourDate || '-'}
-                    </Text>
-                    <Text
-                      className={`w-20 text-xs px-1 ${
-                        isDuplicate ? 'text-red-400' : 'text-gray-900'
-                      }`}
-                    >
-                      {entry.jobNumber || '-'}
-                    </Text>
-                    <Text
-                      className={`w-16 text-xs px-1 ${
-                        isDuplicate ? 'text-red-400' : 'text-gray-900'
-                      }`}
-                    >
-                      {entry.markNumber || '-'}
-                    </Text>
-                    <Text
-                      className={`w-24 text-xs px-1 ${
-                        isDuplicate ? 'text-red-400 line-through' : 'text-gray-900 font-medium'
-                      }`}
-                    >
-                      {entry.idNumber}
-                    </Text>
-                    <Text
-                      className={`w-24 text-xs px-1 ${
-                        isDuplicate ? 'text-red-400' : 'text-gray-600'
-                      }`}
-                    >
-                      {entry.length || '-'}
-                    </Text>
-                    <Text
-                      className={`w-16 text-xs px-1 ${
-                        isDuplicate ? 'text-red-400' : 'text-gray-600'
-                      }`}
-                    >
-                      {entry.width ? `${entry.width}"` : '-'}
-                    </Text>
-                    <Text
-                      className={`flex-1 min-w-[48px] text-xs px-1 ${
-                        isDuplicate ? 'text-red-400' : 'text-gray-600'
-                      }`}
-                    >
-                      {detectedBed || entry.bed || '-'}
-                    </Text>
+                    {renderEditableCell(index, 'pourDate', pourDate || entry.pourDate, 'w-24 px-1', isDuplicate)}
+                    {renderEditableCell(index, 'jobNumber', entry.jobNumber, 'w-20 px-1', isDuplicate)}
+                    {renderEditableCell(index, 'markNumber', entry.markNumber, 'w-16 px-1', isDuplicate)}
+                    {renderEditableCell(index, 'idNumber', entry.idNumber, 'w-24 px-1', isDuplicate)}
+                    {renderEditableCell(index, 'length', entry.length, 'w-24 px-1', isDuplicate)}
+                    {renderEditableCell(index, 'width', entry.width ? `${entry.width}` : '', 'w-16 px-1', isDuplicate)}
+                    {renderEditableCell(index, 'thickness', entry.thickness ? `${entry.thickness}` : '', 'w-16 px-1', isDuplicate)}
+                    <View className="flex-1 min-w-[48px] px-1">
+                      <Text className={`text-xs ${isDuplicate ? 'text-red-400' : 'text-gray-600'}`}>
+                        {selectedBed || '-'}
+                      </Text>
+                    </View>
                   </View>
                 );
               })}
@@ -506,6 +620,32 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         </ScrollView>
       )}
 
+      {/* Bed Selection Modal */}
+      <Modal visible={showBedPrompt} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-center px-6">
+          <View className="bg-white rounded-2xl p-6">
+            <Text className="text-xl font-bold text-gray-900 text-center mb-2">
+              Select Bed Number
+            </Text>
+            <Text className="text-gray-600 text-center mb-6">
+              {extractedEntries.length} entries extracted. Which bed was this schedule for?
+            </Text>
+
+            <View className="flex-row flex-wrap justify-center gap-3">
+              {BED_OPTIONS.map((bed) => (
+                <Pressable
+                  key={bed}
+                  onPress={() => handleBedSelect(bed)}
+                  className="w-16 h-16 bg-blue-600 rounded-xl items-center justify-center active:bg-blue-700"
+                >
+                  <Text className="text-white font-bold text-2xl">{bed}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Product Type Selection Modal */}
       <Modal visible={showProductTypePrompt} transparent animationType="slide">
         <View className="flex-1 bg-black/50 justify-center px-6">
@@ -514,7 +654,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               Select Product Type
             </Text>
             <Text className="text-gray-600 text-center mb-6">
-              {extractedEntries.length} entries extracted. Please select the product type for this batch:
+              Please select the product type for this batch:
             </Text>
 
             <View className="gap-3">
@@ -538,6 +678,41 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 </Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Missing Values Warning Modal */}
+      <Modal visible={showMissingValuesPrompt} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-center px-6">
+          <View className="bg-white rounded-2xl p-6">
+            <View className="items-center mb-4">
+              <View className="w-16 h-16 bg-orange-100 rounded-full items-center justify-center">
+                <Ionicons name="alert-circle" size={40} color="#EA580C" />
+              </View>
+            </View>
+            <Text className="text-xl font-bold text-gray-900 text-center mb-2">
+              Missing Values Detected
+            </Text>
+            <Text className="text-gray-600 text-center mb-4">
+              Some values could not be extracted from the schedule. You can edit them in the review screen.
+            </Text>
+
+            <View className="bg-orange-50 rounded-lg p-4 mb-6">
+              {missingValuesInfo.map((info, idx) => (
+                <View key={idx} className="flex-row justify-between py-1">
+                  <Text className="text-orange-800 font-medium">{info.field}</Text>
+                  <Text className="text-orange-600">{info.count} missing</Text>
+                </View>
+              ))}
+            </View>
+
+            <Pressable
+              onPress={handleMissingValuesAcknowledged}
+              className="bg-blue-600 py-4 rounded-xl items-center active:bg-blue-700"
+            >
+              <Text className="text-white font-bold">Continue to Review</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>

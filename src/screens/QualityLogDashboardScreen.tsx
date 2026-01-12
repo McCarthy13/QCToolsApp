@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,8 @@ import {
   PRODUCT_TYPE_OPTIONS,
   BED_OPTIONS,
   Disposition,
+  ProductType,
+  BedNumber,
 } from '../types/quality-log';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
@@ -30,6 +33,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const entries = useQualityLogStore((s) => s.entries);
   const initialize = useQualityLogStore((s) => s.initialize);
   const setDisposition = useQualityLogStore((s) => s.setDisposition);
+  const updateEntry = useQualityLogStore((s) => s.updateEntry);
   const currentUser = useAuthStore((s) => s.currentUser);
   const isAdmin = currentUser?.role === 'admin';
 
@@ -37,6 +41,14 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [filterBed, setFilterBed] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{ entryId: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [showPickerModal, setShowPickerModal] = useState<{
+    entryId: string;
+    field: 'disposition' | 'productType' | 'bed';
+  } | null>(null);
 
   useEffect(() => {
     initialize();
@@ -96,11 +108,158 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     }
   };
 
+  // Start inline editing for text fields
+  const startEditing = (entryId: string, field: string, currentValue: string | number | undefined) => {
+    setEditingCell({ entryId, field });
+    setEditValue(String(currentValue ?? ''));
+  };
+
+  // Save inline edit
+  const saveEdit = async () => {
+    if (!editingCell) return;
+
+    const { entryId, field } = editingCell;
+    const entry = entries.find((e) => e.id === entryId);
+    if (!entry) return;
+
+    try {
+      const updates: Partial<QualityLogEntry> = {};
+
+      // Handle numeric fields
+      if (field === 'width' || field === 'thickness') {
+        (updates as any)[field] = parseFloat(editValue) || 0;
+      } else {
+        (updates as any)[field] = editValue;
+      }
+
+      await updateEntry(entryId, updates);
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      Alert.alert('Error', 'Failed to update entry');
+    }
+
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  // Cancel inline edit
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  // Handle picker selection
+  const handlePickerSelect = async (value: string) => {
+    if (!showPickerModal) return;
+
+    const { entryId, field } = showPickerModal;
+
+    try {
+      if (field === 'disposition') {
+        await setDisposition(entryId, value as Disposition);
+      } else {
+        const updates: Partial<QualityLogEntry> = {};
+        (updates as any)[field] = value;
+        await updateEntry(entryId, updates);
+      }
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      Alert.alert('Error', 'Failed to update entry');
+    }
+
+    setShowPickerModal(null);
+  };
+
+  // Render an editable text cell
+  const renderEditableTextCell = (
+    entry: QualityLogEntry,
+    field: string,
+    value: string | number | undefined,
+    widthClass: string
+  ) => {
+    const isEditing = editingCell?.entryId === entry.id && editingCell?.field === field;
+    const displayValue = value ?? '-';
+
+    if (isEditing) {
+      return (
+        <View className={`${widthClass} px-2 py-1`}>
+          <TextInput
+            value={editValue}
+            onChangeText={setEditValue}
+            onBlur={saveEdit}
+            onSubmitEditing={saveEdit}
+            autoFocus
+            className="text-xs bg-blue-50 border border-blue-300 rounded px-1 py-1 text-gray-900"
+            style={{ minHeight: 24 }}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => startEditing(entry.id, field, value)}
+        className={`${widthClass} px-2 py-3`}
+      >
+        <Text className="text-xs text-gray-900">{displayValue}</Text>
+      </Pressable>
+    );
+  };
+
+  // Render a picker cell (disposition, product type, bed)
+  const renderPickerCell = (
+    entry: QualityLogEntry,
+    field: 'disposition' | 'productType' | 'bed',
+    value: string | undefined,
+    widthClass: string
+  ) => {
+    const displayValue = field === 'bed' && value ? `${value}` : value || '-';
+
+    return (
+      <Pressable
+        onPress={() => setShowPickerModal({ entryId: entry.id, field })}
+        className={`${widthClass} px-2 py-3 flex-row items-center`}
+      >
+        <Text className="text-xs text-gray-900 flex-1">{displayValue}</Text>
+        <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+      </Pressable>
+    );
+  };
+
   const stats = {
     total: entries.length,
     pending: entries.filter((e) => !e.disposition).length,
     okToShip: entries.filter((e) => e.disposition === 'Ok to Ship').length,
     issues: entries.filter((e) => e.issueCodes.length > 0 || e.rejectCodes.length > 0).length,
+  };
+
+  // Get picker options based on field
+  const getPickerOptions = () => {
+    if (!showPickerModal) return [];
+    switch (showPickerModal.field) {
+      case 'disposition':
+        return DISPOSITION_OPTIONS;
+      case 'productType':
+        return PRODUCT_TYPE_OPTIONS;
+      case 'bed':
+        return BED_OPTIONS;
+      default:
+        return [];
+    }
+  };
+
+  const getPickerTitle = () => {
+    if (!showPickerModal) return '';
+    switch (showPickerModal.field) {
+      case 'disposition':
+        return 'Select Disposition';
+      case 'productType':
+        return 'Select Product Type';
+      case 'bed':
+        return 'Select Bed';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -213,6 +372,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         </ScrollView>
       </View>
 
+      {/* Editing hint */}
+      <View className="bg-blue-50 px-4 py-2 border-b border-blue-100">
+        <Text className="text-xs text-blue-600">Tap any cell to edit. Tap row icon for full details.</Text>
+      </View>
+
       {/* Table */}
       <ScrollView
         className="flex-1"
@@ -226,6 +390,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         >
           <View style={{ minWidth: '100%' }}>
             <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
+              <Text className="w-8 px-1 text-xs font-semibold text-white"></Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Pour Date</Text>
               <Text className="w-20 px-2 text-xs font-semibold text-white">Status</Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Disposition</Text>
@@ -254,36 +419,34 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               </View>
             ) : (
               sortedEntries.map((entry, index) => (
-                <Pressable
+                <View
                   key={entry.id}
-                  onPress={() => navigation.navigate('QualityLogDetail' as any, { entryId: entry.id })}
-                  className="flex-row border-b border-gray-200 active:opacity-70"
+                  className="flex-row border-b border-gray-200"
                   style={{ backgroundColor: getRowColor(entry), minWidth: '100%' }}
                 >
-                  <Text className="w-24 px-2 py-3 text-xs text-gray-900">{entry.pourDate}</Text>
+                  {/* Detail button */}
+                  <Pressable
+                    onPress={() => navigation.navigate('QualityLogDetail' as any, { entryId: entry.id })}
+                    className="w-8 px-1 py-3 items-center justify-center"
+                  >
+                    <Ionicons name="open-outline" size={14} color="#6B7280" />
+                  </Pressable>
+
+                  {/* Editable cells */}
+                  {renderEditableTextCell(entry, 'pourDate', entry.pourDate, 'w-24')}
                   <Text className="w-20 px-2 py-3 text-xs font-bold text-gray-900">
                     {entry.status || '-'}
                   </Text>
-                  <Text className="w-24 px-2 py-3 text-xs text-gray-900">
-                    {entry.disposition || '-'}
-                  </Text>
-                  <Text className="w-16 px-2 py-3 text-xs text-gray-900">
-                    {entry.productType || '-'}
-                  </Text>
-                  <Text className="w-20 px-2 py-3 text-xs text-gray-900">{entry.jobNumber}</Text>
-                  <Text className="w-24 px-2 py-3 text-xs text-gray-900">{entry.markNumber}</Text>
-                  <Text className="w-24 px-2 py-3 text-xs font-medium text-gray-900">
-                    {entry.idNumber}
-                  </Text>
-                  <Text className="w-24 px-2 py-3 text-xs text-gray-900">{entry.length}</Text>
-                  <Text className="w-16 px-2 py-3 text-xs text-gray-900">{entry.width}"</Text>
-                  <Text className="w-12 px-2 py-3 text-xs text-gray-900">{entry.bed || '-'}</Text>
-                  <Text className="w-32 px-2 py-3 text-xs text-gray-900" numberOfLines={1}>
-                    {entry.engineer || '-'}
-                  </Text>
-                  <Text className="w-48 px-2 py-3 text-xs text-gray-900" numberOfLines={2}>
-                    {entry.qualityComments || '-'}
-                  </Text>
+                  {renderPickerCell(entry, 'disposition', entry.disposition, 'w-24')}
+                  {renderPickerCell(entry, 'productType', entry.productType, 'w-16')}
+                  {renderEditableTextCell(entry, 'jobNumber', entry.jobNumber, 'w-20')}
+                  {renderEditableTextCell(entry, 'markNumber', entry.markNumber, 'w-24')}
+                  {renderEditableTextCell(entry, 'idNumber', entry.idNumber, 'w-24')}
+                  {renderEditableTextCell(entry, 'length', entry.length, 'w-24')}
+                  {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', 'w-16')}
+                  {renderPickerCell(entry, 'bed', entry.bed, 'w-12')}
+                  {renderEditableTextCell(entry, 'engineer', entry.engineer, 'w-32')}
+                  {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, 'w-48')}
                   <Text className="w-24 px-2 py-3 text-xs text-gray-900">
                     {entry.issueCodes.length > 0 ? entry.issueCodes.join(', ') : '-'}
                   </Text>
@@ -293,12 +456,38 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   <Text className="flex-1 min-w-[112px] px-2 py-3 text-xs text-gray-900">
                     {entry.approvalRejectionDate || '-'}
                   </Text>
-                </Pressable>
+                </View>
               ))
             )}
           </View>
         </ScrollView>
       </ScrollView>
+
+      {/* Picker Modal */}
+      <Modal visible={!!showPickerModal} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowPickerModal(null)}
+        >
+          <View className="bg-white rounded-t-2xl p-4">
+            <Text className="text-lg font-semibold text-center mb-4">{getPickerTitle()}</Text>
+            {getPickerOptions().map((option) => (
+              <Pressable
+                key={option}
+                onPress={() => handlePickerSelect(option)}
+                className="py-3 border-b border-gray-100 active:bg-gray-50"
+              >
+                <Text className="text-center text-base text-gray-900">
+                  {showPickerModal?.field === 'bed' ? `Bed ${option}` : option}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => setShowPickerModal(null)} className="py-3 mt-2">
+              <Text className="text-center text-base text-red-600">Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
