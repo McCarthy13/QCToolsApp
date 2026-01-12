@@ -339,9 +339,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       {/* Review State */}
       {!isLoading && showReview && (
-        <ScrollView className="flex-1 px-4">
+        <ScrollView className="flex-1">
           {/* Summary Card */}
-          <View className="bg-white rounded-xl p-4 mt-4">
+          <View className="bg-white rounded-xl p-4 mt-4 mx-4">
             <Text className="text-lg font-bold text-gray-900 mb-3">Import Summary</Text>
             <View className="flex-row flex-wrap gap-4">
               <View className="flex-1 min-w-[120px]">
@@ -369,8 +369,8 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             </View>
           </View>
 
-          {/* Entries Count */}
-          <View className="bg-white rounded-xl p-4 mt-4">
+          {/* Entries Header */}
+          <View className="px-4 mt-4">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-lg font-bold text-gray-900">Extracted Entries</Text>
               <View className="bg-blue-100 px-3 py-1 rounded-full">
@@ -391,104 +391,92 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 </Text>
               </View>
             )}
-
-            {/* Entry List Preview - Horizontal scrolling table */}
-            <View className="border border-gray-200 rounded-lg overflow-hidden">
-              {/* Header Row */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={true}
-                contentContainerStyle={{ minWidth: '100%' }}
-              >
-                <View style={{ minWidth: '100%' }}>
-                  <View className="flex-row bg-gray-100 py-2 px-2" style={{ minWidth: '100%' }}>
-                    <Text className="w-24 text-xs font-semibold text-gray-600 px-1">Pour Date</Text>
-                    <Text className="w-20 text-xs font-semibold text-gray-600 px-1">Job #</Text>
-                    <Text className="w-16 text-xs font-semibold text-gray-600 px-1">Mark #</Text>
-                    <Text className="w-20 text-xs font-semibold text-gray-600 px-1">ID #</Text>
-                    <Text className="w-24 text-xs font-semibold text-gray-600 px-1">Length</Text>
-                    <Text className="w-16 text-xs font-semibold text-gray-600 px-1">Width</Text>
-                    <Text className="flex-1 min-w-[48px] text-xs font-semibold text-gray-600 px-1">Bed</Text>
-                  </View>
-                  {/* Data Rows */}
-                  <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled={true}>
-                    {extractedEntries.slice(0, 30).map((entry, index) => {
-                      const isDuplicate = duplicateIds.includes(entry.idNumber);
-                      return (
-                        <View
-                          key={entry.idNumber || index}
-                          className={`flex-row py-2 px-2 border-t border-gray-100 ${
-                            isDuplicate ? 'bg-red-50' : ''
-                          }`}
-                          style={{ minWidth: '100%' }}
-                        >
-                          <Text
-                            className={`w-24 text-xs px-1 ${
-                              isDuplicate ? 'text-red-400' : 'text-gray-900'
-                            }`}
-                          >
-                            {pourDate || entry.pourDate || '-'}
-                          </Text>
-                          <Text
-                            className={`w-20 text-xs px-1 ${
-                              isDuplicate ? 'text-red-400' : 'text-gray-900'
-                            }`}
-                          >
-                            {entry.jobNumber || '-'}
-                          </Text>
-                          <Text
-                            className={`w-16 text-xs px-1 ${
-                              isDuplicate ? 'text-red-400' : 'text-gray-900'
-                            }`}
-                          >
-                            {entry.markNumber || '-'}
-                          </Text>
-                          <Text
-                            className={`w-20 text-xs px-1 ${
-                              isDuplicate ? 'text-red-400 line-through' : 'text-gray-900 font-medium'
-                            }`}
-                          >
-                            {entry.idNumber}
-                          </Text>
-                          <Text
-                            className={`w-24 text-xs px-1 ${
-                              isDuplicate ? 'text-red-400' : 'text-gray-600'
-                            }`}
-                          >
-                            {entry.length || '-'}
-                          </Text>
-                          <Text
-                            className={`w-16 text-xs px-1 ${
-                              isDuplicate ? 'text-red-400' : 'text-gray-600'
-                            }`}
-                          >
-                            {entry.width ? `${entry.width}"` : '-'}
-                          </Text>
-                          <Text
-                            className={`flex-1 min-w-[48px] text-xs px-1 ${
-                              isDuplicate ? 'text-red-400' : 'text-gray-600'
-                            }`}
-                          >
-                            {detectedBed || entry.bed || '-'}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                    {extractedEntries.length > 30 && (
-                      <View className="py-2 px-3 bg-gray-50" style={{ minWidth: '100%' }}>
-                        <Text className="text-xs text-gray-500 text-center">
-                          And {extractedEntries.length - 30} more entries...
-                        </Text>
-                      </View>
-                    )}
-                  </ScrollView>
-                </View>
-              </ScrollView>
-            </View>
           </View>
 
+          {/* Entry List Preview - Full width horizontal scrolling table */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
+            <View style={{ flex: 1, minWidth: '100%' }}>
+              {/* Header Row */}
+              <View className="flex-row bg-gray-800 py-2 px-2">
+                <Text className="w-24 text-xs font-semibold text-white px-1">Pour Date</Text>
+                <Text className="w-20 text-xs font-semibold text-white px-1">Job #</Text>
+                <Text className="w-16 text-xs font-semibold text-white px-1">Mark #</Text>
+                <Text className="w-24 text-xs font-semibold text-white px-1">ID #</Text>
+                <Text className="w-24 text-xs font-semibold text-white px-1">Length</Text>
+                <Text className="w-16 text-xs font-semibold text-white px-1">Width</Text>
+                <Text className="flex-1 min-w-[48px] text-xs font-semibold text-white px-1">Bed</Text>
+              </View>
+              {/* Data Rows */}
+              {extractedEntries.map((entry, index) => {
+                const isDuplicate = duplicateIds.includes(entry.idNumber);
+                return (
+                  <View
+                    key={entry.idNumber || index}
+                    className={`flex-row py-2 px-2 border-b border-gray-200 ${
+                      isDuplicate ? 'bg-red-50' : 'bg-white'
+                    }`}
+                  >
+                    <Text
+                      className={`w-24 text-xs px-1 ${
+                        isDuplicate ? 'text-red-400' : 'text-gray-900'
+                      }`}
+                    >
+                      {pourDate || entry.pourDate || '-'}
+                    </Text>
+                    <Text
+                      className={`w-20 text-xs px-1 ${
+                        isDuplicate ? 'text-red-400' : 'text-gray-900'
+                      }`}
+                    >
+                      {entry.jobNumber || '-'}
+                    </Text>
+                    <Text
+                      className={`w-16 text-xs px-1 ${
+                        isDuplicate ? 'text-red-400' : 'text-gray-900'
+                      }`}
+                    >
+                      {entry.markNumber || '-'}
+                    </Text>
+                    <Text
+                      className={`w-24 text-xs px-1 ${
+                        isDuplicate ? 'text-red-400 line-through' : 'text-gray-900 font-medium'
+                      }`}
+                    >
+                      {entry.idNumber}
+                    </Text>
+                    <Text
+                      className={`w-24 text-xs px-1 ${
+                        isDuplicate ? 'text-red-400' : 'text-gray-600'
+                      }`}
+                    >
+                      {entry.length || '-'}
+                    </Text>
+                    <Text
+                      className={`w-16 text-xs px-1 ${
+                        isDuplicate ? 'text-red-400' : 'text-gray-600'
+                      }`}
+                    >
+                      {entry.width ? `${entry.width}"` : '-'}
+                    </Text>
+                    <Text
+                      className={`flex-1 min-w-[48px] text-xs px-1 ${
+                        isDuplicate ? 'text-red-400' : 'text-gray-600'
+                      }`}
+                    >
+                      {detectedBed || entry.bed || '-'}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
+
           {/* Action Buttons */}
-          <View className="flex-row gap-3 mt-6 mb-8">
+          <View className="flex-row gap-3 mt-6 mb-8 px-4">
             <Pressable
               onPress={resetImport}
               className="flex-1 bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300"
