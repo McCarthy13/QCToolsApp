@@ -384,10 +384,20 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const handlePickPieceTickets = async () => {
     console.log('[QualityLogImport] handlePickPieceTickets called');
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf'],
-        copyToCacheDirectory: true,
-      });
+      console.log('[QualityLogImport] Opening document picker for piece tickets...');
+
+      let result;
+      try {
+        result = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf'],
+          copyToCacheDirectory: true,
+        });
+        console.log('[QualityLogImport] Picker returned:', JSON.stringify(result, null, 2));
+      } catch (pickerError: any) {
+        console.error('[QualityLogImport] Picker error:', pickerError);
+        Alert.alert('Picker Error', `Document picker failed: ${pickerError?.message || 'Unknown error'}`);
+        return;
+      }
 
       if (result.canceled) {
         console.log('[QualityLogImport] User canceled picker');
@@ -396,11 +406,12 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       const file = result.assets?.[0];
       if (!file) {
+        console.log('[QualityLogImport] No file in result.assets');
         Alert.alert('Error', 'No file was selected. Please try again.');
         return;
       }
 
-      console.log('[QualityLogImport] Selected piece ticket file:', file.name);
+      console.log('[QualityLogImport] Selected piece ticket file:', file.name, file.uri);
 
       setIsLoading(true);
       setLoadingMessage('Reading file...');
@@ -408,23 +419,34 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       // Read file as base64
       let base64: string;
-      if (Platform.OS === 'web') {
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
-        base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const result = reader.result as string;
-            const base64Data = result.split(',')[1];
-            resolve(base64Data);
-          };
-          reader.onerror = () => reject(new Error('FileReader failed'));
-          reader.readAsDataURL(blob);
-        });
-      } else {
-        base64 = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
+      try {
+        if (Platform.OS === 'web') {
+          console.log('[QualityLogImport] Reading file on web platform...');
+          const response = await fetch(file.uri);
+          const blob = await response.blob();
+          console.log('[QualityLogImport] Blob size:', blob.size);
+          base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              const base64Data = result.split(',')[1];
+              console.log('[QualityLogImport] Base64 length:', base64Data?.length);
+              resolve(base64Data);
+            };
+            reader.onerror = () => reject(new Error('FileReader failed'));
+            reader.readAsDataURL(blob);
+          });
+        } else {
+          base64 = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        }
+        console.log('[QualityLogImport] File read successfully, base64 length:', base64?.length);
+      } catch (readError: any) {
+        console.error('[QualityLogImport] File read error:', readError);
+        setIsLoading(false);
+        Alert.alert('File Read Error', `Could not read file: ${readError?.message || 'Unknown error'}`);
+        return;
       }
 
       setPieceTicketFile({ base64, name: file.name, mimeType: file.mimeType || 'application/pdf' });
