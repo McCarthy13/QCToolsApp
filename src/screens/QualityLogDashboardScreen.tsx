@@ -213,19 +213,41 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     setShowPickerModal({ entryId, field });
   };
 
+  // Column width definitions (in pixels) for consistent alignment
+  const COLUMN_WIDTHS = {
+    detail: 32,
+    pourDate: 90,
+    disposition: 100,
+    status: 55,
+    approvalDate: 100,
+    productType: 60,
+    jobNumber: 75,
+    markNumber: 90,
+    idNumber: 90,
+    length: 90,
+    width: 60,
+    bed: 50,
+    location: 75,
+    qualityComments: 180,
+    engineer: 100,
+    engineerFeedback: 180,
+    issueCodes: 100,
+    rejectCodes: 100,
+  };
+
   // Render an editable text cell
   const renderEditableTextCell = (
     entry: QualityLogEntry,
     field: string,
     value: string | number | undefined,
-    widthClass: string
+    width: number
   ) => {
     const isEditing = editingCell?.entryId === entry.id && editingCell?.field === field;
     const displayValue = value ?? '-';
 
     if (isEditing) {
       return (
-        <View className={`${widthClass} px-2 py-1`}>
+        <View style={{ width, paddingHorizontal: 8, paddingVertical: 4 }}>
           <TextInput
             value={editValue}
             onChangeText={setEditValue}
@@ -242,9 +264,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => startEditing(entry.id, field, value)}
-        className={`${widthClass} px-2 py-3`}
+        style={{ width, paddingHorizontal: 8, paddingVertical: 12 }}
       >
-        <Text className="text-xs text-gray-900">{displayValue}</Text>
+        <Text className="text-xs text-gray-900" numberOfLines={2}>{displayValue}</Text>
       </Pressable>
     );
   };
@@ -254,16 +276,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     entry: QualityLogEntry,
     field: 'disposition' | 'productType' | 'bed',
     value: string | undefined,
-    widthClass: string
+    width: number
   ) => {
     const displayValue = field === 'bed' && value ? `${value}` : value || '-';
 
     return (
       <Pressable
         onPress={() => setShowPickerModal({ entryId: entry.id, field })}
-        className={`${widthClass} px-2 py-3 flex-row items-center`}
+        style={{ width, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
       >
-        <Text className="text-xs text-gray-900 flex-1">{displayValue}</Text>
+        <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
         <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
       </Pressable>
     );
@@ -443,24 +465,24 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         >
           <View style={{ minWidth: '100%' }}>
             <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
-              <Text className="w-8 px-1 text-xs font-semibold text-white"></Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">Pour Date</Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">Disposition</Text>
-              <Text className="w-16 px-2 text-xs font-semibold text-white">Status</Text>
-              <Text className="w-28 px-2 text-xs font-semibold text-white">Approval Date</Text>
-              <Text className="w-16 px-2 text-xs font-semibold text-white">Type</Text>
-              <Text className="w-20 px-2 text-xs font-semibold text-white">Job #</Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">Mark #</Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">ID #</Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">Length</Text>
-              <Text className="w-16 px-2 text-xs font-semibold text-white">Width</Text>
-              <Text className="w-12 px-2 text-xs font-semibold text-white">Bed</Text>
-              <Text className="w-20 px-2 text-xs font-semibold text-white">Location</Text>
-              <Text className="w-48 px-2 text-xs font-semibold text-white">Quality Comments</Text>
-              <Text className="w-28 px-2 text-xs font-semibold text-white">Engineer</Text>
-              <Text className="w-48 px-2 text-xs font-semibold text-white">Engineer Feedback</Text>
-              <Text className="w-28 px-2 text-xs font-semibold text-white">Issue Codes</Text>
-              <Text className="w-28 px-2 text-xs font-semibold text-white">Reject Codes</Text>
+              <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4 }} className="text-xs font-semibold text-white"></Text>
+              <Text style={{ width: COLUMN_WIDTHS.pourDate, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Pour Date</Text>
+              <Text style={{ width: COLUMN_WIDTHS.disposition, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Disposition</Text>
+              <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Status</Text>
+              <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Approval Date</Text>
+              <Text style={{ width: COLUMN_WIDTHS.productType, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Type</Text>
+              <Text style={{ width: COLUMN_WIDTHS.jobNumber, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Job #</Text>
+              <Text style={{ width: COLUMN_WIDTHS.markNumber, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Mark #</Text>
+              <Text style={{ width: COLUMN_WIDTHS.idNumber, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">ID #</Text>
+              <Text style={{ width: COLUMN_WIDTHS.length, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Length</Text>
+              <Text style={{ width: COLUMN_WIDTHS.width, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Width</Text>
+              <Text style={{ width: COLUMN_WIDTHS.bed, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Bed</Text>
+              <Text style={{ width: COLUMN_WIDTHS.location, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Location</Text>
+              <Text style={{ width: COLUMN_WIDTHS.qualityComments, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Quality Comments</Text>
+              <Text style={{ width: COLUMN_WIDTHS.engineer, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Engineer</Text>
+              <Text style={{ width: COLUMN_WIDTHS.engineerFeedback, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Engineer Feedback</Text>
+              <Text style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Issue Codes</Text>
+              <Text style={{ width: COLUMN_WIDTHS.rejectCodes, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Reject Codes</Text>
             </View>
 
             {/* Table Rows */}
@@ -482,45 +504,45 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {/* Detail button */}
                   <Pressable
                     onPress={() => navigation.navigate('QualityLogDetail' as any, { entryId: entry.id })}
-                    className="w-8 px-1 py-3 items-center justify-center"
+                    style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Ionicons name="open-outline" size={14} color="#6B7280" />
                   </Pressable>
 
                   {/* Editable cells - New column order */}
-                  {renderEditableTextCell(entry, 'pourDate', entry.pourDate, 'w-24')}
-                  {renderPickerCell(entry, 'disposition', entry.disposition || 'Scheduled', 'w-24')}
-                  <Text className="w-16 px-2 py-3 text-xs font-bold text-gray-900">
+                  {renderEditableTextCell(entry, 'pourDate', entry.pourDate, COLUMN_WIDTHS.pourDate)}
+                  {renderPickerCell(entry, 'disposition', entry.disposition || 'Scheduled', COLUMN_WIDTHS.disposition)}
+                  <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 12 }} className="text-xs font-bold text-gray-900">
                     {entry.status || '40'}
                   </Text>
-                  <Text className="w-28 px-2 py-3 text-xs text-gray-900">
+                  <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 12 }} className="text-xs text-gray-900">
                     {entry.approvalRejectionDate || '-'}
                   </Text>
-                  {renderPickerCell(entry, 'productType', entry.productType, 'w-16')}
-                  {renderEditableTextCell(entry, 'jobNumber', entry.jobNumber, 'w-20')}
-                  {renderEditableTextCell(entry, 'markNumber', entry.markNumber, 'w-24')}
-                  {renderEditableTextCell(entry, 'idNumber', entry.idNumber, 'w-24')}
-                  {renderEditableTextCell(entry, 'length', entry.length, 'w-24')}
-                  {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', 'w-16')}
-                  {renderPickerCell(entry, 'bed', entry.bed, 'w-12')}
-                  {renderEditableTextCell(entry, 'location', entry.location, 'w-20')}
-                  {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, 'w-48')}
-                  {renderEditableTextCell(entry, 'engineer', entry.engineer, 'w-28')}
-                  {renderEditableTextCell(entry, 'engineerFeedback', entry.engineerFeedback, 'w-48')}
+                  {renderPickerCell(entry, 'productType', entry.productType, COLUMN_WIDTHS.productType)}
+                  {renderEditableTextCell(entry, 'jobNumber', entry.jobNumber, COLUMN_WIDTHS.jobNumber)}
+                  {renderEditableTextCell(entry, 'markNumber', entry.markNumber, COLUMN_WIDTHS.markNumber)}
+                  {renderEditableTextCell(entry, 'idNumber', entry.idNumber, COLUMN_WIDTHS.idNumber)}
+                  {renderEditableTextCell(entry, 'length', entry.length, COLUMN_WIDTHS.length)}
+                  {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', COLUMN_WIDTHS.width)}
+                  {renderPickerCell(entry, 'bed', entry.bed, COLUMN_WIDTHS.bed)}
+                  {renderEditableTextCell(entry, 'location', entry.location, COLUMN_WIDTHS.location)}
+                  {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, COLUMN_WIDTHS.qualityComments)}
+                  {renderEditableTextCell(entry, 'engineer', entry.engineer, COLUMN_WIDTHS.engineer)}
+                  {renderEditableTextCell(entry, 'engineerFeedback', entry.engineerFeedback, COLUMN_WIDTHS.engineerFeedback)}
                   <Pressable
                     onPress={() => openCodesPicker(entry.id, 'issueCodes', entry.issueCodes)}
-                    className="w-28 px-2 py-3 flex-row items-center"
+                    style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
                   >
-                    <Text className="text-xs text-gray-900 flex-1">
+                    <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>
                       {entry.issueCodes.length > 0 ? entry.issueCodes.join(', ') : '-'}
                     </Text>
                     <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
                   </Pressable>
                   <Pressable
                     onPress={() => openCodesPicker(entry.id, 'rejectCodes', entry.rejectCodes)}
-                    className="w-28 px-2 py-3 flex-row items-center"
+                    style={{ width: COLUMN_WIDTHS.rejectCodes, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
                   >
-                    <Text className="text-xs text-gray-900 flex-1">
+                    <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>
                       {entry.rejectCodes.length > 0 ? entry.rejectCodes.join(', ') : '-'}
                     </Text>
                     <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
