@@ -22,6 +22,9 @@ import {
   DISPOSITION_OPTIONS,
   PRODUCT_TYPE_OPTIONS,
   BED_OPTIONS,
+  ISSUE_CODE_OPTIONS,
+  REJECT_CODE_OPTIONS,
+  isValidLocation,
   Disposition,
   ProductType,
   BedNumber,
@@ -47,8 +50,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const [editValue, setEditValue] = useState('');
   const [showPickerModal, setShowPickerModal] = useState<{
     entryId: string;
-    field: 'disposition' | 'productType' | 'bed';
+    field: 'disposition' | 'productType' | 'bed' | 'issueCodes' | 'rejectCodes';
   } | null>(null);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
 
   useEffect(() => {
     initialize();
@@ -125,6 +129,14 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     try {
       const updates: Partial<QualityLogEntry> = {};
 
+      // Validate location format
+      if (field === 'location' && editValue.trim() !== '') {
+        if (!isValidLocation(editValue.trim())) {
+          Alert.alert('Invalid Location', 'Location must be in format: (1-4)-(1-80)\nExample: 2-45');
+          return;
+        }
+      }
+
       // Handle numeric fields
       if (field === 'width' || field === 'thickness') {
         (updates as any)[field] = parseFloat(editValue) || 0;
@@ -157,6 +169,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     try {
       if (field === 'disposition') {
         await setDisposition(entryId, value as Disposition);
+      } else if (field === 'issueCodes' || field === 'rejectCodes') {
+        // Multi-select: toggle the code
+        setSelectedCodes((prev) =>
+          prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value]
+        );
+        return; // Don't close modal for multi-select
       } else {
         const updates: Partial<QualityLogEntry> = {};
         (updates as any)[field] = value;
@@ -168,6 +186,31 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     }
 
     setShowPickerModal(null);
+  };
+
+  // Save multi-select codes
+  const saveMultiSelectCodes = async () => {
+    if (!showPickerModal) return;
+
+    const { entryId, field } = showPickerModal;
+
+    try {
+      const updates: Partial<QualityLogEntry> = {};
+      (updates as any)[field] = selectedCodes;
+      await updateEntry(entryId, updates);
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      Alert.alert('Error', 'Failed to update entry');
+    }
+
+    setShowPickerModal(null);
+    setSelectedCodes([]);
+  };
+
+  // Open codes picker with current values
+  const openCodesPicker = (entryId: string, field: 'issueCodes' | 'rejectCodes', currentCodes: string[]) => {
+    setSelectedCodes([...currentCodes]);
+    setShowPickerModal({ entryId, field });
   };
 
   // Render an editable text cell
@@ -243,6 +286,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         return PRODUCT_TYPE_OPTIONS;
       case 'bed':
         return BED_OPTIONS;
+      case 'issueCodes':
+        return ISSUE_CODE_OPTIONS;
+      case 'rejectCodes':
+        return REJECT_CODE_OPTIONS;
       default:
         return [];
     }
@@ -257,10 +304,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         return 'Select Product Type';
       case 'bed':
         return 'Select Bed';
+      case 'issueCodes':
+        return 'Select Issue Codes (tap to toggle)';
+      case 'rejectCodes':
+        return 'Select Reject Codes (tap to toggle)';
       default:
         return '';
     }
   };
+
+  const isMultiSelect = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes';
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
@@ -392,8 +445,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
               <Text className="w-8 px-1 text-xs font-semibold text-white"></Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Pour Date</Text>
-              <Text className="w-20 px-2 text-xs font-semibold text-white">Status</Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Disposition</Text>
+              <Text className="w-16 px-2 text-xs font-semibold text-white">Status</Text>
+              <Text className="w-28 px-2 text-xs font-semibold text-white">Approval Date</Text>
               <Text className="w-16 px-2 text-xs font-semibold text-white">Type</Text>
               <Text className="w-20 px-2 text-xs font-semibold text-white">Job #</Text>
               <Text className="w-24 px-2 text-xs font-semibold text-white">Mark #</Text>
@@ -401,11 +455,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               <Text className="w-24 px-2 text-xs font-semibold text-white">Length</Text>
               <Text className="w-16 px-2 text-xs font-semibold text-white">Width</Text>
               <Text className="w-12 px-2 text-xs font-semibold text-white">Bed</Text>
-              <Text className="w-32 px-2 text-xs font-semibold text-white">Engineer</Text>
-              <Text className="w-48 px-2 text-xs font-semibold text-white">Comments</Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">Issue Codes</Text>
-              <Text className="w-24 px-2 text-xs font-semibold text-white">Reject Codes</Text>
-              <Text className="flex-1 min-w-[112px] px-2 text-xs font-semibold text-white">Approval Date</Text>
+              <Text className="w-20 px-2 text-xs font-semibold text-white">Location</Text>
+              <Text className="w-48 px-2 text-xs font-semibold text-white">Quality Comments</Text>
+              <Text className="w-28 px-2 text-xs font-semibold text-white">Engineer</Text>
+              <Text className="w-48 px-2 text-xs font-semibold text-white">Engineer Feedback</Text>
+              <Text className="w-28 px-2 text-xs font-semibold text-white">Issue Codes</Text>
+              <Text className="w-28 px-2 text-xs font-semibold text-white">Reject Codes</Text>
             </View>
 
             {/* Table Rows */}
@@ -432,12 +487,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                     <Ionicons name="open-outline" size={14} color="#6B7280" />
                   </Pressable>
 
-                  {/* Editable cells */}
+                  {/* Editable cells - New column order */}
                   {renderEditableTextCell(entry, 'pourDate', entry.pourDate, 'w-24')}
-                  <Text className="w-20 px-2 py-3 text-xs font-bold text-gray-900">
-                    {entry.status || '-'}
+                  {renderPickerCell(entry, 'disposition', entry.disposition || 'Scheduled', 'w-24')}
+                  <Text className="w-16 px-2 py-3 text-xs font-bold text-gray-900">
+                    {entry.status || '40'}
                   </Text>
-                  {renderPickerCell(entry, 'disposition', entry.disposition, 'w-24')}
+                  <Text className="w-28 px-2 py-3 text-xs text-gray-900">
+                    {entry.approvalRejectionDate || '-'}
+                  </Text>
                   {renderPickerCell(entry, 'productType', entry.productType, 'w-16')}
                   {renderEditableTextCell(entry, 'jobNumber', entry.jobNumber, 'w-20')}
                   {renderEditableTextCell(entry, 'markNumber', entry.markNumber, 'w-24')}
@@ -445,17 +503,28 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'length', entry.length, 'w-24')}
                   {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', 'w-16')}
                   {renderPickerCell(entry, 'bed', entry.bed, 'w-12')}
-                  {renderEditableTextCell(entry, 'engineer', entry.engineer, 'w-32')}
+                  {renderEditableTextCell(entry, 'location', entry.location, 'w-20')}
                   {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, 'w-48')}
-                  <Text className="w-24 px-2 py-3 text-xs text-gray-900">
-                    {entry.issueCodes.length > 0 ? entry.issueCodes.join(', ') : '-'}
-                  </Text>
-                  <Text className="w-24 px-2 py-3 text-xs text-gray-900">
-                    {entry.rejectCodes.length > 0 ? entry.rejectCodes.join(', ') : '-'}
-                  </Text>
-                  <Text className="flex-1 min-w-[112px] px-2 py-3 text-xs text-gray-900">
-                    {entry.approvalRejectionDate || '-'}
-                  </Text>
+                  {renderEditableTextCell(entry, 'engineer', entry.engineer, 'w-28')}
+                  {renderEditableTextCell(entry, 'engineerFeedback', entry.engineerFeedback, 'w-48')}
+                  <Pressable
+                    onPress={() => openCodesPicker(entry.id, 'issueCodes', entry.issueCodes)}
+                    className="w-28 px-2 py-3 flex-row items-center"
+                  >
+                    <Text className="text-xs text-gray-900 flex-1">
+                      {entry.issueCodes.length > 0 ? entry.issueCodes.join(', ') : '-'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => openCodesPicker(entry.id, 'rejectCodes', entry.rejectCodes)}
+                    className="w-28 px-2 py-3 flex-row items-center"
+                  >
+                    <Text className="text-xs text-gray-900 flex-1">
+                      {entry.rejectCodes.length > 0 ? entry.rejectCodes.join(', ') : '-'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+                  </Pressable>
                 </View>
               ))
             )}
@@ -467,25 +536,68 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       <Modal visible={!!showPickerModal} transparent animationType="slide">
         <Pressable
           className="flex-1 bg-black/50 justify-end"
-          onPress={() => setShowPickerModal(null)}
+          onPress={() => {
+            if (isMultiSelect) {
+              saveMultiSelectCodes();
+            } else {
+              setShowPickerModal(null);
+            }
+          }}
         >
-          <View className="bg-white rounded-t-2xl p-4">
-            <Text className="text-lg font-semibold text-center mb-4">{getPickerTitle()}</Text>
-            {getPickerOptions().map((option) => (
-              <Pressable
-                key={option}
-                onPress={() => handlePickerSelect(option)}
-                className="py-3 border-b border-gray-100 active:bg-gray-50"
-              >
-                <Text className="text-center text-base text-gray-900">
-                  {showPickerModal?.field === 'bed' ? `Bed ${option}` : option}
-                </Text>
-              </Pressable>
-            ))}
-            <Pressable onPress={() => setShowPickerModal(null)} className="py-3 mt-2">
+          <Pressable className="bg-white rounded-t-2xl p-4 max-h-[70%]" onPress={(e) => e.stopPropagation()}>
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-semibold flex-1 text-center">{getPickerTitle()}</Text>
+              {isMultiSelect && (
+                <Pressable
+                  onPress={saveMultiSelectCodes}
+                  className="bg-blue-600 px-4 py-2 rounded-lg absolute right-0"
+                >
+                  <Text className="text-white font-semibold">Done</Text>
+                </Pressable>
+              )}
+            </View>
+            {isMultiSelect && selectedCodes.length > 0 && (
+              <View className="mb-3 pb-3 border-b border-gray-200">
+                <Text className="text-xs text-gray-500 mb-1">Selected: {selectedCodes.sort((a, b) => Number(a) - Number(b)).join(', ')}</Text>
+              </View>
+            )}
+            <ScrollView className="max-h-80">
+              <View className="flex-row flex-wrap">
+                {getPickerOptions().map((option) => {
+                  const isSelected = isMultiSelect && selectedCodes.includes(option);
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => handlePickerSelect(option)}
+                      className={`py-2 px-3 m-1 rounded-lg ${
+                        isSelected
+                          ? 'bg-blue-600'
+                          : isMultiSelect
+                          ? 'bg-gray-100'
+                          : 'border-b border-gray-100'
+                      }`}
+                      style={!isMultiSelect ? { width: '100%', marginHorizontal: 0 } : {}}
+                    >
+                      <Text
+                        className={`text-center text-base ${isSelected ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {showPickerModal?.field === 'bed' ? `Bed ${option}` : option}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            <Pressable
+              onPress={() => {
+                setShowPickerModal(null);
+                setSelectedCodes([]);
+              }}
+              className="py-3 mt-2"
+            >
               <Text className="text-center text-base text-red-600">Cancel</Text>
             </Pressable>
-          </View>
+          </Pressable>
         </Pressable>
       </Modal>
     </SafeAreaView>

@@ -151,6 +151,20 @@ The following environment variables are required and should be configured via th
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
 
 ### Recent Updates (2026-01-06)
+- ✅ **Quality Log Dashboard Column Reorder & Enhancements**:
+  - **New Column Order**: Pour Date, Disposition, Status, Approval/Rejection Date, Type, Job #, Mark #, ID #, Length, Width, Bed, Location, Quality Comments, Engineer, Engineer Feedback, Issue Codes, Reject Codes
+  - **New "Scheduled" Disposition**: Added as default disposition option (Status 40, Yellow)
+  - **Status Auto-Assignment**:
+    - Status 40 (Yellow): Scheduled, WIP, Eng, Yard Cut
+    - Status 50 (Green): Ok to Ship
+    - Status 90 (Red): Not Cast, Repour
+  - **Approval Date Auto-Set**: Automatically captures current date when Repour or Ok to Ship is selected
+  - **Location Field**: New user input field with format validation (1-4)-(1-80)
+  - **Issue Codes 1-46**: Multi-select picker with visual chip selection for metric tracking
+  - **Reject Codes 1-46**: Multi-select picker with visual chip selection for metric tracking
+  - **Engineer Feedback Field**: New column for engineer responses
+  - **Default Values**: New entries default to Scheduled disposition and Status 40
+
 - ✅ **New Table-Based Quality Log System**:
   - Completely rebuilt Quality Log with table-based data entry
   - **PDF Schedule Import**: Upload scanned pour schedules for automatic data extraction

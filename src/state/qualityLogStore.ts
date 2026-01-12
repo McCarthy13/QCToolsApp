@@ -176,6 +176,8 @@ export const useQualityLogStore = create<QualityLogState>()(
           importedBy: currentUser.email || 'unknown',
           issueCodes: entry.issueCodes || [],
           rejectCodes: entry.rejectCodes || [],
+          disposition: entry.disposition || 'Scheduled',
+          status: entry.status || '40',
         };
 
         await setDoc(doc(firestore, 'qualityLogEntries', id), newEntry);
@@ -207,6 +209,8 @@ export const useQualityLogStore = create<QualityLogState>()(
             importedBy: currentUser.email || 'unknown',
             issueCodes: entry.issueCodes || [],
             rejectCodes: entry.rejectCodes || [],
+            disposition: entry.disposition || 'Scheduled',
+            status: entry.status || '40',
           };
 
           await setDoc(doc(firestore, 'qualityLogEntries', id), newEntry);

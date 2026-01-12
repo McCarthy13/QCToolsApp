@@ -4,7 +4,7 @@
 export type ProductType = '8048' | '1047' | '1247' | '1250' | '1647' | '1648';
 
 // Disposition options
-export type Disposition = 'Ok to Ship' | 'Eng' | 'WIP' | 'Yard Cut' | 'Not Cast' | 'Repour';
+export type Disposition = 'Scheduled' | 'Ok to Ship' | 'Eng' | 'WIP' | 'Yard Cut' | 'Not Cast' | 'Repour';
 
 // Status codes (auto-set based on disposition)
 export type StatusCode = '40' | '50' | '90';
@@ -36,6 +36,7 @@ export interface QualityLogEntry {
   width: number; // In inches
   thickness: number; // In inches (used for product type inference)
   bed?: BedNumber;
+  location?: string; // Format: "1-80" (1-4)-(1-80)
 
   // Auto-calculated based on disposition
   disposition?: Disposition;
@@ -71,6 +72,7 @@ export interface ImportBatch {
 // Status/color mapping helper
 export const getStatusFromDisposition = (disposition: Disposition): { status: StatusCode; color: string } => {
   switch (disposition) {
+    case 'Scheduled':
     case 'Eng':
     case 'WIP':
     case 'Yard Cut':
@@ -120,6 +122,7 @@ export const getAmbiguousProductTypes = (thickness: number): ProductType[] => {
 
 // All disposition options for dropdown
 export const DISPOSITION_OPTIONS: Disposition[] = [
+  'Scheduled',
   'Ok to Ship',
   'Eng',
   'WIP',
@@ -143,3 +146,17 @@ export const BED_OPTIONS: BedNumber[] = ['1', '2', '3', '4', '5', '6'];
 
 // All status options (for display only - auto-set)
 export const STATUS_OPTIONS: StatusCode[] = ['40', '50', '90'];
+
+// Issue codes 1-46
+export const ISSUE_CODE_OPTIONS: string[] = Array.from({ length: 46 }, (_, i) => String(i + 1));
+
+// Reject codes 1-46
+export const REJECT_CODE_OPTIONS: string[] = Array.from({ length: 46 }, (_, i) => String(i + 1));
+
+// Location validation regex: first digit 1-4, hyphen, then 1-2 digit number 1-80
+export const LOCATION_REGEX = /^[1-4]-([1-9]|[1-7][0-9]|80)$/;
+
+// Validate location format
+export const isValidLocation = (location: string): boolean => {
+  return LOCATION_REGEX.test(location);
+};
