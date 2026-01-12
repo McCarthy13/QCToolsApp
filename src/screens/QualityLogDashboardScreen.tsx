@@ -97,7 +97,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (b.idNumber || '').localeCompare(a.idNumber || '');
   });
 
-  const getRowColor = (entry: QualityLogEntry): string => {
+  const getStatusColor = (entry: QualityLogEntry): string => {
     if (!entry.disposition) return '#FFFFFF';
     const { color } = getStatusFromDisposition(entry.disposition);
     return color;
@@ -499,7 +499,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 <View
                   key={entry.id}
                   className="flex-row border-b border-gray-200"
-                  style={{ backgroundColor: getRowColor(entry), minWidth: '100%' }}
+                  style={{ backgroundColor: '#FFFFFF', minWidth: '100%' }}
                 >
                   {/* Detail button */}
                   <Pressable
@@ -512,7 +512,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {/* Editable cells - New column order */}
                   {renderEditableTextCell(entry, 'pourDate', entry.pourDate, COLUMN_WIDTHS.pourDate)}
                   {renderPickerCell(entry, 'disposition', entry.disposition || 'Scheduled', COLUMN_WIDTHS.disposition)}
-                  <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 12 }} className="text-xs font-bold text-gray-900">
+                  <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 12, backgroundColor: getStatusColor(entry) }} className="text-xs font-bold text-gray-900">
                     {entry.status || '40'}
                   </Text>
                   <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 12 }} className="text-xs text-gray-900">
