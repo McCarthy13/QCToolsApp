@@ -395,16 +395,20 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             {/* Entry List Preview - Horizontal scrolling table */}
             <View className="border border-gray-200 rounded-lg overflow-hidden">
               {/* Header Row */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-                <View>
-                  <View className="flex-row bg-gray-100 py-2 px-2">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={true}
+                contentContainerStyle={{ minWidth: '100%' }}
+              >
+                <View style={{ minWidth: '100%' }}>
+                  <View className="flex-row bg-gray-100 py-2 px-2" style={{ minWidth: '100%' }}>
                     <Text className="w-24 text-xs font-semibold text-gray-600 px-1">Pour Date</Text>
                     <Text className="w-20 text-xs font-semibold text-gray-600 px-1">Job #</Text>
                     <Text className="w-16 text-xs font-semibold text-gray-600 px-1">Mark #</Text>
                     <Text className="w-20 text-xs font-semibold text-gray-600 px-1">ID #</Text>
                     <Text className="w-24 text-xs font-semibold text-gray-600 px-1">Length</Text>
                     <Text className="w-16 text-xs font-semibold text-gray-600 px-1">Width</Text>
-                    <Text className="w-12 text-xs font-semibold text-gray-600 px-1">Bed</Text>
+                    <Text className="flex-1 min-w-[48px] text-xs font-semibold text-gray-600 px-1">Bed</Text>
                   </View>
                   {/* Data Rows */}
                   <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled={true}>
@@ -416,6 +420,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                           className={`flex-row py-2 px-2 border-t border-gray-100 ${
                             isDuplicate ? 'bg-red-50' : ''
                           }`}
+                          style={{ minWidth: '100%' }}
                         >
                           <Text
                             className={`w-24 text-xs px-1 ${
@@ -460,7 +465,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                             {entry.width ? `${entry.width}"` : '-'}
                           </Text>
                           <Text
-                            className={`w-12 text-xs px-1 ${
+                            className={`flex-1 min-w-[48px] text-xs px-1 ${
                               isDuplicate ? 'text-red-400' : 'text-gray-600'
                             }`}
                           >
@@ -470,7 +475,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                       );
                     })}
                     {extractedEntries.length > 30 && (
-                      <View className="py-2 px-3 bg-gray-50">
+                      <View className="py-2 px-3 bg-gray-50" style={{ minWidth: '100%' }}>
                         <Text className="text-xs text-gray-500 text-center">
                           And {extractedEntries.length - 30} more entries...
                         </Text>
