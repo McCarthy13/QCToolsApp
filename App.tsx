@@ -233,7 +233,12 @@ export default function App() {
   return (
     <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
-        <NavigationContainer>
+        <NavigationContainer
+          documentTitle={{
+            formatter: (options, route) =>
+              `${options?.title ?? route?.name ?? 'Screen'} | QC Tools`,
+          }}
+        >
           <Stack.Navigator
             initialRouteName="Dashboard"
             screenOptions={{
