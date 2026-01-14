@@ -23,9 +23,12 @@ if (fs.existsSync(envPath)) {
 const {onRequest, onCall} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
+const {getStorage} = require("firebase-admin/storage");
+const {PDFDocument} = require("pdf-lib");
 
 const app = initializeApp();
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 /**
  * Claude Vision Proxy
@@ -531,7 +534,7 @@ exports.parseSchedulePDF = onCall({
 /**
  * Parse Piece Tickets PDF
  * Uses Azure Document Intelligence to extract Job No and Mark No from piece ticket PDFs
- * Each page of the PDF is a separate piece ticket
+ * Each page of the PDF is a separate piece ticket with a small table containing the values
  */
 exports.parsePieceTickets = onCall({
   maxInstances: 10,
@@ -632,8 +635,29 @@ exports.parsePieceTickets = onCall({
     // Extract data from Azure response
     const analyzeResult = result.analyzeResult;
     const pages = analyzeResult.pages || [];
+    const tables = analyzeResult.tables || [];
 
-    console.log(`[Parse Piece Tickets] Found ${pages.length} pages`);
+    console.log(`[Parse Piece Tickets] Found ${pages.length} pages and ${tables.length} tables`);
+
+    // DEBUG: Log all tables found
+    for (let t = 0; t < tables.length; t++) {
+      const table = tables[t];
+      console.log(`[Parse Piece Tickets] === TABLE ${t} ===`);
+      console.log(`[Parse Piece Tickets] Page: ${table.boundingRegions?.[0]?.pageNumber}, Rows: ${table.rowCount}, Cols: ${table.columnCount}`);
+      for (const cell of (table.cells || [])) {
+        console.log(`[Parse Piece Tickets] Cell [${cell.rowIndex},${cell.columnIndex}]: "${cell.content}"`);
+      }
+    }
+
+    // Group tables by page number
+    const tablesByPage = {};
+    for (const table of tables) {
+      const pageNum = table.boundingRegions?.[0]?.pageNumber || 1;
+      if (!tablesByPage[pageNum]) {
+        tablesByPage[pageNum] = [];
+      }
+      tablesByPage[pageNum].push(table);
+    }
 
     const tickets = [];
 
@@ -644,82 +668,177 @@ exports.parsePieceTickets = onCall({
 
       console.log(`[Parse Piece Tickets] Processing page ${pageNumber}`);
 
-      // Get all text content for this page
-      // Azure provides text organized by lines within each page
-      let pageText = "";
-      const pageLines = page.lines || [];
-
-      for (const line of pageLines) {
-        pageText += (line.content || "") + "\n";
-      }
-
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} text length: ${pageText.length}`);
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} raw text:\n${pageText.substring(0, 500)}...`);
-
-      // Extract JOB NO - look for patterns like "JOB NO" followed by a number
-      // The job number is typically 4-6 digits
       let jobNo = null;
-      const jobPatterns = [
-        /JOB\s*NO\.?\s*[:\s]*(\d{4,6})/i,
-        /JOB\s*#?\s*[:\s]*(\d{4,6})/i,
-        /JOB\s*NUMBER\s*[:\s]*(\d{4,6})/i,
-      ];
-
-      for (const pattern of jobPatterns) {
-        const match = pageText.match(pattern);
-        if (match) {
-          jobNo = match[1];
-          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No: ${jobNo}`);
-          break;
-        }
-      }
-
-      // Extract MARK NO - look for patterns like "MARK NO" followed by alphanumeric
-      // The mark number is typically like "H201", "B101", etc.
       let markNo = null;
-      const markPatterns = [
-        /MARK\s*NO\.?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+)/i,
-        /MARK\s*#?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+)/i,
-        /MARK\s*NUMBER\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+)/i,
-        /MARK\s*NO\.?\s*[:\s]*([A-Za-z0-9]+)/i,
-      ];
 
-      for (const pattern of markPatterns) {
-        const match = pageText.match(pattern);
-        if (match) {
-          markNo = match[1];
-          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No: ${markNo}`);
-          break;
+      // STRATEGY 1: Look for Job No and Mark No in tables on this page
+      const pageTables = tablesByPage[pageNumber] || [];
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} has ${pageTables.length} tables`);
+
+      for (const table of pageTables) {
+        // Build a map of cell content by position
+        const cellMap = {};
+        for (const cell of (table.cells || [])) {
+          const key = `${cell.rowIndex},${cell.columnIndex}`;
+          cellMap[key] = (cell.content || "").trim();
         }
+
+        // Search for "Job No" or "JOB NO" label and get adjacent cell value
+        for (const cell of (table.cells || [])) {
+          const content = (cell.content || "").toLowerCase().replace(/\s+/g, ' ').trim();
+
+          // Look for Job No label
+          if (content.includes('job') && (content.includes('no') || content.includes('#'))) {
+            // Get the cell to the right (same row, next column)
+            const rightKey = `${cell.rowIndex},${cell.columnIndex + 1}`;
+            const rightValue = cellMap[rightKey];
+            if (rightValue && /^\d{4,6}$/.test(rightValue.trim())) {
+              jobNo = rightValue.trim();
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in table (right): ${jobNo}`);
+            }
+            // Also check cell below (next row, same column)
+            const belowKey = `${cell.rowIndex + 1},${cell.columnIndex}`;
+            const belowValue = cellMap[belowKey];
+            if (!jobNo && belowValue && /^\d{4,6}$/.test(belowValue.trim())) {
+              jobNo = belowValue.trim();
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in table (below): ${jobNo}`);
+            }
+          }
+
+          // Look for Mark No label
+          if (content.includes('mark') && (content.includes('no') || content.includes('#'))) {
+            // Get the cell to the right (same row, next column)
+            const rightKey = `${cell.rowIndex},${cell.columnIndex + 1}`;
+            const rightValue = cellMap[rightKey];
+            if (rightValue && rightValue.trim().length > 0) {
+              markNo = rightValue.trim();
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in table (right): ${markNo}`);
+            }
+            // Also check cell below (next row, same column)
+            const belowKey = `${cell.rowIndex + 1},${cell.columnIndex}`;
+            const belowValue = cellMap[belowKey];
+            if (!markNo && belowValue && belowValue.trim().length > 0) {
+              markNo = belowValue.trim();
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in table (below): ${markNo}`);
+            }
+          }
+        }
+
+        if (jobNo && markNo) break; // Found both, stop searching tables
       }
 
-      // Also try to find them in a more structured way using key-value pairs
-      // Sometimes the text comes as "JOB NO\n5201" on separate lines
-      if (!jobNo) {
-        const lines = pageText.split('\n');
-        for (let i = 0; i < lines.length - 1; i++) {
-          if (/JOB\s*NO/i.test(lines[i])) {
-            // Check next line for the value
-            const nextLine = lines[i + 1]?.trim();
-            if (nextLine && /^\d{4,6}$/.test(nextLine)) {
-              jobNo = nextLine;
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No (multi-line): ${jobNo}`);
+      // STRATEGY 2: If not found in tables, search page text using key-value pairs
+      if (!jobNo || !markNo) {
+        let pageText = "";
+        const pageLines = page.lines || [];
+        for (const line of pageLines) {
+          pageText += (line.content || "") + "\n";
+        }
+
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Searching text (${pageText.length} chars)`);
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} raw text:\n${pageText.substring(0, 1000)}`);
+
+        // Try regex patterns for Job No
+        if (!jobNo) {
+          const jobPatterns = [
+            /JOB\s*NO\.?\s*[:\s]*(\d{4,6})/i,
+            /JOB\s*#?\s*[:\s]*(\d{4,6})/i,
+            /JOB\s*NUMBER\s*[:\s]*(\d{4,6})/i,
+            /JOB\s*[:\s]+(\d{4,6})/i,
+          ];
+
+          for (const pattern of jobPatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+              jobNo = match[1];
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No via regex: ${jobNo}`);
               break;
+            }
+          }
+
+          // Try multi-line approach: "JOB NO" on one line, number on next
+          if (!jobNo) {
+            const lines = pageText.split('\n');
+            for (let i = 0; i < lines.length - 1; i++) {
+              const line = lines[i].trim().toLowerCase();
+              if (line.includes('job') && (line.includes('no') || line.includes('#'))) {
+                // Check next few lines for the value
+                for (let j = 1; j <= 3 && i + j < lines.length; j++) {
+                  const nextLine = lines[i + j]?.trim();
+                  if (nextLine && /^\d{4,6}$/.test(nextLine)) {
+                    jobNo = nextLine;
+                    console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No (multi-line): ${jobNo}`);
+                    break;
+                  }
+                }
+                if (jobNo) break;
+              }
+            }
+          }
+        }
+
+        // Try regex patterns for Mark No
+        if (!markNo) {
+          const markPatterns = [
+            /MARK\s*NO\.?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+[A-Za-z]*)/i,
+            /MARK\s*#?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+[A-Za-z]*)/i,
+            /MARK\s*NUMBER\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+[A-Za-z]*)/i,
+            /MARK\s*[:\s]+([A-Za-z0-9]+)/i,
+          ];
+
+          for (const pattern of markPatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+              markNo = match[1];
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No via regex: ${markNo}`);
+              break;
+            }
+          }
+
+          // Try multi-line approach: "MARK NO" on one line, value on next
+          if (!markNo) {
+            const lines = pageText.split('\n');
+            for (let i = 0; i < lines.length - 1; i++) {
+              const line = lines[i].trim().toLowerCase();
+              if (line.includes('mark') && (line.includes('no') || line.includes('#'))) {
+                // Check next few lines for the value
+                for (let j = 1; j <= 3 && i + j < lines.length; j++) {
+                  const nextLine = lines[i + j]?.trim();
+                  if (nextLine && /^[A-Za-z0-9]+$/.test(nextLine) && nextLine.length <= 15) {
+                    markNo = nextLine;
+                    console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No (multi-line): ${markNo}`);
+                    break;
+                  }
+                }
+                if (markNo) break;
+              }
             }
           }
         }
       }
 
-      if (!markNo) {
-        const lines = pageText.split('\n');
-        for (let i = 0; i < lines.length - 1; i++) {
-          if (/MARK\s*NO/i.test(lines[i])) {
-            // Check next line for the value
-            const nextLine = lines[i + 1]?.trim();
-            if (nextLine && /^[A-Za-z0-9]+$/.test(nextLine)) {
-              markNo = nextLine;
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No (multi-line): ${markNo}`);
-              break;
+      // STRATEGY 3: Look for key-value pairs in the document's key-value pairs if available
+      const keyValuePairs = analyzeResult.keyValuePairs || [];
+      if (!jobNo || !markNo) {
+        for (const kvp of keyValuePairs) {
+          // Check if this key-value pair is on the current page
+          const kvpPage = kvp.key?.boundingRegions?.[0]?.pageNumber || 1;
+          if (kvpPage !== pageNumber) continue;
+
+          const keyText = (kvp.key?.content || "").toLowerCase();
+          const valueText = (kvp.value?.content || "").trim();
+
+          if (!jobNo && keyText.includes('job') && (keyText.includes('no') || keyText.includes('#'))) {
+            if (/^\d{4,6}$/.test(valueText)) {
+              jobNo = valueText;
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in KVP: ${jobNo}`);
+            }
+          }
+
+          if (!markNo && keyText.includes('mark') && (keyText.includes('no') || keyText.includes('#'))) {
+            if (valueText.length > 0 && valueText.length <= 15) {
+              markNo = valueText;
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in KVP: ${markNo}`);
             }
           }
         }
@@ -731,10 +850,16 @@ exports.parsePieceTickets = onCall({
         markNo: markNo || null,
       });
 
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} result: Job=${jobNo}, Mark=${markNo}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} FINAL result: Job=${jobNo}, Mark=${markNo}`);
     }
 
     console.log(`[Parse Piece Tickets] Extracted ${tickets.length} piece tickets`);
+
+    // Summary log
+    const matched = tickets.filter(t => t.jobNo && t.markNo).length;
+    const partial = tickets.filter(t => (t.jobNo || t.markNo) && !(t.jobNo && t.markNo)).length;
+    const noMatch = tickets.filter(t => !t.jobNo && !t.markNo).length;
+    console.log(`[Parse Piece Tickets] Summary: ${matched} complete, ${partial} partial, ${noMatch} no data`);
 
     return {
       success: true,
@@ -747,6 +872,86 @@ exports.parsePieceTickets = onCall({
     return {
       success: false,
       error: error.message || "Failed to process piece tickets",
+    };
+  }
+});
+
+/**
+ * Extract Single Page from PDF and Upload to Storage
+ * Takes a multi-page PDF, extracts a specific page, and uploads it to Firebase Storage
+ * Returns the download URL for the single-page PDF
+ */
+exports.extractAndUploadPdfPage = onCall({
+  maxInstances: 20,
+  timeoutSeconds: 60,
+  memory: "1GiB",
+}, async (request) => {
+  try {
+    const {fileBase64, pageNumber, entryId, jobNumber, markNumber} = request.data;
+
+    if (!fileBase64 || !pageNumber || !entryId) {
+      return {success: false, error: "Missing required parameters: fileBase64, pageNumber, entryId"};
+    }
+
+    console.log(`[Extract PDF Page] Extracting page ${pageNumber} for entry ${entryId}`);
+
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(fileBase64, 'base64');
+    console.log(`[Extract PDF Page] Source PDF size: ${fileBuffer.length} bytes`);
+
+    // Load the source PDF
+    const sourcePdf = await PDFDocument.load(fileBuffer);
+    const totalPages = sourcePdf.getPageCount();
+
+    if (pageNumber < 1 || pageNumber > totalPages) {
+      return {success: false, error: `Invalid page number ${pageNumber}. PDF has ${totalPages} pages.`};
+    }
+
+    // Create a new PDF with just the requested page
+    const singlePagePdf = await PDFDocument.create();
+    const [copiedPage] = await singlePagePdf.copyPages(sourcePdf, [pageNumber - 1]); // 0-indexed
+    singlePagePdf.addPage(copiedPage);
+
+    // Save the single-page PDF
+    const singlePageBytes = await singlePagePdf.save();
+    console.log(`[Extract PDF Page] Single page PDF size: ${singlePageBytes.length} bytes`);
+
+    // Upload to Firebase Storage
+    const bucket = storage.bucket();
+    const timestamp = Date.now();
+    const fileName = `piece-tickets/${entryId}/${jobNumber || 'unknown'}-${markNumber || 'unknown'}-${timestamp}.pdf`;
+
+    const file = bucket.file(fileName);
+    await file.save(Buffer.from(singlePageBytes), {
+      metadata: {
+        contentType: 'application/pdf',
+        metadata: {
+          entryId: entryId,
+          jobNumber: jobNumber || '',
+          markNumber: markNumber || '',
+          pageNumber: String(pageNumber),
+          uploadedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    // Make the file publicly accessible and get download URL
+    await file.makePublic();
+    const downloadUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+    console.log(`[Extract PDF Page] Uploaded to: ${downloadUrl}`);
+
+    return {
+      success: true,
+      downloadUrl: downloadUrl,
+      fileName: fileName,
+    };
+
+  } catch (error) {
+    console.error("[Extract PDF Page] Error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to extract PDF page",
     };
   }
 });

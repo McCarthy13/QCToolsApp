@@ -2,20 +2,25 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
-## Recent Feature: Piece Ticket Import ✅
+## Recent Feature: Piece Ticket Import with Single-Page PDF Extraction ✅
 
 **Feature**: Import piece tickets from multi-page PDFs and link them to quality log entries.
 
 **How it works**:
-1. Upload a multi-page PDF containing piece tickets
-2. Azure Document Intelligence extracts Job # and Mark # from each page
-3. Tickets are matched to existing entries by Job # and Mark #
-4. Linked tickets show a PDF icon in the dashboard - click to view
+1. Upload a multi-page PDF containing piece tickets (each page = one piece ticket)
+2. Azure Document Intelligence extracts Job # and Mark # from each page using:
+   - Table extraction (looks for label/value pairs in tables)
+   - Text pattern matching (regex for "JOB NO" / "MARK NO" labels)
+   - Key-value pair extraction from Azure's structured analysis
+3. Tickets are matched to existing entries by Job # AND Mark #
+4. **Each matched page is extracted as a separate single-page PDF** and uploaded to Firebase Storage
+5. Linked tickets show a PDF icon in the dashboard - click to view the single-page piece ticket
 
 **Files Modified**:
-- `functions/index.js` - Added `parsePieceTickets` Cloud Function
-- `src/screens/QualityLogImportScreen.tsx` - Added Import Piece Tickets button
-- `src/screens/QualityLogDashboardScreen.tsx` - Added PDF icon column
+- `functions/index.js` - Enhanced `parsePieceTickets` with better table extraction, added `extractAndUploadPdfPage` function
+- `functions/package.json` - Added `pdf-lib` for PDF page extraction
+- `src/screens/QualityLogImportScreen.tsx` - Updated to use new cloud function for single-page extraction
+- `src/screens/QualityLogDashboardScreen.tsx` - PDF icon column next to Mark #
 - `src/types/quality-log.ts` - Added `pieceTicketUrl` field
 
 ## Recent Fix: Microsoft 365 Login + Record Saving ✅

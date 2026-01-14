@@ -9,7 +9,6 @@ import {
   Modal,
   Platform,
   TextInput,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +24,6 @@ import {
   BED_OPTIONS,
 } from '../types/quality-log';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from '../config/firebase';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogImport'>;
@@ -528,49 +526,63 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     }
 
     setIsLoading(true);
-    setLoadingMessage(`Linking ${ticketsToLink.length} piece tickets...`);
+    setLoadingMessage(`Extracting and linking ${ticketsToLink.length} piece tickets...`);
 
     try {
-      const storage = getStorage(app);
+      const functions = getFunctions(app);
+      const extractAndUploadPdfPage = httpsCallable<
+        { fileBase64: string; pageNumber: number; entryId: string; jobNumber: string | null; markNumber: string | null },
+        { success: boolean; downloadUrl?: string; error?: string }
+      >(functions, 'extractAndUploadPdfPage');
+
       let linkedCount = 0;
+      let errorCount = 0;
 
       for (const ticket of ticketsToLink) {
         if (!ticket.matchedEntryId) continue;
 
-        setLoadingMessage(`Uploading page ${ticket.page} of ${matchedTickets.length}...`);
+        setLoadingMessage(`Extracting page ${ticket.page} of ${matchedTickets.length}...`);
 
-        // Upload the full PDF to storage with a reference to the page number
-        // The viewer will use the page number to navigate
-        const timestamp = Date.now();
-        const storagePath = `piece-tickets/${ticket.matchedEntryId}/page-${ticket.page}-${timestamp}.pdf`;
-        const storageRef = ref(storage, storagePath);
+        try {
+          // Call cloud function to extract single page and upload
+          const response = await extractAndUploadPdfPage({
+            fileBase64: pieceTicketFile.base64,
+            pageNumber: ticket.page,
+            entryId: ticket.matchedEntryId,
+            jobNumber: ticket.matchedJobNumber,
+            markNumber: ticket.matchedMarkNumber,
+          });
 
-        // Convert base64 to blob for upload
-        const byteCharacters = atob(pieceTicketFile.base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+          if (response.data.success && response.data.downloadUrl) {
+            // Update the entry with the single-page PDF URL
+            await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: response.data.downloadUrl });
+            linkedCount++;
+            console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${ticket.matchedEntryId}`);
+          } else {
+            console.error(`[PieceTicket] Failed to extract page ${ticket.page}:`, response.data.error);
+            errorCount++;
+          }
+        } catch (pageError: any) {
+          console.error(`[PieceTicket] Error processing page ${ticket.page}:`, pageError);
+          errorCount++;
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-        await uploadBytes(storageRef, blob);
-        const downloadUrl = await getDownloadURL(storageRef);
-
-        // Add page number to URL for navigation
-        const urlWithPage = `${downloadUrl}#page=${ticket.page}`;
-
-        // Update the entry with the piece ticket URL
-        await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: urlWithPage });
-        linkedCount++;
       }
 
       setIsLoading(false);
-      Alert.alert(
-        'Import Complete',
-        `Successfully linked ${linkedCount} piece ticket${linkedCount !== 1 ? 's' : ''} to entries.`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+
+      if (errorCount > 0) {
+        Alert.alert(
+          'Import Partially Complete',
+          `Linked ${linkedCount} piece ticket${linkedCount !== 1 ? 's' : ''}.\n${errorCount} failed to process.`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert(
+          'Import Complete',
+          `Successfully linked ${linkedCount} piece ticket${linkedCount !== 1 ? 's' : ''} to entries.`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
 
     } catch (error: any) {
       console.error('Error linking piece tickets:', error);
