@@ -563,6 +563,16 @@ exports.parsePieceTickets = onCall({
     // Convert base64 to buffer
     const fileBuffer = Buffer.from(fileBase64, 'base64');
     console.log(`[Parse Piece Tickets] File size: ${fileBuffer.length} bytes`);
+    console.log(`[Parse Piece Tickets] Base64 length received: ${fileBase64.length} chars`);
+
+    // Count pages in PDF using pdf-lib before sending to Azure
+    try {
+      const pdfDoc = await PDFDocument.load(fileBuffer);
+      const pdfPageCount = pdfDoc.getPageCount();
+      console.log(`[Parse Piece Tickets] PDF-lib detected ${pdfPageCount} pages in the PDF`);
+    } catch (pdfErr) {
+      console.log(`[Parse Piece Tickets] Could not count PDF pages: ${pdfErr.message}`);
+    }
 
     // Call Azure Document Intelligence Layout API
     const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
@@ -638,6 +648,13 @@ exports.parsePieceTickets = onCall({
     const tables = analyzeResult.tables || [];
 
     console.log(`[Parse Piece Tickets] Found ${pages.length} pages and ${tables.length} tables`);
+    console.log(`[Parse Piece Tickets] Azure detected page count from document: ${analyzeResult.pages?.length || 0}`);
+    console.log(`[Parse Piece Tickets] Full analyze result keys: ${Object.keys(analyzeResult || {}).join(', ')}`);
+
+    // Also check if there's a pageCount in the result
+    if (analyzeResult.documents) {
+      console.log(`[Parse Piece Tickets] Documents found: ${analyzeResult.documents.length}`);
+    }
 
     const tickets = [];
 
