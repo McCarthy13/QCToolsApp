@@ -781,10 +781,10 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             <Text className="text-base font-semibold text-gray-900 mb-2">Extracted Tickets</Text>
 
             {/* Table Header */}
-            <View className="flex-row bg-gray-800 py-2 px-2 rounded-t-lg">
-              <Text className="w-12 text-xs font-semibold text-white">Page</Text>
-              <Text className="w-20 text-xs font-semibold text-white">Job #</Text>
-              <Text className="w-20 text-xs font-semibold text-white">Mark #</Text>
+            <View className="flex-row bg-gray-800 py-2 px-3 rounded-t-lg">
+              <Text className="w-14 text-xs font-semibold text-white">Page</Text>
+              <Text className="w-24 text-xs font-semibold text-white">Job #</Text>
+              <Text className="w-24 text-xs font-semibold text-white">Mark #</Text>
               <Text className="flex-1 text-xs font-semibold text-white">Match Status</Text>
             </View>
 
@@ -792,13 +792,13 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             {matchedTickets.map((ticket, index) => (
               <View
                 key={index}
-                className={`flex-row py-3 px-2 border-b border-gray-200 ${
+                className={`flex-row py-3 px-3 border-b border-gray-200 ${
                   ticket.matchedEntryId ? 'bg-green-50' : 'bg-red-50'
                 }`}
               >
-                <Text className="w-12 text-xs text-gray-900">{ticket.page}</Text>
-                <Text className="w-20 text-xs text-gray-900">{ticket.jobNo || '-'}</Text>
-                <Text className="w-20 text-xs text-gray-900">{ticket.markNo || '-'}</Text>
+                <Text className="w-14 text-xs text-gray-900">{ticket.page}</Text>
+                <Text className="w-24 text-xs text-gray-900">{ticket.jobNo || '-'}</Text>
+                <Text className="w-24 text-xs text-gray-900">{ticket.markNo || '-'}</Text>
                 <View className="flex-1 flex-row items-center">
                   {ticket.matchedEntryId ? (
                     <>

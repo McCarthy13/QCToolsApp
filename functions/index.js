@@ -698,14 +698,17 @@ exports.parsePieceTickets = onCall({
       }
       console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found numbers: ${JSON.stringify(allNumbers)}`);
 
-      // Find all potential mark numbers (letter+digit combinations like H201, B101, E2, L1, etc.)
+      // Find all potential mark numbers (letter+digit combinations like H201, B101)
+      // Mark numbers typically have 1-2 letters followed by 2-4 digits (e.g., H201, B101, SC12)
+      // Filter out layer/elevation markers like L1, L2, E1, E2 (single letter + single digit)
       const allMarks = [];
-      const markMatches = fullPageText.match(/\b[A-Za-z]{1,2}\d{1,4}\b/g) || [];
+      const markMatches = fullPageText.match(/\b[A-Za-z]{1,2}\d{2,4}\b/g) || [];  // Require at least 2 digits
       for (const mark of markMatches) {
-        // Filter out common labels and dimension markers
         const upper = mark.toUpperCase();
+        // Filter out common false positives
         if (!['TYP', 'MIN'].includes(upper) &&
-            !upper.startsWith('P') && // Filter out P1, P2 etc which might be drawing refs
+            !upper.startsWith('P') &&  // Filter out P12, P34 etc (drawing refs)
+            mark.length >= 3 &&        // Must be at least 3 chars (e.g., H12)
             mark.length <= 6) {
           allMarks.push(mark);
         }
@@ -728,9 +731,9 @@ exports.parsePieceTickets = onCall({
 
       // If we have a MARK NO label, find the mark number
       if (hasMarkLabel && allMarks.length > 0) {
-        // The mark number typically starts with a letter like H, B, E, L followed by digits
-        // Prefer marks that start with common prefixes
-        const preferredMarks = allMarks.filter(m => /^[HBELPSC]/i.test(m));
+        // The mark number typically starts with a letter like H, B, S, C followed by digits
+        // Prefer marks that start with common prefixes for precast pieces
+        const preferredMarks = allMarks.filter(m => /^[HBSC]/i.test(m));
         markNo = preferredMarks.length > 0 ? preferredMarks[0] : allMarks[0];
         console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Mark No: ${markNo}`);
       }
@@ -756,18 +759,18 @@ exports.parsePieceTickets = onCall({
 
       if (!markNo) {
         const markPatterns = [
-          /MARK\s*NO\.?\s*[:\s]*([A-Za-z]{1,2}\d{1,4})/i,
-          /MARKNO\.?\s*[:\s]*([A-Za-z]{1,2}\d{1,4})/i,
-          /MARK\s*#\s*[:\s]*([A-Za-z]{1,2}\d{1,4})/i,
-          /([A-Za-z]{1,2}\d{1,4})\s*MARK/i,  // Mark before label (rotated)
-          /NO\s*MARK\s*([A-Za-z]{1,2}\d{1,4})/i,  // Reversed order
+          /MARK\s*NO\.?\s*[:\s]*([A-Za-z]{1,2}\d{2,4})/i,   // Require at least 2 digits
+          /MARKNO\.?\s*[:\s]*([A-Za-z]{1,2}\d{2,4})/i,
+          /MARK\s*#\s*[:\s]*([A-Za-z]{1,2}\d{2,4})/i,
+          /([A-Za-z]{1,2}\d{2,4})\s*MARK/i,  // Mark before label (rotated)
+          /NO\s*MARK\s*([A-Za-z]{1,2}\d{2,4})/i,  // Reversed order
         ];
         for (const pattern of markPatterns) {
           const match = fullPageText.match(pattern);
           if (match) {
             const val = match[1];
-            // Filter out false positives
-            if (!['TYP', 'MIN'].includes(val.toUpperCase())) {
+            // Filter out false positives - must be at least 3 chars and not a common label
+            if (val.length >= 3 && !['TYP', 'MIN'].includes(val.toUpperCase())) {
               markNo = val;
               console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No via regex: ${markNo}`);
               break;
@@ -798,7 +801,8 @@ exports.parsePieceTickets = onCall({
           if (!markNo && (part.includes('MARK') || part.includes('MARKNO'))) {
             for (let j = Math.max(0, i - 2); j <= Math.min(allTextParts.length - 1, i + 2); j++) {
               const nearbyPart = allTextParts[j].trim();
-              if (/^[A-Za-z]{1,2}\d{1,4}$/.test(nearbyPart)) {
+              // Require at least 2 digits to filter out L1, L2, E1, E2 layer markers
+              if (/^[A-Za-z]{1,2}\d{2,4}$/.test(nearbyPart) && nearbyPart.length >= 3) {
                 const upper = nearbyPart.toUpperCase();
                 if (!['TYP', 'MIN', 'QTY'].includes(upper)) {
                   markNo = nearbyPart;
