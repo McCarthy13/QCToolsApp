@@ -683,43 +683,72 @@ exports.parsePieceTickets = onCall({
           cellMap[key] = (cell.content || "").trim();
         }
 
-        // Search for "Job No" or "JOB NO" label and get adjacent cell value
-        for (const cell of (table.cells || [])) {
-          const content = (cell.content || "").toLowerCase().replace(/\s+/g, ' ').trim();
+        // Log the cell map for debugging
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} table cell map:`, JSON.stringify(cellMap));
 
-          // Look for Job No label
-          if (content.includes('job') && (content.includes('no') || content.includes('#'))) {
-            // Get the cell to the right (same row, next column)
-            const rightKey = `${cell.rowIndex},${cell.columnIndex + 1}`;
-            const rightValue = cellMap[rightKey];
-            if (rightValue && /^\d{4,6}$/.test(rightValue.trim())) {
-              jobNo = rightValue.trim();
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in table (right): ${jobNo}`);
-            }
-            // Also check cell below (next row, same column)
+        // Search for "Job No" or "JOB NO" or "JOBNO" label and get adjacent cell value
+        for (const cell of (table.cells || [])) {
+          const content = (cell.content || "").toUpperCase().replace(/\s+/g, '').trim();
+          const originalContent = (cell.content || "").trim();
+
+          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Checking cell [${cell.rowIndex},${cell.columnIndex}]: "${originalContent}" (normalized: "${content}")`);
+
+          // Look for Job No label - check various formats: "JOB NO", "JOBNO", "JOB#", "JOB NO."
+          if (content.includes('JOBNO') || content.includes('JOB#') || content === 'JOB' ||
+              (content.includes('JOB') && content.includes('NO'))) {
+            console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found JOB NO label at [${cell.rowIndex},${cell.columnIndex}]`);
+
+            // Check cell below first (this is the format in the sample)
             const belowKey = `${cell.rowIndex + 1},${cell.columnIndex}`;
             const belowValue = cellMap[belowKey];
-            if (!jobNo && belowValue && /^\d{4,6}$/.test(belowValue.trim())) {
+            console.log(`[Parse Piece Tickets] Page ${pageNumber} - Below cell value: "${belowValue}"`);
+            if (belowValue && /^\d{3,6}$/.test(belowValue.trim())) {
               jobNo = belowValue.trim();
               console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in table (below): ${jobNo}`);
             }
+
+            // Also check cell to the right
+            if (!jobNo) {
+              const rightKey = `${cell.rowIndex},${cell.columnIndex + 1}`;
+              const rightValue = cellMap[rightKey];
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Right cell value: "${rightValue}"`);
+              if (rightValue && /^\d{3,6}$/.test(rightValue.trim())) {
+                jobNo = rightValue.trim();
+                console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in table (right): ${jobNo}`);
+              }
+            }
           }
 
-          // Look for Mark No label
-          if (content.includes('mark') && (content.includes('no') || content.includes('#'))) {
-            // Get the cell to the right (same row, next column)
-            const rightKey = `${cell.rowIndex},${cell.columnIndex + 1}`;
-            const rightValue = cellMap[rightKey];
-            if (rightValue && rightValue.trim().length > 0) {
-              markNo = rightValue.trim();
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in table (right): ${markNo}`);
-            }
-            // Also check cell below (next row, same column)
+          // Look for Mark No label - check various formats: "MARK NO", "MARKNO", "MARK#"
+          if (content.includes('MARKNO') || content.includes('MARK#') || content === 'MARK' ||
+              (content.includes('MARK') && content.includes('NO'))) {
+            console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found MARK NO label at [${cell.rowIndex},${cell.columnIndex}]`);
+
+            // Check cell below first (this is the format in the sample)
             const belowKey = `${cell.rowIndex + 1},${cell.columnIndex}`;
             const belowValue = cellMap[belowKey];
-            if (!markNo && belowValue && belowValue.trim().length > 0) {
-              markNo = belowValue.trim();
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in table (below): ${markNo}`);
+            console.log(`[Parse Piece Tickets] Page ${pageNumber} - Below cell value: "${belowValue}"`);
+            if (belowValue && belowValue.trim().length > 0 && belowValue.trim().length <= 10) {
+              // Make sure it's not another label
+              const belowNorm = belowValue.toUpperCase().replace(/\s+/g, '');
+              if (!belowNorm.includes('JOB') && !belowNorm.includes('QTY') && !belowNorm.includes('DRAFTER')) {
+                markNo = belowValue.trim();
+                console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in table (below): ${markNo}`);
+              }
+            }
+
+            // Also check cell to the right
+            if (!markNo) {
+              const rightKey = `${cell.rowIndex},${cell.columnIndex + 1}`;
+              const rightValue = cellMap[rightKey];
+              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Right cell value: "${rightValue}"`);
+              if (rightValue && rightValue.trim().length > 0 && rightValue.trim().length <= 10) {
+                const rightNorm = rightValue.toUpperCase().replace(/\s+/g, '');
+                if (!rightNorm.includes('JOB') && !rightNorm.includes('QTY') && !rightNorm.includes('DRAFTER')) {
+                  markNo = rightValue.trim();
+                  console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in table (right): ${markNo}`);
+                }
+              }
             }
           }
         }
@@ -736,15 +765,16 @@ exports.parsePieceTickets = onCall({
         }
 
         console.log(`[Parse Piece Tickets] Page ${pageNumber} - Searching text (${pageText.length} chars)`);
-        console.log(`[Parse Piece Tickets] Page ${pageNumber} raw text:\n${pageText.substring(0, 1000)}`);
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} raw text:\n${pageText.substring(0, 1500)}`);
 
-        // Try regex patterns for Job No
+        // Try regex patterns for Job No - more flexible patterns
         if (!jobNo) {
           const jobPatterns = [
-            /JOB\s*NO\.?\s*[:\s]*(\d{4,6})/i,
-            /JOB\s*#?\s*[:\s]*(\d{4,6})/i,
-            /JOB\s*NUMBER\s*[:\s]*(\d{4,6})/i,
-            /JOB\s*[:\s]+(\d{4,6})/i,
+            /JOB\s*NO\.?\s*[:\s]*(\d{3,6})/i,
+            /JOB\s*#?\s*[:\s]*(\d{3,6})/i,
+            /JOBNO\.?\s*[:\s]*(\d{3,6})/i,
+            /JOB\s*NUMBER\s*[:\s]*(\d{3,6})/i,
+            /JOB\s*[:\s]+(\d{3,6})/i,
           ];
 
           for (const pattern of jobPatterns) {
@@ -760,12 +790,13 @@ exports.parsePieceTickets = onCall({
           if (!jobNo) {
             const lines = pageText.split('\n');
             for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i].trim().toLowerCase();
-              if (line.includes('job') && (line.includes('no') || line.includes('#'))) {
+              const line = lines[i].trim().toUpperCase().replace(/\s+/g, '');
+              if (line.includes('JOBNO') || line.includes('JOB#') || line === 'JOB' ||
+                  (line.includes('JOB') && line.includes('NO'))) {
                 // Check next few lines for the value
                 for (let j = 1; j <= 3 && i + j < lines.length; j++) {
                   const nextLine = lines[i + j]?.trim();
-                  if (nextLine && /^\d{4,6}$/.test(nextLine)) {
+                  if (nextLine && /^\d{3,6}$/.test(nextLine)) {
                     jobNo = nextLine;
                     console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No (multi-line): ${jobNo}`);
                     break;
@@ -777,21 +808,27 @@ exports.parsePieceTickets = onCall({
           }
         }
 
-        // Try regex patterns for Mark No
+        // Try regex patterns for Mark No - more flexible patterns
         if (!markNo) {
           const markPatterns = [
-            /MARK\s*NO\.?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+[A-Za-z]*)/i,
-            /MARK\s*#?\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+[A-Za-z]*)/i,
-            /MARK\s*NUMBER\s*[:\s]*([A-Za-z]?\d*[A-Za-z]+\d+[A-Za-z]*)/i,
+            /MARK\s*NO\.?\s*[:\s]*([A-Za-z]+\d+)/i,
+            /MARK\s*#?\s*[:\s]*([A-Za-z]+\d+)/i,
+            /MARKNO\.?\s*[:\s]*([A-Za-z]+\d+)/i,
+            /MARK\s*NUMBER\s*[:\s]*([A-Za-z]+\d+)/i,
+            /MARK\s*NO\.?\s*[:\s]*([A-Za-z0-9]+)/i,
             /MARK\s*[:\s]+([A-Za-z0-9]+)/i,
           ];
 
           for (const pattern of markPatterns) {
             const match = pageText.match(pattern);
             if (match) {
-              markNo = match[1];
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No via regex: ${markNo}`);
-              break;
+              // Make sure it's not a label
+              const val = match[1];
+              if (!val.toUpperCase().includes('JOB') && !val.toUpperCase().includes('QTY')) {
+                markNo = val;
+                console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No via regex: ${markNo}`);
+                break;
+              }
             }
           }
 
@@ -799,15 +836,20 @@ exports.parsePieceTickets = onCall({
           if (!markNo) {
             const lines = pageText.split('\n');
             for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i].trim().toLowerCase();
-              if (line.includes('mark') && (line.includes('no') || line.includes('#'))) {
+              const line = lines[i].trim().toUpperCase().replace(/\s+/g, '');
+              if (line.includes('MARKNO') || line.includes('MARK#') || line === 'MARK' ||
+                  (line.includes('MARK') && line.includes('NO'))) {
                 // Check next few lines for the value
                 for (let j = 1; j <= 3 && i + j < lines.length; j++) {
                   const nextLine = lines[i + j]?.trim();
-                  if (nextLine && /^[A-Za-z0-9]+$/.test(nextLine) && nextLine.length <= 15) {
-                    markNo = nextLine;
-                    console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No (multi-line): ${markNo}`);
-                    break;
+                  if (nextLine && /^[A-Za-z0-9]+$/.test(nextLine) && nextLine.length <= 10) {
+                    // Make sure it's not another label
+                    const nextNorm = nextLine.toUpperCase();
+                    if (!nextNorm.includes('JOB') && !nextNorm.includes('QTY') && !nextNorm.includes('DRAFTER')) {
+                      markNo = nextLine;
+                      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No (multi-line): ${markNo}`);
+                      break;
+                    }
                   }
                 }
                 if (markNo) break;
@@ -825,18 +867,20 @@ exports.parsePieceTickets = onCall({
           const kvpPage = kvp.key?.boundingRegions?.[0]?.pageNumber || 1;
           if (kvpPage !== pageNumber) continue;
 
-          const keyText = (kvp.key?.content || "").toLowerCase();
+          const keyText = (kvp.key?.content || "").toUpperCase().replace(/\s+/g, '');
           const valueText = (kvp.value?.content || "").trim();
 
-          if (!jobNo && keyText.includes('job') && (keyText.includes('no') || keyText.includes('#'))) {
-            if (/^\d{4,6}$/.test(valueText)) {
+          if (!jobNo && (keyText.includes('JOBNO') || keyText.includes('JOB#') ||
+              (keyText.includes('JOB') && keyText.includes('NO')))) {
+            if (/^\d{3,6}$/.test(valueText)) {
               jobNo = valueText;
               console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No in KVP: ${jobNo}`);
             }
           }
 
-          if (!markNo && keyText.includes('mark') && (keyText.includes('no') || keyText.includes('#'))) {
-            if (valueText.length > 0 && valueText.length <= 15) {
+          if (!markNo && (keyText.includes('MARKNO') || keyText.includes('MARK#') ||
+              (keyText.includes('MARK') && keyText.includes('NO')))) {
+            if (valueText.length > 0 && valueText.length <= 10) {
               markNo = valueText;
               console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No in KVP: ${markNo}`);
             }
