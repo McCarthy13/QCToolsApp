@@ -1,6 +1,6 @@
 /**
  * Firebase Cloud Functions for Precast QC Tools
- * Version: 2.1.0 - Added debug logging for piece ticket page detection
+ * Version: 2.1.1 - Debug logging for piece ticket page detection
  *
  * Provides server-side proxy for Claude API calls to avoid CORS and SSL issues
  */
