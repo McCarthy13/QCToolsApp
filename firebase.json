@@ -2,9 +2,10 @@
   "firestore": {
     "rules": "firestore.rules"
   },
-  "storage": {
+  "storage": [{
+    "bucket": "precast-qc-tools-web-app.firebasestorage.app",
     "rules": "storage.rules"
-  },
+  }],
   "functions": {
     "source": "functions"
   },
