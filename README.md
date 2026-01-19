@@ -171,6 +171,13 @@ The following environment variables are required and should be configured via th
 
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
 
+### Recent Updates (2026-01-19)
+- ✅ **Design & Cast Strand Pattern Columns Added to Quality Log**:
+  - **Design Strand Pattern Column**: Added after Width column, automatically extracted from uploaded schedule PDFs (e.g., "217-70")
+  - **Cast Strand Pattern Column**: Added after Design Strand Pattern, user-selectable picker populated from strand pattern library
+  - **Filterable Columns**: Both columns support filtering by pattern values
+  - **Editable**: Design Strand Pattern is editable as text, Cast Strand Pattern uses dropdown picker
+
 ### Recent Updates (2026-01-06)
 - ✅ **Quality Log Dashboard Column Reorder & Enhancements**:
   - **New Column Order**: Pour Date, Disposition, Status, Approval/Rejection Date, Type, Job #, Mark #, ID #, Length, Width, Bed, Location, Quality Comments, Engineer, Engineer Feedback, Issue Codes, Reject Codes

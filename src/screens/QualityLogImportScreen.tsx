@@ -39,6 +39,7 @@ interface ExtractedEntry {
   length: string;
   width: number;
   thickness: number;
+  designStrandPattern?: string;
   bed?: BedNumber;
 }
 
@@ -328,6 +329,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         length: entry.length,
         width: entry.width,
         thickness: entry.thickness,
+        designStrandPattern: entry.designStrandPattern,
         bed: selectedBed, // Use user-selected bed for all entries
         productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as ProductType) || undefined,
         issueCodes: [],

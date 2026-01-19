@@ -21,6 +21,7 @@ import { storage } from '../config/firebase';
 import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
 import { useAuthStore } from '../state/authStore';
+import { useStrandPatternStore } from '../state/strandPatternStore';
 import {
   QualityLogEntry,
   getStatusFromDisposition,
@@ -40,7 +41,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
 
 // Column filter types
 type ColumnFilterType = 'pourDate' | 'disposition' | 'status' | 'approvalDate' | 'productType' |
-  'jobNumber' | 'markNumber' | 'idNumber' | 'length' | 'width' | 'bed' | 'location' |
+  'jobNumber' | 'markNumber' | 'idNumber' | 'length' | 'width' | 'designStrandPattern' | 'castStrandPattern' | 'bed' | 'location' |
   'qualityComments' | 'engineer' | 'engineerFeedback' | 'issueCodes' | 'rejectCodes';
 
 interface ColumnFilters {
@@ -54,6 +55,8 @@ interface ColumnFilters {
   idNumber: string;
   length: string;
   width: string;
+  designStrandPattern: string;
+  castStrandPattern: string;
   bed: string;
   location: string;
   qualityComments: string;
@@ -70,6 +73,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const updateEntry = useQualityLogStore((s) => s.updateEntry);
   const currentUser = useAuthStore((s) => s.currentUser);
   const isAdmin = currentUser?.role === 'admin';
+  const customPatterns = useStrandPatternStore((s) => s.customPatterns);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -86,6 +90,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     idNumber: '',
     length: '',
     width: '',
+    designStrandPattern: '',
+    castStrandPattern: '',
     bed: '',
     location: '',
     qualityComments: '',
@@ -104,7 +110,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const [editValue, setEditValue] = useState('');
   const [showPickerModal, setShowPickerModal] = useState<{
     entryId: string;
-    field: 'disposition' | 'productType' | 'bed' | 'issueCodes' | 'rejectCodes';
+    field: 'disposition' | 'productType' | 'bed' | 'castStrandPattern' | 'issueCodes' | 'rejectCodes';
   } | null>(null);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
 
@@ -143,6 +149,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     if (columnFilters.idNumber && !entry.idNumber?.toLowerCase().includes(columnFilters.idNumber.toLowerCase())) return false;
     if (columnFilters.length && !entry.length?.toLowerCase().includes(columnFilters.length.toLowerCase())) return false;
     if (columnFilters.width && entry.width?.toString() !== columnFilters.width) return false;
+    if (columnFilters.designStrandPattern && !entry.designStrandPattern?.toLowerCase().includes(columnFilters.designStrandPattern.toLowerCase())) return false;
+    if (columnFilters.castStrandPattern && !entry.castStrandPattern?.toLowerCase().includes(columnFilters.castStrandPattern.toLowerCase())) return false;
     if (columnFilters.bed && entry.bed !== columnFilters.bed) return false;
     if (columnFilters.location && !entry.location?.toLowerCase().includes(columnFilters.location.toLowerCase())) return false;
     if (columnFilters.qualityComments && !entry.qualityComments?.toLowerCase().includes(columnFilters.qualityComments.toLowerCase())) return false;
@@ -396,6 +404,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     idNumber: 90,
     length: 90,
     width: 60,
+    designStrandPattern: 110,
+    castStrandPattern: 110,
     bed: 50,
     location: 75,
     qualityComments: 180,
@@ -441,10 +451,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     );
   };
 
-  // Render a picker cell (disposition, product type, bed)
+  // Render a picker cell (disposition, product type, bed, castStrandPattern)
   const renderPickerCell = (
     entry: QualityLogEntry,
-    field: 'disposition' | 'productType' | 'bed',
+    field: 'disposition' | 'productType' | 'bed' | 'castStrandPattern',
     value: string | undefined,
     width: number
   ) => {
@@ -478,6 +488,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         return PRODUCT_TYPE_OPTIONS;
       case 'bed':
         return BED_OPTIONS;
+      case 'castStrandPattern':
+        // Return unique strand pattern IDs from customPatterns
+        return [...new Set(customPatterns.map(p => p.patternId))].sort();
       case 'issueCodes':
         return ISSUE_CODE_OPTIONS;
       case 'rejectCodes':
@@ -496,6 +509,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         return 'Select Product Type';
       case 'bed':
         return 'Select Bed';
+      case 'castStrandPattern':
+        return 'Select Cast Strand Pattern';
       case 'issueCodes':
         return 'Select Issue Codes (tap to toggle)';
       case 'rejectCodes':
@@ -644,7 +659,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             <Pressable
               onPress={() => setColumnFilters({
                 pourDate: '', disposition: '', status: '', approvalDate: '', productType: '',
-                jobNumber: '', markNumber: '', idNumber: '', length: '', width: '', bed: '',
+                jobNumber: '', markNumber: '', idNumber: '', length: '', width: '',
+                designStrandPattern: '', castStrandPattern: '', bed: '',
                 location: '', qualityComments: '', engineer: '', engineerFeedback: '',
                 issueCodes: '', rejectCodes: '',
               })}
@@ -687,6 +703,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('idNumber', 'ID #', COLUMN_WIDTHS.idNumber)}
               {renderFilterableHeader('length', 'Length', COLUMN_WIDTHS.length)}
               {renderFilterableHeader('width', 'Width', COLUMN_WIDTHS.width)}
+              {renderFilterableHeader('designStrandPattern', 'Design Strand Pattern', COLUMN_WIDTHS.designStrandPattern)}
+              {renderFilterableHeader('castStrandPattern', 'Cast Strand Pattern', COLUMN_WIDTHS.castStrandPattern)}
               {renderFilterableHeader('bed', 'Bed', COLUMN_WIDTHS.bed)}
               {renderFilterableHeader('location', 'Location', COLUMN_WIDTHS.location)}
               {renderFilterableHeader('qualityComments', 'Quality Comments', COLUMN_WIDTHS.qualityComments)}
@@ -773,6 +791,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'idNumber', entry.idNumber, COLUMN_WIDTHS.idNumber)}
                   {renderEditableTextCell(entry, 'length', entry.length, COLUMN_WIDTHS.length)}
                   {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', COLUMN_WIDTHS.width)}
+                  {renderEditableTextCell(entry, 'designStrandPattern', entry.designStrandPattern, COLUMN_WIDTHS.designStrandPattern)}
+                  {renderPickerCell(entry, 'castStrandPattern', entry.castStrandPattern, COLUMN_WIDTHS.castStrandPattern)}
                   {renderPickerCell(entry, 'bed', entry.bed, COLUMN_WIDTHS.bed)}
                   {renderEditableTextCell(entry, 'location', entry.location, COLUMN_WIDTHS.location)}
                   {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, COLUMN_WIDTHS.qualityComments)}
