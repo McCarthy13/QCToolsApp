@@ -408,9 +408,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     castStrandPattern: 70,
     bed: 40,
     location: 58,
-    qualityComments: 140,
+    qualityComments: 350,
     engineer: 80,
-    engineerFeedback: 140,
+    engineerFeedback: 280,
     issueCodes: 80,
     rejectCodes: 80,
   };
