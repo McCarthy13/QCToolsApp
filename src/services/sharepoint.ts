@@ -171,6 +171,48 @@ export async function signOutFromMicrosoft(): Promise<void> {
   }
 }
 
+// Re-authenticate with Microsoft (forces user to enter credentials again)
+// Returns true if the same user re-authenticated successfully, false otherwise
+export async function reAuthenticateWithMicrosoft(): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (Platform.OS !== 'web') {
+      return { success: false, error: 'Re-authentication is only available on web platform' };
+    }
+
+    const msal = await initializeMSAL();
+    const accounts = msal.getAllAccounts();
+
+    if (accounts.length === 0) {
+      return { success: false, error: 'No account found. Please sign in first.' };
+    }
+
+    const currentAccount = accounts[0];
+    const currentUsername = currentAccount.username;
+
+    // Force login prompt - user must enter credentials
+    const response = await msal.loginPopup({
+      ...loginRequest,
+      prompt: 'login', // Forces credential entry
+      loginHint: currentUsername, // Pre-fill the email
+    });
+
+    // Verify the same user re-authenticated
+    if (response.account.username.toLowerCase() !== currentUsername.toLowerCase()) {
+      console.warn('[SharePoint] Different user authenticated:', response.account.username, 'vs', currentUsername);
+      return { success: false, error: 'Please sign in with the same account you are currently logged in with.' };
+    }
+
+    console.log('[SharePoint] Re-authentication successful for:', response.account.username);
+    return { success: true };
+  } catch (error) {
+    console.error('[SharePoint] Re-authentication error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Re-authentication failed'
+    };
+  }
+}
+
 // Create Microsoft Graph client
 async function getGraphClient(): Promise<Client> {
   const accessToken = await getAccessToken();

@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
 import { useAuthStore } from '../state/authStore';
 import { useStrandPatternStore } from '../state/strandPatternStore';
+import { reAuthenticateWithMicrosoft } from '../services/sharepoint';
 import {
   QualityLogEntry,
   getStatusFromDisposition,
@@ -73,12 +74,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const setDisposition = useQualityLogStore((s) => s.setDisposition);
   const updateEntry = useQualityLogStore((s) => s.updateEntry);
   const deleteEntry = useQualityLogStore((s) => s.deleteEntry);
+  const clearAllEntries = useQualityLogStore((s) => s.clearAllEntries);
   const currentUser = useAuthStore((s) => s.currentUser);
   const isAdmin = currentUser?.role === 'admin';
   const customPatterns = useStrandPatternStore((s) => s.customPatterns);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
   // Column filters state
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
@@ -456,6 +460,53 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     }
   };
 
+  // Handle deleting all entries (admin only, requires re-authentication)
+  const handleDeleteAllEntries = async () => {
+    if (!isAdmin) return;
+
+    // Show initial confirmation modal
+    setShowDeleteAllModal(true);
+  };
+
+  // Confirm and execute delete all after re-authentication
+  const confirmDeleteAll = async () => {
+    setShowDeleteAllModal(false);
+    setIsDeletingAll(true);
+
+    try {
+      // Require Microsoft re-authentication
+      const { success, error } = await reAuthenticateWithMicrosoft();
+
+      if (!success) {
+        if (Platform.OS === 'web') {
+          window.alert(error || 'Re-authentication failed. Delete cancelled.');
+        } else {
+          Alert.alert('Authentication Failed', error || 'Re-authentication failed. Delete cancelled.');
+        }
+        setIsDeletingAll(false);
+        return;
+      }
+
+      // User re-authenticated successfully, proceed with deletion
+      await clearAllEntries();
+
+      if (Platform.OS === 'web') {
+        window.alert(`Successfully deleted all ${entries.length} entries.`);
+      } else {
+        Alert.alert('Success', `Successfully deleted all ${entries.length} entries.`);
+      }
+    } catch (error) {
+      console.error('Error deleting all entries:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to delete entries. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to delete entries. Please try again.');
+      }
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   // Navigate to Product Details (Slippage Identifier entry point) with pre-filled data
   const handleOpenSlippageIdentifier = (entry: QualityLogEntry) => {
     navigation.navigate('ProductDetails', {
@@ -694,11 +745,30 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
+      {/* Loading overlay for delete all */}
+      {isDeletingAll && (
+        <View className="absolute inset-0 bg-black/50 z-50 items-center justify-center">
+          <View className="bg-white rounded-xl p-6 items-center">
+            <ActivityIndicator size="large" color="#DC2626" />
+            <Text className="mt-4 text-gray-900 font-medium">Deleting all entries...</Text>
+          </View>
+        </View>
+      )}
+
       {/* Header */}
       <View className="bg-white px-4 py-3 border-b border-gray-200">
         <View className="flex-row items-center justify-between mb-3">
           <Text className="text-2xl font-bold text-gray-900">Quality Log</Text>
           <View className="flex-row gap-2">
+            {isAdmin && (
+              <Pressable
+                onPress={handleDeleteAllEntries}
+                className="bg-red-100 rounded-full p-2"
+                disabled={entries.length === 0 || isDeletingAll}
+              >
+                <Ionicons name="trash" size={22} color={entries.length === 0 ? '#FCA5A5' : '#DC2626'} />
+              </Pressable>
+            )}
             {isAdmin && (
               <Pressable
                 onPress={() => navigation.navigate('QualityLogAdmin' as any)}
@@ -1110,6 +1180,48 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             </Pressable>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Delete All Confirmation Modal */}
+      <Modal visible={showDeleteAllModal} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center items-center p-4">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <View className="items-center mb-4">
+              <View className="bg-red-100 rounded-full p-3 mb-3">
+                <Ionicons name="warning" size={32} color="#DC2626" />
+              </View>
+              <Text className="text-xl font-bold text-gray-900 text-center">Delete All Entries?</Text>
+            </View>
+
+            <Text className="text-gray-600 text-center mb-2">
+              This will permanently delete all {entries.length} entries from the Quality Log.
+            </Text>
+            <Text className="text-gray-600 text-center mb-4">
+              You will be required to sign in with Microsoft again to confirm this action.
+            </Text>
+
+            <View className="bg-red-50 rounded-lg p-3 mb-6">
+              <Text className="text-red-800 text-sm text-center font-medium">
+                This action cannot be undone!
+              </Text>
+            </View>
+
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={() => setShowDeleteAllModal(false)}
+                className="flex-1 py-3 bg-gray-200 rounded-lg"
+              >
+                <Text className="text-center text-base text-gray-700 font-medium">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmDeleteAll}
+                className="flex-1 py-3 bg-red-600 rounded-lg"
+              >
+                <Text className="text-center text-base text-white font-semibold">Delete All</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
