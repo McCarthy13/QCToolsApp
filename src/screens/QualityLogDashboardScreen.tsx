@@ -564,9 +564,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => openFilterModal(column)}
-        style={{ width, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        style={{ width, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
       >
-        <Text className="text-xs font-semibold text-white flex-1" numberOfLines={1}>{label}</Text>
+        <Text className="text-xs font-semibold text-white flex-1" style={{ flexWrap: 'wrap' }}>{label}</Text>
         <Ionicons
           name={hasFilter ? 'funnel' : 'funnel-outline'}
           size={10}
@@ -689,9 +689,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           contentContainerStyle={{ minWidth: '100%' }}
         >
           <View style={{ minWidth: '100%' }}>
-            <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
-              <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4 }} className="text-xs font-semibold text-white"></Text>
-              <Text style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Actions</Text>
+            <View className="flex-row bg-gray-800 py-2 items-center" style={{ minWidth: '100%' }}>
+              <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4, paddingVertical: 4 }} className="text-xs font-semibold text-white"></Text>
+              <Text style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 8, paddingVertical: 4 }} className="text-xs font-semibold text-white">Actions</Text>
               {renderFilterableHeader('pourDate', 'Pour Date', COLUMN_WIDTHS.pourDate)}
               {renderFilterableHeader('disposition', 'Disposition', COLUMN_WIDTHS.disposition)}
               {renderFilterableHeader('status', 'Status', COLUMN_WIDTHS.status)}
@@ -699,7 +699,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('productType', 'Type', COLUMN_WIDTHS.productType)}
               {renderFilterableHeader('jobNumber', 'Job #', COLUMN_WIDTHS.jobNumber)}
               {renderFilterableHeader('markNumber', 'Mark #', COLUMN_WIDTHS.markNumber)}
-              <Text style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4 }} className="text-xs font-semibold text-white"></Text>
+              <Text style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4, paddingVertical: 4 }} className="text-xs font-semibold text-white"></Text>
               {renderFilterableHeader('idNumber', 'ID #', COLUMN_WIDTHS.idNumber)}
               {renderFilterableHeader('length', 'Length', COLUMN_WIDTHS.length)}
               {renderFilterableHeader('width', 'Width', COLUMN_WIDTHS.width)}
