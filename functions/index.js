@@ -1,6 +1,6 @@
 /**
  * Firebase Cloud Functions for Precast QC Tools
- * Version: 2.1.1 - Debug logging for piece ticket page detection
+ * Version: 2.2.0 - Add strand pattern extraction with intelligent matching
  *
  * Provides server-side proxy for Claude API calls to avoid CORS and SSL issues
  */
@@ -387,6 +387,8 @@ exports.parseSchedulePDF = onCall({
             columnMap.lengthFeet = j;
           } else if (cellText === "inches" || cellText === "in") {
             columnMap.lengthInches = j;
+          } else if (cellText === "strand pattern" || cellText === "strand" || (cellText.includes("strand") && cellText.includes("pattern"))) {
+            columnMap.strandPattern = j;
           }
         }
 
@@ -394,6 +396,148 @@ exports.parseSchedulePDF = onCall({
       }
 
       console.log(`[Parse Schedule] Header row: ${headerRowIndex}, Column map:`, JSON.stringify(columnMap));
+
+      // Fetch strand patterns from Firestore for intelligent matching
+      let knownPatterns = [];
+      try {
+        const patternsSnapshot = await db.collection('strandPatterns').get();
+        patternsSnapshot.forEach(doc => {
+          const pattern = doc.data();
+          if (pattern.patternId) {
+            knownPatterns.push(pattern.patternId);
+          }
+        });
+        console.log(`[Parse Schedule] Loaded ${knownPatterns.length} known strand patterns from Firestore`);
+        if (knownPatterns.length > 0) {
+          console.log(`[Parse Schedule] Sample patterns: ${knownPatterns.slice(0, 10).join(', ')}`);
+        }
+      } catch (err) {
+        console.log(`[Parse Schedule] Could not load strand patterns: ${err.message}`);
+      }
+
+      /**
+       * Intelligent strand pattern matching function
+       * Takes a potentially partial/corrupted OCR value and tries to match it against known patterns
+       *
+       * Strand patterns follow the format: BOTTOM-TENSION+TTOP-TENSION
+       * Examples: 130-70, 92-70, 130-70+T16-70, 92-70+T16-30
+       *
+       * The function handles cases where:
+       * - First digit is cut off (e.g., "30-70" should match "130-70")
+       * - Top strand pattern is truncated (e.g., "130-70+T1" should match "130-70+T16-70")
+       * - Characters are partially visible
+       */
+      const matchStrandPattern = (ocrValue) => {
+        if (!ocrValue || typeof ocrValue !== 'string') return '';
+
+        const cleaned = ocrValue.trim().replace(/\s+/g, '');
+        if (!cleaned) return '';
+
+        // If it's already an exact match, return it
+        if (knownPatterns.includes(cleaned)) {
+          console.log(`[Parse Schedule] Exact match for pattern: ${cleaned}`);
+          return cleaned;
+        }
+
+        // Try to find best match using fuzzy logic
+        let bestMatch = null;
+        let bestScore = 0;
+
+        for (const knownPattern of knownPatterns) {
+          const score = calculatePatternMatchScore(cleaned, knownPattern);
+          if (score > bestScore && score >= 0.6) { // Require at least 60% match confidence
+            bestScore = score;
+            bestMatch = knownPattern;
+          }
+        }
+
+        if (bestMatch) {
+          console.log(`[Parse Schedule] Inferred pattern: "${cleaned}" -> "${bestMatch}" (confidence: ${(bestScore * 100).toFixed(1)}%)`);
+          return bestMatch;
+        }
+
+        // If no good match found, return the cleaned OCR value as-is
+        console.log(`[Parse Schedule] No confident match for pattern: "${cleaned}"`);
+        return cleaned;
+      };
+
+      /**
+       * Calculate match score between OCR value and known pattern
+       * Returns a score from 0 to 1
+       */
+      const calculatePatternMatchScore = (ocrValue, knownPattern) => {
+        const ocr = ocrValue.toUpperCase();
+        const known = knownPattern.toUpperCase();
+
+        // Check if OCR is a suffix of the known pattern (missing first digits)
+        // e.g., "30-70" matching "130-70" or "2-70" matching "92-70"
+        if (known.endsWith(ocr)) {
+          // Score based on how much of the pattern we matched
+          return ocr.length / known.length;
+        }
+
+        // Check if OCR is a prefix of the known pattern (truncated end)
+        // e.g., "130-70+T1" matching "130-70+T16-70"
+        if (known.startsWith(ocr)) {
+          return ocr.length / known.length;
+        }
+
+        // Check for combined patterns with partial top strand
+        // e.g., "130-70+T16" should match "130-70+T16-70"
+        if (ocr.includes('+T') && known.includes('+T')) {
+          const [ocrBottom, ocrTop] = ocr.split('+');
+          const [knownBottom, knownTop] = known.split('+');
+
+          // Bottom part must match (allowing for leading digit loss)
+          const bottomMatch = knownBottom.endsWith(ocrBottom) || ocrBottom === knownBottom;
+
+          // Top part: check if OCR top is prefix of known top
+          const topMatch = knownTop && ocrTop && (knownTop.startsWith(ocrTop) || knownTop === ocrTop);
+
+          if (bottomMatch && topMatch) {
+            const bottomScore = ocrBottom.length / knownBottom.length;
+            const topScore = ocrTop.length / knownTop.length;
+            return (bottomScore + topScore) / 2;
+          }
+        }
+
+        // Check if missing first digit from bottom pattern with complete top pattern
+        // e.g., "30-70+T16-70" should match "130-70+T16-70"
+        if (ocr.includes('+') && known.includes('+')) {
+          const [ocrBottom, ocrTop] = ocr.split('+');
+          const [knownBottom, knownTop] = known.split('+');
+
+          const bottomMatch = knownBottom.endsWith(ocrBottom);
+          const topMatch = ocrTop === knownTop;
+
+          if (bottomMatch && topMatch) {
+            return (ocrBottom.length / knownBottom.length + 1) / 2;
+          }
+        }
+
+        // Try to match just the beginning part for partial OCR reads
+        // e.g., "92-7" matching "92-70"
+        const ocrParts = ocr.replace(/\+T.*$/, '').split('-');
+        const knownParts = known.replace(/\+T.*$/, '').split('-');
+
+        if (ocrParts.length === knownParts.length || ocrParts.length === knownParts.length - 1) {
+          let matchScore = 0;
+          let comparisons = 0;
+
+          for (let i = 0; i < ocrParts.length && i < knownParts.length; i++) {
+            if (knownParts[i].endsWith(ocrParts[i]) || ocrParts[i] === knownParts[i]) {
+              matchScore += ocrParts[i].length / knownParts[i].length;
+              comparisons++;
+            }
+          }
+
+          if (comparisons > 0) {
+            return matchScore / comparisons * 0.8; // Slight penalty for not matching the full pattern
+          }
+        }
+
+        return 0;
+      };
 
       // Process ALL data rows after header - simpler approach
       const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
@@ -492,6 +636,17 @@ exports.parseSchedulePDF = onCall({
           formattedLength = `${lengthFeet}'-${inchesStr}"`;
         }
 
+        // Extract strand pattern
+        let strandPattern = "";
+        if (columnMap.strandPattern !== undefined) {
+          const rawPattern = (row[columnMap.strandPattern] || "").trim();
+          if (rawPattern) {
+            console.log(`[Parse Schedule] Row ${i} raw strand pattern: "${rawPattern}"`);
+            // Use intelligent matching to infer the correct pattern
+            strandPattern = matchStrandPattern(rawPattern);
+          }
+        }
+
         entries.push({
           pourDate: pourDate,
           jobNumber: jobNumber || "",
@@ -503,6 +658,7 @@ exports.parseSchedulePDF = onCall({
           lengthFeet: lengthFeet,
           lengthInches: lengthInches,
           bed: rowBed || undefined,
+          designStrandPattern: strandPattern || undefined,
         });
       }
     }
