@@ -357,30 +357,23 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return undefined;
   };
 
-  // Navigate to Slippage Identifier with pre-filled data
-  const handleOpenSlippageIdentifier = (entry: QualityLogEntry) => {
-    // Map product type to strand pattern (default patterns)
-    const getDefaultStrandPattern = (productType: string | undefined): string => {
-      switch (productType) {
-        case '8048': return '8-48';
-        case '1047': return '10-47';
-        case '1247': return '12-47';
-        case '1250': return '12-50';
-        case '1647': return '16-47';
-        case '1648': return '16-48';
-        default: return '10-47';
-      }
-    };
+  // Convert feet to total inches for span (ProductDetails expects inches)
+  const convertLengthToInches = (lengthStr: string | undefined): number | undefined => {
+    const feet = parseLengthToFeet(lengthStr);
+    if (feet === undefined) return undefined;
+    return feet * 12;
+  };
 
-    navigation.navigate('SlippageIdentifier', {
-      config: {
+  // Navigate to Product Details (Slippage Identifier entry point) with pre-filled data
+  const handleOpenSlippageIdentifier = (entry: QualityLogEntry) => {
+    navigation.navigate('ProductDetails', {
+      prefillData: {
         projectNumber: entry.jobNumber,
         markNumber: entry.markNumber,
         idNumber: entry.idNumber,
-        span: parseLengthToFeet(entry.length),
+        span: convertLengthToInches(entry.length),
         pourDate: entry.pourDate,
-        productType: entry.productType || '1047',
-        strandPattern: getDefaultStrandPattern(entry.productType),
+        productType: entry.productType,
         productWidth: entry.width,
       },
       fromQualityLog: true,

@@ -31,6 +31,21 @@ export type RootStackParamList = {
         }>;
         recordId: string;
       }
+    | {
+        // Prefill mode - populate fields but not in edit mode
+        prefillData: {
+          projectName?: string;
+          projectNumber?: string;
+          markNumber?: string;
+          idNumber?: string;
+          span?: number;
+          pourDate?: string;
+          productType?: string;
+          productWidth?: number;
+        };
+        fromQualityLog?: boolean;
+        qualityEntryId?: string;
+      }
     | undefined;
   ProductTagScanner: {
     onDataScanned: (data: {

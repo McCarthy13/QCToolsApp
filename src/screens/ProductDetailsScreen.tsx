@@ -51,11 +51,20 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   const isAdmin = currentUser?.role === 'admin';
   const { findByJobNumber, searchByJobName } = useJobAutocomplete();
 
-  // Check if we're in edit mode
-  const editMode = route.params?.editMode ?? false;
-  const existingConfig = editMode ? route.params?.existingConfig : undefined;
-  const existingSlippages = editMode ? route.params?.existingSlippages : undefined;
-  const recordId = editMode ? route.params?.recordId : undefined;
+  // Check if we're in edit mode or prefill mode
+  const params = route.params;
+  const editMode = params && 'editMode' in params ? params.editMode : false;
+  const existingConfig = params && 'existingConfig' in params ? params.existingConfig : undefined;
+  const existingSlippages = params && 'existingSlippages' in params ? params.existingSlippages : undefined;
+  const recordId = params && 'recordId' in params ? params.recordId : undefined;
+
+  // Prefill data from quality log (not edit mode)
+  const prefillData = params && 'prefillData' in params ? params.prefillData : undefined;
+  const fromQualityLog = params && 'fromQualityLog' in params ? params.fromQualityLog : false;
+  const qualityEntryId = params && 'qualityEntryId' in params ? params.qualityEntryId : undefined;
+
+  // Use existingConfig for edit mode, prefillData for prefill mode
+  const initialData = existingConfig || prefillData;
 
   // Convert span from decimal to feet/inches if it exists
   const convertSpanToFeetInches = (span?: number) => {
@@ -71,27 +80,27 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
     };
   };
 
-  const spanParts = convertSpanToFeetInches(existingConfig?.span);
+  const spanParts = convertSpanToFeetInches(initialData?.span);
 
   // Optional fields
-  const [projectName, setProjectName] = useState(existingConfig?.projectName || "");
-  const [projectNumber, setProjectNumber] = useState(existingConfig?.projectNumber || "");
-  const [markNumber, setMarkNumber] = useState(existingConfig?.markNumber || "");
-  const [idNumber, setIdNumber] = useState(existingConfig?.idNumber || "");
+  const [projectName, setProjectName] = useState(initialData?.projectName || "");
+  const [projectNumber, setProjectNumber] = useState(initialData?.projectNumber || "");
+  const [markNumber, setMarkNumber] = useState(initialData?.markNumber || "");
+  const [idNumber, setIdNumber] = useState(initialData?.idNumber || "");
   const [spanFeet, setSpanFeet] = useState(spanParts.feet);
   const [spanInches, setSpanInches] = useState(spanParts.inches);
   const [spanFraction, setSpanFraction] = useState(spanParts.fraction);
-  const [pourDate, setPourDate] = useState(existingConfig?.pourDate || "");
+  const [pourDate, setPourDate] = useState(initialData?.pourDate || "");
 
   // Required fields
-  const [productType, setProductType] = useState(existingConfig?.productType || "");
+  const [productType, setProductType] = useState(existingConfig?.productType || prefillData?.productType || "");
   const [strandPattern, setStrandPattern] = useState(existingConfig?.strandPattern || "");
   const [castStrandPattern, setCastStrandPattern] = useState(existingConfig?.castStrandPattern || "");
 
   // Optional field
   const [topStrandPattern, setTopStrandPattern] = useState(existingConfig?.topStrandPattern || "");
   const [topCastStrandPattern, setTopCastStrandPattern] = useState(existingConfig?.topCastStrandPattern || "");
-  const [productWidth, setProductWidth] = useState(existingConfig?.productWidth?.toString() || "");
+  const [productWidth, setProductWidth] = useState(initialData?.productWidth?.toString() || "");
   const [productSide, setProductSide] = useState<'L1' | 'L2' | ''>(existingConfig?.productSide || '');
 
   // Modals
