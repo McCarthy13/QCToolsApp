@@ -391,28 +391,28 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   // Column width definitions (in pixels) for consistent alignment
   const COLUMN_WIDTHS = {
-    detail: 32,
-    actions: 100, // Camera, gallery, slippage buttons
-    pourDate: 90,
-    disposition: 100,
-    status: 55,
-    approvalDate: 100,
-    productType: 60,
-    jobNumber: 75,
-    markNumber: 90,
-    pieceTicket: 32,
-    idNumber: 90,
-    length: 90,
-    width: 60,
-    designStrandPattern: 110,
-    castStrandPattern: 110,
-    bed: 50,
-    location: 75,
-    qualityComments: 180,
-    engineer: 100,
-    engineerFeedback: 180,
-    issueCodes: 100,
-    rejectCodes: 100,
+    detail: 28,
+    actions: 90, // Camera, gallery, slippage buttons
+    pourDate: 78,
+    disposition: 85,
+    status: 48,
+    approvalDate: 85,
+    productType: 50,
+    jobNumber: 62,
+    markNumber: 72,
+    pieceTicket: 28,
+    idNumber: 72,
+    length: 72,
+    width: 48,
+    designStrandPattern: 70,
+    castStrandPattern: 70,
+    bed: 40,
+    location: 58,
+    qualityComments: 140,
+    engineer: 80,
+    engineerFeedback: 140,
+    issueCodes: 80,
+    rejectCodes: 80,
   };
 
   // Render an editable text cell
@@ -427,14 +427,14 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     if (isEditing) {
       return (
-        <View style={{ width, paddingHorizontal: 8, paddingVertical: 4 }}>
+        <View style={{ width, paddingHorizontal: 6, paddingVertical: 4 }}>
           <TextInput
             value={editValue}
             onChangeText={setEditValue}
             onBlur={saveEdit}
             onSubmitEditing={saveEdit}
             autoFocus
-            className="text-xs bg-blue-50 border border-blue-300 rounded px-1 py-1 text-gray-900"
+            className="text-sm bg-blue-50 border border-blue-300 rounded px-1 py-1 text-gray-900"
             style={{ minHeight: 24 }}
           />
         </View>
@@ -444,9 +444,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => startEditing(entry.id, field, value)}
-        style={{ width, paddingHorizontal: 8, paddingVertical: 12 }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10 }}
       >
-        <Text className="text-xs text-gray-900" numberOfLines={2}>{displayValue}</Text>
+        <Text className="text-sm text-gray-900" numberOfLines={2}>{displayValue}</Text>
       </Pressable>
     );
   };
@@ -463,10 +463,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => setShowPickerModal({ entryId: entry.id, field })}
-        style={{ width, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' }}
       >
-        <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
-        <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+        <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
+        <Ionicons name="chevron-down" size={10} color="#9CA3AF" />
       </Pressable>
     );
   };
@@ -728,7 +728,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 <View
                   key={entry.id}
                   className="flex-row border-b border-gray-200"
-                  style={{ backgroundColor: '#FFFFFF', minWidth: '100%' }}
+                  style={{ backgroundColor: index % 2 === 0 ? '#FFFFFF' : '#F3F4F6', minWidth: '100%' }}
                 >
                   {/* Detail button */}
                   <Pressable
