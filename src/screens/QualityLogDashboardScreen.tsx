@@ -418,26 +418,42 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   };
 
   // Handle deleting an entry
-  const handleDeleteEntry = (entry: QualityLogEntry) => {
-    Alert.alert(
-      'Delete Entry',
-      `Are you sure you want to delete this entry?\n\nID: ${entry.idNumber || 'N/A'}\nMark: ${entry.markNumber || 'N/A'}\nJob: ${entry.jobNumber || 'N/A'}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteEntry(entry.id);
-            } catch (error) {
-              console.error('Error deleting entry:', error);
-              Alert.alert('Error', 'Failed to delete entry');
-            }
+  const handleDeleteEntry = async (entry: QualityLogEntry) => {
+    const message = `Are you sure you want to delete this entry?\n\nID: ${entry.idNumber || 'N/A'}\nMark: ${entry.markNumber || 'N/A'}\nJob: ${entry.jobNumber || 'N/A'}`;
+
+    if (Platform.OS === 'web') {
+      // Use window.confirm for web
+      const confirmed = window.confirm(message);
+      if (confirmed) {
+        try {
+          await deleteEntry(entry.id);
+        } catch (error) {
+          console.error('Error deleting entry:', error);
+          window.alert('Failed to delete entry');
+        }
+      }
+    } else {
+      // Use Alert.alert for native
+      Alert.alert(
+        'Delete Entry',
+        message,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteEntry(entry.id);
+              } catch (error) {
+                console.error('Error deleting entry:', error);
+                Alert.alert('Error', 'Failed to delete entry');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // Navigate to Product Details (Slippage Identifier entry point) with pre-filled data
