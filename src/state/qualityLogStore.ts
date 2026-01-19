@@ -6,6 +6,7 @@ import {
   QualityCode,
   ImportBatch,
   Disposition,
+  DispositionValue,
   ProductType,
   BedNumber,
   getStatusFromDisposition,
@@ -48,7 +49,7 @@ interface QualityLogState {
   getEntryByIdNumber: (idNumber: string) => QualityLogEntry | undefined;
 
   // Disposition change (handles auto-status and auto-date)
-  setDisposition: (id: string, disposition: Disposition) => Promise<void>;
+  setDisposition: (id: string, disposition: DispositionValue) => Promise<void>;
 
   // Issue/Reject code operations
   addIssueCode: (code: Omit<QualityCode, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;

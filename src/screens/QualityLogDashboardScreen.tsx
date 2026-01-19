@@ -33,6 +33,7 @@ import {
   STATUS_OPTIONS,
   isValidLocation,
   Disposition,
+  DispositionValue,
   ProductType,
   BedNumber,
 } from '../types/quality-log';
@@ -113,6 +114,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     field: 'disposition' | 'productType' | 'bed' | 'castStrandPattern' | 'issueCodes' | 'rejectCodes';
   } | null>(null);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [selectedDispositions, setSelectedDispositions] = useState<string[]>([]);
 
   useEffect(() => {
     initialize();
@@ -178,7 +180,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return color;
   };
 
-  const handleDispositionChange = async (entry: QualityLogEntry, disposition: Disposition) => {
+  const handleDispositionChange = async (entry: QualityLogEntry, disposition: DispositionValue) => {
     try {
       await setDisposition(entry.id, disposition);
     } catch (error) {
@@ -243,7 +245,30 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     try {
       if (field === 'disposition') {
-        await setDisposition(entryId, value as Disposition);
+        // Handle disposition multi-select with Yard Cut logic
+        const isYardCutCompatible = value === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(value);
+
+        if (isYardCutCompatible) {
+          // Toggle the disposition
+          setSelectedDispositions((prev) => {
+            if (prev.includes(value)) {
+              return prev.filter((d) => d !== value);
+            } else {
+              // If selecting a non-Yard Cut compatible option while having one selected,
+              // replace with the new selection
+              if (!YARD_CUT_COMPATIBLE.includes(value) && value !== 'Yard Cut') {
+                return [value];
+              }
+              return [...prev, value];
+            }
+          });
+          return; // Don't close modal yet
+        } else {
+          // Non-compatible options (Ok to Ship, Not Cast, Repour) - single select only
+          await setDisposition(entryId, value as Disposition);
+          setShowPickerModal(null);
+          setSelectedDispositions([]);
+        }
       } else if (field === 'issueCodes' || field === 'rejectCodes') {
         // Multi-select: toggle the code
         setSelectedCodes((prev) =>
@@ -263,23 +288,42 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     setShowPickerModal(null);
   };
 
-  // Save multi-select codes
+  // Save multi-select codes or dispositions
   const saveMultiSelectCodes = async () => {
     if (!showPickerModal) return;
 
     const { entryId, field } = showPickerModal;
 
     try {
-      const updates: Partial<QualityLogEntry> = {};
-      (updates as any)[field] = selectedCodes;
-      await updateEntry(entryId, updates);
+      if (field === 'disposition') {
+        // Save disposition(s) - join with comma if multiple
+        const dispositionValue = selectedDispositions.join(', ');
+        if (dispositionValue) {
+          await setDisposition(entryId, dispositionValue as Disposition);
+        }
+        setSelectedDispositions([]);
+      } else {
+        const updates: Partial<QualityLogEntry> = {};
+        (updates as any)[field] = selectedCodes;
+        await updateEntry(entryId, updates);
+        setSelectedCodes([]);
+      }
     } catch (error) {
       console.error('Error updating entry:', error);
       Alert.alert('Error', 'Failed to update entry');
     }
 
     setShowPickerModal(null);
-    setSelectedCodes([]);
+  };
+
+  // Open disposition picker with current values
+  const openDispositionPicker = (entryId: string, currentDisposition: string | undefined) => {
+    // Parse existing disposition (might be comma-separated)
+    const dispositions = currentDisposition
+      ? currentDisposition.split(', ').map(d => d.trim()).filter(d => d)
+      : [];
+    setSelectedDispositions(dispositions);
+    setShowPickerModal({ entryId, field: 'disposition' });
   };
 
   // Open codes picker with current values
@@ -460,9 +504,17 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   ) => {
     const displayValue = field === 'bed' && value ? `${value}` : value || '-';
 
+    const handlePress = () => {
+      if (field === 'disposition') {
+        openDispositionPicker(entry.id, value);
+      } else {
+        setShowPickerModal({ entryId: entry.id, field });
+      }
+    };
+
     return (
       <Pressable
-        onPress={() => setShowPickerModal({ entryId: entry.id, field })}
+        onPress={handlePress}
         style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' }}
       >
         <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
@@ -520,7 +572,31 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     }
   };
 
-  const isMultiSelect = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes';
+  const isMultiSelect = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes' || showPickerModal?.field === 'disposition';
+
+  // Yard Cut can only be paired with these dispositions
+  const YARD_CUT_COMPATIBLE = ['WIP', 'Scheduled', 'Eng'];
+
+  // Check if a disposition option should be enabled based on current selections
+  const isDispositionOptionEnabled = (option: string): boolean => {
+    if (!showPickerModal || showPickerModal.field !== 'disposition') return true;
+
+    // If nothing is selected, all options are enabled
+    if (selectedDispositions.length === 0) return true;
+
+    // If Yard Cut is selected, only compatible options are enabled
+    if (selectedDispositions.includes('Yard Cut')) {
+      return option === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(option);
+    }
+
+    // If a compatible option is selected, only Yard Cut is allowed to be added
+    if (YARD_CUT_COMPATIBLE.includes(selectedDispositions[0])) {
+      return selectedDispositions.includes(option) || option === 'Yard Cut';
+    }
+
+    // For other options (Ok to Ship, Not Cast, Repour), no multi-select allowed
+    return selectedDispositions.includes(option);
+  };
 
   // Get filter options for dropdown columns
   const getFilterOptions = (column: ColumnFilterType): string[] => {
@@ -847,7 +923,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 </Pressable>
               )}
             </View>
-            {isMultiSelect && selectedCodes.length > 0 && (
+            {showPickerModal?.field === 'disposition' && selectedDispositions.length > 0 && (
+              <View className="mb-3 pb-3 border-b border-gray-200">
+                <Text className="text-xs text-gray-500 mb-1">Selected: {selectedDispositions.join(', ')}</Text>
+              </View>
+            )}
+            {(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') && selectedCodes.length > 0 && (
               <View className="mb-3 pb-3 border-b border-gray-200">
                 <Text className="text-xs text-gray-500 mb-1">Selected: {selectedCodes.sort((a, b) => Number(a) - Number(b)).join(', ')}</Text>
               </View>
@@ -855,22 +936,35 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             <ScrollView className="max-h-80">
               <View className="flex-row flex-wrap">
                 {getPickerOptions().map((option) => {
-                  const isSelected = isMultiSelect && selectedCodes.includes(option);
+                  const isDisposition = showPickerModal?.field === 'disposition';
+                  const isCodeField = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes';
+                  const isSelected = isDisposition
+                    ? selectedDispositions.includes(option)
+                    : isCodeField
+                    ? selectedCodes.includes(option)
+                    : false;
+                  const isEnabled = isDisposition ? isDispositionOptionEnabled(option) : true;
+
                   return (
                     <Pressable
                       key={option}
-                      onPress={() => handlePickerSelect(option)}
+                      onPress={() => isEnabled && handlePickerSelect(option)}
                       className={`py-2 px-3 m-1 rounded-lg ${
                         isSelected
                           ? 'bg-blue-600'
+                          : !isEnabled
+                          ? 'bg-gray-200'
                           : isMultiSelect
                           ? 'bg-gray-100'
                           : 'border-b border-gray-100'
                       }`}
-                      style={!isMultiSelect ? { width: '100%', marginHorizontal: 0 } : {}}
+                      style={!isMultiSelect && !isDisposition ? { width: '100%', marginHorizontal: 0 } : {}}
+                      disabled={!isEnabled}
                     >
                       <Text
-                        className={`text-center text-base ${isSelected ? 'text-white' : 'text-gray-900'}`}
+                        className={`text-center text-base ${
+                          isSelected ? 'text-white' : !isEnabled ? 'text-gray-400' : 'text-gray-900'
+                        }`}
                       >
                         {showPickerModal?.field === 'bed' ? `Bed ${option}` : option}
                       </Text>
@@ -879,10 +973,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 })}
               </View>
             </ScrollView>
+            {showPickerModal?.field === 'disposition' && (
+              <View className="mt-2 pb-2 border-b border-gray-100">
+                <Text className="text-xs text-gray-400 text-center">Yard Cut can be combined with WIP, Scheduled, or Eng</Text>
+              </View>
+            )}
             <Pressable
               onPress={() => {
                 setShowPickerModal(null);
                 setSelectedCodes([]);
+                setSelectedDispositions([]);
               }}
               className="py-3 mt-2"
             >

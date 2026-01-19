@@ -3,8 +3,11 @@
 // Product types for extruded pieces
 export type ProductType = '8048' | '1047' | '1247' | '1250' | '1647' | '1648';
 
-// Disposition options
+// Disposition options (single values)
 export type Disposition = 'Scheduled' | 'Ok to Ship' | 'Eng' | 'WIP' | 'Yard Cut' | 'Not Cast' | 'Repour';
+
+// Combined disposition type (can be single or comma-separated for Yard Cut combos)
+export type DispositionValue = Disposition | string; // string allows "WIP, Yard Cut" etc.
 
 // Status codes (auto-set based on disposition)
 export type StatusCode = '40' | '50' | '90';
@@ -47,7 +50,7 @@ export interface QualityLogEntry {
   photoUrls?: string[]; // Array of Firebase Storage URLs for attached photos
 
   // Auto-calculated based on disposition
-  disposition?: Disposition;
+  disposition?: DispositionValue;
   status?: StatusCode;
   approvalRejectionDate?: string; // Auto-set when disposition changes
 
@@ -78,26 +81,34 @@ export interface ImportBatch {
 }
 
 // Status/color mapping helper
-export const getStatusFromDisposition = (disposition: Disposition): { status: StatusCode; color: string } => {
-  switch (disposition) {
+export const getStatusFromDisposition = (disposition: DispositionValue): { status: StatusCode; color: string } => {
+  // Handle combined dispositions (e.g., "WIP, Yard Cut")
+  const dispositions = disposition.split(', ').map(d => d.trim());
+
+  // If any disposition triggers approval/rejection (Ok to Ship, Not Cast, Repour), use that status
+  if (dispositions.includes('Ok to Ship')) {
+    return { status: '50', color: '#00FF00' }; // Green
+  }
+  if (dispositions.includes('Not Cast') || dispositions.includes('Repour')) {
+    return { status: '90', color: '#FF0000' }; // Red
+  }
+
+  // Otherwise, it's a status 40 (yellow) disposition
+  switch (dispositions[0] as Disposition) {
     case 'Scheduled':
     case 'Eng':
     case 'WIP':
     case 'Yard Cut':
       return { status: '40', color: '#FFFF00' }; // Yellow
-    case 'Ok to Ship':
-      return { status: '50', color: '#00FF00' }; // Green
-    case 'Not Cast':
-    case 'Repour':
-      return { status: '90', color: '#FF0000' }; // Red
     default:
       return { status: '40', color: '#FFFFFF' }; // White (no disposition)
   }
 };
 
 // Check if disposition triggers approval/rejection date
-export const shouldSetApprovalDate = (disposition: Disposition): boolean => {
-  return ['Ok to Ship', 'Not Cast', 'Repour'].includes(disposition);
+export const shouldSetApprovalDate = (disposition: DispositionValue): boolean => {
+  const dispositions = disposition.split(', ').map(d => d.trim());
+  return dispositions.some(d => ['Ok to Ship', 'Not Cast', 'Repour'].includes(d));
 };
 
 // Product type inference from thickness

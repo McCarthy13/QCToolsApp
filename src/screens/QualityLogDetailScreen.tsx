@@ -16,6 +16,7 @@ import { useQualityLogStore } from '../state/qualityLogStore';
 import {
   QualityLogEntry,
   Disposition,
+  DispositionValue,
   ProductType,
   BedNumber,
   getStatusFromDisposition,
