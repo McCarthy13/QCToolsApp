@@ -72,6 +72,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const initialize = useQualityLogStore((s) => s.initialize);
   const setDisposition = useQualityLogStore((s) => s.setDisposition);
   const updateEntry = useQualityLogStore((s) => s.updateEntry);
+  const deleteEntry = useQualityLogStore((s) => s.deleteEntry);
   const currentUser = useAuthStore((s) => s.currentUser);
   const isAdmin = currentUser?.role === 'admin';
   const customPatterns = useStrandPatternStore((s) => s.customPatterns);
@@ -416,6 +417,29 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return feet * 12;
   };
 
+  // Handle deleting an entry
+  const handleDeleteEntry = (entry: QualityLogEntry) => {
+    Alert.alert(
+      'Delete Entry',
+      `Are you sure you want to delete this entry?\n\nID: ${entry.idNumber || 'N/A'}\nMark: ${entry.markNumber || 'N/A'}\nJob: ${entry.jobNumber || 'N/A'}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteEntry(entry.id);
+            } catch (error) {
+              console.error('Error deleting entry:', error);
+              Alert.alert('Error', 'Failed to delete entry');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Navigate to Product Details (Slippage Identifier entry point) with pre-filled data
   const handleOpenSlippageIdentifier = (entry: QualityLogEntry) => {
     navigation.navigate('ProductDetails', {
@@ -436,7 +460,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   // Column width definitions (in pixels) for consistent alignment
   const COLUMN_WIDTHS = {
     detail: 28,
-    actions: 90, // Camera, gallery, slippage buttons
+    actions: 115, // Camera, gallery, slippage, delete buttons
     pourDate: 78,
     disposition: 85,
     status: 48,
@@ -814,7 +838,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                     <Ionicons name="open-outline" size={14} color="#6B7280" />
                   </Pressable>
 
-                  {/* Action buttons - Camera, Gallery, Slippage */}
+                  {/* Action buttons - Camera, Gallery, Slippage, Delete */}
                   <View style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 4, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
                     <Pressable
                       onPress={() => handleTakePhoto(entry)}
@@ -833,6 +857,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       className="bg-purple-100 rounded-full p-1.5 active:bg-purple-200"
                     >
                       <Ionicons name="git-compare" size={16} color="#9333EA" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDeleteEntry(entry)}
+                      className="bg-red-100 rounded-full p-1.5 active:bg-red-200"
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
 
