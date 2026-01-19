@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
+import { useStrandPatternStore } from '../state/strandPatternStore';
 import {
   QualityLogEntry,
   ProductType,
@@ -78,6 +79,21 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const entries = useQualityLogStore((s) => s.entries);
   const updateEntry = useQualityLogStore((s) => s.updateEntry);
 
+  // Strand pattern store
+  const customPatterns = useStrandPatternStore((s) => s.customPatterns);
+  const initializePatterns = useStrandPatternStore((s) => s.initialize);
+
+  // Initialize strand patterns on mount
+  useEffect(() => {
+    initializePatterns();
+  }, []);
+
+  // Get unique strand pattern IDs sorted
+  const availableStrandPatterns = useMemo(() => {
+    const patternIds = [...new Set(customPatterns.map((p) => p.patternId))];
+    return patternIds.sort();
+  }, [customPatterns]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [extractedEntries, setExtractedEntries] = useState<ExtractedEntry[]>([]);
@@ -87,8 +103,10 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   // Selection flow state
   const [showBedPrompt, setShowBedPrompt] = useState(false);
   const [showProductTypePrompt, setShowProductTypePrompt] = useState(false);
+  const [showCastStrandPatternPrompt, setShowCastStrandPatternPrompt] = useState(false);
   const [showMissingValuesPrompt, setShowMissingValuesPrompt] = useState(false);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | 'Mixed' | null>(null);
+  const [selectedCastStrandPattern, setSelectedCastStrandPattern] = useState<string | null>(null);
 
   // Piece ticket state
   const [importMode, setImportMode] = useState<'schedule' | 'pieceTickets' | null>(null);
@@ -289,6 +307,13 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const handleProductTypeSelect = (type: ProductType | 'Mixed') => {
     setShowProductTypePrompt(false);
     setSelectedProductType(type);
+    // Next, ask for cast strand pattern
+    setShowCastStrandPatternPrompt(true);
+  };
+
+  const handleCastStrandPatternSelect = (pattern: string | null) => {
+    setShowCastStrandPatternPrompt(false);
+    setSelectedCastStrandPattern(pattern);
 
     // Check if there are missing values - if so, show warning
     if (missingValuesInfo.length > 0) {
@@ -319,7 +344,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         return;
       }
 
-      // Create full entries with product type and bed
+      // Create full entries with product type, bed, and cast strand pattern
       // If "Mixed" was selected, don't set a product type (user will set individually)
       const fullEntries: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>[] = entriesToImport.map((entry) => ({
         pourDate: pourDate || entry.pourDate,
@@ -330,6 +355,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         width: entry.width,
         thickness: entry.thickness,
         designStrandPattern: entry.designStrandPattern,
+        castStrandPattern: selectedCastStrandPattern || undefined, // Use user-selected cast strand pattern
         bed: selectedBed, // Use user-selected bed for all entries
         productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as ProductType) || undefined,
         issueCodes: [],
@@ -367,9 +393,11 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     setPourDate('');
     setSelectedBed(undefined);
     setSelectedProductType(null);
+    setSelectedCastStrandPattern(null);
     setShowReview(false);
     setShowBedPrompt(false);
     setShowProductTypePrompt(false);
+    setShowCastStrandPatternPrompt(false);
     setShowMissingValuesPrompt(false);
     setDuplicateIds([]);
     setEditingCell(null);
@@ -696,7 +724,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       )}
 
       {/* Initial State - Two Options */}
-      {!isLoading && !showReview && !showBedPrompt && !showProductTypePrompt && !showMissingValuesPrompt && !showPieceTicketReview && (
+      {!isLoading && !showReview && !showBedPrompt && !showProductTypePrompt && !showCastStrandPatternPrompt && !showMissingValuesPrompt && !showPieceTicketReview && (
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, gap: 16 }}>
           {/* Import Pour Schedule */}
           <View className="bg-white rounded-2xl p-6 shadow-sm">
@@ -858,23 +886,29 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           <View className="bg-white rounded-xl p-4 mt-4 mx-4">
             <Text className="text-lg font-bold text-gray-900 mb-3">Import Summary</Text>
             <View className="flex-row flex-wrap gap-4">
-              <View className="flex-1 min-w-[120px]">
+              <View className="flex-1 min-w-[100px]">
                 <Text className="text-xs text-gray-500">Pour Date</Text>
                 <Text className="text-base font-semibold text-gray-900">{pourDate || 'Unknown'}</Text>
               </View>
-              <View className="flex-1 min-w-[120px]">
+              <View className="flex-1 min-w-[100px]">
                 <Text className="text-xs text-gray-500">Bed</Text>
                 <Text className="text-base font-semibold text-gray-900">
                   {selectedBed ? `Bed ${selectedBed}` : 'Not Set'}
                 </Text>
               </View>
-              <View className="flex-1 min-w-[120px]">
+              <View className="flex-1 min-w-[100px]">
                 <Text className="text-xs text-gray-500">Product Type</Text>
                 <Text className="text-base font-semibold text-gray-900">
                   {selectedProductType === 'Mixed' ? 'Mixed/Manual' : selectedProductType || 'Unknown'}
                 </Text>
               </View>
-              <View className="flex-1 min-w-[120px]">
+              <View className="flex-1 min-w-[100px]">
+                <Text className="text-xs text-gray-500">Cast Pattern</Text>
+                <Text className="text-base font-semibold text-gray-900">
+                  {selectedCastStrandPattern || 'None'}
+                </Text>
+              </View>
+              <View className="flex-1 min-w-[100px]">
                 <Text className="text-xs text-gray-500">Entries</Text>
                 <Text className="text-base font-semibold text-gray-900">
                   {extractedEntries.length}
@@ -1054,6 +1088,56 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 </Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cast Strand Pattern Selection Modal */}
+      <Modal visible={showCastStrandPatternPrompt} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-center px-6">
+          <View className="bg-white rounded-2xl p-6 max-h-[80%]">
+            <Text className="text-xl font-bold text-gray-900 text-center mb-2">
+              Select Cast Strand Pattern
+            </Text>
+            <Text className="text-gray-600 text-center mb-6">
+              Choose the strand pattern used for casting this bed:
+            </Text>
+
+            <ScrollView className="max-h-80" showsVerticalScrollIndicator>
+              <View className="gap-3">
+                {availableStrandPatterns.length > 0 ? (
+                  availableStrandPatterns.map((patternId) => (
+                    <Pressable
+                      key={patternId}
+                      onPress={() => handleCastStrandPatternSelect(patternId)}
+                      className="bg-blue-600 py-4 px-4 rounded-xl items-center active:bg-blue-700"
+                    >
+                      <Text className="text-white font-bold text-lg">{patternId}</Text>
+                    </Pressable>
+                  ))
+                ) : (
+                  <View className="bg-gray-100 rounded-xl p-4 items-center">
+                    <Ionicons name="information-circle-outline" size={24} color="#6B7280" />
+                    <Text className="text-gray-600 text-center mt-2">
+                      No strand patterns configured yet.
+                    </Text>
+                    <Text className="text-gray-500 text-xs text-center mt-1">
+                      Add patterns in Strand Pattern Management.
+                    </Text>
+                  </View>
+                )}
+
+                <Pressable
+                  onPress={() => handleCastStrandPatternSelect(null)}
+                  className="bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300 mt-2"
+                >
+                  <Text className="text-gray-700 font-semibold">Skip / None</Text>
+                  <Text className="text-gray-500 text-xs">
+                    Don't set a cast strand pattern
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
