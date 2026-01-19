@@ -66,17 +66,18 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   // Use existingConfig for edit mode, prefillData for prefill mode
   const initialData = existingConfig || prefillData;
 
-  // Convert span from decimal to feet/inches if it exists
+  // Convert span from total inches to feet/inches (with decimal inches)
   const convertSpanToFeetInches = (span?: number) => {
-    if (!span) return { feet: "", inches: "", fraction: "0" };
+    if (!span) return { feet: "", inches: "" };
     const feet = Math.floor(span / 12);
     const remainingInches = span % 12;
-    const inches = Math.floor(remainingInches);
-    const fraction = ((remainingInches - inches) * 16).toFixed(0); // Convert to 16ths
+    // Round to 2 decimal places for display
+    const inchesStr = remainingInches % 1 === 0
+      ? remainingInches.toString()
+      : remainingInches.toFixed(2).replace(/\.?0+$/, '');
     return {
       feet: feet.toString(),
-      inches: inches.toString(),
-      fraction: fraction
+      inches: inchesStr
     };
   };
 
@@ -89,7 +90,6 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   const [idNumber, setIdNumber] = useState(initialData?.idNumber || "");
   const [spanFeet, setSpanFeet] = useState(spanParts.feet);
   const [spanInches, setSpanInches] = useState(spanParts.inches);
-  const [spanFraction, setSpanFraction] = useState(spanParts.fraction);
   const [pourDate, setPourDate] = useState(initialData?.pourDate || "");
 
   // Required fields
@@ -109,7 +109,6 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   const [showCastStrandModal, setShowCastStrandModal] = useState(false);
   const [showTopStrandModal, setShowTopStrandModal] = useState(false);
   const [showTopCastStrandModal, setShowTopCastStrandModal] = useState(false);
-  const [showFractionModal, setShowFractionModal] = useState(false);
 
   // Project Name autocomplete
   const [showProjectNameSuggestions, setShowProjectNameSuggestions] = useState(false);
@@ -261,53 +260,10 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
   const tolerance = 0.001;
   const isCutWidth = parsedWidth !== null && Math.abs(parsedWidth - fullWidth) > tolerance && parsedWidth < fullWidth;
 
-  const parseFraction = (fraction: string): number => {
-    if (!fraction || fraction === "0") return 0;
-    const parts = fraction.split("/");
-    if (parts.length === 2) {
-      const numerator = parseFloat(parts[0]);
-      const denominator = parseFloat(parts[1]);
-      if (denominator !== 0) {
-        return numerator / denominator;
-      }
-    }
-    return 0;
-  };
-
-  // Validate that a fraction string is a valid 1/8" increment
-  const validateFraction = (fractionStr: string): boolean => {
-    const validFractions = ["0", "1/8", "1/4", "3/8", "1/2", "5/8", "3/4", "7/8"];
-    return validFractions.includes(fractionStr.trim());
-  };
-
-  // Handle fraction input change with validation
-  const handleFractionChange = (text: string) => {
-    setSpanFraction(text);
-  };
-
-  // Handle fraction input blur (when user finishes typing)
-  const handleFractionBlur = () => {
-    const trimmed = spanFraction.trim();
-
-    // If empty, default to "0"
-    if (trimmed === "") {
-      setSpanFraction("0");
-      return;
-    }
-
-    // Validate the input
-    if (!validateFraction(trimmed)) {
-      // Show error alert
-      alert("Not a valid value. Please enter 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, or 7/8 or select from the dropdown.");
-      setSpanFraction("0"); // Reset to 0
-    }
-  };
-
   const getSpanInFeet = (): number => {
     const feet = parseFloat(spanFeet) || 0;
     const inches = parseFloat(spanInches) || 0;
-    const fractionValue = parseFraction(spanFraction);
-    return feet + (inches + fractionValue) / 12;
+    return feet + inches / 12;
   };
 
   const handlePopulateTestValues = () => {
@@ -324,8 +280,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
     setMarkNumber("H000");
     setIdNumber("0000000");
     setSpanFeet("30");
-    setSpanInches("6");
-    setSpanFraction("1/2");
+    setSpanInches("6.5");
     setPourDate(currentDate);
     setProductType("8048");
     setProductWidth("40");
@@ -379,7 +334,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
         projectNumber: projectNumber || undefined,
         markNumber: markNumber || undefined,
         idNumber: idNumber || undefined,
-        span: spanFeet || spanInches || spanFraction !== "0" ? getSpanInFeet() : undefined,
+        span: spanFeet || spanInches ? getSpanInFeet() : undefined,
         pourDate: pourDate || undefined,
         productType: productType,
         strandPattern: strandPattern,
@@ -436,7 +391,6 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                         if (data.span) {
                           setSpanFeet(data.span.feet.toString());
                           setSpanInches(data.span.inches.toString());
-                          setSpanFraction("0"); // Decimal inches, no fraction
                         }
                         if (data.pourDate) setPourDate(data.pourDate);
                         if (data.productWidth) {
@@ -600,6 +554,9 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
               <Text className="text-gray-700 text-sm font-medium mb-2">
                 Span (Optional)
               </Text>
+              <Text className="text-xs text-gray-500 mb-2">
+                Enter feet and inches (inches can include decimals, e.g., 10.75)
+              </Text>
               <View className="flex-row items-center" style={{ gap: 8 }}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <TextInput
@@ -612,7 +569,7 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                     keyboardType="numeric"
                   />
                 </View>
-                <Text className="text-gray-600 font-medium">-</Text>
+                <Text className="text-gray-600 font-medium text-lg">'</Text>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <TextInput
                     className="bg-white border border-gray-300 rounded-lg px-3 py-3 text-base text-gray-900"
@@ -621,27 +578,10 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                     cursorColor="#000000"
                     value={spanInches}
                     onChangeText={setSpanInches}
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                   />
                 </View>
-                <View style={{ minWidth: 90 }}>
-                  <Pressable
-                    className="bg-white border border-gray-300 rounded-lg px-3 py-3 flex-row items-center justify-between"
-                    onPress={() => setShowFractionModal(true)}
-                  >
-                    <TextInput
-                      className="text-gray-900 font-medium text-sm flex-1"
-                      placeholder="0"
-                      placeholderTextColor="#9CA3AF"
-                      cursorColor="#000000"
-                      value={spanFraction}
-                      onChangeText={handleFractionChange}
-                      onBlur={handleFractionBlur}
-                      style={{ padding: 0 }}
-                    />
-                    <Ionicons name="chevron-down" size={16} color="#6B7280" />
-                  </Pressable>
-                </View>
+                <Text className="text-gray-600 font-medium text-lg">"</Text>
               </View>
             </View>
 
@@ -1303,53 +1243,6 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
                   <Text className="text-gray-600 text-sm mt-1">
                     Pattern ID: {pattern.patternId} • Position:{" "}
                     {pattern.position}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Fraction Selector Modal */}
-      <Modal
-        visible={showFractionModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowFractionModal(false)}
-      >
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl max-h-[70%]">
-            <View className="p-4 border-b border-gray-200 flex-row items-center justify-between">
-              <Text className="text-gray-900 text-lg font-semibold">
-                Select Fraction
-              </Text>
-              <Pressable onPress={() => setShowFractionModal(false)}>
-                <Ionicons name="close" size={24} color="#6B7280" />
-              </Pressable>
-            </View>
-            <ScrollView className="p-4">
-              {["0", "1/8", "1/4", "3/8", "1/2", "5/8", "3/4", "7/8"].map((fraction) => (
-                <Pressable
-                  key={fraction}
-                  className={`p-4 mb-2 rounded-lg border ${
-                    spanFraction === fraction
-                      ? "bg-blue-50 border-blue-500"
-                      : "bg-white border-gray-200"
-                  }`}
-                  onPress={() => {
-                    setSpanFraction(fraction);
-                    setShowFractionModal(false);
-                  }}
-                >
-                  <Text
-                    className={`text-base font-semibold ${
-                      spanFraction === fraction
-                        ? "text-blue-600"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    {fraction}″
                   </Text>
                 </Pressable>
               ))}
