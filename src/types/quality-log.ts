@@ -41,6 +41,9 @@ export interface QualityLogEntry {
   // Piece ticket attachment
   pieceTicketUrl?: string; // URL to the piece ticket PDF page in Firebase Storage
 
+  // Photos associated with this piece
+  photoUrls?: string[]; // Array of Firebase Storage URLs for attached photos
+
   // Auto-calculated based on disposition
   disposition?: Disposition;
   status?: StatusCode;

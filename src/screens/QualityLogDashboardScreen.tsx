@@ -10,10 +10,14 @@ import {
   RefreshControl,
   Modal,
   Linking,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../config/firebase';
 import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
 import { useAuthStore } from '../state/authStore';
@@ -276,9 +280,118 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     setShowPickerModal({ entryId, field });
   };
 
+  // Upload photo to Firebase Storage
+  const uploadPhoto = async (uri: string, entryId: string): Promise<string> => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const filename = `quality-log-photos/${entryId}/${Date.now()}.jpg`;
+    const storageRef = ref(storage, filename);
+    await uploadBytes(storageRef, blob);
+    return getDownloadURL(storageRef);
+  };
+
+  // Handle taking a photo with camera
+  const handleTakePhoto = async (entry: QualityLogEntry) => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant camera access to take photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      try {
+        const downloadUrl = await uploadPhoto(result.assets[0].uri, entry.id);
+        const existingPhotos = entry.photoUrls || [];
+        await updateEntry(entry.id, { photoUrls: [...existingPhotos, downloadUrl] });
+        Alert.alert('Success', 'Photo added successfully');
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        Alert.alert('Error', 'Failed to upload photo');
+      }
+    }
+  };
+
+  // Handle selecting photo from gallery
+  const handleSelectFromGallery = async (entry: QualityLogEntry) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant photo library access to select photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 10,
+    });
+
+    if (!result.canceled && result.assets) {
+      try {
+        const existingPhotos = entry.photoUrls || [];
+        const uploadPromises = result.assets.map(asset => uploadPhoto(asset.uri, entry.id));
+        const downloadUrls = await Promise.all(uploadPromises);
+        await updateEntry(entry.id, { photoUrls: [...existingPhotos, ...downloadUrls] });
+        Alert.alert('Success', `${downloadUrls.length} photo(s) added successfully`);
+      } catch (error) {
+        console.error('Error uploading photos:', error);
+        Alert.alert('Error', 'Failed to upload photos');
+      }
+    }
+  };
+
+  // Parse length string to number (e.g., "24'-3.75\"" -> 24.3125)
+  const parseLengthToFeet = (lengthStr: string | undefined): number | undefined => {
+    if (!lengthStr) return undefined;
+    const match = lengthStr.match(/(\d+)'[-\s]*(\d+(?:\.\d+)?)"?/);
+    if (match) {
+      const feet = parseInt(match[1], 10);
+      const inches = parseFloat(match[2]);
+      return feet + (inches / 12);
+    }
+    return undefined;
+  };
+
+  // Navigate to Slippage Identifier with pre-filled data
+  const handleOpenSlippageIdentifier = (entry: QualityLogEntry) => {
+    // Map product type to strand pattern (default patterns)
+    const getDefaultStrandPattern = (productType: string | undefined): string => {
+      switch (productType) {
+        case '8048': return '8-48';
+        case '1047': return '10-47';
+        case '1247': return '12-47';
+        case '1250': return '12-50';
+        case '1647': return '16-47';
+        case '1648': return '16-48';
+        default: return '10-47';
+      }
+    };
+
+    navigation.navigate('SlippageIdentifier', {
+      config: {
+        projectNumber: entry.jobNumber,
+        markNumber: entry.markNumber,
+        idNumber: entry.idNumber,
+        span: parseLengthToFeet(entry.length),
+        pourDate: entry.pourDate,
+        productType: entry.productType || '1047',
+        strandPattern: getDefaultStrandPattern(entry.productType),
+        productWidth: entry.width,
+      },
+      fromQualityLog: true,
+      qualityEntryId: entry.id,
+    });
+  };
+
   // Column width definitions (in pixels) for consistent alignment
   const COLUMN_WIDTHS = {
     detail: 32,
+    actions: 100, // Camera, gallery, slippage buttons
     pourDate: 90,
     disposition: 100,
     status: 55,
@@ -569,6 +682,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           <View style={{ minWidth: '100%' }}>
             <View className="flex-row bg-gray-800 py-2" style={{ minWidth: '100%' }}>
               <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4 }} className="text-xs font-semibold text-white"></Text>
+              <Text style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 8 }} className="text-xs font-semibold text-white">Actions</Text>
               {renderFilterableHeader('pourDate', 'Pour Date', COLUMN_WIDTHS.pourDate)}
               {renderFilterableHeader('disposition', 'Disposition', COLUMN_WIDTHS.disposition)}
               {renderFilterableHeader('status', 'Status', COLUMN_WIDTHS.status)}
@@ -612,6 +726,28 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   >
                     <Ionicons name="open-outline" size={14} color="#6B7280" />
                   </Pressable>
+
+                  {/* Action buttons - Camera, Gallery, Slippage */}
+                  <View style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 4, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
+                    <Pressable
+                      onPress={() => handleTakePhoto(entry)}
+                      className="bg-blue-100 rounded-full p-1.5 active:bg-blue-200"
+                    >
+                      <Ionicons name="camera" size={16} color="#2563EB" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleSelectFromGallery(entry)}
+                      className="bg-green-100 rounded-full p-1.5 active:bg-green-200"
+                    >
+                      <Ionicons name="images" size={16} color="#16A34A" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleOpenSlippageIdentifier(entry)}
+                      className="bg-purple-100 rounded-full p-1.5 active:bg-purple-200"
+                    >
+                      <Ionicons name="git-compare" size={16} color="#9333EA" />
+                    </Pressable>
+                  </View>
 
                   {/* Editable cells - New column order */}
                   {renderEditableTextCell(entry, 'pourDate', entry.pourDate, COLUMN_WIDTHS.pourDate)}
