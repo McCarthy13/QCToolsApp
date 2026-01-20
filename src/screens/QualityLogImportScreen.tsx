@@ -100,7 +100,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [pourDate, setPourDate] = useState<string>('');
   const [selectedBed, setSelectedBed] = useState<BedNumber | undefined>();
 
-  // Selection flow state
+  // Selection flow state - collect metadata BEFORE file upload
   const [showBedPrompt, setShowBedPrompt] = useState(false);
   const [showProductTypePrompt, setShowProductTypePrompt] = useState(false);
   const [showCastStrandPatternPrompt, setShowCastStrandPatternPrompt] = useState(false);
@@ -108,8 +108,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [selectedProductType, setSelectedProductType] = useState<ProductType | 'Mixed' | null>(null);
   const [selectedCastStrandPattern, setSelectedCastStrandPattern] = useState<string | null>(null);
 
-  // Pending file state - store file data before Cloud Function call
-  const [pendingFile, setPendingFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
+  // No longer need pending file state - we collect metadata first, then pick file
 
   // Piece ticket state
   const [importMode, setImportMode] = useState<'schedule' | 'pieceTickets' | null>(null);
@@ -154,11 +153,36 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     return missing;
   }, [extractedEntries]);
 
-  const handlePickDocument = async () => {
-    console.log('[QualityLogImport] handlePickDocument called');
-    try {
-      console.log('[QualityLogImport] Opening document picker...');
+  // Step 1: User clicks "Select Schedule File" - start by asking for Bed
+  const handlePickDocument = () => {
+    console.log('[QualityLogImport] Starting import flow - asking for bed first');
+    setShowBedPrompt(true);
+  };
 
+  // Step 2: After bed selected, ask for product type
+  const handleBedSelect = (bed: BedNumber) => {
+    setSelectedBed(bed);
+    setShowBedPrompt(false);
+    setShowProductTypePrompt(true);
+  };
+
+  // Step 3: After product type selected, ask for cast strand pattern
+  const handleProductTypeSelect = (type: ProductType | 'Mixed') => {
+    setSelectedProductType(type);
+    setShowProductTypePrompt(false);
+    setShowCastStrandPatternPrompt(true);
+  };
+
+  // Step 4: After cast strand pattern selected, open file picker and process
+  const handleCastStrandPatternSelect = async (pattern: string | null) => {
+    setSelectedCastStrandPattern(pattern);
+    setShowCastStrandPatternPrompt(false);
+
+    // Now open file picker
+    console.log('[QualityLogImport] Metadata collected, opening file picker...');
+    console.log('[QualityLogImport] Bed:', selectedBed, 'Product Type:', selectedProductType, 'Cast Pattern:', pattern);
+
+    try {
       let result;
       try {
         result = await DocumentPicker.getDocumentAsync({
@@ -169,16 +193,13 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       } catch (pickerError: any) {
         console.log('[QualityLogImport] Picker threw error:', pickerError?.message || pickerError);
         Alert.alert('Picker Error', `Document picker failed: ${pickerError?.message || 'Unknown error'}`);
+        resetImport();
         return;
       }
 
-      console.log('[QualityLogImport] Picker result type:', typeof result);
-      console.log('[QualityLogImport] Picker result canceled:', result?.canceled);
-      console.log('[QualityLogImport] Picker result assets:', result?.assets?.length);
-      console.log('[QualityLogImport] Picker result full:', JSON.stringify(result, null, 2));
-
       if (result.canceled) {
         console.log('[QualityLogImport] User canceled picker');
+        resetImport();
         return;
       }
 
@@ -186,6 +207,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       if (!file) {
         console.log('[QualityLogImport] No file in assets');
         Alert.alert('Error', 'No file was selected. Please try again.');
+        resetImport();
         return;
       }
 
@@ -200,11 +222,8 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       setLoadingMessage('Reading file...');
 
       // Read file as base64
-      console.log('[QualityLogImport] Reading file as base64...');
       let base64;
       try {
-        // On web, we need to fetch the blob and convert it manually
-        // expo-file-system doesn't work with blob URLs on web
         if (Platform.OS === 'web') {
           console.log('[QualityLogImport] Using web-specific file reading...');
           const response = await fetch(file.uri);
@@ -213,136 +232,92 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             const reader = new FileReader();
             reader.onloadend = () => {
               const result = reader.result as string;
-              // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
               const base64Data = result.split(',')[1];
               resolve(base64Data);
             };
             reader.onerror = () => reject(new Error('FileReader failed'));
             reader.readAsDataURL(blob);
           });
-          console.log('[QualityLogImport] Web file read successfully, base64 length:', base64.length);
         } else {
           base64 = await FileSystem.readAsStringAsync(file.uri, {
             encoding: FileSystem.EncodingType.Base64,
           });
-          console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
         }
+        console.log('[QualityLogImport] File read successfully, base64 length:', base64.length);
       } catch (fileError: any) {
         console.log('[QualityLogImport] File read error:', fileError?.message || fileError);
         Alert.alert('File Read Error', `Could not read file: ${fileError?.message || 'Unknown error'}`);
         setIsLoading(false);
+        resetImport();
         return;
       }
 
-      // Store the file data and show product type prompt FIRST
-      // This allows us to pass the product type to the Cloud Function for better strand pattern matching
-      setPendingFile({
-        base64,
-        name: file.name,
-        mimeType: file.mimeType || 'application/pdf',
-      });
-      setIsLoading(false);
-      setShowProductTypePrompt(true);
+      setLoadingMessage('Extracting data from schedule...');
 
+      // Call Cloud Function with product type for better strand pattern matching
+      console.log('[QualityLogImport] Calling parseSchedulePDF with productType:', selectedProductType);
+
+      try {
+        const functions = getFunctions(app);
+        const parseSchedule = httpsCallable<
+          { fileBase64: string; fileName: string; mimeType: string; productType?: string },
+          ParsedScheduleResult
+        >(functions, 'parseSchedulePDF');
+
+        const response = await parseSchedule({
+          fileBase64: base64,
+          fileName: file.name,
+          mimeType: file.mimeType || 'application/pdf',
+          productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as string),
+        });
+
+        console.log('[QualityLogImport] Cloud Function response received');
+
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Failed to parse schedule');
+        }
+
+        const { entries, pourDate: extractedPourDate } = response.data;
+
+        if (entries.length === 0) {
+          Alert.alert('No Data Found', 'Could not extract any entries from the schedule. Please try a clearer scan.');
+          setIsLoading(false);
+          resetImport();
+          return;
+        }
+
+        setExtractedEntries(entries);
+        setPourDate(extractedPourDate);
+
+        // Check for duplicate IDs
+        const duplicates = entries
+          .map((e) => e.idNumber)
+          .filter((id) => getEntryByIdNumber(id) !== undefined);
+        setDuplicateIds(duplicates);
+
+        setIsLoading(false);
+
+        // Check if there are missing values - if so, show warning before review
+        if (missingValuesInfo.length > 0) {
+          setShowMissingValuesPrompt(true);
+        } else {
+          setShowReview(true);
+        }
+
+      } catch (cloudFunctionError: any) {
+        console.error('[QualityLogImport] Cloud Function error:', cloudFunctionError);
+        setIsLoading(false);
+        Alert.alert(
+          'Import Error',
+          `Failed to process schedule: ${cloudFunctionError?.message || 'Unknown error'}. Please try again.`
+        );
+        resetImport();
+      }
     } catch (error: any) {
       console.error('Error importing schedule:', error);
       setIsLoading(false);
       Alert.alert('Import Error', error.message || 'Failed to import schedule. Please try again.');
-    }
-  };
-
-  // Process the schedule PDF after product type is selected
-  const processScheduleWithProductType = async (productType: ProductType | 'Mixed') => {
-    if (!pendingFile) {
-      Alert.alert('Error', 'No file to process');
-      return;
-    }
-
-    setShowProductTypePrompt(false);
-    setSelectedProductType(productType);
-    setIsLoading(true);
-    setLoadingMessage('Extracting data from schedule...');
-
-    // Call Cloud Function to parse the PDF/image with product type for better strand pattern matching
-    console.log('[QualityLogImport] Calling parseSchedulePDF Cloud Function...');
-    console.log('[QualityLogImport] File size (base64 length):', pendingFile.base64.length);
-    console.log('[QualityLogImport] Product type for filtering:', productType);
-
-    try {
-      const functions = getFunctions(app);
-      const parseSchedule = httpsCallable<
-        { fileBase64: string; fileName: string; mimeType: string; productType?: string },
-        ParsedScheduleResult
-      >(functions, 'parseSchedulePDF');
-
-      console.log('[QualityLogImport] Sending request to Cloud Function...');
-      const response = await parseSchedule({
-        fileBase64: pendingFile.base64,
-        fileName: pendingFile.name,
-        mimeType: pendingFile.mimeType,
-        // Pass product type to Cloud Function for strand pattern filtering (unless Mixed)
-        productType: productType === 'Mixed' ? undefined : productType,
-      });
-      console.log('[QualityLogImport] Cloud Function response received:', JSON.stringify(response.data, null, 2));
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to parse schedule');
-      }
-
-      const { entries, pourDate: extractedPourDate } = response.data;
-
-      if (entries.length === 0) {
-        Alert.alert('No Data Found', 'Could not extract any entries from the schedule. Please try a clearer scan.');
-        setIsLoading(false);
-        setPendingFile(null);
-        return;
-      }
-
-      setExtractedEntries(entries);
-      setPourDate(extractedPourDate);
-      setPendingFile(null); // Clear pending file
-
-      // Check for duplicate IDs
-      const duplicates = entries
-        .map((e) => e.idNumber)
-        .filter((id) => getEntryByIdNumber(id) !== undefined);
-      setDuplicateIds(duplicates);
-
-      setIsLoading(false);
-
-      // Next, ask for bed number
-      setShowBedPrompt(true);
-
-    } catch (cloudFunctionError: any) {
-      console.error('[QualityLogImport] Cloud Function error:', cloudFunctionError);
-      console.error('[QualityLogImport] Error code:', cloudFunctionError?.code);
-      console.error('[QualityLogImport] Error message:', cloudFunctionError?.message);
-      console.error('[QualityLogImport] Error details:', cloudFunctionError?.details);
-      setIsLoading(false);
-      setPendingFile(null);
-      Alert.alert(
-        'Import Error',
-        `Failed to process schedule: ${cloudFunctionError?.message || 'Unknown error'}. Please try again.`
-      );
-    }
-  };
-
-  const handleBedSelect = (bed: BedNumber) => {
-    setSelectedBed(bed);
-    setShowBedPrompt(false);
-    // Next, ask for cast strand pattern
-    setShowCastStrandPatternPrompt(true);
-  };
-
-  const handleCastStrandPatternSelect = (pattern: string | null) => {
-    setShowCastStrandPatternPrompt(false);
-    setSelectedCastStrandPattern(pattern);
-
-    // Check if there are missing values - if so, show warning
-    if (missingValuesInfo.length > 0) {
-      setShowMissingValuesPrompt(true);
-    } else {
-      setShowReview(true);
+      resetImport();
     }
   };
 
@@ -417,7 +392,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     setSelectedBed(undefined);
     setSelectedProductType(null);
     setSelectedCastStrandPattern(null);
-    setPendingFile(null);
     setShowReview(false);
     setShowBedPrompt(false);
     setShowProductTypePrompt(false);
@@ -1095,7 +1069,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               {ALL_PRODUCT_TYPES.map((type: ProductType) => (
                 <Pressable
                   key={type}
-                  onPress={() => processScheduleWithProductType(type)}
+                  onPress={() => handleProductTypeSelect(type)}
                   className="bg-blue-600 py-4 rounded-xl items-center active:bg-blue-700"
                 >
                   <Text className="text-white font-bold text-lg">{type}</Text>
@@ -1103,7 +1077,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               ))}
 
               <Pressable
-                onPress={() => processScheduleWithProductType('Mixed')}
+                onPress={() => handleProductTypeSelect('Mixed')}
                 className="bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300 mt-2"
               >
                 <Text className="text-gray-700 font-semibold">Mixed/Manual</Text>
