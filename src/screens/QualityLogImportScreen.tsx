@@ -853,9 +853,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
             {/* Table Header */}
             <View className="flex-row bg-gray-800 py-2 px-3 rounded-t-lg">
-              <Text className="w-12 text-xs font-semibold text-white mr-4">Page</Text>
-              <Text className="w-20 text-xs font-semibold text-white mr-4">Job #</Text>
-              <Text className="w-20 text-xs font-semibold text-white mr-4">Mark #</Text>
+              <Text className="w-14 text-xs font-semibold text-white pr-3">Page</Text>
+              <Text className="w-24 text-xs font-semibold text-white pr-3">Job #</Text>
+              <Text className="w-20 text-xs font-semibold text-white pr-3">Mark #</Text>
               <Text className="flex-1 text-xs font-semibold text-white">Match Status</Text>
             </View>
 
@@ -867,9 +867,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                   ticket.matchedEntryId ? 'bg-green-50' : 'bg-red-50'
                 }`}
               >
-                <Text className="w-12 text-xs text-gray-900 mr-4">{ticket.page}</Text>
-                <Text className="w-20 text-xs text-gray-900 mr-4">{ticket.jobNo || '-'}</Text>
-                <Text className="w-20 text-xs text-gray-900 mr-4">{ticket.markNo || '-'}</Text>
+                <Text className="w-14 text-xs text-gray-900 pr-3">{ticket.page}</Text>
+                <Text className="w-24 text-xs text-gray-900 pr-3">{ticket.jobNo || '-'}</Text>
+                <Text className="w-20 text-xs text-gray-900 pr-3">{ticket.markNo || '-'}</Text>
                 <View className="flex-1 flex-row items-center">
                   {ticket.matchedEntryId ? (
                     <>
