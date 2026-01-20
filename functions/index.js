@@ -453,12 +453,12 @@ exports.parseSchedulePDF = onCall({
        * Intelligent strand pattern matching function
        * Takes a potentially partial/corrupted OCR value and tries to match it against known patterns
        *
-       * Handles combined patterns like "117-70+T32-70" by splitting and matching separately.
+       * Handles combined patterns like "117-70+T32-70" or truncated "117-70+T3"
        * Format: BOTTOM+TTOP (e.g., "117-70+T32-70")
        *
        * Strategy:
-       * 1. Check if pattern contains "+T" or "T" indicating combined bottom+top
-       * 2. Split and match each part separately
+       * 1. Check if pattern contains "+T" indicating combined bottom+top
+       * 2. Split and match each part separately (handling truncated values)
        * 3. Recombine in standard format
        * 4. If not combined, match as single pattern
        */
@@ -471,70 +471,63 @@ exports.parseSchedulePDF = onCall({
 
         console.log(`[Parse Schedule] matchStrandPattern input: "${ocrValue}" -> cleaned: "${cleaned}"`);
 
-        // Check for combined pattern format (various separators)
-        // Patterns like: "117-70+T32-70", "117-70 T32-70", "117-70T32-70", "117-70 / T32-70"
-        // Also handle: "117-70 +T32-70", "117-70+ T32-70"
-
-        // Pattern 1: Standard format with +T separator (with possible spaces)
-        let combinedMatch = cleaned.match(/^(\d+-\d+)\s*\+\s*T\s*(\d+-\d+)$/i);
-        if (combinedMatch) {
-          console.log(`[Parse Schedule] Matched pattern 1 (+T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
-        }
-
-        // Pattern 2: Just T separator (no +), e.g., "117-70 T32-70" or "117-70T32-70"
-        if (!combinedMatch) {
-          combinedMatch = cleaned.match(/^(\d+-\d+)\s+T\s*(\d+-\d+)$/i);
-          if (combinedMatch) {
-            console.log(`[Parse Schedule] Matched pattern 2 (space T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
-          }
-        }
-
-        // Pattern 3: T directly attached, e.g., "117-70T32-70"
-        if (!combinedMatch) {
-          combinedMatch = cleaned.replace(/\s+/g, '').match(/^(\d+-\d+)T(\d+-\d+)$/i);
-          if (combinedMatch) {
-            console.log(`[Parse Schedule] Matched pattern 3 (direct T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
-          }
-        }
-
-        // Pattern 4: Slash separator, e.g., "117-70/T32-70"
-        if (!combinedMatch) {
-          combinedMatch = cleaned.match(/^(\d+-\d+)\s*[\/]\s*T\s*(\d+-\d+)$/i);
-          if (combinedMatch) {
-            console.log(`[Parse Schedule] Matched pattern 4 (slash T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
-          }
-        }
+        // Check for combined pattern with +T separator
+        // Handle both full patterns like "117-70+T32-70" AND truncated like "117-70+T3"
+        // The top part might be truncated due to narrow column width in OCR
+        const combinedMatch = cleaned.match(/^(\d+-\d+)\s*\+\s*T(\d+(?:-\d+)?)(.*)$/i);
 
         if (combinedMatch) {
           const bottomPart = combinedMatch[1];
-          const topPart = `T${combinedMatch[2]}`;
-          console.log(`[Parse Schedule] Detected combined pattern: bottom="${bottomPart}", top="${topPart}"`);
+          const topPartRaw = combinedMatch[2]; // Could be "32-70" or just "3" (truncated)
+          const suffix = combinedMatch[3] || ''; // Any trailing chars like /RCF
+
+          console.log(`[Parse Schedule] Detected combined pattern: bottom="${bottomPart}", topRaw="T${topPartRaw}", suffix="${suffix}"`);
 
           // Match bottom part against bottom patterns
           const matchedBottom = matchSinglePattern(bottomPart, 'bottom');
-          // Match top part against top patterns
-          const matchedTop = matchSinglePattern(topPart, 'top');
+
+          // Match top part - may need to infer full pattern from truncated value
+          let topToMatch = `T${topPartRaw}`;
+          const matchedTop = matchSinglePattern(topToMatch, 'top');
 
           if (matchedBottom && matchedTop) {
             const combined = `${matchedBottom}+${matchedTop}`;
             console.log(`[Parse Schedule] Combined pattern matched: "${cleaned}" -> "${combined}"`);
             return combined;
           } else if (matchedBottom) {
-            // Only bottom matched, still return with top part as-is
-            const combined = `${matchedBottom}+${topPart}`;
-            console.log(`[Parse Schedule] Partial match (bottom only): "${cleaned}" -> "${combined}"`);
+            // Only bottom matched, return with whatever top we could infer
+            const combined = matchedTop ? `${matchedBottom}+${matchedTop}` : `${matchedBottom}+T${topPartRaw}`;
+            console.log(`[Parse Schedule] Partial match: "${cleaned}" -> "${combined}"`);
+            return combined;
+          }
+        }
+
+        // Check for pattern with space before T (no +)
+        const spaceMatch = cleaned.match(/^(\d+-\d+)\s+T(\d+(?:-\d+)?)$/i);
+        if (spaceMatch) {
+          const bottomPart = spaceMatch[1];
+          const topPartRaw = spaceMatch[2];
+
+          console.log(`[Parse Schedule] Detected space-separated pattern: bottom="${bottomPart}", top="T${topPartRaw}"`);
+
+          const matchedBottom = matchSinglePattern(bottomPart, 'bottom');
+          const matchedTop = matchSinglePattern(`T${topPartRaw}`, 'top');
+
+          if (matchedBottom) {
+            const combined = matchedTop ? `${matchedBottom}+${matchedTop}` : `${matchedBottom}+T${topPartRaw}`;
+            console.log(`[Parse Schedule] Space pattern matched: "${cleaned}" -> "${combined}"`);
             return combined;
           }
         }
 
         // Not a combined pattern, try single pattern match
-        // Remove spaces for single pattern matching
         const cleanedNoSpaces = cleaned.replace(/\s+/g, '');
         return matchSinglePattern(cleanedNoSpaces, 'any');
       };
 
       /**
        * Match a single pattern (bottom or top) against known patterns
+       * Handles truncated values like "T3" that should match "T32-70"
        */
       const matchSinglePattern = (value, type) => {
         if (!value) return '';
@@ -555,6 +548,8 @@ exports.parseSchedulePDF = onCall({
           console.log(`[Parse Schedule] No ${type} patterns to match against, returning: "${cleaned}"`);
           return cleaned;
         }
+
+        console.log(`[Parse Schedule] Matching "${cleaned}" against ${type} patterns: ${patternsToMatch.join(', ')}`);
 
         // 1. Exact match (case-insensitive)
         const exactMatch = patternsToMatch.find(p => p.toUpperCase() === cleaned);
@@ -594,8 +589,18 @@ exports.parseSchedulePDF = onCall({
           }
         }
 
-        // 4. Check if a known pattern contains the OCR value (min 4 chars)
-        if (cleaned.length >= 4) {
+        // 4. Check if a known pattern STARTS WITH the OCR value (for truncated patterns)
+        // This handles cases like "T3" matching "T32-70" or "117" matching "117-70"
+        for (const knownPattern of patternsToMatch) {
+          if (knownPattern.toUpperCase().startsWith(cleaned)) {
+            console.log(`[Parse Schedule] Prefix ${type} match: "${cleaned}" -> "${knownPattern}"`);
+            return knownPattern;
+          }
+        }
+
+        // 5. Check if a known pattern contains the OCR value (min 2 chars for top patterns)
+        const minLength = type === 'top' ? 2 : 4;
+        if (cleaned.length >= minLength) {
           for (const knownPattern of patternsToMatch) {
             if (knownPattern.toUpperCase().includes(cleaned)) {
               console.log(`[Parse Schedule] Substring ${type} match: "${cleaned}" -> "${knownPattern}"`);
@@ -604,7 +609,7 @@ exports.parseSchedulePDF = onCall({
           }
         }
 
-        // 5. No match - return original value
+        // 6. No match - return original value
         console.log(`[Parse Schedule] No ${type} match for: "${cleaned}" (available: ${patternsToMatch.join(', ')})`);
         return cleaned;
       };
