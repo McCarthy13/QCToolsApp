@@ -550,19 +550,36 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         return;
       }
 
+      // Track which entries have already been matched to avoid duplicate assignments
+      const alreadyMatchedEntryIds = new Set<string>();
+
       // Match tickets to existing entries
       const matched: MatchedTicket[] = tickets.map((ticket) => {
         // Find matching entry by Job # and Mark #
         // Job # might be partial (e.g., "5201" matches "255201")
+        // IMPORTANT: Find an entry that hasn't been matched yet AND doesn't already have a pieceTicketUrl
         let matchedEntry: QualityLogEntry | undefined;
 
         if (ticket.jobNo && ticket.markNo) {
           matchedEntry = entries.find((entry) => {
+            // Skip if this entry was already matched to another ticket in this batch
+            if (alreadyMatchedEntryIds.has(entry.id)) {
+              return false;
+            }
+            // Skip if this entry already has a piece ticket attached
+            if (entry.pieceTicketUrl) {
+              return false;
+            }
             const entryJobEnds = entry.jobNumber?.endsWith(ticket.jobNo || '');
             const entryJobEquals = entry.jobNumber === ticket.jobNo;
             const markMatches = entry.markNumber?.toUpperCase() === ticket.markNo?.toUpperCase();
             return (entryJobEnds || entryJobEquals) && markMatches;
           });
+
+          // Mark this entry as matched so subsequent tickets don't match to it
+          if (matchedEntry) {
+            alreadyMatchedEntryIds.add(matchedEntry.id);
+          }
         }
 
         return {

@@ -828,7 +828,7 @@ exports.parsePieceTickets = onCall({
     }
 
     console.log(`[Parse Piece Tickets] Processing file: ${fileName} (${mimeType})`);
-    console.log(`[Parse Piece Tickets] Using Azure Document Intelligence - PAGE BY PAGE MODE`);
+    console.log(`[Parse Piece Tickets] Using Azure Document Intelligence - PAGE BY PAGE MODE with rate limiting`);
 
     // Convert base64 to buffer
     const fileBuffer = Buffer.from(fileBase64, 'base64');
@@ -839,11 +839,11 @@ exports.parsePieceTickets = onCall({
     const pageCount = pdfDoc.getPageCount();
     console.log(`[Parse Piece Tickets] PDF has ${pageCount} pages - will process EACH page individually`);
 
-    // Helper function to call Azure for a single page PDF
-    const analyzePageWithAzure = async (pageBuffer, pageNum) => {
+    // Helper function to call Azure for a single page PDF with retry logic for rate limits
+    const analyzePageWithAzure = async (pageBuffer, pageNum, retryCount = 0) => {
       const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30`;
 
-      console.log(`[Parse Piece Tickets] Page ${pageNum} - Calling Azure API...`);
+      console.log(`[Parse Piece Tickets] Page ${pageNum} - Calling Azure API... (attempt ${retryCount + 1})`);
 
       const analyzeResponse = await fetch(analyzeUrl, {
         method: "POST",
@@ -853,6 +853,28 @@ exports.parsePieceTickets = onCall({
         },
         body: pageBuffer,
       });
+
+      // Handle rate limiting (429) with retry
+      if (analyzeResponse.status === 429) {
+        const errorText = await analyzeResponse.text();
+        console.log(`[Parse Piece Tickets] Page ${pageNum} - Rate limited (429), will retry...`);
+
+        // Extract wait time from error message or default to 10 seconds
+        let waitTime = 10000;
+        const waitMatch = errorText.match(/retry after (\d+) seconds/i);
+        if (waitMatch) {
+          waitTime = (parseInt(waitMatch[1]) + 2) * 1000; // Add 2 second buffer
+        }
+
+        if (retryCount < 3) {
+          console.log(`[Parse Piece Tickets] Page ${pageNum} - Waiting ${waitTime/1000} seconds before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return analyzePageWithAzure(pageBuffer, pageNum, retryCount + 1);
+        } else {
+          console.error(`[Parse Piece Tickets] Page ${pageNum} - Max retries exceeded for rate limit`);
+          return null;
+        }
+      }
 
       if (!analyzeResponse.ok) {
         const errorText = await analyzeResponse.text();
@@ -900,11 +922,18 @@ exports.parsePieceTickets = onCall({
       return null;
     };
 
-    // Process each page individually
+    // Process each page individually with delay between calls to avoid rate limits
     const tickets = [];
+    const DELAY_BETWEEN_PAGES = 3000; // 3 seconds between pages to avoid rate limits
 
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
       console.log(`[Parse Piece Tickets] === Processing page ${pageNum} of ${pageCount} ===`);
+
+      // Add delay between pages (except for first page)
+      if (pageNum > 1) {
+        console.log(`[Parse Piece Tickets] Waiting ${DELAY_BETWEEN_PAGES/1000}s before next page to avoid rate limits...`);
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_PAGES));
+      }
 
       // Extract single page as new PDF
       const singlePagePdf = await PDFDocument.create();
