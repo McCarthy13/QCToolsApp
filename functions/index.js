@@ -844,8 +844,10 @@ exports.parsePieceTickets = onCall({
       console.log(`[Parse Piece Tickets] Could not count PDF pages: ${pdfErr.message}`);
     }
 
-    // Call Azure Document Intelligence Layout API
-    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
+    // Call Azure Document Intelligence Layout API with features for better text extraction
+    // - Enable all features for comprehensive extraction regardless of page orientation
+    // - Azure DI 2024-11-30 automatically handles page rotation detection
+    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30&features=keyValuePairs`;
 
     console.log(`[Parse Piece Tickets] Calling Azure API: ${analyzeUrl}`);
 
@@ -951,7 +953,9 @@ exports.parsePieceTickets = onCall({
       const page = pages[pageIndex] || null; // May be undefined if Azure didn't detect this page
       const pageNumber = pageIndex + 1;
 
-      console.log(`[Parse Piece Tickets] Processing page ${pageNumber} (Azure data available: ${!!page})`);
+      // Log page rotation/angle if detected by Azure
+      const pageAngle = page?.angle || 0;
+      console.log(`[Parse Piece Tickets] Processing page ${pageNumber} (Azure data available: ${!!page}, angle: ${pageAngle}°)`);
 
       let jobNo = null;
       let markNo = null;
