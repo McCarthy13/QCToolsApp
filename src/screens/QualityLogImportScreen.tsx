@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   TextInput,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -137,6 +138,9 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [pieceTicketFile, setPieceTicketFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
   const [matchedTickets, setMatchedTickets] = useState<MatchedTicket[]>([]);
   const [showPieceTicketReview, setShowPieceTicketReview] = useState(false);
+  const [comparisonTicket, setComparisonTicket] = useState<{ ticket: MatchedTicket; index: number } | null>(null);
+  const [newPagePreviewUrl, setNewPagePreviewUrl] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   // Review state
   const [showReview, setShowReview] = useState(false);
@@ -730,6 +734,55 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     }
   };
 
+  // Open comparison modal for already-linked tickets
+  const openComparisonModal = async (ticket: MatchedTicket, index: number) => {
+    if (!pieceTicketFile || !ticket.existingPieceTicketUrl) return;
+
+    setComparisonTicket({ ticket, index });
+    setIsGeneratingPreview(true);
+    setNewPagePreviewUrl(null);
+
+    try {
+      // Generate a preview URL for the new page by extracting it
+      const functions = getFunctions(app);
+      const extractAndUploadPdfPage = httpsCallable<
+        { fileBase64: string; pageNumber: number; entryId: string; jobNumber: string | null; markNumber: string | null },
+        { success: boolean; downloadUrl?: string; error?: string }
+      >(functions, 'extractAndUploadPdfPage');
+
+      // Use a temporary entry ID for preview
+      const response = await extractAndUploadPdfPage({
+        fileBase64: pieceTicketFile.base64,
+        pageNumber: ticket.page,
+        entryId: `preview-${Date.now()}`,
+        jobNumber: ticket.jobNo,
+        markNumber: ticket.markNo,
+      });
+
+      if (response.data.success && response.data.downloadUrl) {
+        setNewPagePreviewUrl(response.data.downloadUrl);
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
+  // Handle comparison decision
+  const handleComparisonDecision = (shouldReplace: boolean) => {
+    if (!comparisonTicket) return;
+
+    const updated = [...matchedTickets];
+    updated[comparisonTicket.index] = {
+      ...comparisonTicket.ticket,
+      shouldReplace
+    };
+    setMatchedTickets(updated);
+    setComparisonTicket(null);
+    setNewPagePreviewUrl(null);
+  };
+
   // Start editing a cell
   const startEditing = (index: number, field: string, currentValue: string | number) => {
     setEditingCell({ index, field });
@@ -950,23 +1003,31 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 <Text style={{ width: 70, marginRight: 16 }} className="text-xs text-gray-900">{ticket.markNo || '-'}</Text>
                 <View className="flex-1">
                   {ticket.alreadyLinked ? (
-                    <Pressable
-                      onPress={() => {
-                        const updated = [...matchedTickets];
-                        updated[index] = { ...ticket, shouldReplace: !ticket.shouldReplace };
-                        setMatchedTickets(updated);
-                      }}
-                      className="flex-row items-center"
-                    >
-                      <Ionicons
-                        name={ticket.shouldReplace ? "checkbox" : "square-outline"}
-                        size={16}
-                        color={ticket.shouldReplace ? "#EA580C" : "#9CA3AF"}
-                      />
-                      <Text className="text-xs text-orange-700 ml-1">
-                        Already linked - {ticket.shouldReplace ? 'will replace' : 'tap to replace'}
-                      </Text>
-                    </Pressable>
+                    <View className="flex-row items-center justify-between">
+                      <Pressable
+                        onPress={() => {
+                          const updated = [...matchedTickets];
+                          updated[index] = { ...ticket, shouldReplace: !ticket.shouldReplace };
+                          setMatchedTickets(updated);
+                        }}
+                        className="flex-row items-center flex-1"
+                      >
+                        <Ionicons
+                          name={ticket.shouldReplace ? "checkbox" : "square-outline"}
+                          size={16}
+                          color={ticket.shouldReplace ? "#EA580C" : "#9CA3AF"}
+                        />
+                        <Text className="text-xs text-orange-700 ml-1">
+                          {ticket.shouldReplace ? 'Will replace' : 'Already linked'}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => openComparisonModal(ticket, index)}
+                        className="bg-orange-500 px-2 py-1 rounded ml-2"
+                      >
+                        <Text className="text-xs text-white font-medium">Compare</Text>
+                      </Pressable>
+                    </View>
                   ) : ticket.matchedEntryId ? (
                     <View className="flex-row items-center">
                       <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
@@ -1391,6 +1452,105 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             >
               <Text className="text-white font-bold">Continue to Review</Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* PDF Comparison Modal */}
+      <Modal visible={!!comparisonTicket} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-center px-4">
+          <View className="bg-white rounded-2xl p-6 max-h-[80%]">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-bold text-gray-900">Compare Piece Tickets</Text>
+              <Pressable
+                onPress={() => {
+                  setComparisonTicket(null);
+                  setNewPagePreviewUrl(null);
+                }}
+                className="p-2"
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            {comparisonTicket && (
+              <>
+                <View className="bg-gray-100 rounded-lg p-3 mb-4">
+                  <Text className="text-sm text-gray-600">
+                    Job #: <Text className="font-semibold text-gray-900">{comparisonTicket.ticket.matchedJobNumber}</Text>
+                  </Text>
+                  <Text className="text-sm text-gray-600">
+                    Mark #: <Text className="font-semibold text-gray-900">{comparisonTicket.ticket.matchedMarkNumber}</Text>
+                  </Text>
+                  <Text className="text-sm text-gray-600">
+                    Page: <Text className="font-semibold text-gray-900">{comparisonTicket.ticket.page}</Text>
+                  </Text>
+                </View>
+
+                <View className="flex-row gap-4 mb-6">
+                  {/* Existing PDF */}
+                  <View className="flex-1 bg-blue-50 rounded-lg p-4">
+                    <Text className="text-sm font-semibold text-blue-800 mb-2 text-center">Current PDF</Text>
+                    <Text className="text-xs text-blue-600 text-center mb-3">(Already attached)</Text>
+                    <Pressable
+                      onPress={() => {
+                        if (comparisonTicket.ticket.existingPieceTicketUrl) {
+                          Linking.openURL(comparisonTicket.ticket.existingPieceTicketUrl);
+                        }
+                      }}
+                      className="bg-blue-600 py-3 rounded-lg items-center active:bg-blue-700"
+                    >
+                      <Ionicons name="eye-outline" size={20} color="#FFFFFF" />
+                      <Text className="text-white font-medium text-sm mt-1">View Current</Text>
+                    </Pressable>
+                  </View>
+
+                  {/* New PDF */}
+                  <View className="flex-1 bg-orange-50 rounded-lg p-4">
+                    <Text className="text-sm font-semibold text-orange-800 mb-2 text-center">New PDF</Text>
+                    <Text className="text-xs text-orange-600 text-center mb-3">(From upload)</Text>
+                    {isGeneratingPreview ? (
+                      <View className="py-3 items-center">
+                        <ActivityIndicator color="#EA580C" />
+                        <Text className="text-xs text-orange-600 mt-2">Generating...</Text>
+                      </View>
+                    ) : newPagePreviewUrl ? (
+                      <Pressable
+                        onPress={() => Linking.openURL(newPagePreviewUrl)}
+                        className="bg-orange-600 py-3 rounded-lg items-center active:bg-orange-700"
+                      >
+                        <Ionicons name="eye-outline" size={20} color="#FFFFFF" />
+                        <Text className="text-white font-medium text-sm mt-1">View New</Text>
+                      </Pressable>
+                    ) : (
+                      <View className="py-3 items-center">
+                        <Ionicons name="alert-circle-outline" size={24} color="#9CA3AF" />
+                        <Text className="text-xs text-gray-500 mt-1">Preview unavailable</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                <Text className="text-sm text-gray-600 text-center mb-4">
+                  View both PDFs, then choose whether to keep the current one or replace it with the new one.
+                </Text>
+
+                <View className="flex-row gap-3">
+                  <Pressable
+                    onPress={() => handleComparisonDecision(false)}
+                    className="flex-1 bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300"
+                  >
+                    <Text className="text-gray-700 font-semibold">Keep Current</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleComparisonDecision(true)}
+                    className="flex-1 bg-orange-600 py-4 rounded-xl items-center active:bg-orange-700"
+                  >
+                    <Text className="text-white font-semibold">Replace</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
