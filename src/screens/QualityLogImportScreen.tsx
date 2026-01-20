@@ -1456,102 +1456,116 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* PDF Comparison Modal */}
+      {/* PDF Comparison Modal - Full Screen with Side-by-Side View */}
       <Modal visible={!!comparisonTicket} transparent animationType="slide">
-        <View className="flex-1 bg-black/50 justify-center px-4">
-          <View className="bg-white rounded-2xl p-6 max-h-[80%]">
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-bold text-gray-900">Compare Piece Tickets</Text>
+        <View className="flex-1 bg-white">
+          {/* Header */}
+          <SafeAreaView edges={['top']} className="bg-gray-900">
+            <View className="flex-row items-center justify-between px-4 py-3">
+              <View className="flex-1">
+                <Text className="text-lg font-bold text-white">Compare Piece Tickets</Text>
+                {comparisonTicket && (
+                  <Text className="text-sm text-gray-300">
+                    {comparisonTicket.ticket.matchedJobNumber} - {comparisonTicket.ticket.matchedMarkNumber} (Page {comparisonTicket.ticket.page})
+                  </Text>
+                )}
+              </View>
               <Pressable
                 onPress={() => {
                   setComparisonTicket(null);
                   setNewPagePreviewUrl(null);
                 }}
-                className="p-2"
+                className="p-2 bg-gray-700 rounded-full"
               >
-                <Ionicons name="close" size={24} color="#6B7280" />
+                <Ionicons name="close" size={20} color="#FFFFFF" />
               </Pressable>
             </View>
+          </SafeAreaView>
 
-            {comparisonTicket && (
-              <>
-                <View className="bg-gray-100 rounded-lg p-3 mb-4">
-                  <Text className="text-sm text-gray-600">
-                    Job #: <Text className="font-semibold text-gray-900">{comparisonTicket.ticket.matchedJobNumber}</Text>
-                  </Text>
-                  <Text className="text-sm text-gray-600">
-                    Mark #: <Text className="font-semibold text-gray-900">{comparisonTicket.ticket.matchedMarkNumber}</Text>
-                  </Text>
-                  <Text className="text-sm text-gray-600">
-                    Page: <Text className="font-semibold text-gray-900">{comparisonTicket.ticket.page}</Text>
-                  </Text>
+          {comparisonTicket && (
+            <View className="flex-1">
+              {/* Side-by-side PDF viewers */}
+              <View className="flex-1 flex-row">
+                {/* Current PDF */}
+                <View className="flex-1 border-r border-gray-300">
+                  <View className="bg-blue-600 py-2 px-4">
+                    <Text className="text-white font-semibold text-center">Current PDF</Text>
+                    <Text className="text-blue-200 text-xs text-center">(Already attached)</Text>
+                  </View>
+                  {Platform.OS === 'web' && comparisonTicket.ticket.existingPieceTicketUrl ? (
+                    <iframe
+                      src={comparisonTicket.ticket.existingPieceTicketUrl}
+                      style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
+                      title="Current PDF"
+                    />
+                  ) : (
+                    <View className="flex-1 items-center justify-center bg-gray-100">
+                      <Pressable
+                        onPress={() => {
+                          if (comparisonTicket.ticket.existingPieceTicketUrl) {
+                            Linking.openURL(comparisonTicket.ticket.existingPieceTicketUrl);
+                          }
+                        }}
+                        className="bg-blue-600 px-6 py-3 rounded-lg"
+                      >
+                        <Text className="text-white font-medium">Open Current PDF</Text>
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
 
-                <View className="flex-row gap-4 mb-6">
-                  {/* Existing PDF */}
-                  <View className="flex-1 bg-blue-50 rounded-lg p-4">
-                    <Text className="text-sm font-semibold text-blue-800 mb-2 text-center">Current PDF</Text>
-                    <Text className="text-xs text-blue-600 text-center mb-3">(Already attached)</Text>
-                    <Pressable
-                      onPress={() => {
-                        if (comparisonTicket.ticket.existingPieceTicketUrl) {
-                          Linking.openURL(comparisonTicket.ticket.existingPieceTicketUrl);
-                        }
-                      }}
-                      className="bg-blue-600 py-3 rounded-lg items-center active:bg-blue-700"
-                    >
-                      <Ionicons name="eye-outline" size={20} color="#FFFFFF" />
-                      <Text className="text-white font-medium text-sm mt-1">View Current</Text>
-                    </Pressable>
+                {/* New PDF */}
+                <View className="flex-1">
+                  <View className="bg-orange-600 py-2 px-4">
+                    <Text className="text-white font-semibold text-center">New PDF</Text>
+                    <Text className="text-orange-200 text-xs text-center">(From upload)</Text>
                   </View>
-
-                  {/* New PDF */}
-                  <View className="flex-1 bg-orange-50 rounded-lg p-4">
-                    <Text className="text-sm font-semibold text-orange-800 mb-2 text-center">New PDF</Text>
-                    <Text className="text-xs text-orange-600 text-center mb-3">(From upload)</Text>
-                    {isGeneratingPreview ? (
-                      <View className="py-3 items-center">
-                        <ActivityIndicator color="#EA580C" />
-                        <Text className="text-xs text-orange-600 mt-2">Generating...</Text>
-                      </View>
-                    ) : newPagePreviewUrl ? (
+                  {isGeneratingPreview ? (
+                    <View className="flex-1 items-center justify-center bg-gray-100">
+                      <ActivityIndicator size="large" color="#EA580C" />
+                      <Text className="text-orange-600 mt-3">Generating preview...</Text>
+                    </View>
+                  ) : Platform.OS === 'web' && newPagePreviewUrl ? (
+                    <iframe
+                      src={newPagePreviewUrl}
+                      style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
+                      title="New PDF"
+                    />
+                  ) : newPagePreviewUrl ? (
+                    <View className="flex-1 items-center justify-center bg-gray-100">
                       <Pressable
                         onPress={() => Linking.openURL(newPagePreviewUrl)}
-                        className="bg-orange-600 py-3 rounded-lg items-center active:bg-orange-700"
+                        className="bg-orange-600 px-6 py-3 rounded-lg"
                       >
-                        <Ionicons name="eye-outline" size={20} color="#FFFFFF" />
-                        <Text className="text-white font-medium text-sm mt-1">View New</Text>
+                        <Text className="text-white font-medium">Open New PDF</Text>
                       </Pressable>
-                    ) : (
-                      <View className="py-3 items-center">
-                        <Ionicons name="alert-circle-outline" size={24} color="#9CA3AF" />
-                        <Text className="text-xs text-gray-500 mt-1">Preview unavailable</Text>
-                      </View>
-                    )}
-                  </View>
+                    </View>
+                  ) : (
+                    <View className="flex-1 items-center justify-center bg-gray-100">
+                      <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
+                      <Text className="text-gray-500 mt-2">Preview unavailable</Text>
+                    </View>
+                  )}
                 </View>
+              </View>
 
-                <Text className="text-sm text-gray-600 text-center mb-4">
-                  View both PDFs, then choose whether to keep the current one or replace it with the new one.
-                </Text>
-
-                <View className="flex-row gap-3">
-                  <Pressable
-                    onPress={() => handleComparisonDecision(false)}
-                    className="flex-1 bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300"
-                  >
-                    <Text className="text-gray-700 font-semibold">Keep Current</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => handleComparisonDecision(true)}
-                    className="flex-1 bg-orange-600 py-4 rounded-xl items-center active:bg-orange-700"
-                  >
-                    <Text className="text-white font-semibold">Replace</Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
+              {/* Action Buttons */}
+              <View className="flex-row gap-3 p-4 bg-gray-100 border-t border-gray-300">
+                <Pressable
+                  onPress={() => handleComparisonDecision(false)}
+                  className="flex-1 bg-gray-300 py-4 rounded-xl items-center active:bg-gray-400"
+                >
+                  <Text className="text-gray-700 font-semibold">Keep Current</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleComparisonDecision(true)}
+                  className="flex-1 bg-orange-600 py-4 rounded-xl items-center active:bg-orange-700"
+                >
+                  <Text className="text-white font-semibold">Replace with New</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
     </SafeAreaView>
