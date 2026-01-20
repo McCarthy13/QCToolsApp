@@ -431,177 +431,78 @@ exports.parseSchedulePDF = onCall({
        * Intelligent strand pattern matching function
        * Takes a potentially partial/corrupted OCR value and tries to match it against known patterns
        *
-       * Strand patterns follow the format: BOTTOM-TENSION+TTOP-TENSION
-       * Examples: 130-70, 92-70, 130-70+T16-70, 92-70+T16-30
-       *
-       * The function handles cases where:
-       * - First digit is cut off (e.g., "30-70" should match "130-70")
-       * - Top strand pattern is truncated (e.g., "130-70+T1" should match "130-70+T16-70")
-       * - Characters are partially visible
-       *
-       * Key improvement: When multiple patterns match, prefer the one with fewer missing characters
-       * This prevents "92-70" from incorrectly matching "152-70" when "92-70" exists
+       * Since we filter by product type, we typically only have 4-6 valid patterns.
+       * Strategy:
+       * 1. Try exact match first
+       * 2. Try cleaned/normalized match
+       * 3. Try matching with common OCR corrections
+       * 4. If no confident match, return raw OCR value for manual correction
        */
       const matchStrandPattern = (ocrValue) => {
         if (!ocrValue || typeof ocrValue !== 'string') return '';
 
-        const cleaned = ocrValue.trim().replace(/\s+/g, '');
+        const cleaned = ocrValue.trim().replace(/\s+/g, '').toUpperCase();
         if (!cleaned) return '';
 
-        // If it's already an exact match, return it
-        if (knownPatterns.includes(cleaned)) {
-          console.log(`[Parse Schedule] Exact match for pattern: ${cleaned}`);
+        // If no known patterns, just return cleaned value
+        if (knownPatterns.length === 0) {
+          console.log(`[Parse Schedule] No known patterns to match against, returning: "${cleaned}"`);
           return cleaned;
         }
 
-        // Try to find best match using fuzzy logic
-        // Collect all matches with their scores and missing character counts
-        let matches = [];
+        // 1. Exact match (case-insensitive)
+        const exactMatch = knownPatterns.find(p => p.toUpperCase() === cleaned);
+        if (exactMatch) {
+          console.log(`[Parse Schedule] Exact match: "${cleaned}" -> "${exactMatch}"`);
+          return exactMatch;
+        }
 
+        // 2. Try common OCR error corrections and match
+        const ocrCorrections = [
+          // Common OCR misreads
+          [/O/g, '0'],  // O -> 0
+          [/l/g, '1'],  // l -> 1
+          [/I/g, '1'],  // I -> 1
+          [/S/g, '5'],  // S -> 5
+          [/B/g, '8'],  // B -> 8
+          [/Z/g, '2'],  // Z -> 2
+        ];
+
+        let corrected = cleaned;
+        for (const [pattern, replacement] of ocrCorrections) {
+          corrected = corrected.replace(pattern, replacement);
+        }
+
+        if (corrected !== cleaned) {
+          const correctedMatch = knownPatterns.find(p => p.toUpperCase() === corrected);
+          if (correctedMatch) {
+            console.log(`[Parse Schedule] OCR-corrected match: "${cleaned}" -> "${correctedMatch}"`);
+            return correctedMatch;
+          }
+        }
+
+        // 3. Check if OCR value contains a known pattern (for cases with extra chars)
         for (const knownPattern of knownPatterns) {
-          const result = calculatePatternMatchScore(cleaned, knownPattern);
-          if (result.score >= 0.6) { // Require at least 60% match confidence
-            matches.push({
-              pattern: knownPattern,
-              score: result.score,
-              missingChars: result.missingChars
-            });
+          if (cleaned.includes(knownPattern.toUpperCase())) {
+            console.log(`[Parse Schedule] Contains match: "${cleaned}" -> "${knownPattern}"`);
+            return knownPattern;
           }
         }
 
-        if (matches.length > 0) {
-          // Sort by: 1) fewest missing characters, 2) highest score
-          matches.sort((a, b) => {
-            // Prefer fewer missing characters first
-            if (a.missingChars !== b.missingChars) {
-              return a.missingChars - b.missingChars;
+        // 4. Check if a known pattern contains the OCR value (for truncated reads)
+        // Only if OCR value is at least 4 chars to avoid false positives
+        if (cleaned.length >= 4) {
+          for (const knownPattern of knownPatterns) {
+            if (knownPattern.toUpperCase().includes(cleaned)) {
+              console.log(`[Parse Schedule] Substring match: "${cleaned}" -> "${knownPattern}"`);
+              return knownPattern;
             }
-            // Then by highest score
-            return b.score - a.score;
-          });
-
-          const bestMatch = matches[0];
-
-          // Additional validation: if we're missing too many characters (>2), require very high confidence
-          if (bestMatch.missingChars > 2 && bestMatch.score < 0.85) {
-            console.log(`[Parse Schedule] Low confidence match rejected: "${cleaned}" -> "${bestMatch.pattern}" (missing ${bestMatch.missingChars} chars, score: ${(bestMatch.score * 100).toFixed(1)}%)`);
-            return cleaned; // Return original OCR value
           }
-
-          console.log(`[Parse Schedule] Inferred pattern: "${cleaned}" -> "${bestMatch.pattern}" (confidence: ${(bestMatch.score * 100).toFixed(1)}%, missing: ${bestMatch.missingChars} chars)`);
-          return bestMatch.pattern;
         }
 
-        // If no good match found, return the cleaned OCR value as-is
-        console.log(`[Parse Schedule] No confident match for pattern: "${cleaned}"`);
+        // 5. No confident match - return raw OCR value for manual review
+        console.log(`[Parse Schedule] No match found for: "${cleaned}" (available: ${knownPatterns.join(', ')})`);
         return cleaned;
-      };
-
-      /**
-       * Calculate match score between OCR value and known pattern
-       * Returns an object with score (0 to 1) and missingChars count
-       *
-       * Key principle: Prefer matches where fewer characters are inferred/missing
-       * This prevents "92-70" from matching "152-70" when "92-70" exists
-       */
-      const calculatePatternMatchScore = (ocrValue, knownPattern) => {
-        const ocr = ocrValue.toUpperCase();
-        const known = knownPattern.toUpperCase();
-
-        // Exact match gets perfect score
-        if (ocr === known) {
-          return { score: 1.0, missingChars: 0 };
-        }
-
-        // Check if OCR is a suffix of the known pattern (missing first digits)
-        // e.g., "30-70" matching "130-70" or "2-70" matching "92-70"
-        if (known.endsWith(ocr)) {
-          const missingChars = known.length - ocr.length;
-          // Only allow missing at most 1-2 characters for suffix match
-          // This prevents "2-70" from matching "152-70" with high confidence
-          if (missingChars <= 2) {
-            // Higher score for fewer missing characters
-            const baseScore = ocr.length / known.length;
-            // Bonus for fewer missing chars (0 missing = 0.2 bonus, 1 missing = 0.1, 2 missing = 0)
-            const missingPenalty = missingChars * 0.1;
-            return { score: Math.min(1.0, baseScore + (0.2 - missingPenalty)), missingChars };
-          }
-          // More than 2 chars missing - very low confidence
-          return { score: 0.3, missingChars };
-        }
-
-        // Check if OCR is a prefix of the known pattern (truncated end)
-        // e.g., "130-70+T1" matching "130-70+T16-70"
-        if (known.startsWith(ocr)) {
-          const missingChars = known.length - ocr.length;
-          return { score: ocr.length / known.length, missingChars };
-        }
-
-        // Check for combined patterns with partial top strand
-        // e.g., "130-70+T16" should match "130-70+T16-70"
-        if (ocr.includes('+T') && known.includes('+T')) {
-          const [ocrBottom, ocrTop] = ocr.split('+');
-          const [knownBottom, knownTop] = known.split('+');
-
-          // Bottom part must match exactly or be a close suffix (max 1 char missing)
-          const bottomExact = ocrBottom === knownBottom;
-          const bottomSuffix = knownBottom.endsWith(ocrBottom) && (knownBottom.length - ocrBottom.length) <= 1;
-
-          // Top part: check if OCR top is prefix of known top
-          const topMatch = knownTop && ocrTop && (knownTop.startsWith(ocrTop) || knownTop === ocrTop);
-
-          if ((bottomExact || bottomSuffix) && topMatch) {
-            const bottomScore = ocrBottom.length / knownBottom.length;
-            const topScore = ocrTop.length / knownTop.length;
-            const missingChars = (knownBottom.length - ocrBottom.length) + (knownTop.length - ocrTop.length);
-            return { score: (bottomScore + topScore) / 2, missingChars };
-          }
-        }
-
-        // Check if missing first digit from bottom pattern with complete top pattern
-        // e.g., "30-70+T16-70" should match "130-70+T16-70"
-        if (ocr.includes('+') && known.includes('+')) {
-          const [ocrBottom, ocrTop] = ocr.split('+');
-          const [knownBottom, knownTop] = known.split('+');
-
-          const bottomMissingChars = knownBottom.length - ocrBottom.length;
-          const bottomMatch = knownBottom.endsWith(ocrBottom) && bottomMissingChars <= 1;
-          const topMatch = ocrTop === knownTop;
-
-          if (bottomMatch && topMatch) {
-            return { score: (ocrBottom.length / knownBottom.length + 1) / 2, missingChars: bottomMissingChars };
-          }
-        }
-
-        // Try to match just the beginning part for partial OCR reads
-        // e.g., "92-7" matching "92-70"
-        const ocrParts = ocr.replace(/\+T.*$/, '').split('-');
-        const knownParts = known.replace(/\+T.*$/, '').split('-');
-
-        if (ocrParts.length === knownParts.length || ocrParts.length === knownParts.length - 1) {
-          let matchScore = 0;
-          let comparisons = 0;
-          let totalMissing = 0;
-
-          for (let i = 0; i < ocrParts.length && i < knownParts.length; i++) {
-            const exactMatch = ocrParts[i] === knownParts[i];
-            const suffixMatch = knownParts[i].endsWith(ocrParts[i]);
-            const missingInPart = knownParts[i].length - ocrParts[i].length;
-
-            // Only accept suffix match if missing at most 1 character
-            if (exactMatch || (suffixMatch && missingInPart <= 1)) {
-              matchScore += ocrParts[i].length / knownParts[i].length;
-              totalMissing += missingInPart;
-              comparisons++;
-            }
-          }
-
-          if (comparisons > 0) {
-            return { score: matchScore / comparisons * 0.8, missingChars: totalMissing };
-          }
-        }
-
-        return { score: 0, missingChars: 999 };
       };
 
       // Process ALL data rows after header - simpler approach
