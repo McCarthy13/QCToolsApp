@@ -71,6 +71,9 @@ interface MatchedTicket extends PieceTicket {
   matchedEntryId: string | null;
   matchedJobNumber: string | null;
   matchedMarkNumber: string | null;
+  alreadyLinked: boolean; // true if entry exists but already has a piece ticket
+  existingPieceTicketUrl: string | null; // URL of existing piece ticket if already linked
+  shouldReplace: boolean; // user's choice to replace existing ticket
 }
 
 export default function QualityLogImportScreen({ navigation }: Props) {
@@ -558,10 +561,11 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       const matched: MatchedTicket[] = tickets.map((ticket) => {
         // Find matching entry by Job # and Mark #
         // Job # might be partial (e.g., "5201" matches "255201")
-        // IMPORTANT: Find an entry that hasn't been matched yet AND doesn't already have a pieceTicketUrl
         let matchedEntry: QualityLogEntry | undefined;
+        let alreadyLinkedEntry: QualityLogEntry | undefined;
 
         if (ticket.jobNo && ticket.markNo) {
+          // First, try to find an entry without an existing piece ticket
           matchedEntry = entries.find((entry) => {
             // Skip if this entry was already matched to another ticket in this batch
             if (alreadyMatchedEntryIds.has(entry.id)) {
@@ -577,17 +581,43 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             return (entryJobEnds || entryJobEquals) && markMatches;
           });
 
+          // If no unlinked entry found, check if there's an already-linked entry
+          if (!matchedEntry) {
+            alreadyLinkedEntry = entries.find((entry) => {
+              // Skip if this entry was already matched to another ticket in this batch
+              if (alreadyMatchedEntryIds.has(entry.id)) {
+                return false;
+              }
+              // Only consider entries that already have a piece ticket
+              if (!entry.pieceTicketUrl) {
+                return false;
+              }
+              const entryJobEnds = entry.jobNumber?.endsWith(ticket.jobNo || '');
+              const entryJobEquals = entry.jobNumber === ticket.jobNo;
+              const markMatches = entry.markNumber?.toUpperCase() === ticket.markNo?.toUpperCase();
+              return (entryJobEnds || entryJobEquals) && markMatches;
+            });
+          }
+
           // Mark this entry as matched so subsequent tickets don't match to it
           if (matchedEntry) {
             alreadyMatchedEntryIds.add(matchedEntry.id);
+          } else if (alreadyLinkedEntry) {
+            alreadyMatchedEntryIds.add(alreadyLinkedEntry.id);
           }
         }
 
+        const finalEntry = matchedEntry || alreadyLinkedEntry;
+        const isAlreadyLinked = !matchedEntry && !!alreadyLinkedEntry;
+
         return {
           ...ticket,
-          matchedEntryId: matchedEntry?.id || null,
-          matchedJobNumber: matchedEntry?.jobNumber || null,
-          matchedMarkNumber: matchedEntry?.markNumber || null,
+          matchedEntryId: finalEntry?.id || null,
+          matchedJobNumber: finalEntry?.jobNumber || null,
+          matchedMarkNumber: finalEntry?.markNumber || null,
+          alreadyLinked: isAlreadyLinked,
+          existingPieceTicketUrl: isAlreadyLinked ? alreadyLinkedEntry?.pieceTicketUrl || null : null,
+          shouldReplace: false, // Default to not replacing, user can toggle
         };
       });
 
@@ -607,10 +637,13 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const handleLinkPieceTickets = async () => {
     if (!pieceTicketFile) return;
 
-    const ticketsToLink = matchedTickets.filter((t) => t.matchedEntryId);
+    // Include new matches AND already-linked tickets that user chose to replace
+    const ticketsToLink = matchedTickets.filter((t) =>
+      t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)
+    );
 
     if (ticketsToLink.length === 0) {
-      Alert.alert('No Matches', 'No piece tickets matched any existing entries.');
+      Alert.alert('No Tickets to Link', 'No piece tickets selected for linking. For already-linked entries, tap to select replacement.');
       return;
     }
 
@@ -625,12 +658,14 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       >(functions, 'extractAndUploadPdfPage');
 
       let linkedCount = 0;
+      let replacedCount = 0;
       let errorCount = 0;
 
       for (const ticket of ticketsToLink) {
         if (!ticket.matchedEntryId) continue;
 
-        setLoadingMessage(`Extracting page ${ticket.page} of ${matchedTickets.length}...`);
+        const action = ticket.alreadyLinked ? 'Replacing' : 'Linking';
+        setLoadingMessage(`${action} page ${ticket.page} of ${matchedTickets.length}...`);
 
         try {
           // Call cloud function to extract single page and upload
@@ -645,8 +680,13 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           if (response.data.success && response.data.downloadUrl) {
             // Update the entry with the single-page PDF URL
             await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: response.data.downloadUrl });
-            linkedCount++;
-            console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${ticket.matchedEntryId}`);
+            if (ticket.alreadyLinked) {
+              replacedCount++;
+              console.log(`[PieceTicket] Replaced page ${ticket.page} for entry ${ticket.matchedEntryId}`);
+            } else {
+              linkedCount++;
+              console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${ticket.matchedEntryId}`);
+            }
           } else {
             console.error(`[PieceTicket] Failed to extract page ${ticket.page}:`, response.data.error);
             errorCount++;
@@ -659,16 +699,26 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       setIsLoading(false);
 
+      // Build success message
+      const parts = [];
+      if (linkedCount > 0) {
+        parts.push(`${linkedCount} new link${linkedCount !== 1 ? 's' : ''}`);
+      }
+      if (replacedCount > 0) {
+        parts.push(`${replacedCount} replaced`);
+      }
+      const successMsg = parts.join(', ');
+
       if (errorCount > 0) {
         Alert.alert(
           'Import Partially Complete',
-          `Linked ${linkedCount} piece ticket${linkedCount !== 1 ? 's' : ''}.\n${errorCount} failed to process.`,
+          `${successMsg}.\n${errorCount} failed to process.`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
         Alert.alert(
           'Import Complete',
-          `Successfully linked ${linkedCount} piece ticket${linkedCount !== 1 ? 's' : ''} to entries.`,
+          `Successfully processed piece tickets: ${successMsg}.`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }
@@ -851,13 +901,19 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 <Text className="text-xl font-bold text-gray-900">{matchedTickets.length}</Text>
               </View>
               <View className="flex-1 bg-green-50 rounded-lg p-3">
-                <Text className="text-xs text-gray-500">Matched</Text>
+                <Text className="text-xs text-gray-500">New Links</Text>
                 <Text className="text-xl font-bold text-green-600">
-                  {matchedTickets.filter((t) => t.matchedEntryId).length}
+                  {matchedTickets.filter((t) => t.matchedEntryId && !t.alreadyLinked).length}
+                </Text>
+              </View>
+              <View className="flex-1 bg-orange-50 rounded-lg p-3">
+                <Text className="text-xs text-gray-500">Already Linked</Text>
+                <Text className="text-xl font-bold text-orange-600">
+                  {matchedTickets.filter((t) => t.alreadyLinked).length}
                 </Text>
               </View>
               <View className="flex-1 bg-red-50 rounded-lg p-3">
-                <Text className="text-xs text-gray-500">Unmatched</Text>
+                <Text className="text-xs text-gray-500">No Match</Text>
                 <Text className="text-xl font-bold text-red-600">
                   {matchedTickets.filter((t) => !t.matchedEntryId).length}
                 </Text>
@@ -882,20 +938,42 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               <View
                 key={index}
                 className={`flex-row py-3 px-3 border-b border-gray-200 ${
-                  ticket.matchedEntryId ? 'bg-green-50' : 'bg-red-50'
+                  ticket.alreadyLinked
+                    ? (ticket.shouldReplace ? 'bg-orange-100' : 'bg-orange-50')
+                    : ticket.matchedEntryId
+                      ? 'bg-green-50'
+                      : 'bg-red-50'
                 }`}
               >
                 <Text style={{ width: 50, marginRight: 16 }} className="text-xs text-gray-900">{ticket.page}</Text>
                 <Text style={{ width: 80, marginRight: 16 }} className="text-xs text-gray-900">{ticket.jobNo || '-'}</Text>
                 <Text style={{ width: 70, marginRight: 16 }} className="text-xs text-gray-900">{ticket.markNo || '-'}</Text>
-                <View className="flex-1 flex-row items-center">
-                  {ticket.matchedEntryId ? (
-                    <>
+                <View className="flex-1">
+                  {ticket.alreadyLinked ? (
+                    <Pressable
+                      onPress={() => {
+                        const updated = [...matchedTickets];
+                        updated[index] = { ...ticket, shouldReplace: !ticket.shouldReplace };
+                        setMatchedTickets(updated);
+                      }}
+                      className="flex-row items-center"
+                    >
+                      <Ionicons
+                        name={ticket.shouldReplace ? "checkbox" : "square-outline"}
+                        size={16}
+                        color={ticket.shouldReplace ? "#EA580C" : "#9CA3AF"}
+                      />
+                      <Text className="text-xs text-orange-700 ml-1">
+                        Already linked - {ticket.shouldReplace ? 'will replace' : 'tap to replace'}
+                      </Text>
+                    </Pressable>
+                  ) : ticket.matchedEntryId ? (
+                    <View className="flex-row items-center">
                       <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
                       <Text className="text-xs text-green-700 ml-1">
                         Matched: {ticket.matchedJobNumber}-{ticket.matchedMarkNumber}
                       </Text>
-                    </>
+                    </View>
                   ) : (
                     <>
                       <Ionicons name="close-circle" size={14} color="#DC2626" />
@@ -917,21 +995,21 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             </Pressable>
             <Pressable
               onPress={handleLinkPieceTickets}
-              disabled={matchedTickets.filter((t) => t.matchedEntryId).length === 0}
+              disabled={matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length === 0}
               className={`flex-1 py-4 rounded-xl items-center ${
-                matchedTickets.filter((t) => t.matchedEntryId).length > 0
+                matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length > 0
                   ? 'bg-green-600 active:bg-green-700'
                   : 'bg-gray-300'
               }`}
             >
               <Text
                 className={`font-semibold ${
-                  matchedTickets.filter((t) => t.matchedEntryId).length > 0
+                  matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length > 0
                     ? 'text-white'
                     : 'text-gray-500'
                 }`}
               >
-                Link {matchedTickets.filter((t) => t.matchedEntryId).length} Tickets
+                Link {matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length} Tickets
               </Text>
             </Pressable>
           </View>
