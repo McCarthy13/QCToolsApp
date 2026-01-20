@@ -391,6 +391,10 @@ exports.parseSchedulePDF = onCall({
             columnMap.lengthInches = j;
           } else if (cellText === "strand pattern" || cellText === "strand" || (cellText.includes("strand") && cellText.includes("pattern"))) {
             columnMap.strandPattern = j;
+          } else if (cellText.includes("bottom") && cellText.includes("strand")) {
+            columnMap.bottomStrand = j;
+          } else if (cellText.includes("top") && cellText.includes("strand")) {
+            columnMap.topStrand = j;
           }
         }
 
@@ -684,14 +688,52 @@ exports.parseSchedulePDF = onCall({
           formattedLength = `${lengthFeet}'-${inchesStr}"`;
         }
 
-        // Extract strand pattern
+        // Extract strand pattern - check for combined column first, then separate bottom/top columns
         let strandPattern = "";
+
         if (columnMap.strandPattern !== undefined) {
+          // Single combined strand pattern column
           const rawPattern = (row[columnMap.strandPattern] || "").trim();
           if (rawPattern) {
-            console.log(`[Parse Schedule] Row ${i} raw strand pattern: "${rawPattern}"`);
-            // Use intelligent matching to infer the correct pattern
+            console.log(`[Parse Schedule] Row ${i} raw strand pattern (combined column): "${rawPattern}"`);
             strandPattern = matchStrandPattern(rawPattern);
+          }
+        } else if (columnMap.bottomStrand !== undefined) {
+          // Separate bottom and top strand columns
+          const bottomRaw = (row[columnMap.bottomStrand] || "").trim();
+          const topRaw = columnMap.topStrand !== undefined ? (row[columnMap.topStrand] || "").trim() : "";
+
+          console.log(`[Parse Schedule] Row ${i} raw bottom strand: "${bottomRaw}", raw top strand: "${topRaw}"`);
+
+          if (bottomRaw) {
+            const matchedBottom = matchSinglePattern(bottomRaw, 'bottom');
+
+            if (topRaw) {
+              // Clean up top strand - ensure it has T prefix
+              let topCleaned = topRaw.toUpperCase().replace(/\s+/g, '');
+              if (!topCleaned.startsWith('T')) {
+                topCleaned = 'T' + topCleaned;
+              }
+              const matchedTop = matchSinglePattern(topCleaned, 'top');
+              strandPattern = `${matchedBottom}+${matchedTop}`;
+              console.log(`[Parse Schedule] Row ${i} combined from separate columns: "${strandPattern}"`);
+            } else {
+              strandPattern = matchedBottom;
+              console.log(`[Parse Schedule] Row ${i} bottom only: "${strandPattern}"`);
+            }
+          }
+        }
+
+        // If still no strand pattern, search the row for pattern-like values
+        if (!strandPattern) {
+          for (const cell of row) {
+            const cellVal = (cell || "").trim();
+            // Look for patterns like "117-70" or "117-70+T32-70" or "T32-70"
+            if (/^\d+-\d+/.test(cellVal) || /^T\d+-\d+/.test(cellVal)) {
+              console.log(`[Parse Schedule] Row ${i} found pattern in cell search: "${cellVal}"`);
+              strandPattern = matchStrandPattern(cellVal);
+              if (strandPattern) break;
+            }
           }
         }
 
