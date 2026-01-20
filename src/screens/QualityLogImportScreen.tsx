@@ -520,14 +520,15 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       setPieceTicketFile({ base64, name: file.name, mimeType: file.mimeType || 'application/pdf' });
 
-      setLoadingMessage('Extracting Job # and Mark # from piece tickets...');
+      setLoadingMessage('Extracting Job # and Mark # from piece tickets (this may take 1-2 minutes)...');
 
       // Call Cloud Function to parse piece tickets
+      // Note: Extended timeout because processing 16+ pages takes time with rate limiting
       const functions = getFunctions(app);
       const parsePieceTickets = httpsCallable<
         { fileBase64: string; fileName: string; mimeType: string },
         ParsedPieceTicketsResult
-      >(functions, 'parsePieceTickets');
+      >(functions, 'parsePieceTickets', { timeout: 300000 }); // 5 minute timeout
 
       const response = await parsePieceTickets({
         fileBase64: base64,

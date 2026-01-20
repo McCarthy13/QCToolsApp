@@ -924,7 +924,7 @@ exports.parsePieceTickets = onCall({
 
     // Process each page individually with delay between calls to avoid rate limits
     const tickets = [];
-    const DELAY_BETWEEN_PAGES = 3000; // 3 seconds between pages to avoid rate limits
+    const DELAY_BETWEEN_PAGES = 1500; // 1.5 seconds between pages to balance speed vs rate limits
 
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
       console.log(`[Parse Piece Tickets] === Processing page ${pageNum} of ${pageCount} ===`);
