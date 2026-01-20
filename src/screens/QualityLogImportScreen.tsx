@@ -369,23 +369,37 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
       // Create full entries with product type, bed, and cast strand pattern
       // If "Mixed" was selected, don't set a product type (user will set individually)
-      const fullEntries: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>[] = entriesToImport.map((entry) => ({
-        pourDate: pourDate || entry.pourDate,
-        jobNumber: entry.jobNumber,
-        markNumber: entry.markNumber,
-        idNumber: entry.idNumber,
-        length: entry.length,
-        width: entry.width,
-        thickness: entry.thickness,
-        designStrandPattern: entry.designStrandPattern,
-        castStrandPattern: selectedBottomStrandPattern || undefined, // Bottom strand pattern (required)
-        castTopStrandPattern: selectedTopStrandPattern || undefined, // Top strand pattern (optional)
-        bed: selectedBed, // Use user-selected bed for all entries
-        productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as ProductType) || undefined,
-        issueCodes: [],
-        rejectCodes: [],
-        importedBy: '', // Will be set by store
-      }));
+      const fullEntries: Omit<QualityLogEntry, 'id' | 'importedAt' | 'updatedAt'>[] = entriesToImport.map((entry) => {
+        const baseEntry = {
+          pourDate: pourDate || entry.pourDate,
+          jobNumber: entry.jobNumber,
+          markNumber: entry.markNumber,
+          idNumber: entry.idNumber,
+          length: entry.length,
+          width: entry.width,
+          thickness: entry.thickness,
+          bed: selectedBed,
+          issueCodes: [] as string[],
+          rejectCodes: [] as string[],
+          importedBy: '',
+        };
+
+        // Only add optional fields if they have values (Firestore doesn't accept undefined)
+        if (entry.designStrandPattern) {
+          (baseEntry as any).designStrandPattern = entry.designStrandPattern;
+        }
+        if (selectedBottomStrandPattern) {
+          (baseEntry as any).castStrandPattern = selectedBottomStrandPattern;
+        }
+        if (selectedTopStrandPattern) {
+          (baseEntry as any).castTopStrandPattern = selectedTopStrandPattern;
+        }
+        if (selectedProductType && selectedProductType !== 'Mixed') {
+          (baseEntry as any).productType = selectedProductType as ProductType;
+        }
+
+        return baseEntry;
+      });
 
       const importedIds = await addEntries(fullEntries);
 
