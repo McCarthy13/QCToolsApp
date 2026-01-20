@@ -921,6 +921,19 @@ exports.parsePieceTickets = onCall({
     console.log(`[Parse Piece Tickets] Azure detected page count from document: ${analyzeResult.pages?.length || 0}`);
     console.log(`[Parse Piece Tickets] Full analyze result keys: ${Object.keys(analyzeResult || {}).join(', ')}`);
 
+    // Get the actual PDF page count using pdf-lib to ensure we don't miss any pages
+    let actualPageCount = pages.length;
+    try {
+      const pdfDoc = await PDFDocument.load(fileBuffer);
+      actualPageCount = pdfDoc.getPageCount();
+      console.log(`[Parse Piece Tickets] PDF-lib confirms ${actualPageCount} pages in the PDF`);
+      if (actualPageCount > pages.length) {
+        console.log(`[Parse Piece Tickets] WARNING: Azure only detected ${pages.length} pages but PDF has ${actualPageCount} pages!`);
+      }
+    } catch (pdfErr) {
+      console.log(`[Parse Piece Tickets] Could not verify PDF page count: ${pdfErr.message}`);
+    }
+
     // Also check if there's a pageCount in the result
     if (analyzeResult.documents) {
       console.log(`[Parse Piece Tickets] Documents found: ${analyzeResult.documents.length}`);
@@ -929,12 +942,16 @@ exports.parsePieceTickets = onCall({
     const tickets = [];
 
     // Process each page to extract Job No and Mark No
+    // Use the larger of Azure pages or actual PDF pages to ensure we don't miss any
+    const pagesToProcess = Math.max(pages.length, actualPageCount);
+    console.log(`[Parse Piece Tickets] Will process ${pagesToProcess} pages`);
+
     // ORIENTATION-AGNOSTIC APPROACH: Don't rely on cell positions, just find the values anywhere
-    for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
-      const page = pages[pageIndex];
+    for (let pageIndex = 0; pageIndex < pagesToProcess; pageIndex++) {
+      const page = pages[pageIndex] || null; // May be undefined if Azure didn't detect this page
       const pageNumber = pageIndex + 1;
 
-      console.log(`[Parse Piece Tickets] Processing page ${pageNumber}`);
+      console.log(`[Parse Piece Tickets] Processing page ${pageNumber} (Azure data available: ${!!page})`);
 
       let jobNo = null;
       let markNo = null;
@@ -942,9 +959,16 @@ exports.parsePieceTickets = onCall({
       // Collect ALL text from the page (lines, words, tables, everything)
       let allTextParts = [];
 
-      // Get text from page lines
-      for (const line of (page.lines || [])) {
-        allTextParts.push(line.content || "");
+      // Get text from page lines (if Azure detected this page)
+      if (page) {
+        for (const line of (page.lines || [])) {
+          allTextParts.push(line.content || "");
+        }
+
+        // Also get words directly if lines didn't capture everything
+        for (const word of (page.words || [])) {
+          allTextParts.push(word.content || "");
+        }
       }
 
       // Get text from tables on this page
@@ -966,10 +990,21 @@ exports.parsePieceTickets = onCall({
         }
       }
 
+      // Also check paragraphs if available
+      for (const paragraph of (analyzeResult.paragraphs || [])) {
+        const paraPage = paragraph.boundingRegions?.[0]?.pageNumber || 1;
+        if (paraPage === pageNumber) {
+          allTextParts.push(paragraph.content || "");
+        }
+      }
+
+      // Remove duplicates and empty strings
+      allTextParts = [...new Set(allTextParts.filter(t => t && t.trim()))];
+
       // Join all text and also keep individual parts
       const fullPageText = allTextParts.join(" ");
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - All text (${fullPageText.length} chars):`);
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Text: ${fullPageText.substring(0, 2000)}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Collected ${allTextParts.length} text parts (${fullPageText.length} chars total)`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Text preview: ${fullPageText.substring(0, 500)}`);
 
       // STRATEGY 1: Look for "JOB NO" label and find nearby number
       // This works regardless of orientation because we're searching all text
@@ -983,46 +1018,48 @@ exports.parsePieceTickets = onCall({
           allNumbers.push(num);
         }
       }
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found numbers: ${JSON.stringify(allNumbers)}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found numbers: ${JSON.stringify(allNumbers.slice(0, 10))}${allNumbers.length > 10 ? '...' : ''}`);
 
       // Find all potential mark numbers (letter+digit combinations like H201, B101)
       // Mark numbers typically have 1-2 letters followed by 2-4 digits (e.g., H201, B101, SC12)
-      // Filter out layer/elevation markers like L1, L2, E1, E2 (single letter + single digit)
+      // Also allow marks with dashes like H200-1, H200A
       const allMarks = [];
-      const markMatches = fullPageText.match(/\b[A-Za-z]{1,2}\d{2,4}\b/g) || [];  // Require at least 2 digits
+      const markMatches = fullPageText.match(/\b[A-Za-z]{1,2}\d{2,4}[A-Za-z]?\b/g) || [];
       for (const mark of markMatches) {
         const upper = mark.toUpperCase();
         // Filter out common false positives
-        if (!['TYP', 'MIN'].includes(upper) &&
+        if (!['TYP', 'MIN', 'MAX', 'REF', 'DWG'].includes(upper) &&
             !upper.startsWith('P') &&  // Filter out P12, P34 etc (drawing refs)
+            !upper.startsWith('L') &&  // Filter out L1, L2 (layer markers)
+            !upper.startsWith('E') &&  // Filter out E1, E2 (elevation markers)
             mark.length >= 3 &&        // Must be at least 3 chars (e.g., H12)
             mark.length <= 6) {
           allMarks.push(mark);
         }
       }
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found marks: ${JSON.stringify(allMarks)}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found marks: ${JSON.stringify(allMarks.slice(0, 10))}${allMarks.length > 10 ? '...' : ''}`);
 
-      // Check if "JOB" and "NO" appear in the text (in any order due to rotation)
-      const hasJobLabel = /JOB/i.test(fullPageText) && /NO/i.test(fullPageText);
-      const hasMarkLabel = /MARK/i.test(fullPageText) && /NO/i.test(fullPageText);
+      // Check if "JOB" appears in the text (more flexible than requiring both JOB and NO)
+      const hasJobLabel = /JOB/i.test(fullPageText);
+      const hasMarkLabel = /MARK/i.test(fullPageText);
 
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Has JOB NO label: ${hasJobLabel}, Has MARK NO label: ${hasMarkLabel}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Has JOB label: ${hasJobLabel}, Has MARK label: ${hasMarkLabel}`);
 
-      // If we have a JOB NO label, the first suitable number is likely the job number
+      // If we have a JOB label and numbers, try to find the job number
       if (hasJobLabel && allNumbers.length > 0) {
-        // Prefer 4-digit numbers (like 5201, 5127) over 3-digit
-        const fourDigitNums = allNumbers.filter(n => n.length === 4);
-        jobNo = fourDigitNums.length > 0 ? fourDigitNums[0] : allNumbers[0];
-        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Job No: ${jobNo}`);
+        // Prefer 4-6 digit numbers (like 5201, 255201) - typical job numbers
+        const preferredNums = allNumbers.filter(n => n.length >= 4 && n.length <= 6);
+        jobNo = preferredNums.length > 0 ? preferredNums[0] : allNumbers[0];
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Job No from numbers: ${jobNo}`);
       }
 
-      // If we have a MARK NO label, find the mark number
+      // If we have a MARK label, find the mark number
       if (hasMarkLabel && allMarks.length > 0) {
         // The mark number typically starts with a letter like H, B, S, C followed by digits
         // Prefer marks that start with common prefixes for precast pieces
-        const preferredMarks = allMarks.filter(m => /^[HBSC]/i.test(m));
+        const preferredMarks = allMarks.filter(m => /^[HBSCW]/i.test(m));
         markNo = preferredMarks.length > 0 ? preferredMarks[0] : allMarks[0];
-        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Mark No: ${markNo}`);
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Mark No from marks: ${markNo}`);
       }
 
       // STRATEGY 2: Try regex patterns on the full text
@@ -1031,8 +1068,10 @@ exports.parsePieceTickets = onCall({
           /JOB\s*NO\.?\s*[:\s]*(\d{3,6})/i,
           /JOBNO\.?\s*[:\s]*(\d{3,6})/i,
           /JOB\s*#\s*[:\s]*(\d{3,6})/i,
-          /(\d{4})\s*JOB/i,  // Number before JOB (rotated)
+          /JOB[:\s]+(\d{3,6})/i,  // Just "JOB:" or "JOB " followed by number
+          /(\d{4,6})\s*JOB/i,  // Number before JOB (rotated)
           /NO\s*JOB\s*(\d{3,6})/i,  // Reversed order
+          /PROJECT\s*(?:NO\.?|#)?\s*[:\s]*(\d{3,6})/i,  // PROJECT NO
         ];
         for (const pattern of jobPatterns) {
           const match = fullPageText.match(pattern);
@@ -1046,18 +1085,22 @@ exports.parsePieceTickets = onCall({
 
       if (!markNo) {
         const markPatterns = [
-          /MARK\s*NO\.?\s*[:\s]*([A-Za-z]{1,2}\d{2,4})/i,   // Require at least 2 digits
-          /MARKNO\.?\s*[:\s]*([A-Za-z]{1,2}\d{2,4})/i,
-          /MARK\s*#\s*[:\s]*([A-Za-z]{1,2}\d{2,4})/i,
-          /([A-Za-z]{1,2}\d{2,4})\s*MARK/i,  // Mark before label (rotated)
-          /NO\s*MARK\s*([A-Za-z]{1,2}\d{2,4})/i,  // Reversed order
+          /MARK\s*NO\.?\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,
+          /MARKNO\.?\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,
+          /MARK\s*#\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,
+          /MARK[:\s]+([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,  // Just "MARK:" followed by value
+          /PIECE\s*(?:NO\.?|#|MARK)?\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,  // PIECE MARK
+          /([A-Za-z]{1,2}\d{2,4}[A-Za-z]?)\s*MARK/i,  // Mark before label (rotated)
+          /NO\s*MARK\s*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,  // Reversed order
         ];
         for (const pattern of markPatterns) {
           const match = fullPageText.match(pattern);
           if (match) {
             const val = match[1];
-            // Filter out false positives - must be at least 3 chars and not a common label
-            if (val.length >= 3 && !['TYP', 'MIN'].includes(val.toUpperCase())) {
+            // Filter out false positives
+            const upper = val.toUpperCase();
+            if (val.length >= 2 && !['TYP', 'MIN', 'MAX', 'REF'].includes(upper) &&
+                !upper.startsWith('L') && !upper.startsWith('E') && !upper.startsWith('P')) {
               markNo = val;
               console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No via regex: ${markNo}`);
               break;
@@ -1071,10 +1114,10 @@ exports.parsePieceTickets = onCall({
         for (let i = 0; i < allTextParts.length; i++) {
           const part = allTextParts[i].toUpperCase();
 
-          // If this part contains JOB or JOBNO, check nearby parts for the number
-          if (!jobNo && (part.includes('JOB') || part.includes('JOBNO'))) {
+          // If this part contains JOB, check nearby parts for the number
+          if (!jobNo && part.includes('JOB')) {
             // Check this part and adjacent parts for a number
-            for (let j = Math.max(0, i - 2); j <= Math.min(allTextParts.length - 1, i + 2); j++) {
+            for (let j = Math.max(0, i - 3); j <= Math.min(allTextParts.length - 1, i + 3); j++) {
               const nearbyPart = allTextParts[j].trim();
               if (/^\d{3,6}$/.test(nearbyPart)) {
                 jobNo = nearbyPart;
@@ -1084,14 +1127,14 @@ exports.parsePieceTickets = onCall({
             }
           }
 
-          // If this part contains MARK or MARKNO, check nearby parts for the value
-          if (!markNo && (part.includes('MARK') || part.includes('MARKNO'))) {
-            for (let j = Math.max(0, i - 2); j <= Math.min(allTextParts.length - 1, i + 2); j++) {
+          // If this part contains MARK, check nearby parts for the value
+          if (!markNo && part.includes('MARK')) {
+            for (let j = Math.max(0, i - 3); j <= Math.min(allTextParts.length - 1, i + 3); j++) {
               const nearbyPart = allTextParts[j].trim();
-              // Require at least 2 digits to filter out L1, L2, E1, E2 layer markers
-              if (/^[A-Za-z]{1,2}\d{2,4}$/.test(nearbyPart) && nearbyPart.length >= 3) {
+              if (/^[A-Za-z]{1,2}\d{1,4}[A-Za-z]?$/.test(nearbyPart) && nearbyPart.length >= 2) {
                 const upper = nearbyPart.toUpperCase();
-                if (!['TYP', 'MIN', 'QTY'].includes(upper)) {
+                if (!['TYP', 'MIN', 'QTY', 'MAX', 'REF'].includes(upper) &&
+                    !upper.startsWith('L') && !upper.startsWith('E') && !upper.startsWith('P')) {
                   markNo = nearbyPart;
                   console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No near label: ${markNo}`);
                   break;
@@ -1099,6 +1142,24 @@ exports.parsePieceTickets = onCall({
               }
             }
           }
+        }
+      }
+
+      // STRATEGY 4: If still no data and we have numbers/marks, just take the best candidates
+      // This is a fallback for pages where labels weren't detected but data exists
+      if (!jobNo && allNumbers.length > 0) {
+        const preferredNums = allNumbers.filter(n => n.length >= 4 && n.length <= 6);
+        if (preferredNums.length > 0) {
+          jobNo = preferredNums[0];
+          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Fallback Job No (no label): ${jobNo}`);
+        }
+      }
+
+      if (!markNo && allMarks.length > 0) {
+        const preferredMarks = allMarks.filter(m => /^[HBSCW]/i.test(m));
+        if (preferredMarks.length > 0) {
+          markNo = preferredMarks[0];
+          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Fallback Mark No (no label): ${markNo}`);
         }
       }
 
