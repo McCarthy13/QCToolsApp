@@ -88,12 +88,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     initializePatterns();
   }, []);
 
-  // Get unique strand pattern IDs sorted
-  const availableStrandPatterns = useMemo(() => {
-    const patternIds = [...new Set(customPatterns.map((p) => p.patternId))];
-    return patternIds.sort();
-  }, [customPatterns]);
-
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [extractedEntries, setExtractedEntries] = useState<ExtractedEntry[]>([]);
@@ -106,7 +100,32 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [showCastStrandPatternPrompt, setShowCastStrandPatternPrompt] = useState(false);
   const [showMissingValuesPrompt, setShowMissingValuesPrompt] = useState(false);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | 'Mixed' | null>(null);
-  const [selectedCastStrandPattern, setSelectedCastStrandPattern] = useState<string | null>(null);
+  const [selectedBottomStrandPattern, setSelectedBottomStrandPattern] = useState<string | null>(null);
+  const [selectedTopStrandPattern, setSelectedTopStrandPattern] = useState<string | null>(null);
+
+  // Get bottom strand patterns filtered by selected product type
+  const availableBottomPatterns = useMemo(() => {
+    if (!selectedProductType || selectedProductType === 'Mixed') {
+      return [];
+    }
+    const filteredPatterns = customPatterns.filter(
+      (p) => p.productType === selectedProductType && (p.position === 'Bottom' || p.position === 'Both')
+    );
+    const patternIds = [...new Set(filteredPatterns.map((p) => p.patternId))];
+    return patternIds.sort();
+  }, [customPatterns, selectedProductType]);
+
+  // Get top strand patterns filtered by selected product type
+  const availableTopPatterns = useMemo(() => {
+    if (!selectedProductType || selectedProductType === 'Mixed') {
+      return [];
+    }
+    const filteredPatterns = customPatterns.filter(
+      (p) => p.productType === selectedProductType && (p.position === 'Top' || p.position === 'Both')
+    );
+    const patternIds = [...new Set(filteredPatterns.map((p) => p.patternId))];
+    return patternIds.sort();
+  }, [customPatterns, selectedProductType]);
 
   // No longer need pending file state - we collect metadata first, then pick file
 
@@ -173,14 +192,20 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     setShowCastStrandPatternPrompt(true);
   };
 
-  // Step 4: After cast strand pattern selected, open file picker and process
-  const handleCastStrandPatternSelect = async (pattern: string | null) => {
-    setSelectedCastStrandPattern(pattern);
+  // Step 4: After strand patterns selected, open file picker and process
+  const handleStrandPatternsConfirm = async () => {
+    // Bottom pattern is required
+    if (!selectedBottomStrandPattern) {
+      Alert.alert('Required', 'Please select a bottom strand pattern.');
+      return;
+    }
+
     setShowCastStrandPatternPrompt(false);
 
     // Now open file picker
     console.log('[QualityLogImport] Metadata collected, opening file picker...');
-    console.log('[QualityLogImport] Bed:', selectedBed, 'Product Type:', selectedProductType, 'Cast Pattern:', pattern);
+    console.log('[QualityLogImport] Bed:', selectedBed, 'Product Type:', selectedProductType);
+    console.log('[QualityLogImport] Bottom Pattern:', selectedBottomStrandPattern, 'Top Pattern:', selectedTopStrandPattern);
 
     try {
       let result;
@@ -353,7 +378,8 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         width: entry.width,
         thickness: entry.thickness,
         designStrandPattern: entry.designStrandPattern,
-        castStrandPattern: selectedCastStrandPattern || undefined, // Use user-selected cast strand pattern
+        castStrandPattern: selectedBottomStrandPattern || undefined, // Bottom strand pattern (required)
+        castTopStrandPattern: selectedTopStrandPattern || undefined, // Top strand pattern (optional)
         bed: selectedBed, // Use user-selected bed for all entries
         productType: selectedProductType === 'Mixed' ? undefined : (selectedProductType as ProductType) || undefined,
         issueCodes: [],
@@ -391,7 +417,8 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     setPourDate('');
     setSelectedBed(undefined);
     setSelectedProductType(null);
-    setSelectedCastStrandPattern(null);
+    setSelectedBottomStrandPattern(null);
+    setSelectedTopStrandPattern(null);
     setShowReview(false);
     setShowBedPrompt(false);
     setShowProductTypePrompt(false);
@@ -901,9 +928,15 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 </Text>
               </View>
               <View className="flex-1 min-w-[100px]">
-                <Text className="text-xs text-gray-500">Cast Pattern</Text>
+                <Text className="text-xs text-gray-500">Bottom Pattern</Text>
                 <Text className="text-base font-semibold text-gray-900">
-                  {selectedCastStrandPattern || 'None'}
+                  {selectedBottomStrandPattern || 'None'}
+                </Text>
+              </View>
+              <View className="flex-1 min-w-[100px]">
+                <Text className="text-xs text-gray-500">Top Pattern</Text>
+                <Text className="text-base font-semibold text-gray-900">
+                  {selectedTopStrandPattern || 'None'}
                 </Text>
               </View>
               <View className="flex-1 min-w-[100px]">
@@ -1093,49 +1126,124 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       {/* Cast Strand Pattern Selection Modal */}
       <Modal visible={showCastStrandPatternPrompt} transparent animationType="slide">
         <View className="flex-1 bg-black/50 justify-center px-6">
-          <View className="bg-white rounded-2xl p-6 max-h-[80%]">
+          <View className="bg-white rounded-2xl p-6 max-h-[85%]">
             <Text className="text-xl font-bold text-gray-900 text-center mb-2">
-              Select Cast Strand Pattern
+              Select Strand Patterns
             </Text>
-            <Text className="text-gray-600 text-center mb-6">
-              Choose the strand pattern used for casting this bed:
+            <Text className="text-gray-600 text-center mb-4">
+              Choose the strand patterns used for casting this bed:
             </Text>
 
-            <ScrollView className="max-h-80" showsVerticalScrollIndicator>
-              <View className="gap-3">
-                {availableStrandPatterns.length > 0 ? (
-                  availableStrandPatterns.map((patternId) => (
-                    <Pressable
-                      key={patternId}
-                      onPress={() => handleCastStrandPatternSelect(patternId)}
-                      className="bg-blue-600 py-4 px-4 rounded-xl items-center active:bg-blue-700"
-                    >
-                      <Text className="text-white font-bold text-lg">{patternId}</Text>
-                    </Pressable>
-                  ))
-                ) : (
-                  <View className="bg-gray-100 rounded-xl p-4 items-center">
-                    <Ionicons name="information-circle-outline" size={24} color="#6B7280" />
-                    <Text className="text-gray-600 text-center mt-2">
-                      No strand patterns configured yet.
-                    </Text>
-                    <Text className="text-gray-500 text-xs text-center mt-1">
-                      Add patterns in Strand Pattern Management.
-                    </Text>
-                  </View>
-                )}
+            <ScrollView className="max-h-[400px]" showsVerticalScrollIndicator>
+              {/* Bottom Strand Pattern - Required */}
+              <View className="mb-6">
+                <Text className="text-base font-semibold text-gray-900 mb-2">
+                  Bottom Strand Pattern <Text className="text-red-500">*</Text>
+                </Text>
+                <View className="gap-2">
+                  {availableBottomPatterns.length > 0 ? (
+                    availableBottomPatterns.map((patternId: string) => (
+                      <Pressable
+                        key={patternId}
+                        onPress={() => setSelectedBottomStrandPattern(patternId)}
+                        className={`py-3 px-4 rounded-xl items-center border-2 ${
+                          selectedBottomStrandPattern === patternId
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'bg-white border-gray-300 active:border-blue-400'
+                        }`}
+                      >
+                        <Text className={`font-bold text-base ${
+                          selectedBottomStrandPattern === patternId ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {patternId}
+                        </Text>
+                      </Pressable>
+                    ))
+                  ) : (
+                    <View className="bg-gray-100 rounded-xl p-4 items-center">
+                      <Text className="text-gray-600 text-center">
+                        No bottom patterns for {selectedProductType}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
 
-                <Pressable
-                  onPress={() => handleCastStrandPatternSelect(null)}
-                  className="bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300 mt-2"
-                >
-                  <Text className="text-gray-700 font-semibold">Skip / None</Text>
-                  <Text className="text-gray-500 text-xs">
-                    Don't set a cast strand pattern
-                  </Text>
-                </Pressable>
+              {/* Top Strand Pattern - Optional */}
+              <View className="mb-4">
+                <Text className="text-base font-semibold text-gray-900 mb-2">
+                  Top Strand Pattern <Text className="text-gray-400">(optional)</Text>
+                </Text>
+                <View className="gap-2">
+                  {availableTopPatterns.length > 0 ? (
+                    <>
+                      <Pressable
+                        onPress={() => setSelectedTopStrandPattern(null)}
+                        className={`py-3 px-4 rounded-xl items-center border-2 ${
+                          selectedTopStrandPattern === null
+                            ? 'bg-gray-600 border-gray-600'
+                            : 'bg-white border-gray-300 active:border-gray-400'
+                        }`}
+                      >
+                        <Text className={`font-semibold ${
+                          selectedTopStrandPattern === null ? 'text-white' : 'text-gray-700'
+                        }`}>
+                          None / No Top Strand
+                        </Text>
+                      </Pressable>
+                      {availableTopPatterns.map((patternId: string) => (
+                        <Pressable
+                          key={patternId}
+                          onPress={() => setSelectedTopStrandPattern(patternId)}
+                          className={`py-3 px-4 rounded-xl items-center border-2 ${
+                            selectedTopStrandPattern === patternId
+                              ? 'bg-blue-600 border-blue-600'
+                              : 'bg-white border-gray-300 active:border-blue-400'
+                          }`}
+                        >
+                          <Text className={`font-bold text-base ${
+                            selectedTopStrandPattern === patternId ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {patternId}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </>
+                  ) : (
+                    <View className="bg-gray-100 rounded-xl p-3 items-center">
+                      <Text className="text-gray-500 text-center text-sm">
+                        No top patterns available for {selectedProductType}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </ScrollView>
+
+            {/* Action Buttons */}
+            <View className="flex-row gap-3 mt-4">
+              <Pressable
+                onPress={resetImport}
+                className="flex-1 bg-gray-200 py-4 rounded-xl items-center active:bg-gray-300"
+              >
+                <Text className="text-gray-700 font-semibold">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleStrandPatternsConfirm}
+                disabled={!selectedBottomStrandPattern}
+                className={`flex-1 py-4 rounded-xl items-center ${
+                  selectedBottomStrandPattern
+                    ? 'bg-blue-600 active:bg-blue-700'
+                    : 'bg-gray-300'
+                }`}
+              >
+                <Text className={`font-semibold ${
+                  selectedBottomStrandPattern ? 'text-white' : 'text-gray-500'
+                }`}>
+                  Upload Schedule
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

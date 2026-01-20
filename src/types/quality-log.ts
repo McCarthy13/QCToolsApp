@@ -39,7 +39,8 @@ export interface QualityLogEntry {
   width: number; // In inches
   thickness: number; // In inches (used for product type inference)
   designStrandPattern?: string; // Design strand pattern from schedule (e.g., "217-70")
-  castStrandPattern?: string; // Cast strand pattern selected by user
+  castStrandPattern?: string; // Bottom cast strand pattern selected by user (required)
+  castTopStrandPattern?: string; // Top cast strand pattern selected by user (optional)
   bed?: BedNumber;
   location?: string; // Format: "1-80" (1-4)-(1-80)
 
