@@ -582,7 +582,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => startEditing(entry.id, field, value)}
-        style={{ width, paddingHorizontal: 6, paddingVertical: 10, ...cellBorderStyle }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10, justifyContent: 'center', ...cellBorderStyle }}
       >
         <Text className="text-sm text-gray-900" numberOfLines={2}>{displayValue}</Text>
       </Pressable>
@@ -958,12 +958,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {/* Editable cells - New column order */}
                   {renderEditableTextCell(entry, 'pourDate', entry.pourDate, COLUMN_WIDTHS.pourDate)}
                   {renderPickerCell(entry, 'disposition', entry.disposition || 'Scheduled', COLUMN_WIDTHS.disposition)}
-                  <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 12, backgroundColor: getStatusColor(entry), borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }} className="text-xs font-bold text-gray-900">
-                    {entry.status || '40'}
-                  </Text>
-                  <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 12, borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }} className="text-xs text-gray-900">
-                    {entry.approvalRejectionDate || '-'}
-                  </Text>
+                  <View style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 10, backgroundColor: getStatusColor(entry), borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)', justifyContent: 'center' }}>
+                    <Text className="text-sm font-bold text-gray-900">
+                      {entry.status || '40'}
+                    </Text>
+                  </View>
+                  <View style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 10, borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)', justifyContent: 'center' }}>
+                    <Text className="text-sm text-gray-900">
+                      {entry.approvalRejectionDate || '-'}
+                    </Text>
+                  </View>
                   {renderPickerCell(entry, 'productType', entry.productType, COLUMN_WIDTHS.productType)}
                   {renderEditableTextCell(entry, 'jobNumber', entry.jobNumber, COLUMN_WIDTHS.jobNumber)}
                   {renderEditableTextCell(entry, 'markNumber', entry.markNumber, COLUMN_WIDTHS.markNumber)}
@@ -995,21 +999,21 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'engineerFeedback', entry.engineerFeedback, COLUMN_WIDTHS.engineerFeedback)}
                   <Pressable
                     onPress={() => openCodesPicker(entry.id, 'issueCodes', entry.issueCodes)}
-                    style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}
+                    style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}
                   >
-                    <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>
+                    <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>
                       {entry.issueCodes.length > 0 ? entry.issueCodes.join(', ') : '-'}
                     </Text>
-                    <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+                    <Ionicons name="chevron-down" size={10} color="#9CA3AF" />
                   </Pressable>
                   <Pressable
                     onPress={() => openCodesPicker(entry.id, 'rejectCodes', entry.rejectCodes)}
-                    style={{ width: COLUMN_WIDTHS.rejectCodes, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
+                    style={{ width: COLUMN_WIDTHS.rejectCodes, paddingHorizontal: 8, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' }}
                   >
-                    <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>
+                    <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>
                       {entry.rejectCodes.length > 0 ? entry.rejectCodes.join(', ') : '-'}
                     </Text>
-                    <Ionicons name="chevron-down" size={12} color="#9CA3AF" />
+                    <Ionicons name="chevron-down" size={10} color="#9CA3AF" />
                   </Pressable>
                 </View>
               ))
