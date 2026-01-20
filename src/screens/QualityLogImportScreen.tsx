@@ -683,13 +683,18 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
           if (response.data.success && response.data.downloadUrl) {
             // Update the entry with the single-page PDF URL
-            await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: response.data.downloadUrl });
-            if (ticket.alreadyLinked) {
-              replacedCount++;
-              console.log(`[PieceTicket] Replaced page ${ticket.page} for entry ${ticket.matchedEntryId}`);
-            } else {
-              linkedCount++;
-              console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${ticket.matchedEntryId}`);
+            try {
+              await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: response.data.downloadUrl });
+              if (ticket.alreadyLinked) {
+                replacedCount++;
+                console.log(`[PieceTicket] Replaced page ${ticket.page} for entry ${ticket.matchedEntryId}`);
+              } else {
+                linkedCount++;
+                console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${ticket.matchedEntryId}`);
+              }
+            } catch (updateError: any) {
+              console.error(`[PieceTicket] Failed to update entry ${ticket.matchedEntryId}:`, updateError);
+              errorCount++;
             }
           } else {
             console.error(`[PieceTicket] Failed to extract page ${ticket.page}:`, response.data.error);
