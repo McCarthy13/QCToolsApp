@@ -15,6 +15,19 @@ export type StatusCode = '40' | '50' | '90';
 // Bed numbers
 export type BedNumber = '1' | '2' | '3' | '4' | '5' | '6';
 
+// Attachment types
+export type AttachmentType = 'photo' | 'file' | 'slippage-report';
+
+// Individual attachment item
+export interface Attachment {
+  id: string;
+  type: AttachmentType;
+  url: string;
+  name: string;
+  createdAt: number;
+  createdBy?: string;
+}
+
 // Issue/Reject code definition
 export interface QualityCode {
   id: string;
@@ -46,8 +59,11 @@ export interface QualityLogEntry {
   // Piece ticket attachment
   pieceTicketUrl?: string; // URL to the piece ticket PDF page in Firebase Storage
 
-  // Photos associated with this piece
+  // Photos associated with this piece (legacy - use attachments instead)
   photoUrls?: string[]; // Array of Firebase Storage URLs for attached photos
+
+  // Attachments (photos, files, slippage reports)
+  attachments?: Attachment[];
 
   // Auto-calculated based on disposition
   disposition?: DispositionValue;

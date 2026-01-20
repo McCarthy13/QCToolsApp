@@ -37,6 +37,8 @@ import {
   DispositionValue,
   ProductType,
   BedNumber,
+  Attachment,
+  AttachmentType,
 } from '../types/quality-log';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
@@ -120,6 +122,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   } | null>(null);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [selectedDispositions, setSelectedDispositions] = useState<string[]>([]);
+
+  // Attachments modal state
+  const [showAttachmentsModal, setShowAttachmentsModal] = useState<{ entry: QualityLogEntry } | null>(null);
 
   useEffect(() => {
     initialize();
@@ -341,10 +346,24 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const uploadPhoto = async (uri: string, entryId: string): Promise<string> => {
     const response = await fetch(uri);
     const blob = await response.blob();
-    const filename = `quality-log-photos/${entryId}/${Date.now()}.jpg`;
+    const filename = `quality-log-attachments/${entryId}/${Date.now()}.jpg`;
     const storageRef = ref(storage, filename);
     await uploadBytes(storageRef, blob);
     return getDownloadURL(storageRef);
+  };
+
+  // Add attachment to entry
+  const addAttachment = async (entry: QualityLogEntry, type: AttachmentType, url: string, name: string) => {
+    const newAttachment: Attachment = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      url,
+      name,
+      createdAt: Date.now(),
+      createdBy: currentUser?.email || undefined,
+    };
+    const existingAttachments = entry.attachments || [];
+    await updateEntry(entry.id, { attachments: [...existingAttachments, newAttachment] });
   };
 
   // Handle taking a photo with camera
@@ -363,8 +382,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     if (!result.canceled && result.assets && result.assets[0]) {
       try {
         const downloadUrl = await uploadPhoto(result.assets[0].uri, entry.id);
-        const existingPhotos = entry.photoUrls || [];
-        await updateEntry(entry.id, { photoUrls: [...existingPhotos, downloadUrl] });
+        const timestamp = new Date().toLocaleString();
+        await addAttachment(entry, 'photo', downloadUrl, `Photo ${timestamp}`);
         Alert.alert('Success', 'Photo added successfully');
       } catch (error) {
         console.error('Error uploading photo:', error);
@@ -390,14 +409,18 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     if (!result.canceled && result.assets) {
       try {
-        const existingPhotos = entry.photoUrls || [];
-        const uploadPromises = result.assets.map(asset => uploadPhoto(asset.uri, entry.id));
-        const downloadUrls = await Promise.all(uploadPromises);
-        await updateEntry(entry.id, { photoUrls: [...existingPhotos, ...downloadUrls] });
-        Alert.alert('Success', `${downloadUrls.length} photo(s) added successfully`);
+        for (let i = 0; i < result.assets.length; i++) {
+          const asset = result.assets[i];
+          const downloadUrl = await uploadPhoto(asset.uri, entry.id);
+          const timestamp = new Date().toLocaleString();
+          // Re-fetch entry to get latest attachments
+          const currentEntry = entries.find(e => e.id === entry.id) || entry;
+          await addAttachment(currentEntry, 'file', downloadUrl, asset.fileName || `File ${timestamp}`);
+        }
+        Alert.alert('Success', `${result.assets.length} file(s) added successfully`);
       } catch (error) {
-        console.error('Error uploading photos:', error);
-        Alert.alert('Error', 'Failed to upload photos');
+        console.error('Error uploading files:', error);
+        Alert.alert('Error', 'Failed to upload files');
       }
     }
   };
@@ -544,6 +567,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     bed: 40,
     location: 58,
     qualityComments: 350,
+    attachments: 36, // New attachments folder column
     engineer: 80,
     engineerFeedback: 280,
     issueCodes: 80,
@@ -897,6 +921,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('bed', 'Bed', COLUMN_WIDTHS.bed)}
               {renderFilterableHeader('location', 'Location', COLUMN_WIDTHS.location)}
               {renderFilterableHeader('qualityComments', 'Quality Comments', COLUMN_WIDTHS.qualityComments)}
+              <Text style={{ width: COLUMN_WIDTHS.attachments, paddingHorizontal: 4, paddingVertical: 4, borderRightWidth: 1, borderRightColor: 'rgba(156, 163, 175, 0.4)' }} className="text-xs font-semibold text-white"></Text>
               {renderFilterableHeader('engineer', 'Engineer', COLUMN_WIDTHS.engineer)}
               {renderFilterableHeader('engineerFeedback', 'Engineer Feedback', COLUMN_WIDTHS.engineerFeedback)}
               {renderFilterableHeader('issueCodes', 'Issue Codes', COLUMN_WIDTHS.issueCodes)}
@@ -995,6 +1020,30 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderPickerCell(entry, 'bed', entry.bed, COLUMN_WIDTHS.bed)}
                   {renderEditableTextCell(entry, 'location', entry.location, COLUMN_WIDTHS.location)}
                   {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, COLUMN_WIDTHS.qualityComments)}
+                  {/* Attachments folder icon */}
+                  <Pressable
+                    onPress={() => {
+                      const attachmentCount = (entry.attachments?.length || 0) + (entry.photoUrls?.length || 0);
+                      if (attachmentCount > 0) {
+                        setShowAttachmentsModal({ entry });
+                      }
+                    }}
+                    style={{ width: COLUMN_WIDTHS.attachments, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}
+                    disabled={(entry.attachments?.length || 0) + (entry.photoUrls?.length || 0) === 0}
+                  >
+                    {((entry.attachments?.length || 0) + (entry.photoUrls?.length || 0)) > 0 ? (
+                      <View className="relative">
+                        <Ionicons name="folder" size={18} color="#F59E0B" />
+                        <View className="absolute -top-1 -right-2 bg-blue-600 rounded-full px-1 min-w-[14px] items-center">
+                          <Text className="text-white text-[9px] font-bold">
+                            {(entry.attachments?.length || 0) + (entry.photoUrls?.length || 0)}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={{ width: 18, height: 18 }} />
+                    )}
+                  </Pressable>
                   {renderEditableTextCell(entry, 'engineer', entry.engineer, COLUMN_WIDTHS.engineer)}
                   {renderEditableTextCell(entry, 'engineerFeedback', entry.engineerFeedback, COLUMN_WIDTHS.engineerFeedback)}
                   <Pressable
@@ -1229,6 +1278,110 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Attachments Modal */}
+      <Modal visible={!!showAttachmentsModal} transparent animationType="slide">
+        <Pressable
+          className="flex-1 bg-black/50 justify-end"
+          onPress={() => setShowAttachmentsModal(null)}
+        >
+          <Pressable className="bg-white rounded-t-2xl p-4 max-h-[80%]" onPress={(e) => e.stopPropagation()}>
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-1">
+                <Text className="text-lg font-semibold text-gray-900">Attachments</Text>
+                {showAttachmentsModal && (
+                  <Text className="text-sm text-gray-500">
+                    {showAttachmentsModal.entry.jobNumber} - {showAttachmentsModal.entry.markNumber}
+                  </Text>
+                )}
+              </View>
+              <Pressable
+                onPress={() => setShowAttachmentsModal(null)}
+                className="p-2"
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            <ScrollView className="max-h-96">
+              {showAttachmentsModal && (
+                <>
+                  {/* New attachments system */}
+                  {showAttachmentsModal.entry.attachments?.map((attachment, index) => (
+                    <Pressable
+                      key={attachment.id}
+                      onPress={() => Linking.openURL(attachment.url)}
+                      className="flex-row items-center py-3 px-4 bg-gray-50 rounded-lg mb-2"
+                    >
+                      <View className="bg-white rounded-full p-2 mr-3">
+                        <Ionicons
+                          name={
+                            attachment.type === 'photo' ? 'image' :
+                            attachment.type === 'slippage-report' ? 'document-text' :
+                            'document'
+                          }
+                          size={20}
+                          color={
+                            attachment.type === 'photo' ? '#2563EB' :
+                            attachment.type === 'slippage-report' ? '#9333EA' :
+                            '#16A34A'
+                          }
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+                          {attachment.name}
+                        </Text>
+                        <Text className="text-xs text-gray-500">
+                          {attachment.type === 'photo' ? 'Photo' :
+                           attachment.type === 'slippage-report' ? 'Slippage Report' : 'File'}
+                          {' • '}
+                          {new Date(attachment.createdAt).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      <Ionicons name="open-outline" size={18} color="#9CA3AF" />
+                    </Pressable>
+                  ))}
+
+                  {/* Legacy photoUrls */}
+                  {showAttachmentsModal.entry.photoUrls?.map((url, index) => (
+                    <Pressable
+                      key={`legacy-${index}`}
+                      onPress={() => Linking.openURL(url)}
+                      className="flex-row items-center py-3 px-4 bg-gray-50 rounded-lg mb-2"
+                    >
+                      <View className="bg-white rounded-full p-2 mr-3">
+                        <Ionicons name="image" size={20} color="#2563EB" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+                          Photo {index + 1}
+                        </Text>
+                        <Text className="text-xs text-gray-500">Legacy photo</Text>
+                      </View>
+                      <Ionicons name="open-outline" size={18} color="#9CA3AF" />
+                    </Pressable>
+                  ))}
+
+                  {((showAttachmentsModal.entry.attachments?.length || 0) + (showAttachmentsModal.entry.photoUrls?.length || 0)) === 0 && (
+                    <View className="py-8 items-center">
+                      <Ionicons name="folder-open-outline" size={48} color="#D1D5DB" />
+                      <Text className="text-gray-400 mt-2">No attachments</Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
+
+            <Pressable
+              onPress={() => setShowAttachmentsModal(null)}
+              className="py-3 mt-4 bg-gray-200 rounded-lg"
+            >
+              <Text className="text-center text-base text-gray-700">Close</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
