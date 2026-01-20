@@ -389,9 +389,10 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           (baseEntry as any).designStrandPattern = entry.designStrandPattern;
         }
         // Combine bottom + top strand pattern in format: "117-70+T32-70"
+        // Note: selectedTopStrandPattern already has "T" prefix (e.g., "T32-70")
         if (selectedBottomStrandPattern) {
           const castPattern = selectedTopStrandPattern
-            ? `${selectedBottomStrandPattern}+T${selectedTopStrandPattern}`
+            ? `${selectedBottomStrandPattern}+${selectedTopStrandPattern}`
             : selectedBottomStrandPattern;
           (baseEntry as any).castStrandPattern = castPattern;
         }

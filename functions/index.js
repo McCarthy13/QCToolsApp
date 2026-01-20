@@ -435,7 +435,7 @@ exports.parseSchedulePDF = onCall({
        * Format: BOTTOM+TTOP (e.g., "117-70+T32-70")
        *
        * Strategy:
-       * 1. Check if pattern contains "+T" indicating combined bottom+top
+       * 1. Check if pattern contains "+T" or "T" indicating combined bottom+top
        * 2. Split and match each part separately
        * 3. Recombine in standard format
        * 4. If not combined, match as single pattern
@@ -443,13 +443,46 @@ exports.parseSchedulePDF = onCall({
       const matchStrandPattern = (ocrValue) => {
         if (!ocrValue || typeof ocrValue !== 'string') return '';
 
-        // Clean the input - remove spaces, normalize
-        let cleaned = ocrValue.trim().replace(/\s+/g, '').toUpperCase();
+        // Clean the input - normalize but preserve some structure for pattern detection
+        let cleaned = ocrValue.trim().toUpperCase();
         if (!cleaned) return '';
 
-        // Check for combined pattern format (contains +T or just T followed by digits)
-        // Patterns like: "117-70+T32-70", "117-70 T32-70", "117-70T32-70"
-        const combinedMatch = cleaned.match(/^(\d+-\d+)\+?T(\d+-\d+)$/i);
+        console.log(`[Parse Schedule] matchStrandPattern input: "${ocrValue}" -> cleaned: "${cleaned}"`);
+
+        // Check for combined pattern format (various separators)
+        // Patterns like: "117-70+T32-70", "117-70 T32-70", "117-70T32-70", "117-70 / T32-70"
+        // Also handle: "117-70 +T32-70", "117-70+ T32-70"
+
+        // Pattern 1: Standard format with +T separator (with possible spaces)
+        let combinedMatch = cleaned.match(/^(\d+-\d+)\s*\+\s*T\s*(\d+-\d+)$/i);
+        if (combinedMatch) {
+          console.log(`[Parse Schedule] Matched pattern 1 (+T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
+        }
+
+        // Pattern 2: Just T separator (no +), e.g., "117-70 T32-70" or "117-70T32-70"
+        if (!combinedMatch) {
+          combinedMatch = cleaned.match(/^(\d+-\d+)\s+T\s*(\d+-\d+)$/i);
+          if (combinedMatch) {
+            console.log(`[Parse Schedule] Matched pattern 2 (space T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
+          }
+        }
+
+        // Pattern 3: T directly attached, e.g., "117-70T32-70"
+        if (!combinedMatch) {
+          combinedMatch = cleaned.replace(/\s+/g, '').match(/^(\d+-\d+)T(\d+-\d+)$/i);
+          if (combinedMatch) {
+            console.log(`[Parse Schedule] Matched pattern 3 (direct T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
+          }
+        }
+
+        // Pattern 4: Slash separator, e.g., "117-70/T32-70"
+        if (!combinedMatch) {
+          combinedMatch = cleaned.match(/^(\d+-\d+)\s*[\/]\s*T\s*(\d+-\d+)$/i);
+          if (combinedMatch) {
+            console.log(`[Parse Schedule] Matched pattern 4 (slash T): "${combinedMatch[1]}" + "T${combinedMatch[2]}"`);
+          }
+        }
+
         if (combinedMatch) {
           const bottomPart = combinedMatch[1];
           const topPart = `T${combinedMatch[2]}`;
@@ -472,24 +505,10 @@ exports.parseSchedulePDF = onCall({
           }
         }
 
-        // Also check for patterns where +T might be written differently
-        // e.g., "117-70/T32-70" or "117-70 / T32-70"
-        const altCombinedMatch = cleaned.match(/^(\d+-\d+)[\/\s]+T(\d+-\d+)$/i);
-        if (altCombinedMatch) {
-          const bottomPart = altCombinedMatch[1];
-          const topPart = `T${altCombinedMatch[2]}`;
-          const matchedBottom = matchSinglePattern(bottomPart, 'bottom');
-          const matchedTop = matchSinglePattern(topPart, 'top');
-
-          if (matchedBottom) {
-            const combined = matchedTop ? `${matchedBottom}+${matchedTop}` : `${matchedBottom}+${topPart}`;
-            console.log(`[Parse Schedule] Alt combined pattern matched: "${cleaned}" -> "${combined}"`);
-            return combined;
-          }
-        }
-
         // Not a combined pattern, try single pattern match
-        return matchSinglePattern(cleaned, 'any');
+        // Remove spaces for single pattern matching
+        const cleanedNoSpaces = cleaned.replace(/\s+/g, '');
+        return matchSinglePattern(cleanedNoSpaces, 'any');
       };
 
       /**
