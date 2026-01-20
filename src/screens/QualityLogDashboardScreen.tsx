@@ -550,6 +550,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     rejectCodes: 80,
   };
 
+  // Subtle border style for cells
+  const cellBorderStyle = { borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' };
+
   // Render an editable text cell
   const renderEditableTextCell = (
     entry: QualityLogEntry,
@@ -562,7 +565,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     if (isEditing) {
       return (
-        <View style={{ width, paddingHorizontal: 6, paddingVertical: 4 }}>
+        <View style={{ width, paddingHorizontal: 6, paddingVertical: 4, ...cellBorderStyle }}>
           <TextInput
             value={editValue}
             onChangeText={setEditValue}
@@ -579,7 +582,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => startEditing(entry.id, field, value)}
-        style={{ width, paddingHorizontal: 6, paddingVertical: 10 }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10, ...cellBorderStyle }}
       >
         <Text className="text-sm text-gray-900" numberOfLines={2}>{displayValue}</Text>
       </Pressable>
@@ -606,7 +609,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={handlePress}
-        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: 'center' }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', ...cellBorderStyle }}
       >
         <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
         <Ionicons name="chevron-down" size={10} color="#9CA3AF" />
@@ -731,7 +734,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     return (
       <Pressable
         onPress={() => openFilterModal(column)}
-        style={{ width, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        style={{ width, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRightWidth: 1, borderRightColor: 'rgba(156, 163, 175, 0.4)' }}
       >
         <Text className="text-xs font-semibold text-white flex-1" style={{ flexWrap: 'wrap' }}>{label}</Text>
         <Ionicons
@@ -876,8 +879,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         >
           <View style={{ minWidth: '100%' }}>
             <View className="flex-row bg-gray-800 py-2 items-center" style={{ minWidth: '100%' }}>
-              <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4, paddingVertical: 4 }} className="text-xs font-semibold text-white"></Text>
-              <Text style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 8, paddingVertical: 4 }} className="text-xs font-semibold text-white">Actions</Text>
+              <Text style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4, paddingVertical: 4, borderRightWidth: 1, borderRightColor: 'rgba(156, 163, 175, 0.4)' }} className="text-xs font-semibold text-white"></Text>
+              <Text style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 8, paddingVertical: 4, borderRightWidth: 1, borderRightColor: 'rgba(156, 163, 175, 0.4)' }} className="text-xs font-semibold text-white">Actions</Text>
               {renderFilterableHeader('pourDate', 'Pour Date', COLUMN_WIDTHS.pourDate)}
               {renderFilterableHeader('disposition', 'Disposition', COLUMN_WIDTHS.disposition)}
               {renderFilterableHeader('status', 'Status', COLUMN_WIDTHS.status)}
@@ -885,7 +888,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('productType', 'Type', COLUMN_WIDTHS.productType)}
               {renderFilterableHeader('jobNumber', 'Job #', COLUMN_WIDTHS.jobNumber)}
               {renderFilterableHeader('markNumber', 'Mark #', COLUMN_WIDTHS.markNumber)}
-              <Text style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4, paddingVertical: 4 }} className="text-xs font-semibold text-white"></Text>
+              <Text style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4, paddingVertical: 4, borderRightWidth: 1, borderRightColor: 'rgba(156, 163, 175, 0.4)' }} className="text-xs font-semibold text-white"></Text>
               {renderFilterableHeader('idNumber', 'ID #', COLUMN_WIDTHS.idNumber)}
               {renderFilterableHeader('length', 'Length', COLUMN_WIDTHS.length)}
               {renderFilterableHeader('width', 'Width', COLUMN_WIDTHS.width)}
@@ -919,13 +922,13 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {/* Detail button */}
                   <Pressable
                     onPress={() => navigation.navigate('QualityLogDetail' as any, { entryId: entry.id })}
-                    style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: COLUMN_WIDTHS.detail, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}
                   >
                     <Ionicons name="open-outline" size={14} color="#6B7280" />
                   </Pressable>
 
                   {/* Action buttons - Camera, Gallery, Slippage, Delete */}
-                  <View style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 4, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
+                  <View style={{ width: COLUMN_WIDTHS.actions, paddingHorizontal: 4, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}>
                     <Pressable
                       onPress={() => handleTakePhoto(entry)}
                       className="bg-blue-100 rounded-full p-1.5 active:bg-blue-200"
@@ -955,10 +958,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {/* Editable cells - New column order */}
                   {renderEditableTextCell(entry, 'pourDate', entry.pourDate, COLUMN_WIDTHS.pourDate)}
                   {renderPickerCell(entry, 'disposition', entry.disposition || 'Scheduled', COLUMN_WIDTHS.disposition)}
-                  <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 12, backgroundColor: getStatusColor(entry) }} className="text-xs font-bold text-gray-900">
+                  <Text style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 12, backgroundColor: getStatusColor(entry), borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }} className="text-xs font-bold text-gray-900">
                     {entry.status || '40'}
                   </Text>
-                  <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 12 }} className="text-xs text-gray-900">
+                  <Text style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 12, borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }} className="text-xs text-gray-900">
                     {entry.approvalRejectionDate || '-'}
                   </Text>
                   {renderPickerCell(entry, 'productType', entry.productType, COLUMN_WIDTHS.productType)}
@@ -971,7 +974,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                         Linking.openURL(entry.pieceTicketUrl);
                       }
                     }}
-                    style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: COLUMN_WIDTHS.pieceTicket, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}
                     disabled={!entry.pieceTicketUrl}
                   >
                     {entry.pieceTicketUrl ? (
@@ -992,7 +995,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'engineerFeedback', entry.engineerFeedback, COLUMN_WIDTHS.engineerFeedback)}
                   <Pressable
                     onPress={() => openCodesPicker(entry.id, 'issueCodes', entry.issueCodes)}
-                    style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}
+                    style={{ width: COLUMN_WIDTHS.issueCodes, paddingHorizontal: 8, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)' }}
                   >
                     <Text className="text-xs text-gray-900 flex-1" numberOfLines={1}>
                       {entry.issueCodes.length > 0 ? entry.issueCodes.join(', ') : '-'}
