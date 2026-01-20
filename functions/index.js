@@ -844,12 +844,12 @@ exports.parsePieceTickets = onCall({
       console.log(`[Parse Piece Tickets] Could not count PDF pages: ${pdfErr.message}`);
     }
 
-    // Call Azure Document Intelligence Read API (better for OCR on rotated/scanned documents)
-    // The prebuilt-read model is optimized for text extraction from scanned documents
-    // and handles rotation/orientation better than the layout model
-    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30`;
+    // Call Azure Document Intelligence Layout API with features for rotated text
+    // Using prebuilt-layout with readingOrder feature for better handling of rotated tables
+    // The readingOrder feature helps with non-standard text flow like rotated headers
+    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30&features=keyValuePairs`;
 
-    console.log(`[Parse Piece Tickets] Calling Azure API (prebuilt-read model): ${analyzeUrl}`);
+    console.log(`[Parse Piece Tickets] Calling Azure API (prebuilt-layout with keyValuePairs): ${analyzeUrl}`);
 
     const analyzeResponse = await fetch(analyzeUrl, {
       method: "POST",
@@ -923,6 +923,18 @@ exports.parsePieceTickets = onCall({
     console.log(`[Parse Piece Tickets] Azure detected page count from document: ${analyzeResult.pages?.length || 0}`);
     console.log(`[Parse Piece Tickets] Full analyze result keys: ${Object.keys(analyzeResult || {}).join(', ')}`);
 
+    // Log total content length to verify Azure is extracting text
+    const totalContent = analyzeResult.content || '';
+    console.log(`[Parse Piece Tickets] Total content length: ${totalContent.length} chars`);
+    console.log(`[Parse Piece Tickets] Content preview (first 1000 chars): ${totalContent.substring(0, 1000)}`);
+
+    // Log key-value pairs if any were detected
+    const kvPairs = analyzeResult.keyValuePairs || [];
+    console.log(`[Parse Piece Tickets] Key-Value pairs detected: ${kvPairs.length}`);
+    if (kvPairs.length > 0) {
+      const kvPreview = kvPairs.slice(0, 10).map(kv => `${kv.key?.content || '?'}: ${kv.value?.content || '?'}`).join('; ');
+      console.log(`[Parse Piece Tickets] First 10 KV pairs: ${kvPreview}`);
+    }
     // Get the actual PDF page count using pdf-lib to ensure we don't miss any pages
     let actualPageCount = pages.length;
     try {
@@ -960,6 +972,11 @@ exports.parsePieceTickets = onCall({
       // Debug: Log what Azure returned for this page
       if (page) {
         console.log(`[Parse Piece Tickets] Page ${pageNumber} - Lines: ${page.lines?.length || 0}, Words: ${page.words?.length || 0}`);
+        // Log first few words to see what Azure is extracting
+        const firstWords = (page.words || []).slice(0, 20).map(w => w.content).join(', ');
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} - First 20 words: ${firstWords}`);
+      } else {
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} - NO PAGE DATA from Azure!`);
       }
 
       let jobNo = null;
