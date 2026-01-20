@@ -808,7 +808,7 @@ exports.parseSchedulePDF = onCall({
  */
 exports.parsePieceTickets = onCall({
   maxInstances: 10,
-  timeoutSeconds: 300,
+  timeoutSeconds: 540,
   memory: "2GiB",
 }, async (request) => {
   try {
@@ -828,424 +828,216 @@ exports.parsePieceTickets = onCall({
     }
 
     console.log(`[Parse Piece Tickets] Processing file: ${fileName} (${mimeType})`);
-    console.log(`[Parse Piece Tickets] Using Azure Document Intelligence`);
+    console.log(`[Parse Piece Tickets] Using Azure Document Intelligence - PAGE BY PAGE MODE`);
 
     // Convert base64 to buffer
     const fileBuffer = Buffer.from(fileBase64, 'base64');
     console.log(`[Parse Piece Tickets] File size: ${fileBuffer.length} bytes`);
-    console.log(`[Parse Piece Tickets] Base64 length received: ${fileBase64.length} chars`);
 
-    // Count pages in PDF using pdf-lib before sending to Azure
-    try {
-      const pdfDoc = await PDFDocument.load(fileBuffer);
-      const pdfPageCount = pdfDoc.getPageCount();
-      console.log(`[Parse Piece Tickets] PDF-lib detected ${pdfPageCount} pages in the PDF`);
-    } catch (pdfErr) {
-      console.log(`[Parse Piece Tickets] Could not count PDF pages: ${pdfErr.message}`);
-    }
+    // Load PDF and get page count
+    const pdfDoc = await PDFDocument.load(fileBuffer);
+    const pageCount = pdfDoc.getPageCount();
+    console.log(`[Parse Piece Tickets] PDF has ${pageCount} pages - will process EACH page individually`);
 
-    // Call Azure Document Intelligence Layout API with features for rotated text
-    // Using prebuilt-layout with readingOrder feature for better handling of rotated tables
-    // The readingOrder feature helps with non-standard text flow like rotated headers
-    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30&features=keyValuePairs`;
+    // Helper function to call Azure for a single page PDF
+    const analyzePageWithAzure = async (pageBuffer, pageNum) => {
+      const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30`;
 
-    console.log(`[Parse Piece Tickets] Calling Azure API (prebuilt-layout with keyValuePairs): ${analyzeUrl}`);
+      console.log(`[Parse Piece Tickets] Page ${pageNum} - Calling Azure API...`);
 
-    const analyzeResponse = await fetch(analyzeUrl, {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": AZURE_KEY,
-        "Content-Type": mimeType || "application/pdf",
-      },
-      body: fileBuffer,
-    });
-
-    if (!analyzeResponse.ok) {
-      const errorText = await analyzeResponse.text();
-      console.error("[Parse Piece Tickets] Azure API Error:", analyzeResponse.status, errorText);
-      return {success: false, error: `Azure API error: ${analyzeResponse.status} - ${errorText}`};
-    }
-
-    // Get the operation location for polling
-    const operationLocation = analyzeResponse.headers.get("Operation-Location");
-    if (!operationLocation) {
-      console.error("[Parse Piece Tickets] No operation location returned");
-      return {success: false, error: "Azure API did not return operation location"};
-    }
-
-    console.log(`[Parse Piece Tickets] Operation started: ${operationLocation}`);
-
-    // Poll for results (Azure processes async)
-    let result = null;
-    let attempts = 0;
-    const maxAttempts = 60; // 60 seconds max wait for multi-page PDFs
-
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-
-      const pollResponse = await fetch(operationLocation, {
+      const analyzeResponse = await fetch(analyzeUrl, {
+        method: "POST",
         headers: {
           "Ocp-Apim-Subscription-Key": AZURE_KEY,
+          "Content-Type": "application/pdf",
         },
+        body: pageBuffer,
       });
 
-      if (!pollResponse.ok) {
-        const errorText = await pollResponse.text();
-        console.error("[Parse Piece Tickets] Poll error:", pollResponse.status, errorText);
-        return {success: false, error: `Azure poll error: ${pollResponse.status}`};
+      if (!analyzeResponse.ok) {
+        const errorText = await analyzeResponse.text();
+        console.error(`[Parse Piece Tickets] Page ${pageNum} - Azure API Error:`, analyzeResponse.status, errorText);
+        return null;
       }
 
-      result = await pollResponse.json();
-      console.log(`[Parse Piece Tickets] Poll attempt ${attempts + 1}, status: ${result.status}`);
-
-      if (result.status === "succeeded") {
-        break;
-      } else if (result.status === "failed") {
-        console.error("[Parse Piece Tickets] Azure analysis failed:", result.error);
-        return {success: false, error: "Document analysis failed"};
+      const operationLocation = analyzeResponse.headers.get("Operation-Location");
+      if (!operationLocation) {
+        console.error(`[Parse Piece Tickets] Page ${pageNum} - No operation location`);
+        return null;
       }
 
-      attempts++;
-    }
+      // Poll for results
+      let result = null;
+      let attempts = 0;
+      const maxAttempts = 30;
 
-    if (!result || result.status !== "succeeded") {
-      return {success: false, error: "Document analysis timed out"};
-    }
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-    console.log("[Parse Piece Tickets] Azure analysis succeeded");
+        const pollResponse = await fetch(operationLocation, {
+          headers: { "Ocp-Apim-Subscription-Key": AZURE_KEY },
+        });
 
-    // Extract data from Azure response
-    const analyzeResult = result.analyzeResult;
-    const pages = analyzeResult.pages || [];
-    const tables = analyzeResult.tables || [];
-
-    console.log(`[Parse Piece Tickets] Found ${pages.length} pages and ${tables.length} tables`);
-    console.log(`[Parse Piece Tickets] Azure detected page count from document: ${analyzeResult.pages?.length || 0}`);
-    console.log(`[Parse Piece Tickets] Full analyze result keys: ${Object.keys(analyzeResult || {}).join(', ')}`);
-
-    // Log total content length to verify Azure is extracting text
-    const totalContent = analyzeResult.content || '';
-    console.log(`[Parse Piece Tickets] Total content length: ${totalContent.length} chars`);
-    console.log(`[Parse Piece Tickets] Content preview (first 1000 chars): ${totalContent.substring(0, 1000)}`);
-
-    // Log key-value pairs if any were detected
-    const kvPairs = analyzeResult.keyValuePairs || [];
-    console.log(`[Parse Piece Tickets] Key-Value pairs detected: ${kvPairs.length}`);
-    if (kvPairs.length > 0) {
-      const kvPreview = kvPairs.slice(0, 10).map(kv => `${kv.key?.content || '?'}: ${kv.value?.content || '?'}`).join('; ');
-      console.log(`[Parse Piece Tickets] First 10 KV pairs: ${kvPreview}`);
-    }
-
-    // Get the actual PDF page count using pdf-lib to ensure we don't miss any pages
-    let actualPageCount = pages.length;
-    try {
-      const pdfDoc = await PDFDocument.load(fileBuffer);
-      actualPageCount = pdfDoc.getPageCount();
-      console.log(`[Parse Piece Tickets] PDF-lib confirms ${actualPageCount} pages in the PDF`);
-      if (actualPageCount > pages.length) {
-        console.log(`[Parse Piece Tickets] WARNING: Azure only detected ${pages.length} pages but PDF has ${actualPageCount} pages!`);
-      }
-    } catch (pdfErr) {
-      console.log(`[Parse Piece Tickets] Could not verify PDF page count: ${pdfErr.message}`);
-    }
-
-    // Also check if there's a pageCount in the result
-    if (analyzeResult.documents) {
-      console.log(`[Parse Piece Tickets] Documents found: ${analyzeResult.documents.length}`);
-    }
-
-    // Build a map of page number -> content by extracting from all available sources
-    // This ensures we get content even for pages Azure might have partially processed
-    const pageContentMap = new Map();
-
-    // Initialize all pages with empty arrays
-    for (let i = 1; i <= actualPageCount; i++) {
-      pageContentMap.set(i, []);
-    }
-
-    // Method 1: Extract from page.spans (primary method)
-    for (const page of pages) {
-      const pageNum = page.pageNumber || 1;
-      if (page.spans?.length > 0) {
-        for (const span of page.spans) {
-          const pageContent = totalContent.substring(span.offset, span.offset + span.length);
-          if (pageContent) {
-            pageContentMap.get(pageNum)?.push(pageContent);
-          }
+        if (!pollResponse.ok) {
+          console.error(`[Parse Piece Tickets] Page ${pageNum} - Poll error`);
+          return null;
         }
+
+        result = await pollResponse.json();
+
+        if (result.status === "succeeded") {
+          console.log(`[Parse Piece Tickets] Page ${pageNum} - Azure analysis succeeded`);
+          return result.analyzeResult;
+        } else if (result.status === "failed") {
+          console.error(`[Parse Piece Tickets] Page ${pageNum} - Azure analysis failed`);
+          return null;
+        }
+
+        attempts++;
       }
-      // Also add lines and words
-      for (const line of (page.lines || [])) {
-        pageContentMap.get(pageNum)?.push(line.content || "");
-      }
-      for (const word of (page.words || [])) {
-        pageContentMap.get(pageNum)?.push(word.content || "");
-      }
-    }
 
-    // Method 2: Extract from tables by page number
-    for (const table of tables) {
-      const tablePageNum = table.boundingRegions?.[0]?.pageNumber || 1;
-      for (const cell of (table.cells || [])) {
-        pageContentMap.get(tablePageNum)?.push(cell.content || "");
-      }
-    }
+      console.error(`[Parse Piece Tickets] Page ${pageNum} - Timed out`);
+      return null;
+    };
 
-    // Method 3: Extract from key-value pairs by page number
-    for (const kvp of kvPairs) {
-      const kvpPage = kvp.key?.boundingRegions?.[0]?.pageNumber || 1;
-      pageContentMap.get(kvpPage)?.push(kvp.key?.content || "");
-      pageContentMap.get(kvpPage)?.push(kvp.value?.content || "");
-    }
-
-    // Method 4: Extract from paragraphs by page number
-    for (const paragraph of (analyzeResult.paragraphs || [])) {
-      const paraPage = paragraph.boundingRegions?.[0]?.pageNumber || 1;
-      pageContentMap.get(paraPage)?.push(paragraph.content || "");
-    }
-
-    // Log content distribution across pages
-    console.log(`[Parse Piece Tickets] Content distribution:`);
-    for (let i = 1; i <= actualPageCount; i++) {
-      const content = pageContentMap.get(i) || [];
-      const uniqueContent = [...new Set(content.filter(t => t && t.trim()))];
-      console.log(`[Parse Piece Tickets]   Page ${i}: ${uniqueContent.length} unique text parts, ${uniqueContent.join(' ').length} chars`);
-    }
-
+    // Process each page individually
     const tickets = [];
 
-    // Process each page to extract Job No and Mark No
-    console.log(`[Parse Piece Tickets] Will process ${actualPageCount} pages`);
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      console.log(`[Parse Piece Tickets] === Processing page ${pageNum} of ${pageCount} ===`);
 
-    for (let pageNumber = 1; pageNumber <= actualPageCount; pageNumber++) {
-      const page = pages.find(p => p.pageNumber === pageNumber) || null;
+      // Extract single page as new PDF
+      const singlePagePdf = await PDFDocument.create();
+      const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [pageNum - 1]);
+      singlePagePdf.addPage(copiedPage);
+      const singlePageBuffer = Buffer.from(await singlePagePdf.save());
 
-      // Log page rotation/angle if detected by Azure
-      const pageAngle = page?.angle || 0;
-      console.log(`[Parse Piece Tickets] Processing page ${pageNumber} (Azure data available: ${!!page}, angle: ${pageAngle}°)`);
+      console.log(`[Parse Piece Tickets] Page ${pageNum} - Extracted as ${singlePageBuffer.length} bytes`);
+
+      // Send single page to Azure
+      const analyzeResult = await analyzePageWithAzure(singlePageBuffer, pageNum);
 
       let jobNo = null;
       let markNo = null;
 
-      // Get all text parts for this page from our pre-built map
-      let allTextParts = pageContentMap.get(pageNumber) || [];
+      if (analyzeResult) {
+        // Get all text content from this single page
+        const content = analyzeResult.content || '';
+        console.log(`[Parse Piece Tickets] Page ${pageNum} - Content length: ${content.length} chars`);
+        console.log(`[Parse Piece Tickets] Page ${pageNum} - Content preview: ${content.substring(0, 500)}`);
 
-      // Remove duplicates and empty strings
-      allTextParts = [...new Set(allTextParts.filter(t => t && t.trim()))];
-
-      // Join all text
-      const fullPageText = allTextParts.join(" ");
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Collected ${allTextParts.length} text parts (${fullPageText.length} chars total)`);
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Text preview: ${fullPageText.substring(0, 500)}`);
-
-      // If no text found for this page, try to extract from the overall content using position estimation
-      if (fullPageText.length < 20 && totalContent.length > 0) {
-        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Low content, attempting content estimation from total...`);
-
-        // Estimate where this page's content might be in the total content
-        // This is a fallback when Azure doesn't properly segment pages
-        const estimatedCharsPerPage = Math.floor(totalContent.length / actualPageCount);
-        const startOffset = (pageNumber - 1) * estimatedCharsPerPage;
-        const endOffset = Math.min(pageNumber * estimatedCharsPerPage, totalContent.length);
-        const estimatedContent = totalContent.substring(startOffset, endOffset);
-
-        if (estimatedContent.length > fullPageText.length) {
-          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Using estimated content (${estimatedContent.length} chars)`);
-          allTextParts.push(estimatedContent);
-        }
+        // Extract Job No and Mark No from page content
+        const extractResult = extractJobAndMark(content, pageNum);
+        jobNo = extractResult.jobNo;
+        markNo = extractResult.markNo;
+      } else {
+        console.log(`[Parse Piece Tickets] Page ${pageNum} - No Azure result, skipping`);
       }
 
-      // Rebuild fullPageText after potentially adding estimated content
-      const finalPageText = allTextParts.join(" ");
-
-      // STRATEGY 1: Look for "JOB NO" label and find nearby number
-      // This works regardless of orientation because we're searching all text
-
-      // First, find all 3-6 digit numbers on the page (potential job numbers)
-      const allNumbers = [];
-      const numberMatches = finalPageText.match(/\b\d{3,6}\b/g) || [];
-      for (const num of numberMatches) {
-        // Filter out numbers that are likely dimensions (like 1'-0", 28'-3 3/4")
-        if (!finalPageText.includes(`${num}'`) && !finalPageText.includes(`${num}"`)) {
-          allNumbers.push(num);
-        }
-      }
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found numbers: ${JSON.stringify(allNumbers.slice(0, 10))}${allNumbers.length > 10 ? '...' : ''}`);
-
-      // Find all potential mark numbers (letter+digit combinations like H201, B101)
-      // Mark numbers typically have 1-2 letters followed by 2-4 digits (e.g., H201, B101, SC12)
-      // Also allow marks with dashes like H200-1, H200A
-      const allMarks = [];
-      const markMatches = finalPageText.match(/\b[A-Za-z]{1,2}\d{2,4}[A-Za-z]?\b/g) || [];
-      for (const mark of markMatches) {
-        const upper = mark.toUpperCase();
-        // Filter out common false positives
-        if (!['TYP', 'MIN', 'MAX', 'REF', 'DWG'].includes(upper) &&
-            !upper.startsWith('P') &&  // Filter out P12, P34 etc (drawing refs)
-            !upper.startsWith('L') &&  // Filter out L1, L2 (layer markers)
-            !upper.startsWith('E') &&  // Filter out E1, E2 (elevation markers)
-            mark.length >= 3 &&        // Must be at least 3 chars (e.g., H12)
-            mark.length <= 6) {
-          allMarks.push(mark);
-        }
-      }
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found marks: ${JSON.stringify(allMarks.slice(0, 10))}${allMarks.length > 10 ? '...' : ''}`);
-
-      // Check if "JOB" appears in the text (more flexible than requiring both JOB and NO)
-      const hasJobLabel = /JOB/i.test(finalPageText);
-      const hasMarkLabel = /MARK/i.test(finalPageText);
-
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} - Has JOB label: ${hasJobLabel}, Has MARK label: ${hasMarkLabel}`);
-
-      // If we have a JOB label and numbers, try to find the job number
-      if (hasJobLabel && allNumbers.length > 0) {
-        // Prefer 4-6 digit numbers (like 5201, 255201) - typical job numbers
-        const preferredNums = allNumbers.filter(n => n.length >= 4 && n.length <= 6);
-        jobNo = preferredNums.length > 0 ? preferredNums[0] : allNumbers[0];
-        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Job No from numbers: ${jobNo}`);
-      }
-
-      // If we have a MARK label, find the mark number
-      if (hasMarkLabel && allMarks.length > 0) {
-        // The mark number typically starts with a letter like H, B, S, C followed by digits
-        // Prefer marks that start with common prefixes for precast pieces
-        const preferredMarks = allMarks.filter(m => /^[HBSCW]/i.test(m));
-        markNo = preferredMarks.length > 0 ? preferredMarks[0] : allMarks[0];
-        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Selected Mark No from marks: ${markNo}`);
-      }
-
-      // STRATEGY 2: Try regex patterns on the full text
-      if (!jobNo) {
-        const jobPatterns = [
-          /JOB\s*NO\.?\s*[:\s]*(\d{3,6})/i,
-          /JOBNO\.?\s*[:\s]*(\d{3,6})/i,
-          /JOB\s*#\s*[:\s]*(\d{3,6})/i,
-          /JOB[:\s]+(\d{3,6})/i,  // Just "JOB:" or "JOB " followed by number
-          /(\d{4,6})\s*JOB/i,  // Number before JOB (rotated)
-          /NO\s*JOB\s*(\d{3,6})/i,  // Reversed order
-          /PROJECT\s*(?:NO\.?|#)?\s*[:\s]*(\d{3,6})/i,  // PROJECT NO
-        ];
-        for (const pattern of jobPatterns) {
-          const match = finalPageText.match(pattern);
-          if (match) {
-            jobNo = match[1];
-            console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No via regex: ${jobNo}`);
-            break;
-          }
-        }
-      }
-
-      if (!markNo) {
-        const markPatterns = [
-          /MARK\s*NO\.?\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,
-          /MARKNO\.?\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,
-          /MARK\s*#\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,
-          /MARK[:\s]+([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,  // Just "MARK:" followed by value
-          /PIECE\s*(?:NO\.?|#|MARK)?\s*[:\s]*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,  // PIECE MARK
-          /([A-Za-z]{1,2}\d{2,4}[A-Za-z]?)\s*MARK/i,  // Mark before label (rotated)
-          /NO\s*MARK\s*([A-Za-z]{1,2}\d{1,4}[A-Za-z]?)/i,  // Reversed order
-        ];
-        for (const pattern of markPatterns) {
-          const match = finalPageText.match(pattern);
-          if (match) {
-            const val = match[1];
-            // Filter out false positives
-            const upper = val.toUpperCase();
-            if (val.length >= 2 && !['TYP', 'MIN', 'MAX', 'REF'].includes(upper) &&
-                !upper.startsWith('L') && !upper.startsWith('E') && !upper.startsWith('P')) {
-              markNo = val;
-              console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No via regex: ${markNo}`);
-              break;
-            }
-          }
-        }
-      }
-
-      // STRATEGY 3: Look at individual text parts for proximity-based matching
-      if (!jobNo || !markNo) {
-        for (let i = 0; i < allTextParts.length; i++) {
-          const part = allTextParts[i].toUpperCase();
-
-          // If this part contains JOB, check nearby parts for the number
-          if (!jobNo && part.includes('JOB')) {
-            // Check this part and adjacent parts for a number
-            for (let j = Math.max(0, i - 3); j <= Math.min(allTextParts.length - 1, i + 3); j++) {
-              const nearbyPart = allTextParts[j].trim();
-              if (/^\d{3,6}$/.test(nearbyPart)) {
-                jobNo = nearbyPart;
-                console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Job No near label: ${jobNo}`);
-                break;
-              }
-            }
-          }
-
-          // If this part contains MARK, check nearby parts for the value
-          if (!markNo && part.includes('MARK')) {
-            for (let j = Math.max(0, i - 3); j <= Math.min(allTextParts.length - 1, i + 3); j++) {
-              const nearbyPart = allTextParts[j].trim();
-              if (/^[A-Za-z]{1,2}\d{1,4}[A-Za-z]?$/.test(nearbyPart) && nearbyPart.length >= 2) {
-                const upper = nearbyPart.toUpperCase();
-                if (!['TYP', 'MIN', 'QTY', 'MAX', 'REF'].includes(upper) &&
-                    !upper.startsWith('L') && !upper.startsWith('E') && !upper.startsWith('P')) {
-                  markNo = nearbyPart;
-                  console.log(`[Parse Piece Tickets] Page ${pageNumber} - Found Mark No near label: ${markNo}`);
-                  break;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // STRATEGY 4: If still no data and we have numbers/marks, just take the best candidates
-      // This is a fallback for pages where labels weren't detected but data exists
-      if (!jobNo && allNumbers.length > 0) {
-        const preferredNums = allNumbers.filter(n => n.length >= 4 && n.length <= 6);
-        if (preferredNums.length > 0) {
-          jobNo = preferredNums[0];
-          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Fallback Job No (no label): ${jobNo}`);
-        }
-      }
-
-      if (!markNo && allMarks.length > 0) {
-        const preferredMarks = allMarks.filter(m => /^[HBSCW]/i.test(m));
-        if (preferredMarks.length > 0) {
-          markNo = preferredMarks[0];
-          console.log(`[Parse Piece Tickets] Page ${pageNumber} - Fallback Mark No (no label): ${markNo}`);
-        }
-      }
+      console.log(`[Parse Piece Tickets] Page ${pageNum} FINAL: Job=${jobNo}, Mark=${markNo}`);
 
       tickets.push({
-        page: pageNumber,
-        jobNo: jobNo || null,
-        markNo: markNo || null,
+        page: pageNum,
+        jobNo,
+        markNo,
       });
-
-      console.log(`[Parse Piece Tickets] Page ${pageNumber} FINAL result: Job=${jobNo}, Mark=${markNo}`);
     }
 
-    console.log(`[Parse Piece Tickets] Extracted ${tickets.length} piece tickets`);
-
-    // Summary log
-    const matched = tickets.filter(t => t.jobNo && t.markNo).length;
-    const partial = tickets.filter(t => (t.jobNo || t.markNo) && !(t.jobNo && t.markNo)).length;
-    const noMatch = tickets.filter(t => !t.jobNo && !t.markNo).length;
-    console.log(`[Parse Piece Tickets] Summary: ${matched} complete, ${partial} partial, ${noMatch} no data`);
-
-    return {
-      success: true,
-      tickets: tickets,
-      pageCount: tickets.length,
-    };
+    console.log(`[Parse Piece Tickets] Completed processing ${pageCount} pages`);
+    return { success: true, tickets, pageCount };
 
   } catch (error) {
     console.error("[Parse Piece Tickets] Error:", error);
-    return {
-      success: false,
-      error: error.message || "Failed to process piece tickets",
-    };
+    return { success: false, error: error.message };
   }
 });
+
+// Helper function to extract Job No and Mark No from page text
+function extractJobAndMark(text, pageNum) {
+  let jobNo = null;
+  let markNo = null;
+
+  if (!text || text.length < 10) {
+    console.log(`[Parse Piece Tickets] Page ${pageNum} - Text too short for extraction`);
+    return { jobNo, markNo };
+  }
+
+  const upperText = text.toUpperCase();
+
+  // Find all 4-6 digit numbers (potential job numbers)
+  const allNumbers = [];
+  const numberMatches = text.match(/\b\d{4,6}\b/g) || [];
+  for (const num of numberMatches) {
+    // Filter out numbers that are part of dimensions
+    if (!text.includes(`${num}'`) && !text.includes(`${num}"`)) {
+      allNumbers.push(num);
+    }
+  }
+
+  // Find all potential mark numbers (letter+digit combinations)
+  const allMarks = [];
+  const markMatches = text.match(/\b[A-Za-z]{1,2}\d{2,4}[A-Za-z]?\b/g) || [];
+  for (const mark of markMatches) {
+    const upper = mark.toUpperCase();
+    if (!['TYP', 'MIN', 'MAX', 'REF', 'DWG'].includes(upper) && mark.length >= 3) {
+      allMarks.push(mark);
+    }
+  }
+
+  console.log(`[Parse Piece Tickets] Page ${pageNum} - Numbers found: ${JSON.stringify(allNumbers.slice(0, 5))}`);
+  console.log(`[Parse Piece Tickets] Page ${pageNum} - Marks found: ${JSON.stringify(allMarks.slice(0, 5))}`);
+
+  // Check for JOB label
+  const hasJobLabel = /JOB/i.test(upperText);
+  const hasMarkLabel = /MARK/i.test(upperText);
+
+  console.log(`[Parse Piece Tickets] Page ${pageNum} - Has JOB: ${hasJobLabel}, Has MARK: ${hasMarkLabel}`);
+
+  // Extract Job No
+  if (hasJobLabel && allNumbers.length > 0) {
+    // Prefer 4-6 digit numbers
+    const preferredNums = allNumbers.filter(n => n.length >= 4);
+    jobNo = preferredNums.length > 0 ? preferredNums[0] : allNumbers[0];
+  }
+
+  // Try regex patterns for job
+  if (!jobNo) {
+    const jobPatterns = [
+      /JOB\s*(?:NO\.?|#)?\s*[:\s]*(\d{4,6})/i,
+      /PROJECT\s*(?:NO\.?|#)?\s*[:\s]*(\d{4,6})/i,
+    ];
+    for (const pattern of jobPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        jobNo = match[1];
+        break;
+      }
+    }
+  }
+
+  // Extract Mark No
+  if (hasMarkLabel && allMarks.length > 0) {
+    const preferredMarks = allMarks.filter(m => /^[HBSCW]/i.test(m));
+    markNo = preferredMarks.length > 0 ? preferredMarks[0] : allMarks[0];
+  }
+
+  // Try regex patterns for mark
+  if (!markNo) {
+    const markPatterns = [
+      /MARK\s*(?:NO\.?|#)?\s*[:\s]*([A-Za-z]{1,2}\d{2,4}[A-Za-z]?)/i,
+      /PIECE\s*(?:NO\.?|#|MARK)?\s*[:\s]*([A-Za-z]{1,2}\d{2,4}[A-Za-z]?)/i,
+    ];
+    for (const pattern of markPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1].length >= 3) {
+        markNo = match[1];
+        break;
+      }
+    }
+  }
+
+  return { jobNo, markNo };
+}
 
 /**
  * Extract Single Page from PDF and Upload to Storage
