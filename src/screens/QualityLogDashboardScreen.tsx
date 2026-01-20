@@ -423,30 +423,35 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       if (Platform.OS === 'web') {
         console.log('[QualityLogDashboard] Using web file input');
 
+        // Capture entry data before async operations to avoid stale closure
+        const entryId = entry.id;
+        const existingAttachments = entry.attachments || [];
+        const userEmail = currentUser?.email;
+
         // Create a hidden file input element
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
         input.multiple = true;
+        input.style.display = 'none';
 
-        input.onchange = async (e) => {
-          const files = (e.target as HTMLInputElement).files;
-          if (!files || files.length === 0) {
-            console.log('[QualityLogDashboard] No files selected');
-            return;
-          }
+        // Add to DOM to ensure it works in all browsers
+        document.body.appendChild(input);
 
-          console.log('[QualityLogDashboard] Selected', files.length, 'files');
+        // Use a Promise-based approach for cleaner async handling
+        const handleFiles = async (files: FileList) => {
+          console.log('[QualityLogDashboard] handleFiles called with', files.length, 'files');
 
           try {
             const newAttachments: Attachment[] = [];
 
             for (let i = 0; i < files.length; i++) {
               const file = files[i];
-              console.log(`[QualityLogDashboard] Processing file ${i + 1}:`, file.name);
+              console.log(`[QualityLogDashboard] Processing file ${i + 1}:`, file.name, 'size:', file.size);
 
               // Upload to Firebase Storage
-              const filename = `quality-log-attachments/${entry.id}/${Date.now()}_${file.name}`;
+              const filename = `quality-log-attachments/${entryId}/${Date.now()}_${file.name}`;
+              console.log(`[QualityLogDashboard] Uploading to:`, filename);
               const storageRef = ref(storage, filename);
               await uploadBytes(storageRef, file);
               const downloadUrl = await getDownloadURL(storageRef);
@@ -454,33 +459,61 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               console.log(`[QualityLogDashboard] Uploaded, got URL:`, downloadUrl.substring(0, 50) + '...');
 
               const newAttachment: Attachment = {
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: `${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
                 type: 'file' as AttachmentType,
                 url: downloadUrl,
                 name: file.name,
                 createdAt: Date.now(),
-                createdBy: currentUser?.email || undefined,
+                createdBy: userEmail || undefined,
               };
 
               newAttachments.push(newAttachment);
               console.log(`[QualityLogDashboard] File ${i + 1} processed successfully`);
             }
 
-            const existingAttachments = entry.attachments || [];
             const allAttachments = [...existingAttachments, ...newAttachments];
 
             console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
-            await updateEntry(entry.id, { attachments: allAttachments });
+            await updateEntry(entryId, { attachments: allAttachments });
 
             console.log('[QualityLogDashboard] Entry updated successfully');
-            Alert.alert('Success', `${files.length} file(s) added successfully`);
+            window.alert(`Success: ${files.length} file(s) added successfully`);
           } catch (uploadError) {
             console.error('[QualityLogDashboard] Error uploading files:', uploadError);
-            Alert.alert('Error', `Failed to upload files: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+            window.alert(`Error: Failed to upload files - ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
           }
         };
 
+        // Use addEventListener for better reliability
+        input.addEventListener('change', (e) => {
+          console.log('[QualityLogDashboard] Input change event fired');
+          const target = e.target as HTMLInputElement;
+          const files = target.files;
+
+          // Clean up input element
+          document.body.removeChild(input);
+
+          if (!files || files.length === 0) {
+            console.log('[QualityLogDashboard] No files selected');
+            return;
+          }
+
+          console.log('[QualityLogDashboard] Selected', files.length, 'files, starting upload...');
+
+          // Call the async handler
+          handleFiles(files).catch((err) => {
+            console.error('[QualityLogDashboard] handleFiles error:', err);
+          });
+        });
+
+        // Also handle cancel (user closes dialog without selecting)
+        input.addEventListener('cancel', () => {
+          console.log('[QualityLogDashboard] File dialog cancelled');
+          document.body.removeChild(input);
+        });
+
         // Trigger the file picker
+        console.log('[QualityLogDashboard] Triggering file input click');
         input.click();
         return;
       }
