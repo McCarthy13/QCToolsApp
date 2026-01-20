@@ -69,12 +69,14 @@ interface ParsedPieceTicketsResult {
 }
 
 interface MatchedTicket extends PieceTicket {
-  matchedEntryId: string | null;
+  matchedEntryIds: string[]; // All entry IDs that match this ticket (can be multiple)
   matchedJobNumber: string | null;
   matchedMarkNumber: string | null;
-  alreadyLinked: boolean; // true if entry exists but already has a piece ticket
-  existingPieceTicketUrl: string | null; // URL of existing piece ticket if already linked
-  shouldReplace: boolean; // user's choice to replace existing ticket
+  entriesWithoutTicket: number; // Count of matching entries that don't have a piece ticket yet
+  entriesWithTicket: number; // Count of matching entries that already have a piece ticket
+  isDuplicate: boolean; // true if this is a duplicate ticket in the PDF (same job/mark as earlier page)
+  firstOccurrencePage: number | null; // Page number of the first occurrence if this is a duplicate
+  shouldLinkToAll: boolean; // user's choice to link to all matching entries (including those with existing tickets)
 }
 
 export default function QualityLogImportScreen({ navigation }: Props) {
@@ -138,9 +140,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   const [pieceTicketFile, setPieceTicketFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
   const [matchedTickets, setMatchedTickets] = useState<MatchedTicket[]>([]);
   const [showPieceTicketReview, setShowPieceTicketReview] = useState(false);
-  const [comparisonTicket, setComparisonTicket] = useState<{ ticket: MatchedTicket; index: number } | null>(null);
-  const [newPagePreviewUrl, setNewPagePreviewUrl] = useState<string | null>(null);
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   // Review state
   const [showReview, setShowReview] = useState(false);
@@ -558,70 +557,50 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         return;
       }
 
-      // Track which entries have already been matched to avoid duplicate assignments
-      const alreadyMatchedEntryIds = new Set<string>();
+      // Track which job+mark combinations have been seen to detect duplicates
+      const seenJobMarkCombos = new Map<string, number>(); // key: "job-mark", value: first page number
 
-      // Match tickets to existing entries
+      // Match tickets to existing entries - ONE ticket can match MULTIPLE entries
       const matched: MatchedTicket[] = tickets.map((ticket) => {
-        // Find matching entry by Job # and Mark #
+        // Check for duplicate ticket (same job+mark as an earlier page)
+        const jobMarkKey = `${(ticket.jobNo || '').toLowerCase()}-${(ticket.markNo || '').toLowerCase()}`;
+        const firstOccurrence = seenJobMarkCombos.get(jobMarkKey);
+        const isDuplicate = firstOccurrence !== undefined;
+
+        if (!isDuplicate && ticket.jobNo && ticket.markNo) {
+          seenJobMarkCombos.set(jobMarkKey, ticket.page);
+        }
+
+        // Find ALL matching entries by Job # and Mark #
         // Job # might be partial (e.g., "5201" matches "255201")
-        let matchedEntry: QualityLogEntry | undefined;
-        let alreadyLinkedEntry: QualityLogEntry | undefined;
+        let matchingEntries: QualityLogEntry[] = [];
 
         if (ticket.jobNo && ticket.markNo) {
-          // First, try to find an entry without an existing piece ticket
-          matchedEntry = entries.find((entry) => {
-            // Skip if this entry was already matched to another ticket in this batch
-            if (alreadyMatchedEntryIds.has(entry.id)) {
-              return false;
-            }
-            // Skip if this entry already has a piece ticket attached
-            if (entry.pieceTicketUrl) {
-              return false;
-            }
+          matchingEntries = entries.filter((entry) => {
             const entryJobEnds = entry.jobNumber?.endsWith(ticket.jobNo || '');
             const entryJobEquals = entry.jobNumber === ticket.jobNo;
             const markMatches = entry.markNumber?.toUpperCase() === ticket.markNo?.toUpperCase();
             return (entryJobEnds || entryJobEquals) && markMatches;
           });
-
-          // If no unlinked entry found, check if there's an already-linked entry
-          if (!matchedEntry) {
-            alreadyLinkedEntry = entries.find((entry) => {
-              // Skip if this entry was already matched to another ticket in this batch
-              if (alreadyMatchedEntryIds.has(entry.id)) {
-                return false;
-              }
-              // Only consider entries that already have a piece ticket
-              if (!entry.pieceTicketUrl) {
-                return false;
-              }
-              const entryJobEnds = entry.jobNumber?.endsWith(ticket.jobNo || '');
-              const entryJobEquals = entry.jobNumber === ticket.jobNo;
-              const markMatches = entry.markNumber?.toUpperCase() === ticket.markNo?.toUpperCase();
-              return (entryJobEnds || entryJobEquals) && markMatches;
-            });
-          }
-
-          // Mark this entry as matched so subsequent tickets don't match to it
-          if (matchedEntry) {
-            alreadyMatchedEntryIds.add(matchedEntry.id);
-          } else if (alreadyLinkedEntry) {
-            alreadyMatchedEntryIds.add(alreadyLinkedEntry.id);
-          }
         }
 
-        const finalEntry = matchedEntry || alreadyLinkedEntry;
-        const isAlreadyLinked = !matchedEntry && !!alreadyLinkedEntry;
+        // Count entries with and without existing piece tickets
+        const entriesWithoutTicket = matchingEntries.filter(e => !e.pieceTicketUrl).length;
+        const entriesWithTicket = matchingEntries.filter(e => !!e.pieceTicketUrl).length;
+
+        // Get job/mark from first matching entry (for display purposes)
+        const firstMatch = matchingEntries[0];
 
         return {
           ...ticket,
-          matchedEntryId: finalEntry?.id || null,
-          matchedJobNumber: finalEntry?.jobNumber || null,
-          matchedMarkNumber: finalEntry?.markNumber || null,
-          alreadyLinked: isAlreadyLinked,
-          existingPieceTicketUrl: isAlreadyLinked ? alreadyLinkedEntry?.pieceTicketUrl || null : null,
-          shouldReplace: false, // Default to not replacing, user can toggle
+          matchedEntryIds: matchingEntries.map(e => e.id),
+          matchedJobNumber: firstMatch?.jobNumber || null,
+          matchedMarkNumber: firstMatch?.markNumber || null,
+          entriesWithoutTicket,
+          entriesWithTicket,
+          isDuplicate,
+          firstOccurrencePage: isDuplicate ? firstOccurrence : null,
+          shouldLinkToAll: false, // Default: only link to entries without existing tickets
         };
       });
 
@@ -637,22 +616,31 @@ export default function QualityLogImportScreen({ navigation }: Props) {
     }
   };
 
-  // Upload individual PDF page to Firebase Storage and link to entry
+  // Upload individual PDF page to Firebase Storage and link to ALL matching entries
   const handleLinkPieceTickets = async () => {
     if (!pieceTicketFile) return;
 
-    // Include new matches AND already-linked tickets that user chose to replace
+    // Filter to non-duplicate tickets that have matches
     const ticketsToLink = matchedTickets.filter((t) =>
-      t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)
+      !t.isDuplicate && t.matchedEntryIds.length > 0
     );
 
     if (ticketsToLink.length === 0) {
-      Alert.alert('No Tickets to Link', 'No piece tickets selected for linking. For already-linked entries, tap to select replacement.');
+      Alert.alert('No Tickets to Link', 'No piece tickets have matching entries.');
       return;
     }
 
+    // Calculate total entries to update
+    const totalEntriesToUpdate = ticketsToLink.reduce((sum, t) => {
+      // If shouldLinkToAll, link to all entries; otherwise only those without existing tickets
+      const entriesToLink = t.shouldLinkToAll
+        ? t.matchedEntryIds.length
+        : t.entriesWithoutTicket;
+      return sum + entriesToLink;
+    }, 0);
+
     setIsLoading(true);
-    setLoadingMessage(`Extracting and linking ${ticketsToLink.length} piece tickets...`);
+    setLoadingMessage(`Extracting and linking to ${totalEntriesToUpdate} entries...`);
 
     try {
       const functions = getFunctions(app);
@@ -666,35 +654,48 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       let errorCount = 0;
 
       for (const ticket of ticketsToLink) {
-        if (!ticket.matchedEntryId) continue;
+        if (ticket.matchedEntryIds.length === 0) continue;
 
-        const action = ticket.alreadyLinked ? 'Replacing' : 'Linking';
-        setLoadingMessage(`${action} page ${ticket.page} of ${matchedTickets.length}...`);
+        setLoadingMessage(`Extracting page ${ticket.page}...`);
 
         try {
-          // Call cloud function to extract single page and upload
+          // Extract the page ONCE and upload it
           const response = await extractAndUploadPdfPage({
             fileBase64: pieceTicketFile.base64,
             pageNumber: ticket.page,
-            entryId: ticket.matchedEntryId,
+            entryId: ticket.matchedEntryIds[0], // Use first entry ID for storage path
             jobNumber: ticket.matchedJobNumber,
             markNumber: ticket.matchedMarkNumber,
           });
 
           if (response.data.success && response.data.downloadUrl) {
-            // Update the entry with the single-page PDF URL
-            try {
-              await updateEntry(ticket.matchedEntryId, { pieceTicketUrl: response.data.downloadUrl });
-              if (ticket.alreadyLinked) {
-                replacedCount++;
-                console.log(`[PieceTicket] Replaced page ${ticket.page} for entry ${ticket.matchedEntryId}`);
-              } else {
-                linkedCount++;
-                console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${ticket.matchedEntryId}`);
+            const pdfUrl = response.data.downloadUrl;
+
+            // Find all matching entries to update
+            const entriesToUpdate = entries.filter(e => ticket.matchedEntryIds.includes(e.id));
+
+            // Link the same PDF URL to ALL matching entries
+            for (const entry of entriesToUpdate) {
+              // Skip entries that already have a ticket (unless shouldLinkToAll is true)
+              if (entry.pieceTicketUrl && !ticket.shouldLinkToAll) {
+                continue;
               }
-            } catch (updateError: any) {
-              console.error(`[PieceTicket] Failed to update entry ${ticket.matchedEntryId}:`, updateError);
-              errorCount++;
+
+              const isReplacing = !!entry.pieceTicketUrl;
+
+              try {
+                await updateEntry(entry.id, { pieceTicketUrl: pdfUrl });
+                if (isReplacing) {
+                  replacedCount++;
+                  console.log(`[PieceTicket] Replaced ticket for entry ${entry.id} (${entry.jobNumber}-${entry.markNumber})`);
+                } else {
+                  linkedCount++;
+                  console.log(`[PieceTicket] Linked page ${ticket.page} to entry ${entry.id} (${entry.jobNumber}-${entry.markNumber})`);
+                }
+              } catch (updateError: any) {
+                console.error(`[PieceTicket] Failed to update entry ${entry.id}:`, updateError);
+                errorCount++;
+              }
             }
           } else {
             console.error(`[PieceTicket] Failed to extract page ${ticket.page}:`, response.data.error);
@@ -716,7 +717,7 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       if (replacedCount > 0) {
         parts.push(`${replacedCount} replaced`);
       }
-      const successMsg = parts.join(', ');
+      const successMsg = parts.length > 0 ? parts.join(', ') : 'No changes made';
 
       if (errorCount > 0) {
         Alert.alert(
@@ -737,55 +738,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
       setIsLoading(false);
       Alert.alert('Error', 'Failed to link piece tickets. Please try again.');
     }
-  };
-
-  // Open comparison modal for already-linked tickets
-  const openComparisonModal = async (ticket: MatchedTicket, index: number) => {
-    if (!pieceTicketFile || !ticket.existingPieceTicketUrl) return;
-
-    setComparisonTicket({ ticket, index });
-    setIsGeneratingPreview(true);
-    setNewPagePreviewUrl(null);
-
-    try {
-      // Generate a preview URL for the new page by extracting it
-      const functions = getFunctions(app);
-      const extractAndUploadPdfPage = httpsCallable<
-        { fileBase64: string; pageNumber: number; entryId: string; jobNumber: string | null; markNumber: string | null },
-        { success: boolean; downloadUrl?: string; error?: string }
-      >(functions, 'extractAndUploadPdfPage');
-
-      // Use a temporary entry ID for preview
-      const response = await extractAndUploadPdfPage({
-        fileBase64: pieceTicketFile.base64,
-        pageNumber: ticket.page,
-        entryId: `preview-${Date.now()}`,
-        jobNumber: ticket.jobNo,
-        markNumber: ticket.markNo,
-      });
-
-      if (response.data.success && response.data.downloadUrl) {
-        setNewPagePreviewUrl(response.data.downloadUrl);
-      }
-    } catch (error) {
-      console.error('Error generating preview:', error);
-    } finally {
-      setIsGeneratingPreview(false);
-    }
-  };
-
-  // Handle comparison decision
-  const handleComparisonDecision = (shouldReplace: boolean) => {
-    if (!comparisonTicket) return;
-
-    const updated = [...matchedTickets];
-    updated[comparisonTicket.index] = {
-      ...comparisonTicket.ticket,
-      shouldReplace
-    };
-    setMatchedTickets(updated);
-    setComparisonTicket(null);
-    setNewPagePreviewUrl(null);
   };
 
   // Start editing a cell
@@ -959,23 +911,32 @@ export default function QualityLogImportScreen({ navigation }: Props) {
                 <Text className="text-xl font-bold text-gray-900">{matchedTickets.length}</Text>
               </View>
               <View className="flex-1 bg-green-50 rounded-lg p-3">
-                <Text className="text-xs text-gray-500">New Links</Text>
+                <Text className="text-xs text-gray-500">Will Link</Text>
                 <Text className="text-xl font-bold text-green-600">
-                  {matchedTickets.filter((t) => t.matchedEntryId && !t.alreadyLinked).length}
+                  {matchedTickets.filter((t) => !t.isDuplicate && t.matchedEntryIds.length > 0).length}
                 </Text>
               </View>
-              <View className="flex-1 bg-orange-50 rounded-lg p-3">
-                <Text className="text-xs text-gray-500">Already Linked</Text>
-                <Text className="text-xl font-bold text-orange-600">
-                  {matchedTickets.filter((t) => t.alreadyLinked).length}
+              <View className="flex-1 bg-yellow-50 rounded-lg p-3">
+                <Text className="text-xs text-gray-500">Duplicates</Text>
+                <Text className="text-xl font-bold text-yellow-600">
+                  {matchedTickets.filter((t) => t.isDuplicate).length}
                 </Text>
               </View>
               <View className="flex-1 bg-red-50 rounded-lg p-3">
                 <Text className="text-xs text-gray-500">No Match</Text>
                 <Text className="text-xl font-bold text-red-600">
-                  {matchedTickets.filter((t) => !t.matchedEntryId).length}
+                  {matchedTickets.filter((t) => !t.isDuplicate && t.matchedEntryIds.length === 0).length}
                 </Text>
               </View>
+            </View>
+            {/* Total entries that will be updated */}
+            <View className="mt-3 bg-blue-50 rounded-lg p-3">
+              <Text className="text-xs text-gray-500">Total Entries to Update</Text>
+              <Text className="text-xl font-bold text-blue-600">
+                {matchedTickets
+                  .filter((t) => !t.isDuplicate && t.matchedEntryIds.length > 0)
+                  .reduce((sum, t) => sum + (t.shouldLinkToAll ? t.matchedEntryIds.length : t.entriesWithoutTicket), 0)}
+              </Text>
             </View>
           </View>
 
@@ -985,10 +946,10 @@ export default function QualityLogImportScreen({ navigation }: Props) {
 
             {/* Table Header */}
             <View className="flex-row bg-gray-800 py-2 px-3 rounded-t-lg">
-              <Text style={{ width: 50, marginRight: 16 }} className="text-xs font-semibold text-white">Page</Text>
-              <Text style={{ width: 80, marginRight: 16 }} className="text-xs font-semibold text-white">Job #</Text>
-              <Text style={{ width: 70, marginRight: 16 }} className="text-xs font-semibold text-white">Mark #</Text>
-              <Text className="flex-1 text-xs font-semibold text-white">Match Status</Text>
+              <Text style={{ width: 40, marginRight: 8 }} className="text-xs font-semibold text-white">Page</Text>
+              <Text style={{ width: 70, marginRight: 8 }} className="text-xs font-semibold text-white">Job #</Text>
+              <Text style={{ width: 60, marginRight: 8 }} className="text-xs font-semibold text-white">Mark #</Text>
+              <Text className="flex-1 text-xs font-semibold text-white">Status</Text>
             </View>
 
             {/* Table Rows */}
@@ -996,55 +957,57 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               <View
                 key={index}
                 className={`flex-row py-3 px-3 border-b border-gray-200 ${
-                  ticket.alreadyLinked
-                    ? (ticket.shouldReplace ? 'bg-orange-100' : 'bg-orange-50')
-                    : ticket.matchedEntryId
+                  ticket.isDuplicate
+                    ? 'bg-yellow-50'
+                    : ticket.matchedEntryIds.length > 0
                       ? 'bg-green-50'
                       : 'bg-red-50'
                 }`}
               >
-                <Text style={{ width: 50, marginRight: 16 }} className="text-xs text-gray-900">{ticket.page}</Text>
-                <Text style={{ width: 80, marginRight: 16 }} className="text-xs text-gray-900">{ticket.jobNo || '-'}</Text>
-                <Text style={{ width: 70, marginRight: 16 }} className="text-xs text-gray-900">{ticket.markNo || '-'}</Text>
+                <Text style={{ width: 40, marginRight: 8 }} className="text-xs text-gray-900">{ticket.page}</Text>
+                <Text style={{ width: 70, marginRight: 8 }} className="text-xs text-gray-900">{ticket.jobNo || '-'}</Text>
+                <Text style={{ width: 60, marginRight: 8 }} className="text-xs text-gray-900">{ticket.markNo || '-'}</Text>
                 <View className="flex-1">
-                  {ticket.alreadyLinked ? (
-                    <View className="flex-row items-center justify-between">
-                      <Pressable
-                        onPress={() => {
-                          const updated = [...matchedTickets];
-                          updated[index] = { ...ticket, shouldReplace: !ticket.shouldReplace };
-                          setMatchedTickets(updated);
-                        }}
-                        className="flex-row items-center flex-1"
-                      >
-                        <Ionicons
-                          name={ticket.shouldReplace ? "checkbox" : "square-outline"}
-                          size={16}
-                          color={ticket.shouldReplace ? "#EA580C" : "#9CA3AF"}
-                        />
-                        <Text className="text-xs text-orange-700 ml-1">
-                          {ticket.shouldReplace ? 'Will replace' : 'Already linked'}
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => openComparisonModal(ticket, index)}
-                        className="bg-orange-500 px-2 py-1 rounded ml-2"
-                      >
-                        <Text className="text-xs text-white font-medium">Compare</Text>
-                      </Pressable>
-                    </View>
-                  ) : ticket.matchedEntryId ? (
+                  {ticket.isDuplicate ? (
                     <View className="flex-row items-center">
-                      <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
-                      <Text className="text-xs text-green-700 ml-1">
-                        Matched: {ticket.matchedJobNumber}-{ticket.matchedMarkNumber}
+                      <Ionicons name="copy-outline" size={14} color="#CA8A04" />
+                      <Text className="text-xs text-yellow-700 ml-1">
+                        Duplicate (see page {ticket.firstOccurrencePage})
                       </Text>
                     </View>
+                  ) : ticket.matchedEntryIds.length > 0 ? (
+                    <View>
+                      <View className="flex-row items-center">
+                        <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                        <Text className="text-xs text-green-700 ml-1">
+                          {ticket.matchedEntryIds.length} {ticket.matchedEntryIds.length === 1 ? 'entry' : 'entries'} matched
+                        </Text>
+                      </View>
+                      {ticket.entriesWithTicket > 0 && (
+                        <Pressable
+                          onPress={() => {
+                            const updated = [...matchedTickets];
+                            updated[index] = { ...ticket, shouldLinkToAll: !ticket.shouldLinkToAll };
+                            setMatchedTickets(updated);
+                          }}
+                          className="flex-row items-center mt-1"
+                        >
+                          <Ionicons
+                            name={ticket.shouldLinkToAll ? "checkbox" : "square-outline"}
+                            size={14}
+                            color={ticket.shouldLinkToAll ? "#EA580C" : "#9CA3AF"}
+                          />
+                          <Text className="text-xs text-orange-600 ml-1">
+                            {ticket.entriesWithTicket} already have ticket{ticket.shouldLinkToAll ? ' (will replace)' : ''}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
                   ) : (
-                    <>
+                    <View className="flex-row items-center">
                       <Ionicons name="close-circle" size={14} color="#DC2626" />
-                      <Text className="text-xs text-red-700 ml-1">No match found</Text>
-                    </>
+                      <Text className="text-xs text-red-700 ml-1">No matching entries</Text>
+                    </View>
                   )}
                 </View>
               </View>
@@ -1061,21 +1024,21 @@ export default function QualityLogImportScreen({ navigation }: Props) {
             </Pressable>
             <Pressable
               onPress={handleLinkPieceTickets}
-              disabled={matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length === 0}
+              disabled={matchedTickets.filter((t) => !t.isDuplicate && t.matchedEntryIds.length > 0).length === 0}
               className={`flex-1 py-4 rounded-xl items-center ${
-                matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length > 0
+                matchedTickets.filter((t) => !t.isDuplicate && t.matchedEntryIds.length > 0).length > 0
                   ? 'bg-green-600 active:bg-green-700'
                   : 'bg-gray-300'
               }`}
             >
               <Text
                 className={`font-semibold ${
-                  matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length > 0
+                  matchedTickets.filter((t) => !t.isDuplicate && t.matchedEntryIds.length > 0).length > 0
                     ? 'text-white'
                     : 'text-gray-500'
                 }`}
               >
-                Link {matchedTickets.filter((t) => t.matchedEntryId && (!t.alreadyLinked || t.shouldReplace)).length} Tickets
+                Link {matchedTickets.filter((t) => !t.isDuplicate && t.matchedEntryIds.length > 0).length} Tickets
               </Text>
             </Pressable>
           </View>
@@ -1458,119 +1421,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
               <Text className="text-white font-bold">Continue to Review</Text>
             </Pressable>
           </View>
-        </View>
-      </Modal>
-
-      {/* PDF Comparison Modal - Full Screen with Side-by-Side View */}
-      <Modal visible={!!comparisonTicket} transparent animationType="slide">
-        <View className="flex-1 bg-white">
-          {/* Header */}
-          <SafeAreaView edges={['top']} className="bg-gray-900">
-            <View className="flex-row items-center justify-between px-4 py-3">
-              <View className="flex-1">
-                <Text className="text-lg font-bold text-white">Compare Piece Tickets</Text>
-                {comparisonTicket && (
-                  <Text className="text-sm text-gray-300">
-                    {comparisonTicket.ticket.matchedJobNumber} - {comparisonTicket.ticket.matchedMarkNumber} (Page {comparisonTicket.ticket.page})
-                  </Text>
-                )}
-              </View>
-              <Pressable
-                onPress={() => {
-                  setComparisonTicket(null);
-                  setNewPagePreviewUrl(null);
-                }}
-                className="p-2 bg-gray-700 rounded-full"
-              >
-                <Ionicons name="close" size={20} color="#FFFFFF" />
-              </Pressable>
-            </View>
-          </SafeAreaView>
-
-          {comparisonTicket && (
-            <View className="flex-1">
-              {/* Side-by-side PDF viewers */}
-              <View className="flex-1 flex-row">
-                {/* Current PDF */}
-                <View className="flex-1 border-r border-gray-300">
-                  <View className="bg-blue-600 py-2 px-4">
-                    <Text className="text-white font-semibold text-center">Current PDF</Text>
-                    <Text className="text-blue-200 text-xs text-center">(Already attached)</Text>
-                  </View>
-                  {Platform.OS === 'web' && comparisonTicket.ticket.existingPieceTicketUrl ? (
-                    <iframe
-                      src={comparisonTicket.ticket.existingPieceTicketUrl}
-                      style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
-                      title="Current PDF"
-                    />
-                  ) : (
-                    <View className="flex-1 items-center justify-center bg-gray-100">
-                      <Pressable
-                        onPress={() => {
-                          if (comparisonTicket.ticket.existingPieceTicketUrl) {
-                            Linking.openURL(comparisonTicket.ticket.existingPieceTicketUrl);
-                          }
-                        }}
-                        className="bg-blue-600 px-6 py-3 rounded-lg"
-                      >
-                        <Text className="text-white font-medium">Open Current PDF</Text>
-                      </Pressable>
-                    </View>
-                  )}
-                </View>
-
-                {/* New PDF */}
-                <View className="flex-1">
-                  <View className="bg-orange-600 py-2 px-4">
-                    <Text className="text-white font-semibold text-center">New PDF</Text>
-                    <Text className="text-orange-200 text-xs text-center">(From upload)</Text>
-                  </View>
-                  {isGeneratingPreview ? (
-                    <View className="flex-1 items-center justify-center bg-gray-100">
-                      <ActivityIndicator size="large" color="#EA580C" />
-                      <Text className="text-orange-600 mt-3">Generating preview...</Text>
-                    </View>
-                  ) : Platform.OS === 'web' && newPagePreviewUrl ? (
-                    <iframe
-                      src={newPagePreviewUrl}
-                      style={{ flex: 1, width: '100%', height: '100%', border: 'none' }}
-                      title="New PDF"
-                    />
-                  ) : newPagePreviewUrl ? (
-                    <View className="flex-1 items-center justify-center bg-gray-100">
-                      <Pressable
-                        onPress={() => Linking.openURL(newPagePreviewUrl)}
-                        className="bg-orange-600 px-6 py-3 rounded-lg"
-                      >
-                        <Text className="text-white font-medium">Open New PDF</Text>
-                      </Pressable>
-                    </View>
-                  ) : (
-                    <View className="flex-1 items-center justify-center bg-gray-100">
-                      <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
-                      <Text className="text-gray-500 mt-2">Preview unavailable</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Action Buttons */}
-              <View className="flex-row gap-3 p-4 bg-gray-100 border-t border-gray-300">
-                <Pressable
-                  onPress={() => handleComparisonDecision(false)}
-                  className="flex-1 bg-gray-300 py-4 rounded-xl items-center active:bg-gray-400"
-                >
-                  <Text className="text-gray-700 font-semibold">Keep Current</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => handleComparisonDecision(true)}
-                  className="flex-1 bg-orange-600 py-4 rounded-xl items-center active:bg-orange-700"
-                >
-                  <Text className="text-white font-semibold">Replace with New</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
         </View>
       </Modal>
     </SafeAreaView>
