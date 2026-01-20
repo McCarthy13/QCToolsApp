@@ -347,6 +347,8 @@ export default function ProductDetailsScreen({ navigation, route }: Props) {
       editMode: editMode,
       existingSlippages: existingSlippages,
       recordId: recordId,
+      fromQualityLog: fromQualityLog,
+      qualityEntryId: qualityEntryId,
     });
   };
 

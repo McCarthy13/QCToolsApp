@@ -25,6 +25,10 @@ import {
   getSharePointFolderUrl,
   generateFolderName,
 } from "../services/sharepoint";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { firestore, storage } from "../config/firebase";
+import { Attachment, AttachmentType } from "../types/quality-log";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -42,7 +46,7 @@ interface Props {
 
 export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { slippages, config } = route.params;
+  const { slippages, config, fromQualityLog, qualityEntryId } = route.params;
   const { customPatterns } = useStrandPatternStore();
   const { addUserRecord, publishRecord } = useSlippageHistoryStore();
   const currentUser = useAuthStore((state) => state.currentUser);
@@ -101,6 +105,62 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     } catch (error) {
       console.error('[SharePoint] Sign-out error:', error);
       Alert.alert('Error', 'Failed to sign out');
+    }
+  };
+
+  // Save slippage report as attachment to quality log entry
+  const saveSlippageReportAsAttachment = async (pdfBlob: Blob, fileName: string) => {
+    if (!qualityEntryId) {
+      console.log('[SlippageSummary] No qualityEntryId - skipping attachment save');
+      return null;
+    }
+
+    try {
+      console.log('[SlippageSummary] Saving slippage report as attachment for entry:', qualityEntryId);
+
+      // Upload PDF to Firebase Storage
+      const timestamp = Date.now();
+      const storagePath = `quality-log-attachments/${qualityEntryId}/slippage-reports/${timestamp}_${fileName}`;
+      const storageRef = ref(storage, storagePath);
+
+      await uploadBytes(storageRef, pdfBlob);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      console.log('[SlippageSummary] PDF uploaded to Firebase Storage:', downloadUrl);
+
+      // Create attachment object
+      const newAttachment: Attachment = {
+        id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'slippage-report' as AttachmentType,
+        url: downloadUrl,
+        name: fileName,
+        createdAt: timestamp,
+        createdBy: currentUser?.email || undefined,
+      };
+
+      // Get current entry and update attachments
+      const entryRef = doc(firestore, 'quality-log-entries', qualityEntryId);
+      const entrySnap = await getDoc(entryRef);
+
+      if (!entrySnap.exists()) {
+        console.error('[SlippageSummary] Quality log entry not found:', qualityEntryId);
+        return null;
+      }
+
+      const existingAttachments = entrySnap.data()?.attachments || [];
+      const updatedAttachments = [...existingAttachments, newAttachment];
+
+      await updateDoc(entryRef, {
+        attachments: updatedAttachments,
+        updatedAt: timestamp,
+        updatedBy: currentUser?.email || undefined,
+      });
+
+      console.log('[SlippageSummary] Attachment saved to quality log entry');
+      return downloadUrl;
+    } catch (error) {
+      console.error('[SlippageSummary] Error saving slippage report as attachment:', error);
+      return null;
     }
   };
 
@@ -385,6 +445,14 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         activeStrandIndices,
         activeTopStrandIndices,
         uploadToSharePoint: isSharePointSignedIn && uploadToSharePoint && Platform.OS === 'web',
+        // Callback to save PDF as attachment to quality log entry
+        onPdfBlobCreated: qualityEntryId ? async (blob, filename) => {
+          try {
+            await saveSlippageReportAsAttachment(blob, filename);
+          } catch (err) {
+            console.error('[PDF] Error saving attachment:', err);
+          }
+        } : undefined,
       });
 
       if (filePath) {

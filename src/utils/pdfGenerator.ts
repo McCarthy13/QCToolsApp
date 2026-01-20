@@ -65,6 +65,7 @@ interface PDFGenerationParams {
   activeStrandIndices?: number[] | null;
   activeTopStrandIndices?: number[] | null;
   uploadToSharePoint?: boolean; // New parameter for SharePoint upload
+  onPdfBlobCreated?: (blob: Blob, filename: string) => void; // Callback when PDF blob is created
 }
 
 export interface PDFGenerationResult {
@@ -1104,6 +1105,18 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
 
         let sharePointUrl: string | undefined;
 
+        // Always generate the blob so we can provide it to the callback
+        const pdfBlob = pdf.output('blob');
+
+        // Call the callback with the blob if provided
+        if (params.onPdfBlobCreated) {
+          try {
+            params.onPdfBlobCreated(pdfBlob, `${filename}.pdf`);
+          } catch (callbackError) {
+            console.error('[PDF Generator] Callback error:', callbackError);
+          }
+        }
+
         if (shouldUploadToSharePoint) {
           try {
             console.log('[PDF Generator] Uploading to SharePoint...');
@@ -1114,9 +1127,6 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
               config.markNumber || '',
               config.idNumber || ''
             );
-
-            // Convert PDF to Blob
-            const pdfBlob = pdf.output('blob');
 
             // Upload to SharePoint
             sharePointUrl = await uploadPDFToSharePoint(

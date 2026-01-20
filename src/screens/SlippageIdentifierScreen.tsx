@@ -47,7 +47,7 @@ interface StrandSlippage {
 
 export default function SlippageIdentifierScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { config, editMode, existingSlippages, recordId } = route.params;
+  const { config, editMode, existingSlippages, recordId, fromQualityLog, qualityEntryId } = route.params;
   const { customPatterns } = useStrandPatternStore();
   const { currentUser } = useAuthStore();
   const isAdmin = currentUser?.role === 'admin';
@@ -686,7 +686,12 @@ export default function SlippageIdentifierScreen({ navigation, route }: Props) {
           {/* Calculate button */}
           <Pressable
             className="bg-blue-500 rounded-xl py-3 items-center active:bg-blue-600 mt-2"
-            onPress={() => navigation.navigate("SlippageSummary", { slippages, config })}
+            onPress={() => navigation.navigate("SlippageSummary", {
+              slippages,
+              config,
+              fromQualityLog,
+              qualityEntryId,
+            })}
           >
             <Text className="text-white text-sm font-semibold">
               Calculate Results
