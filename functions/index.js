@@ -391,9 +391,9 @@ exports.parseSchedulePDF = onCall({
             columnMap.lengthInches = j;
           } else if (cellText === "strand pattern" || cellText === "strand" || (cellText.includes("strand") && cellText.includes("pattern"))) {
             columnMap.strandPattern = j;
-          } else if (cellText.includes("bottom") && cellText.includes("strand")) {
+          } else if ((cellText.includes("bottom") && cellText.includes("strand")) || cellText === "bot strand" || cellText === "bot" || cellText === "bottom") {
             columnMap.bottomStrand = j;
-          } else if (cellText.includes("top") && cellText.includes("strand")) {
+          } else if ((cellText.includes("top") && cellText.includes("strand")) || cellText === "top strand" || cellText === "top") {
             columnMap.topStrand = j;
           }
         }
@@ -402,6 +402,24 @@ exports.parseSchedulePDF = onCall({
       }
 
       console.log(`[Parse Schedule] Header row: ${headerRowIndex}, Column map:`, JSON.stringify(columnMap));
+
+      // Log if we found strand pattern columns
+      if (columnMap.strandPattern !== undefined) {
+        console.log(`[Parse Schedule] Found combined strand pattern column at index ${columnMap.strandPattern}`);
+      }
+      if (columnMap.bottomStrand !== undefined) {
+        console.log(`[Parse Schedule] Found bottom strand column at index ${columnMap.bottomStrand}`);
+      }
+      if (columnMap.topStrand !== undefined) {
+        console.log(`[Parse Schedule] Found top strand column at index ${columnMap.topStrand}`);
+      }
+      if (columnMap.strandPattern === undefined && columnMap.bottomStrand === undefined) {
+        console.log(`[Parse Schedule] WARNING: No strand pattern columns detected! Will search cells for patterns.`);
+        // Log the header row to help debug
+        if (headerRowIndex >= 0 && tableData[headerRowIndex]) {
+          console.log(`[Parse Schedule] Header row contents: ${JSON.stringify(tableData[headerRowIndex])}`);
+        }
+      }
 
       // Fetch strand patterns from Firestore for intelligent matching
       // If productType is specified, only load patterns for that product type
