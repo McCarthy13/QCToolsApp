@@ -431,35 +431,99 @@ exports.parseSchedulePDF = onCall({
        * Intelligent strand pattern matching function
        * Takes a potentially partial/corrupted OCR value and tries to match it against known patterns
        *
-       * Since we filter by product type, we typically only have 4-6 valid patterns.
+       * Handles combined patterns like "117-70+T32-70" by splitting and matching separately.
+       * Format: BOTTOM+TTOP (e.g., "117-70+T32-70")
+       *
        * Strategy:
-       * 1. Try exact match first
-       * 2. Try cleaned/normalized match
-       * 3. Try matching with common OCR corrections
-       * 4. If no confident match, return raw OCR value for manual correction
+       * 1. Check if pattern contains "+T" indicating combined bottom+top
+       * 2. Split and match each part separately
+       * 3. Recombine in standard format
+       * 4. If not combined, match as single pattern
        */
       const matchStrandPattern = (ocrValue) => {
         if (!ocrValue || typeof ocrValue !== 'string') return '';
 
-        const cleaned = ocrValue.trim().replace(/\s+/g, '').toUpperCase();
+        // Clean the input - remove spaces, normalize
+        let cleaned = ocrValue.trim().replace(/\s+/g, '').toUpperCase();
         if (!cleaned) return '';
 
-        // If no known patterns, just return cleaned value
-        if (knownPatterns.length === 0) {
-          console.log(`[Parse Schedule] No known patterns to match against, returning: "${cleaned}"`);
+        // Check for combined pattern format (contains +T or just T followed by digits)
+        // Patterns like: "117-70+T32-70", "117-70 T32-70", "117-70T32-70"
+        const combinedMatch = cleaned.match(/^(\d+-\d+)\+?T(\d+-\d+)$/i);
+        if (combinedMatch) {
+          const bottomPart = combinedMatch[1];
+          const topPart = `T${combinedMatch[2]}`;
+          console.log(`[Parse Schedule] Detected combined pattern: bottom="${bottomPart}", top="${topPart}"`);
+
+          // Match bottom part against bottom patterns
+          const matchedBottom = matchSinglePattern(bottomPart, 'bottom');
+          // Match top part against top patterns
+          const matchedTop = matchSinglePattern(topPart, 'top');
+
+          if (matchedBottom && matchedTop) {
+            const combined = `${matchedBottom}+${matchedTop}`;
+            console.log(`[Parse Schedule] Combined pattern matched: "${cleaned}" -> "${combined}"`);
+            return combined;
+          } else if (matchedBottom) {
+            // Only bottom matched, still return with top part as-is
+            const combined = `${matchedBottom}+${topPart}`;
+            console.log(`[Parse Schedule] Partial match (bottom only): "${cleaned}" -> "${combined}"`);
+            return combined;
+          }
+        }
+
+        // Also check for patterns where +T might be written differently
+        // e.g., "117-70/T32-70" or "117-70 / T32-70"
+        const altCombinedMatch = cleaned.match(/^(\d+-\d+)[\/\s]+T(\d+-\d+)$/i);
+        if (altCombinedMatch) {
+          const bottomPart = altCombinedMatch[1];
+          const topPart = `T${altCombinedMatch[2]}`;
+          const matchedBottom = matchSinglePattern(bottomPart, 'bottom');
+          const matchedTop = matchSinglePattern(topPart, 'top');
+
+          if (matchedBottom) {
+            const combined = matchedTop ? `${matchedBottom}+${matchedTop}` : `${matchedBottom}+${topPart}`;
+            console.log(`[Parse Schedule] Alt combined pattern matched: "${cleaned}" -> "${combined}"`);
+            return combined;
+          }
+        }
+
+        // Not a combined pattern, try single pattern match
+        return matchSinglePattern(cleaned, 'any');
+      };
+
+      /**
+       * Match a single pattern (bottom or top) against known patterns
+       */
+      const matchSinglePattern = (value, type) => {
+        if (!value) return '';
+
+        const cleaned = value.toUpperCase().replace(/\s+/g, '');
+
+        // Filter patterns by type if specified
+        let patternsToMatch = knownPatterns;
+        if (type === 'bottom') {
+          // Bottom patterns don't start with T
+          patternsToMatch = knownPatterns.filter(p => !p.toUpperCase().startsWith('T'));
+        } else if (type === 'top') {
+          // Top patterns start with T
+          patternsToMatch = knownPatterns.filter(p => p.toUpperCase().startsWith('T'));
+        }
+
+        if (patternsToMatch.length === 0) {
+          console.log(`[Parse Schedule] No ${type} patterns to match against, returning: "${cleaned}"`);
           return cleaned;
         }
 
         // 1. Exact match (case-insensitive)
-        const exactMatch = knownPatterns.find(p => p.toUpperCase() === cleaned);
+        const exactMatch = patternsToMatch.find(p => p.toUpperCase() === cleaned);
         if (exactMatch) {
-          console.log(`[Parse Schedule] Exact match: "${cleaned}" -> "${exactMatch}"`);
+          console.log(`[Parse Schedule] Exact ${type} match: "${cleaned}" -> "${exactMatch}"`);
           return exactMatch;
         }
 
-        // 2. Try common OCR error corrections and match
+        // 2. Try common OCR error corrections
         const ocrCorrections = [
-          // Common OCR misreads
           [/O/g, '0'],  // O -> 0
           [/l/g, '1'],  // l -> 1
           [/I/g, '1'],  // I -> 1
@@ -474,34 +538,33 @@ exports.parseSchedulePDF = onCall({
         }
 
         if (corrected !== cleaned) {
-          const correctedMatch = knownPatterns.find(p => p.toUpperCase() === corrected);
+          const correctedMatch = patternsToMatch.find(p => p.toUpperCase() === corrected);
           if (correctedMatch) {
-            console.log(`[Parse Schedule] OCR-corrected match: "${cleaned}" -> "${correctedMatch}"`);
+            console.log(`[Parse Schedule] OCR-corrected ${type} match: "${cleaned}" -> "${correctedMatch}"`);
             return correctedMatch;
           }
         }
 
-        // 3. Check if OCR value contains a known pattern (for cases with extra chars)
-        for (const knownPattern of knownPatterns) {
+        // 3. Check if OCR value contains a known pattern
+        for (const knownPattern of patternsToMatch) {
           if (cleaned.includes(knownPattern.toUpperCase())) {
-            console.log(`[Parse Schedule] Contains match: "${cleaned}" -> "${knownPattern}"`);
+            console.log(`[Parse Schedule] Contains ${type} match: "${cleaned}" -> "${knownPattern}"`);
             return knownPattern;
           }
         }
 
-        // 4. Check if a known pattern contains the OCR value (for truncated reads)
-        // Only if OCR value is at least 4 chars to avoid false positives
+        // 4. Check if a known pattern contains the OCR value (min 4 chars)
         if (cleaned.length >= 4) {
-          for (const knownPattern of knownPatterns) {
+          for (const knownPattern of patternsToMatch) {
             if (knownPattern.toUpperCase().includes(cleaned)) {
-              console.log(`[Parse Schedule] Substring match: "${cleaned}" -> "${knownPattern}"`);
+              console.log(`[Parse Schedule] Substring ${type} match: "${cleaned}" -> "${knownPattern}"`);
               return knownPattern;
             }
           }
         }
 
-        // 5. No confident match - return raw OCR value for manual review
-        console.log(`[Parse Schedule] No match found for: "${cleaned}" (available: ${knownPatterns.join(', ')})`);
+        // 5. No match - return original value
+        console.log(`[Parse Schedule] No ${type} match for: "${cleaned}" (available: ${patternsToMatch.join(', ')})`);
         return cleaned;
       };
 

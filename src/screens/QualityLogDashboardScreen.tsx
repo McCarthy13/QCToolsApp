@@ -984,7 +984,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'length', entry.length, COLUMN_WIDTHS.length)}
                   {renderEditableTextCell(entry, 'width', entry.width ? `${entry.width}` : '', COLUMN_WIDTHS.width)}
                   {renderEditableTextCell(entry, 'designStrandPattern', entry.designStrandPattern, COLUMN_WIDTHS.designStrandPattern)}
-                  {renderPickerCell(entry, 'castStrandPattern', entry.castStrandPattern, COLUMN_WIDTHS.castStrandPattern)}
+                  {renderEditableTextCell(entry, 'castStrandPattern', entry.castStrandPattern, COLUMN_WIDTHS.castStrandPattern)}
                   {renderPickerCell(entry, 'bed', entry.bed, COLUMN_WIDTHS.bed)}
                   {renderEditableTextCell(entry, 'location', entry.location, COLUMN_WIDTHS.location)}
                   {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, COLUMN_WIDTHS.qualityComments)}

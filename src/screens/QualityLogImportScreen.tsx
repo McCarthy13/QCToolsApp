@@ -388,11 +388,12 @@ export default function QualityLogImportScreen({ navigation }: Props) {
         if (entry.designStrandPattern) {
           (baseEntry as any).designStrandPattern = entry.designStrandPattern;
         }
+        // Combine bottom + top strand pattern in format: "117-70+T32-70"
         if (selectedBottomStrandPattern) {
-          (baseEntry as any).castStrandPattern = selectedBottomStrandPattern;
-        }
-        if (selectedTopStrandPattern) {
-          (baseEntry as any).castTopStrandPattern = selectedTopStrandPattern;
+          const castPattern = selectedTopStrandPattern
+            ? `${selectedBottomStrandPattern}+T${selectedTopStrandPattern}`
+            : selectedBottomStrandPattern;
+          (baseEntry as any).castStrandPattern = castPattern;
         }
         if (selectedProductType && selectedProductType !== 'Mixed') {
           (baseEntry as any).productType = selectedProductType as ProductType;
