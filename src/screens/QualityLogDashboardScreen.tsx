@@ -416,62 +416,152 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   // Handle selecting photo from gallery
   const handleSelectFromGallery = async (entry: QualityLogEntry) => {
     console.log('[QualityLogDashboard] handleSelectFromGallery called for entry:', entry.id);
+    console.log('[QualityLogDashboard] Platform:', Platform.OS);
 
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant photo library access to select photos.');
-      return;
-    }
+    try {
+      // On web, use native file input for better compatibility
+      if (Platform.OS === 'web') {
+        console.log('[QualityLogDashboard] Using web file input');
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.8,
-      selectionLimit: 10,
-    });
+        // Create a hidden file input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
 
-    console.log('[QualityLogDashboard] ImagePicker result:', result.canceled ? 'canceled' : `${result.assets?.length || 0} assets selected`);
+        input.onchange = async (e) => {
+          const files = (e.target as HTMLInputElement).files;
+          if (!files || files.length === 0) {
+            console.log('[QualityLogDashboard] No files selected');
+            return;
+          }
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      try {
-        // Collect all new attachments first
-        const newAttachments: Attachment[] = [];
+          console.log('[QualityLogDashboard] Selected', files.length, 'files');
 
-        for (let i = 0; i < result.assets.length; i++) {
-          const asset = result.assets[i];
-          console.log(`[QualityLogDashboard] Uploading file ${i + 1}/${result.assets.length}: ${asset.fileName || 'unnamed'}`);
+          try {
+            const newAttachments: Attachment[] = [];
 
-          const downloadUrl = await uploadPhoto(asset.uri, entry.id);
-          const timestamp = new Date().toLocaleString();
+            for (let i = 0; i < files.length; i++) {
+              const file = files[i];
+              console.log(`[QualityLogDashboard] Processing file ${i + 1}:`, file.name);
 
-          const newAttachment: Attachment = {
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: 'file' as AttachmentType,
-            url: downloadUrl,
-            name: asset.fileName || `File ${timestamp}`,
-            createdAt: Date.now(),
-            createdBy: currentUser?.email || undefined,
-          };
+              // Upload to Firebase Storage
+              const filename = `quality-log-attachments/${entry.id}/${Date.now()}_${file.name}`;
+              const storageRef = ref(storage, filename);
+              await uploadBytes(storageRef, file);
+              const downloadUrl = await getDownloadURL(storageRef);
 
-          newAttachments.push(newAttachment);
-          console.log(`[QualityLogDashboard] File ${i + 1} uploaded successfully`);
-        }
+              console.log(`[QualityLogDashboard] Uploaded, got URL:`, downloadUrl.substring(0, 50) + '...');
 
-        // Get current attachments from the entry (use entry passed in, not stale closure)
-        const existingAttachments = entry.attachments || [];
-        const allAttachments = [...existingAttachments, ...newAttachments];
+              const newAttachment: Attachment = {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                type: 'file' as AttachmentType,
+                url: downloadUrl,
+                name: file.name,
+                createdAt: Date.now(),
+                createdBy: currentUser?.email || undefined,
+              };
 
-        console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
+              newAttachments.push(newAttachment);
+              console.log(`[QualityLogDashboard] File ${i + 1} processed successfully`);
+            }
 
-        // Update entry once with all new attachments
-        await updateEntry(entry.id, { attachments: allAttachments });
+            const existingAttachments = entry.attachments || [];
+            const allAttachments = [...existingAttachments, ...newAttachments];
 
-        console.log('[QualityLogDashboard] Entry updated successfully');
-        Alert.alert('Success', `${result.assets.length} file(s) added successfully`);
-      } catch (error) {
-        console.error('[QualityLogDashboard] Error uploading files:', error);
-        Alert.alert('Error', 'Failed to upload files');
+            console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
+            await updateEntry(entry.id, { attachments: allAttachments });
+
+            console.log('[QualityLogDashboard] Entry updated successfully');
+            Alert.alert('Success', `${files.length} file(s) added successfully`);
+          } catch (uploadError) {
+            console.error('[QualityLogDashboard] Error uploading files:', uploadError);
+            Alert.alert('Error', `Failed to upload files: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+          }
+        };
+
+        // Trigger the file picker
+        input.click();
+        return;
       }
+
+      // Native platforms use expo-image-picker
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[QualityLogDashboard] Permission status:', status);
+
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant photo library access to select photos.');
+        return;
+      }
+
+      console.log('[QualityLogDashboard] Launching image library...');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 10,
+      });
+
+      console.log('[QualityLogDashboard] ImagePicker full result:', JSON.stringify(result, null, 2));
+
+      if (result.canceled) {
+        console.log('[QualityLogDashboard] User canceled selection');
+        return;
+      }
+
+      if (!result.assets || result.assets.length === 0) {
+        console.log('[QualityLogDashboard] No assets in result');
+        Alert.alert('No Files Selected', 'Please select at least one file.');
+        return;
+      }
+
+      console.log('[QualityLogDashboard] Selected', result.assets.length, 'assets');
+
+      // Collect all new attachments first
+      const newAttachments: Attachment[] = [];
+
+      for (let i = 0; i < result.assets.length; i++) {
+        const asset = result.assets[i];
+        console.log(`[QualityLogDashboard] Processing asset ${i + 1}:`, {
+          uri: asset.uri?.substring(0, 50) + '...',
+          fileName: asset.fileName,
+          type: asset.type,
+          width: asset.width,
+          height: asset.height,
+        });
+
+        const downloadUrl = await uploadPhoto(asset.uri, entry.id);
+        console.log(`[QualityLogDashboard] Uploaded, got URL:`, downloadUrl?.substring(0, 50) + '...');
+
+        const timestamp = new Date().toLocaleString();
+
+        const newAttachment: Attachment = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'file' as AttachmentType,
+          url: downloadUrl,
+          name: asset.fileName || `File ${timestamp}`,
+          createdAt: Date.now(),
+          createdBy: currentUser?.email || undefined,
+        };
+
+        newAttachments.push(newAttachment);
+        console.log(`[QualityLogDashboard] File ${i + 1} processed successfully`);
+      }
+
+      // Get current attachments from the entry (use entry passed in, not stale closure)
+      const existingAttachments = entry.attachments || [];
+      const allAttachments = [...existingAttachments, ...newAttachments];
+
+      console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
+
+      // Update entry once with all new attachments
+      await updateEntry(entry.id, { attachments: allAttachments });
+
+      console.log('[QualityLogDashboard] Entry updated successfully');
+      Alert.alert('Success', `${result.assets.length} file(s) added successfully`);
+    } catch (error) {
+      console.error('[QualityLogDashboard] Error in handleSelectFromGallery:', error);
+      Alert.alert('Error', `Failed to upload files: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
