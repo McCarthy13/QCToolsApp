@@ -182,11 +182,13 @@ exports.parseSchedulePDF = onCall({
   memory: "1GiB",
 }, async (request) => {
   try {
-    const {fileBase64, fileName, mimeType} = request.data;
+    const {fileBase64, fileName, mimeType, productType} = request.data;
 
     if (!fileBase64) {
       return {success: false, error: "Missing file data"};
     }
+
+    console.log(`[Parse Schedule] Product type filter: ${productType || 'none (all patterns)'}`);
 
     // Get Azure credentials from environment
     const AZURE_ENDPOINT = process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT;
@@ -398,18 +400,28 @@ exports.parseSchedulePDF = onCall({
       console.log(`[Parse Schedule] Header row: ${headerRowIndex}, Column map:`, JSON.stringify(columnMap));
 
       // Fetch strand patterns from Firestore for intelligent matching
+      // If productType is specified, only load patterns for that product type
       let knownPatterns = [];
       try {
-        const patternsSnapshot = await db.collection('strandPatterns').get();
+        let patternsQuery = db.collection('strandPatterns');
+
+        // Filter by product type if specified - this dramatically reduces false positives
+        // For example, 1250 only has ~4 bottom strand patterns, so "92-70" won't incorrectly match "152-70"
+        if (productType) {
+          patternsQuery = patternsQuery.where('productType', '==', productType);
+          console.log(`[Parse Schedule] Filtering patterns by productType: ${productType}`);
+        }
+
+        const patternsSnapshot = await patternsQuery.get();
         patternsSnapshot.forEach(doc => {
           const pattern = doc.data();
           if (pattern.patternId) {
             knownPatterns.push(pattern.patternId);
           }
         });
-        console.log(`[Parse Schedule] Loaded ${knownPatterns.length} known strand patterns from Firestore`);
+        console.log(`[Parse Schedule] Loaded ${knownPatterns.length} known strand patterns from Firestore${productType ? ` (filtered by ${productType})` : ''}`);
         if (knownPatterns.length > 0) {
-          console.log(`[Parse Schedule] Sample patterns: ${knownPatterns.slice(0, 10).join(', ')}`);
+          console.log(`[Parse Schedule] Available patterns: ${knownPatterns.join(', ')}`);
         }
       } catch (err) {
         console.log(`[Parse Schedule] Could not load strand patterns: ${err.message}`);
