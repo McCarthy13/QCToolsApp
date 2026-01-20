@@ -844,12 +844,12 @@ exports.parsePieceTickets = onCall({
       console.log(`[Parse Piece Tickets] Could not count PDF pages: ${pdfErr.message}`);
     }
 
-    // Call Azure Document Intelligence Layout API with features for better text extraction
-    // - Enable all features for comprehensive extraction regardless of page orientation
-    // - Azure DI 2024-11-30 automatically handles page rotation detection
-    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30&features=keyValuePairs`;
+    // Call Azure Document Intelligence Read API (better for OCR on rotated/scanned documents)
+    // The prebuilt-read model is optimized for text extraction from scanned documents
+    // and handles rotation/orientation better than the layout model
+    const analyzeUrl = `${AZURE_ENDPOINT}documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30`;
 
-    console.log(`[Parse Piece Tickets] Calling Azure API: ${analyzeUrl}`);
+    console.log(`[Parse Piece Tickets] Calling Azure API (prebuilt-read model): ${analyzeUrl}`);
 
     const analyzeResponse = await fetch(analyzeUrl, {
       method: "POST",
@@ -957,6 +957,11 @@ exports.parsePieceTickets = onCall({
       const pageAngle = page?.angle || 0;
       console.log(`[Parse Piece Tickets] Processing page ${pageNumber} (Azure data available: ${!!page}, angle: ${pageAngle}°)`);
 
+      // Debug: Log what Azure returned for this page
+      if (page) {
+        console.log(`[Parse Piece Tickets] Page ${pageNumber} - Lines: ${page.lines?.length || 0}, Words: ${page.words?.length || 0}`);
+      }
+
       let jobNo = null;
       let markNo = null;
 
@@ -972,6 +977,18 @@ exports.parsePieceTickets = onCall({
         // Also get words directly if lines didn't capture everything
         for (const word of (page.words || [])) {
           allTextParts.push(word.content || "");
+        }
+      }
+
+      // Also try getting content from analyzeResult.content for this page's span
+      // The content field contains all extracted text
+      if (analyzeResult.content && page?.spans?.length > 0) {
+        for (const span of page.spans) {
+          const pageContent = analyzeResult.content.substring(span.offset, span.offset + span.length);
+          if (pageContent) {
+            allTextParts.push(pageContent);
+            console.log(`[Parse Piece Tickets] Page ${pageNumber} - Content span (${span.length} chars): ${pageContent.substring(0, 200)}`);
+          }
         }
       }
 
