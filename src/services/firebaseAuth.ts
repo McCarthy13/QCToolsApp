@@ -7,8 +7,14 @@ import {
   User as FirebaseUser,
   onAuthStateChanged,
   signInAnonymously,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  EmailAuthProvider,
+  linkWithCredential,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { Platform } from 'react-native';
 
 export interface AuthResult {
   user: FirebaseUser | null;
@@ -176,5 +182,127 @@ export const signInForMicrosoftUser = async (
     }
 
     return { user: null, error: errorMessage };
+  }
+};
+
+/**
+ * Send a sign-in link to the user's email (passwordless authentication)
+ */
+export const sendEmailSignInLink = async (
+  email: string
+): Promise<{ error: string | null }> => {
+  try {
+    console.log('[FirebaseAuth] sendEmailSignInLink - Sending to:', email);
+
+    // Determine the correct URL based on platform
+    const baseUrl = Platform.OS === 'web'
+      ? window.location.origin
+      : 'https://precast-qc-tools-web-app.web.app';
+
+    const actionCodeSettings = {
+      url: `${baseUrl}/email-sign-in?email=${encodeURIComponent(email)}`,
+      handleCodeInApp: true,
+      iOS: {
+        bundleId: 'com.yourcompany.precastqualitytools',
+      },
+      android: {
+        packageName: 'com.yourcompany.precastqualitytools',
+        installApp: false,
+      },
+      dynamicLinkDomain: undefined, // Not using dynamic links
+    };
+
+    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+    console.log('[FirebaseAuth] sendEmailSignInLink - Email sent successfully');
+
+    return { error: null };
+  } catch (error: any) {
+    console.error('[FirebaseAuth] sendEmailSignInLink - Error:', error);
+
+    let errorMessage = 'Failed to send sign-in link';
+    if (error.code === 'auth/invalid-email') {
+      errorMessage = 'Invalid email address';
+    } else if (error.code === 'auth/missing-continue-uri') {
+      errorMessage = 'Configuration error. Please contact support.';
+    }
+
+    return { error: errorMessage };
+  }
+};
+
+/**
+ * Check if the current URL is a sign-in link
+ */
+export const isEmailSignInLink = (url: string): boolean => {
+  return isSignInWithEmailLink(auth, url);
+};
+
+/**
+ * Complete sign-in with email link
+ */
+export const completeEmailSignIn = async (
+  email: string,
+  url: string
+): Promise<AuthResult> => {
+  try {
+    console.log('[FirebaseAuth] completeEmailSignIn - Completing sign in for:', email);
+
+    if (!isSignInWithEmailLink(auth, url)) {
+      return { user: null, error: 'Invalid sign-in link' };
+    }
+
+    const userCredential = await signInWithEmailLink(auth, email, url);
+    console.log('[FirebaseAuth] completeEmailSignIn - Success, uid:', userCredential.user.uid);
+
+    return { user: userCredential.user, error: null };
+  } catch (error: any) {
+    console.error('[FirebaseAuth] completeEmailSignIn - Error:', error);
+
+    let errorMessage = 'Failed to sign in';
+    if (error.code === 'auth/invalid-action-code') {
+      errorMessage = 'This sign-in link has expired or already been used. Please request a new one.';
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage = 'Email address does not match the one used for the sign-in link.';
+    }
+
+    return { user: null, error: errorMessage };
+  }
+};
+
+/**
+ * Add a password to an existing email-link authenticated user
+ */
+export const addPasswordToAccount = async (
+  password: string
+): Promise<{ error: string | null }> => {
+  try {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      return { error: 'No user logged in or user has no email' };
+    }
+
+    console.log('[FirebaseAuth] addPasswordToAccount - Adding password for:', user.email);
+
+    // Create email/password credential
+    const credential = EmailAuthProvider.credential(user.email, password);
+
+    // Link the credential to the current user
+    await linkWithCredential(user, credential);
+
+    console.log('[FirebaseAuth] addPasswordToAccount - Password added successfully');
+    return { error: null };
+  } catch (error: any) {
+    console.error('[FirebaseAuth] addPasswordToAccount - Error:', error);
+
+    let errorMessage = 'Failed to set password';
+    if (error.code === 'auth/weak-password') {
+      errorMessage = 'Password is too weak. Please use at least 6 characters.';
+    } else if (error.code === 'auth/requires-recent-login') {
+      errorMessage = 'Please sign in again before setting a password.';
+    } else if (error.code === 'auth/provider-already-linked') {
+      errorMessage = 'This account already has a password set.';
+    }
+
+    return { error: errorMessage };
   }
 };

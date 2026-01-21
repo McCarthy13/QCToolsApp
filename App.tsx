@@ -57,6 +57,7 @@ import YardMapScreen from "./src/screens/YardMapScreen";
 import YardDepartmentScreen from "./src/screens/YardDepartmentScreen";
 import YardProductSelectionScreen from "./src/screens/YardProductSelectionScreen";
 import YardSearchScreen from "./src/screens/YardSearchScreen";
+import AccountSettingsScreen from "./src/screens/AccountSettingsScreen";
 import { useAuthStore } from "./src/state/authStore";
 import { useStrandLibraryStore } from "./src/state/strandLibraryStore";
 import { useStrandPatternStore } from "./src/state/strandPatternStore";
@@ -768,6 +769,11 @@ export default function App() {
                   </Pressable>
                 ),
               })}
+            />
+            <Stack.Screen
+              name="AccountSettings"
+              component={AccountSettingsScreen}
+              options={{ headerShown: false }}
             />
           </Stack.Navigator>
           <StatusBar style="auto" />

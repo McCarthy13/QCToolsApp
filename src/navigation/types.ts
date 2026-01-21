@@ -174,4 +174,5 @@ export type RootStackParamList = {
   YardProductSelection: { pourEntryId: string; department: string };
   YardSearch: undefined;
   AdminApproval: undefined;
+  AccountSettings: undefined;
 };

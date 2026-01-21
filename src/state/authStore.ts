@@ -7,7 +7,10 @@ import {
   registerUser as firebaseRegisterUser,
   onAuthStateChange,
   getCurrentUser as getFirebaseCurrentUser,
-  signInForMicrosoftUser
+  signInForMicrosoftUser,
+  sendEmailSignInLink as firebaseSendEmailSignInLink,
+  completeEmailSignIn,
+  addPasswordToAccount as firebaseAddPasswordToAccount,
 } from '../services/firebaseAuth';
 import {
   createUserProfile,
@@ -56,6 +59,9 @@ interface AuthState {
   // Actions
   login: (email: string, password: string) => Promise<{ success: boolean; requiresPasswordChange?: boolean; error?: string }>;
   loginWithMicrosoft: () => Promise<{ success: boolean; error?: string }>;
+  loginWithEmailLink: (email: string, url: string) => Promise<{ success: boolean; error?: string }>;
+  sendEmailSignInLink: (email: string) => Promise<{ success: boolean; error?: string }>;
+  addPassword: (password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   requestAccess: (data: Omit<PendingRequest, 'id' | 'requestedAt' | 'status'>) => Promise<{ success: boolean; requestId: string; error?: string }>;
   approveRequest: (requestId: string, temporaryPassword: string) => Promise<{ success: boolean; error?: string }>;
@@ -323,6 +329,95 @@ export const useAuthStore = create<AuthState>()(
           };
         } catch (error: any) {
           return { success: false, error: error.message || 'Login failed' };
+        }
+      },
+
+      sendEmailSignInLink: async (email: string) => {
+        try {
+          console.log('[AuthStore] sendEmailSignInLink - Sending link to:', email);
+          const { error } = await firebaseSendEmailSignInLink(email);
+
+          if (error) {
+            return { success: false, error };
+          }
+
+          return { success: true };
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Failed to send sign-in link' };
+        }
+      },
+
+      loginWithEmailLink: async (email: string, url: string) => {
+        try {
+          console.log('[AuthStore] loginWithEmailLink - Completing sign in for:', email);
+
+          const { user: firebaseUser, error } = await completeEmailSignIn(email, url);
+
+          if (error || !firebaseUser) {
+            return { success: false, error: error || 'Failed to sign in with email link' };
+          }
+
+          // Use sanitized email as the user ID (consistent with Microsoft SSO)
+          const userId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          console.log('[AuthStore] loginWithEmailLink - Generated userId:', userId);
+
+          // Check if user profile exists in Firestore
+          const { user: profile, error: profileError } = await getUserProfile(userId);
+
+          if (profileError || !profile) {
+            // User doesn't exist - sign them out
+            await firebaseSignOut();
+            return {
+              success: false,
+              error: 'No account found for this email. Please contact an administrator to get access.'
+            };
+          }
+
+          // Check if user is approved
+          if (profile.status === 'pending') {
+            await firebaseSignOut();
+            return {
+              success: false,
+              error: 'Your account is pending approval. Please wait for an administrator to approve your access.'
+            };
+          }
+
+          if (profile.status === 'rejected') {
+            await firebaseSignOut();
+            return {
+              success: false,
+              error: 'Your access request was denied. Please contact an administrator.'
+            };
+          }
+
+          const appUser = firebaseUserToAppUser(profile);
+          console.log('[AuthStore] loginWithEmailLink - Setting currentUser to:', JSON.stringify(appUser, null, 2));
+
+          set({
+            currentUser: appUser,
+            currentSession: userId,
+          });
+
+          console.log('[AuthStore] loginWithEmailLink - Login successful');
+          return { success: true };
+        } catch (error: any) {
+          console.error('[AuthStore] loginWithEmailLink - Error:', error);
+          return { success: false, error: error.message || 'Failed to sign in with email link' };
+        }
+      },
+
+      addPassword: async (password: string) => {
+        try {
+          console.log('[AuthStore] addPassword - Adding password to account');
+          const { error } = await firebaseAddPasswordToAccount(password);
+
+          if (error) {
+            return { success: false, error };
+          }
+
+          return { success: true };
+        } catch (error: any) {
+          return { success: false, error: error.message || 'Failed to set password' };
         }
       },
 

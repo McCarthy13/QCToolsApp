@@ -246,6 +246,12 @@ export default function DashboardScreen() {
                   <Ionicons name="search" size={24} color="white" />
                 </Pressable>
                 <Pressable
+                  onPress={() => navigation.navigate('AccountSettings')}
+                  className="bg-gray-600 rounded-full p-3 active:bg-gray-700"
+                >
+                  <Ionicons name="person-circle-outline" size={24} color="white" />
+                </Pressable>
+                <Pressable
                   onPress={handleLogout}
                   className="bg-red-600 rounded-full p-3 active:bg-red-700"
                 >
