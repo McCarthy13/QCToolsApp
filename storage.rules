@@ -7,12 +7,19 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Quality log photos
+    // Quality log photos (legacy path)
     match /qualityLogs/{logId}/{fileName} {
       allow read: if isApproved();
       allow write: if isApproved() &&
                      request.resource.size < 10 * 1024 * 1024 && // 10MB max
                      request.resource.contentType.matches('image/.*');
+    }
+
+    // Quality log attachments (new path used by dashboard)
+    match /quality-log-attachments/{entryId}/{fileName} {
+      allow read: if isApproved();
+      allow write: if isApproved() &&
+                     request.resource.size < 10 * 1024 * 1024; // 10MB max
     }
 
     // Calibration reports
