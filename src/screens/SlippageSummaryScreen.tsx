@@ -139,7 +139,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       };
 
       // Get current entry and update attachments
-      const entryRef = doc(firestore, 'quality-log-entries', qualityEntryId);
+      const entryRef = doc(firestore, 'qualityLogEntries', qualityEntryId);
       const entrySnap = await getDoc(entryRef);
 
       if (!entrySnap.exists()) {

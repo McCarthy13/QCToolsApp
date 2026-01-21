@@ -368,47 +368,79 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   // Handle taking a photo with camera
   const handleTakePhoto = async (entry: QualityLogEntry) => {
-    console.log('[QualityLogDashboard] handleTakePhoto called for entry:', entry.id);
+    const entryId = entry.id;
+    console.log('[QualityLogDashboard] handleTakePhoto called for entry:', entryId);
 
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant camera access to take photos.');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      console.log('[QualityLogDashboard] Camera permission status:', status);
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera access to take photos.');
+        return;
+      }
 
-    console.log('[QualityLogDashboard] Camera result:', result.canceled ? 'canceled' : 'photo taken');
+      console.log('[QualityLogDashboard] Launching camera...');
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets && result.assets[0]) {
-      try {
-        console.log('[QualityLogDashboard] Uploading photo...');
-        const downloadUrl = await uploadPhoto(result.assets[0].uri, entry.id);
-        const timestamp = new Date().toLocaleString();
+      console.log('[QualityLogDashboard] Camera result:', JSON.stringify({
+        canceled: result.canceled,
+        assetsCount: result.assets?.length || 0,
+      }));
 
-        const newAttachment: Attachment = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: 'photo' as AttachmentType,
-          url: downloadUrl,
-          name: `Photo ${timestamp}`,
-          createdAt: Date.now(),
-          createdBy: currentUser?.email || undefined,
-        };
+      if (result.canceled) {
+        console.log('[QualityLogDashboard] User cancelled camera');
+        return;
+      }
 
-        const existingAttachments = entry.attachments || [];
-        const allAttachments = [...existingAttachments, newAttachment];
+      if (!result.assets || !result.assets[0]) {
+        console.log('[QualityLogDashboard] No assets returned from camera');
+        Alert.alert('Error', 'No photo was captured. Please try again.');
+        return;
+      }
 
-        console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
-        await updateEntry(entry.id, { attachments: allAttachments });
+      const photoUri = result.assets[0].uri;
+      console.log('[QualityLogDashboard] Photo URI:', photoUri?.substring(0, 50) + '...');
 
-        console.log('[QualityLogDashboard] Photo added successfully');
+      console.log('[QualityLogDashboard] Uploading photo to Firebase Storage...');
+      const downloadUrl = await uploadPhoto(photoUri, entryId);
+      console.log('[QualityLogDashboard] Upload complete, URL:', downloadUrl?.substring(0, 50) + '...');
+
+      const timestamp = new Date().toLocaleString();
+      const newAttachment: Attachment = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'photo' as AttachmentType,
+        url: downloadUrl,
+        name: `Photo ${timestamp}`,
+        createdAt: Date.now(),
+        createdBy: currentUser?.email || undefined,
+      };
+
+      // Get fresh entry from store to avoid stale closure
+      const freshEntry = entries.find(e => e.id === entryId);
+      const existingAttachments = freshEntry?.attachments || [];
+      const allAttachments = [...existingAttachments, newAttachment];
+
+      console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
+      await updateEntry(entryId, { attachments: allAttachments });
+
+      console.log('[QualityLogDashboard] Photo added successfully');
+      if (Platform.OS === 'web') {
+        window.alert('Photo added successfully');
+      } else {
         Alert.alert('Success', 'Photo added successfully');
-      } catch (error) {
-        console.error('[QualityLogDashboard] Error uploading photo:', error);
-        Alert.alert('Error', 'Failed to upload photo');
+      }
+    } catch (error) {
+      console.error('[QualityLogDashboard] Error in handleTakePhoto:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[QualityLogDashboard] Error details:', errorMessage);
+      if (Platform.OS === 'web') {
+        window.alert(`Failed to upload photo: ${errorMessage}`);
+      } else {
+        Alert.alert('Error', `Failed to upload photo: ${errorMessage}`);
       }
     }
   };
@@ -423,9 +455,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       if (Platform.OS === 'web') {
         console.log('[QualityLogDashboard] Using web file input');
 
-        // Capture entry data before async operations to avoid stale closure
+        // Capture entry ID before async operations to avoid stale closure
         const entryId = entry.id;
-        const existingAttachments = entry.attachments || [];
         const userEmail = currentUser?.email;
 
         // Create a hidden file input element
@@ -471,6 +502,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               console.log(`[QualityLogDashboard] File ${i + 1} processed successfully`);
             }
 
+            // Get FRESH entry from store AFTER uploads complete to avoid stale data
+            const currentEntries = useQualityLogStore.getState().entries;
+            const freshEntry = currentEntries.find(e => e.id === entryId);
+            const existingAttachments = freshEntry?.attachments || [];
             const allAttachments = [...existingAttachments, ...newAttachments];
 
             console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
@@ -519,6 +554,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       }
 
       // Native platforms use expo-image-picker
+      const entryId = entry.id;
+
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       console.log('[QualityLogDashboard] Permission status:', status);
 
@@ -535,7 +572,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         selectionLimit: 10,
       });
 
-      console.log('[QualityLogDashboard] ImagePicker full result:', JSON.stringify(result, null, 2));
+      console.log('[QualityLogDashboard] ImagePicker result:', JSON.stringify({
+        canceled: result.canceled,
+        assetsCount: result.assets?.length || 0,
+      }));
 
       if (result.canceled) {
         console.log('[QualityLogDashboard] User canceled selection');
@@ -548,7 +588,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         return;
       }
 
-      console.log('[QualityLogDashboard] Selected', result.assets.length, 'assets');
+      console.log('[QualityLogDashboard] Selected', result.assets.length, 'assets, starting upload...');
 
       // Collect all new attachments first
       const newAttachments: Attachment[] = [];
@@ -558,18 +598,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         console.log(`[QualityLogDashboard] Processing asset ${i + 1}:`, {
           uri: asset.uri?.substring(0, 50) + '...',
           fileName: asset.fileName,
-          type: asset.type,
-          width: asset.width,
-          height: asset.height,
         });
 
-        const downloadUrl = await uploadPhoto(asset.uri, entry.id);
-        console.log(`[QualityLogDashboard] Uploaded, got URL:`, downloadUrl?.substring(0, 50) + '...');
+        const downloadUrl = await uploadPhoto(asset.uri, entryId);
+        console.log(`[QualityLogDashboard] Uploaded asset ${i + 1}, got URL:`, downloadUrl?.substring(0, 50) + '...');
 
         const timestamp = new Date().toLocaleString();
 
         const newAttachment: Attachment = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
           type: 'file' as AttachmentType,
           url: downloadUrl,
           name: asset.fileName || `File ${timestamp}`,
@@ -578,17 +615,18 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         };
 
         newAttachments.push(newAttachment);
-        console.log(`[QualityLogDashboard] File ${i + 1} processed successfully`);
+        console.log(`[QualityLogDashboard] Asset ${i + 1} processed successfully`);
       }
 
-      // Get current attachments from the entry (use entry passed in, not stale closure)
-      const existingAttachments = entry.attachments || [];
+      // Get FRESH entry from store to avoid stale closure
+      const freshEntry = entries.find(e => e.id === entryId);
+      const existingAttachments = freshEntry?.attachments || [];
       const allAttachments = [...existingAttachments, ...newAttachments];
 
       console.log('[QualityLogDashboard] Updating entry with', allAttachments.length, 'total attachments');
 
       // Update entry once with all new attachments
-      await updateEntry(entry.id, { attachments: allAttachments });
+      await updateEntry(entryId, { attachments: allAttachments });
 
       console.log('[QualityLogDashboard] Entry updated successfully');
       Alert.alert('Success', `${result.assets.length} file(s) added successfully`);
