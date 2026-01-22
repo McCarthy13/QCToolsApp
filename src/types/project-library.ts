@@ -3,6 +3,16 @@ export interface PieceCountByType {
   count: number;
 }
 
+export interface Blueprint {
+  id: string;
+  name: string;
+  url: string;
+  thumbnailUrl?: string;
+  fileSize?: number;
+  uploadedAt: number;
+  uploadedBy: string;
+}
+
 export interface Project {
   id: string;
   jobNumber: string;
@@ -13,6 +23,7 @@ export interface Project {
   assignedEngineer?: string;
   assignedDrafter?: string;
   pieceCountByType: PieceCountByType[];
+  blueprints?: Blueprint[];
   createdAt: number;
   updatedAt: number;
   createdBy: string;

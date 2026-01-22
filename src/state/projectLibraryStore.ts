@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { FirebaseSync } from '../services/firebaseSync';
-import { Project, ProjectInput } from '../types/project-library';
+import { Project, ProjectInput, Blueprint } from '../types/project-library';
 
 interface ProjectLibraryState {
   projects: Project[];
@@ -14,6 +14,8 @@ interface ProjectLibraryState {
   exportProjects: () => string;
   importProjects: (jsonData: string) => { success: boolean; message: string; imported: number };
   clearAllProjects: () => Promise<void>;
+  addBlueprint: (projectId: string, blueprint: Blueprint) => Promise<void>;
+  removeBlueprint: (projectId: string, blueprintId: string) => Promise<void>;
   initialize: () => Promise<void>;
 }
 
@@ -183,6 +185,52 @@ export const useProjectLibraryStore = create<ProjectLibraryState>()((set, get) =
       await Promise.all(oldProjects.map(p => firebaseSync.delete(p.id)));
     } catch (error) {
       set({ projects: oldProjects });
+      throw error;
+    }
+  },
+
+  addBlueprint: async (projectId, blueprint) => {
+    const project = get().projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const updatedBlueprints = [...(project.blueprints || []), blueprint];
+    const updatedProject = { ...project, blueprints: updatedBlueprints, updatedAt: Date.now() };
+
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? updatedProject : p
+      ),
+    }));
+
+    try {
+      await firebaseSync.set(projectId, updatedProject);
+    } catch (error) {
+      set((state) => ({
+        projects: state.projects.map((p) => (p.id === projectId ? project : p)),
+      }));
+      throw error;
+    }
+  },
+
+  removeBlueprint: async (projectId, blueprintId) => {
+    const project = get().projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const updatedBlueprints = (project.blueprints || []).filter((b) => b.id !== blueprintId);
+    const updatedProject = { ...project, blueprints: updatedBlueprints, updatedAt: Date.now() };
+
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? updatedProject : p
+      ),
+    }));
+
+    try {
+      await firebaseSync.set(projectId, updatedProject);
+    } catch (error) {
+      set((state) => ({
+        projects: state.projects.map((p) => (p.id === projectId ? project : p)),
+      }));
       throw error;
     }
   },

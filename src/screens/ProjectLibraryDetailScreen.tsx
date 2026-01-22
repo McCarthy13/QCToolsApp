@@ -5,6 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useProjectLibraryStore } from '../state/projectLibraryStore';
+import { useAuthStore } from '../state/authStore';
+import BlueprintUpload from '../components/BlueprintUpload';
+import { Blueprint } from '../types/project-library';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibraryDetail'>;
 
@@ -12,7 +15,10 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
   const { projectId } = route.params;
   const getProjectById = useProjectLibraryStore((s) => s.getProjectById);
   const deleteProject = useProjectLibraryStore((s) => s.deleteProject);
-  
+  const addBlueprint = useProjectLibraryStore((s) => s.addBlueprint);
+  const removeBlueprint = useProjectLibraryStore((s) => s.removeBlueprint);
+  const currentUser = useAuthStore((s) => s.currentUser);
+
   const project = getProjectById(projectId);
 
   if (!project) {
@@ -179,7 +185,7 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
             {project.pieceCountByType.length > 0 ? (
               <View className="gap-2">
                 {project.pieceCountByType.map((item, index) => (
-                  <View 
+                  <View
                     key={index}
                     className="flex-row items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
                   >
@@ -195,6 +201,20 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
               <Text className="text-gray-400 text-sm italic">No piece counts added</Text>
             )}
           </View>
+
+          {/* Blueprints Section */}
+          <BlueprintUpload
+            projectId={projectId}
+            blueprints={project.blueprints || []}
+            userEmail={currentUser?.email || 'unknown'}
+            onAddBlueprint={async (blueprint: Blueprint) => {
+              await addBlueprint(projectId, blueprint);
+            }}
+            onRemoveBlueprint={async (blueprintId: string) => {
+              await removeBlueprint(projectId, blueprintId);
+            }}
+            editable={true}
+          />
 
           {/* Metadata */}
           <View className="bg-gray-100 rounded-xl p-3">
