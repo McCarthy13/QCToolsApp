@@ -69,14 +69,37 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
   const addDocument = useProjectLibraryStore((s) => s.addDocument);
   const currentUser = useAuthStore((s) => s.currentUser);
 
-  // Parse job number and name from folder name (e.g., "255096 - Project Name")
+  // Parse job number and name from folder name
+  // Formats supported:
+  // - "26-6000 - Project Name" → jobNumber: "266000"
+  // - "26-6000- Project Name" → jobNumber: "266000"
+  // - "266000 - Project Name" → jobNumber: "266000"
   const parseJobFolder = (folderName: string): { jobNumber: string; jobName: string } | null => {
-    // Try pattern: "123456 - Project Name" or "123456- Project Name" or "123456 -Project Name"
-    const match = folderName.match(/^(\d{6})\s*-\s*(.+)$/);
-    if (match) {
+    // Try pattern: "XX-XXXX - Project Name" (2 digits, hyphen, 4 digits)
+    const hyphenatedMatch = folderName.match(/^(\d{2})-(\d{4})\s*-\s*(.+)$/);
+    if (hyphenatedMatch) {
       return {
-        jobNumber: match[1],
-        jobName: match[2].trim(),
+        jobNumber: hyphenatedMatch[1] + hyphenatedMatch[2], // Remove hyphen: "26-6000" → "266000"
+        jobName: hyphenatedMatch[3].trim(),
+      };
+    }
+
+    // Try pattern: "XX-XXXX" without project name separator (just the job number folder)
+    const hyphenatedOnlyMatch = folderName.match(/^(\d{2})-(\d{4})$/);
+    if (hyphenatedOnlyMatch) {
+      const jobNum = hyphenatedOnlyMatch[1] + hyphenatedOnlyMatch[2];
+      return {
+        jobNumber: jobNum,
+        jobName: `Job ${jobNum}`,
+      };
+    }
+
+    // Try pattern: "123456 - Project Name" (6 digits without hyphen)
+    const sixDigitMatch = folderName.match(/^(\d{6})\s*-\s*(.+)$/);
+    if (sixDigitMatch) {
+      return {
+        jobNumber: sixDigitMatch[1],
+        jobName: sixDigitMatch[2].trim(),
       };
     }
 
@@ -86,6 +109,17 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
       return {
         jobNumber: numMatch[1],
         jobName: folderName.replace(/^\d{6}\s*-?\s*/, '').trim() || `Job ${numMatch[1]}`,
+      };
+    }
+
+    // Try pattern: XX-XXXX anywhere in the name (more flexible)
+    const flexMatch = folderName.match(/(\d{2})-(\d{4})/);
+    if (flexMatch) {
+      const jobNum = flexMatch[1] + flexMatch[2];
+      const nameAfter = folderName.replace(/\d{2}-\d{4}\s*-?\s*/, '').trim();
+      return {
+        jobNumber: jobNum,
+        jobName: nameAfter || `Job ${jobNum}`,
       };
     }
 
@@ -389,7 +423,10 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
                   1. ZIP your year folder (e.g., "2026.zip")
                 </Text>
                 <Text className="text-sm text-blue-800 mb-2">
-                  2. Each project folder should be named: "JobNumber - Project Name"
+                  2. Each project folder should be named: "XX-XXXX - Project Name"
+                </Text>
+                <Text className="text-xs text-blue-700 ml-4 mb-2">
+                  (e.g., "26-6000 - Main Street Building" → Job #266000)
                 </Text>
                 <Text className="text-sm text-blue-800 mb-2">
                   3. Inside each project, files are categorized by subfolder:
@@ -410,7 +447,7 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
             <Text className="text-sm font-semibold text-gray-500 mb-3">EXPECTED FOLDER STRUCTURE</Text>
             <View className="bg-gray-50 rounded-lg p-3">
               <Text className="text-xs font-mono text-gray-700">2026/</Text>
-              <Text className="text-xs font-mono text-gray-700">├── 255096 - Project Name/</Text>
+              <Text className="text-xs font-mono text-gray-700">├── 26-6000 - Project Name/</Text>
               <Text className="text-xs font-mono text-gray-600">│   ├── Documents/</Text>
               <Text className="text-xs font-mono text-gray-500">│   │   └── ... files</Text>
               <Text className="text-xs font-mono text-gray-600">│   ├── Layout Dwgs/</Text>
@@ -419,7 +456,7 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
               <Text className="text-xs font-mono text-gray-500">│   │   └── ... files</Text>
               <Text className="text-xs font-mono text-gray-600">│   └── Project Management/</Text>
               <Text className="text-xs font-mono text-gray-500">│       └── ... files</Text>
-              <Text className="text-xs font-mono text-gray-700">├── 266123 - Another Project/</Text>
+              <Text className="text-xs font-mono text-gray-700">├── 26-6001 - Another Project/</Text>
               <Text className="text-xs font-mono text-gray-600">│   ├── Documents/</Text>
               <Text className="text-xs font-mono text-gray-500">│   └── ...</Text>
             </View>
