@@ -92,34 +92,41 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
     return null;
   };
 
-  // Determine category from path
+  // Determine category from path - category folder is INSIDE the project folder
+  // Path: Year/ProjectFolder/CategoryFolder/files
   const getCategoryFromPath = (path: string): keyof ProjectDocuments | null => {
-    const pathLower = path.toLowerCase();
-    const parts = pathLower.split('/');
+    const parts = path.split('/');
 
-    for (const part of parts) {
-      const cleanPart = part.trim();
-      if (FOLDER_CATEGORY_MAP[cleanPart]) {
-        return FOLDER_CATEGORY_MAP[cleanPart];
+    // Look for category folder (should be after the project folder)
+    // Expected: 2026/255096 - Project Name/Documents/file.pdf
+    // Or: 255096 - Project Name/Documents/file.pdf
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].toLowerCase().trim();
+      if (FOLDER_CATEGORY_MAP[part]) {
+        return FOLDER_CATEGORY_MAP[part];
       }
     }
 
     // Check if any part contains category keywords
     for (const part of parts) {
-      if (part.includes('layout')) return 'layout';
-      if (part.includes('piece') || part.includes('ticket')) return 'pieceTickets';
-      if (part.includes('embed')) return 'embeds';
-      if (part.includes('pm') || part.includes('management')) return 'projectManagement';
-      if (part.includes('engineering') || part.includes('document')) return 'engineering';
+      const partLower = part.toLowerCase();
+      if (partLower.includes('layout')) return 'layout';
+      if (partLower.includes('piece') || partLower.includes('ticket')) return 'pieceTickets';
+      if (partLower.includes('embed')) return 'embeds';
+      if (partLower.includes('pm') || partLower.includes('management')) return 'projectManagement';
+      if (partLower.includes('engineering') || partLower.includes('document')) return 'engineering';
     }
 
     return null;
   };
 
-  // Find job info from path
+  // Find job info from path - project folder contains job number
+  // Path: Year/ProjectFolder/CategoryFolder/files
+  // ProjectFolder format: "255096 - Project Name"
   const findJobInfoFromPath = (path: string): { jobNumber: string; jobName: string } | null => {
     const parts = path.split('/');
 
+    // Check each part for job folder pattern (6-digit number)
     for (const part of parts) {
       const jobInfo = parseJobFolder(part);
       if (jobInfo) {
@@ -382,10 +389,10 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
                   1. ZIP your year folder (e.g., "2026.zip")
                 </Text>
                 <Text className="text-sm text-blue-800 mb-2">
-                  2. The importer will scan for project folders
+                  2. Each project folder should be named: "JobNumber - Project Name"
                 </Text>
                 <Text className="text-sm text-blue-800 mb-2">
-                  3. Files are categorized based on folder names:
+                  3. Inside each project, files are categorized by subfolder:
                 </Text>
                 <View className="ml-4">
                   <Text className="text-xs text-blue-700">• "Layout Dwgs" → Layout</Text>
@@ -403,17 +410,18 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
             <Text className="text-sm font-semibold text-gray-500 mb-3">EXPECTED FOLDER STRUCTURE</Text>
             <View className="bg-gray-50 rounded-lg p-3">
               <Text className="text-xs font-mono text-gray-700">2026/</Text>
-              <Text className="text-xs font-mono text-gray-700">├── Documents/</Text>
-              <Text className="text-xs font-mono text-gray-600">│   ├── 255096 - Project Name/</Text>
+              <Text className="text-xs font-mono text-gray-700">├── 255096 - Project Name/</Text>
+              <Text className="text-xs font-mono text-gray-600">│   ├── Documents/</Text>
               <Text className="text-xs font-mono text-gray-500">│   │   └── ... files</Text>
-              <Text className="text-xs font-mono text-gray-700">├── Layout Dwgs/</Text>
-              <Text className="text-xs font-mono text-gray-600">│   ├── 255096 - Project Name/</Text>
+              <Text className="text-xs font-mono text-gray-600">│   ├── Layout Dwgs/</Text>
               <Text className="text-xs font-mono text-gray-500">│   │   └── ... files</Text>
-              <Text className="text-xs font-mono text-gray-700">├── Pieces Dwgs/</Text>
-              <Text className="text-xs font-mono text-gray-600">│   ├── 255096 - Project Name/</Text>
+              <Text className="text-xs font-mono text-gray-600">│   ├── Pieces Dwgs/</Text>
               <Text className="text-xs font-mono text-gray-500">│   │   └── ... files</Text>
-              <Text className="text-xs font-mono text-gray-700">└── Project Management/</Text>
-              <Text className="text-xs font-mono text-gray-600">    └── 255096 - Project Name/</Text>
+              <Text className="text-xs font-mono text-gray-600">│   └── Project Management/</Text>
+              <Text className="text-xs font-mono text-gray-500">│       └── ... files</Text>
+              <Text className="text-xs font-mono text-gray-700">├── 266123 - Another Project/</Text>
+              <Text className="text-xs font-mono text-gray-600">│   ├── Documents/</Text>
+              <Text className="text-xs font-mono text-gray-500">│   └── ...</Text>
             </View>
           </View>
 
