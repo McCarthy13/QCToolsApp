@@ -6,8 +6,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import { useAuthStore } from '../state/authStore';
-import BlueprintUpload from '../components/BlueprintUpload';
-import { Blueprint } from '../types/project-library';
+import ProjectDocumentsSection from '../components/ProjectDocumentsSection';
+import { ProjectDocument } from '../types/project-library';
+
+type DocumentCategoryKey = 'pieceTickets' | 'layout' | 'embeds' | 'projectManagement' | 'engineering';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibraryDetail'>;
 
@@ -15,8 +17,8 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
   const { projectId } = route.params;
   const getProjectById = useProjectLibraryStore((s) => s.getProjectById);
   const deleteProject = useProjectLibraryStore((s) => s.deleteProject);
-  const addBlueprint = useProjectLibraryStore((s) => s.addBlueprint);
-  const removeBlueprint = useProjectLibraryStore((s) => s.removeBlueprint);
+  const addDocument = useProjectLibraryStore((s) => s.addDocument);
+  const removeDocument = useProjectLibraryStore((s) => s.removeDocument);
   const currentUser = useAuthStore((s) => s.currentUser);
 
   const project = getProjectById(projectId);
@@ -45,7 +47,6 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
       if (supported) {
         Linking.openURL(url);
       } else {
-        // Fallback to Google Maps web
         Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${address}`);
       }
     });
@@ -78,7 +79,7 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
         </Pressable>
         <Text className="text-lg font-bold text-gray-900">Project Details</Text>
         <View className="flex-row gap-2">
-          <Pressable 
+          <Pressable
             onPress={() => navigation.navigate('ProjectLibraryAddEdit', { projectId })}
             className="p-2"
           >
@@ -109,7 +110,7 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
 
           {/* Location Card */}
           {project.location && (
-            <Pressable 
+            <Pressable
               onPress={handleOpenMaps}
               className="bg-white rounded-xl p-4 border border-gray-200 active:bg-gray-50"
             >
@@ -119,9 +120,7 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
                   <Text className="text-base text-gray-900 mb-1">{project.location}</Text>
                   <View className="flex-row items-center mt-1">
                     <Ionicons name="map-outline" size={14} color="#3B82F6" />
-                    <Text className="text-sm text-blue-600 ml-1 font-medium">
-                      Open in Maps
-                    </Text>
+                    <Text className="text-sm text-blue-600 ml-1 font-medium">Open in Maps</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#3B82F6" />
@@ -176,12 +175,10 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-sm font-semibold text-gray-500">PIECE COUNT</Text>
               <View className="bg-blue-100 px-3 py-1 rounded-full">
-                <Text className="text-base font-bold text-blue-700">
-                  {totalPieceCount} Total
-                </Text>
+                <Text className="text-base font-bold text-blue-700">{totalPieceCount} Total</Text>
               </View>
             </View>
-            
+
             {project.pieceCountByType.length > 0 ? (
               <View className="gap-2">
                 {project.pieceCountByType.map((item, index) => (
@@ -202,18 +199,17 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
             )}
           </View>
 
-          {/* Blueprints Section */}
-          <BlueprintUpload
+          {/* Documents Section */}
+          <ProjectDocumentsSection
             projectId={projectId}
-            blueprints={project.blueprints || []}
+            documents={project.documents || {}}
             userEmail={currentUser?.email || 'unknown'}
-            onAddBlueprint={async (blueprint: Blueprint) => {
-              await addBlueprint(projectId, blueprint);
+            onAddDocument={async (category: DocumentCategoryKey, doc: ProjectDocument) => {
+              await addDocument(projectId, category, doc);
             }}
-            onRemoveBlueprint={async (blueprintId: string) => {
-              await removeBlueprint(projectId, blueprintId);
+            onRemoveDocument={async (category: DocumentCategoryKey, docId: string) => {
+              await removeDocument(projectId, category, docId);
             }}
-            editable={true}
           />
 
           {/* Metadata */}

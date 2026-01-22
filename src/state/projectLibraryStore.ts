@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { FirebaseSync } from '../services/firebaseSync';
-import { Project, ProjectInput, Blueprint } from '../types/project-library';
+import { Project, ProjectInput, ProjectDocument } from '../types/project-library';
+
+// Document category key type
+type DocumentCategoryKey = 'pieceTickets' | 'layout' | 'embeds' | 'projectManagement' | 'engineering';
 
 interface ProjectLibraryState {
   projects: Project[];
@@ -14,7 +17,10 @@ interface ProjectLibraryState {
   exportProjects: () => string;
   importProjects: (jsonData: string) => { success: boolean; message: string; imported: number };
   clearAllProjects: () => Promise<void>;
-  addBlueprint: (projectId: string, blueprint: Blueprint) => Promise<void>;
+  addDocument: (projectId: string, category: DocumentCategoryKey, doc: ProjectDocument) => Promise<void>;
+  removeDocument: (projectId: string, category: DocumentCategoryKey, docId: string) => Promise<void>;
+  // Legacy methods for backward compatibility
+  addBlueprint: (projectId: string, blueprint: ProjectDocument) => Promise<void>;
   removeBlueprint: (projectId: string, blueprintId: string) => Promise<void>;
   initialize: () => Promise<void>;
 }
@@ -218,6 +224,58 @@ export const useProjectLibraryStore = create<ProjectLibraryState>()((set, get) =
 
     const updatedBlueprints = (project.blueprints || []).filter((b) => b.id !== blueprintId);
     const updatedProject = { ...project, blueprints: updatedBlueprints, updatedAt: Date.now() };
+
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? updatedProject : p
+      ),
+    }));
+
+    try {
+      await firebaseSync.set(projectId, updatedProject);
+    } catch (error) {
+      set((state) => ({
+        projects: state.projects.map((p) => (p.id === projectId ? project : p)),
+      }));
+      throw error;
+    }
+  },
+
+  addDocument: async (projectId, category, doc) => {
+    const project = get().projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const currentDocs = project.documents || {};
+    const categoryDocs = currentDocs[category] || [];
+    const updatedCategoryDocs = [...categoryDocs, doc];
+    const updatedDocuments = { ...currentDocs, [category]: updatedCategoryDocs };
+    const updatedProject = { ...project, documents: updatedDocuments, updatedAt: Date.now() };
+
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? updatedProject : p
+      ),
+    }));
+
+    try {
+      await firebaseSync.set(projectId, updatedProject);
+    } catch (error) {
+      set((state) => ({
+        projects: state.projects.map((p) => (p.id === projectId ? project : p)),
+      }));
+      throw error;
+    }
+  },
+
+  removeDocument: async (projectId, category, docId) => {
+    const project = get().projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const currentDocs = project.documents || {};
+    const categoryDocs = currentDocs[category] || [];
+    const updatedCategoryDocs = categoryDocs.filter((d) => d.id !== docId);
+    const updatedDocuments = { ...currentDocs, [category]: updatedCategoryDocs };
+    const updatedProject = { ...project, documents: updatedDocuments, updatedAt: Date.now() };
 
     set((state) => ({
       projects: state.projects.map((p) =>
