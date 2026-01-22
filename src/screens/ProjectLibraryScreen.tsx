@@ -29,12 +29,20 @@ export default function ProjectLibraryScreen({ navigation }: Props) {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </Pressable>
         <Text className="text-xl font-bold text-gray-900">Project Library</Text>
-        <Pressable 
-          onPress={() => navigation.navigate('ProjectLibraryAddEdit', {})}
-          className="p-2"
-        >
-          <Ionicons name="add-circle" size={28} color="#3B82F6" />
-        </Pressable>
+        <View className="flex-row items-center">
+          <Pressable
+            onPress={() => navigation.navigate('ProjectLibraryBulkImport')}
+            className="p-2"
+          >
+            <Ionicons name="cloud-upload" size={26} color="#059669" />
+          </Pressable>
+          <Pressable
+            onPress={() => navigation.navigate('ProjectLibraryAddEdit', {})}
+            className="p-2"
+          >
+            <Ionicons name="add-circle" size={28} color="#3B82F6" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Search Bar */}

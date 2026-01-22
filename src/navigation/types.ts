@@ -165,6 +165,7 @@ export type RootStackParamList = {
     returnScreen?: string;
   };
   ProjectLibraryExportImport: undefined;
+  ProjectLibraryBulkImport: undefined;
   DailyPourSchedule: { date?: string; department?: string } | undefined;
   ScheduleSearch: undefined;
   ScheduleScanner: { date?: string; department?: string };

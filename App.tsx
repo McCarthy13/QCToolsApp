@@ -44,6 +44,7 @@ import ProjectLibraryScreen from "./src/screens/ProjectLibraryScreen";
 import ProjectLibraryDetailScreen from "./src/screens/ProjectLibraryDetailScreen";
 import ProjectLibraryAddEditScreen from "./src/screens/ProjectLibraryAddEditScreen";
 import ProjectLibraryExportImportScreen from "./src/screens/ProjectLibraryExportImportScreen";
+import ProjectLibraryBulkImportScreen from "./src/screens/ProjectLibraryBulkImportScreen";
 import DailyPourScheduleScreen from "./src/screens/DailyPourScheduleScreen";
 import ScheduleSearchScreen from "./src/screens/ScheduleSearchScreen";
 import ScheduleScannerScreen from "./src/screens/ScheduleScannerScreen";
@@ -679,6 +680,11 @@ export default function App() {
             <Stack.Screen
               name="ProjectLibraryExportImport"
               component={ProjectLibraryExportImportScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="ProjectLibraryBulkImport"
+              component={ProjectLibraryBulkImportScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen
