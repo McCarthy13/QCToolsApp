@@ -2,6 +2,31 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
+## Recent Feature: Project Library Blueprint Uploads
+
+**Feature**: Upload blueprint drawings and documents to projects in the Project Library.
+
+**How it works**:
+1. Navigate to Project Library from the Dashboard
+2. Open any project's detail view
+3. Use the "Blueprints & Drawings" section to upload files:
+   - **PDF/File**: Upload PDFs, drawings, and documents (up to 50MB)
+   - **Gallery**: Select images from photo library
+   - **Camera**: Take photos of blueprints (mobile only)
+4. View uploaded blueprints by tapping on them
+5. Remove blueprints with the trash icon
+
+**Files Added/Modified**:
+- `src/types/project-library.ts` - Added Blueprint interface
+- `src/state/projectLibraryStore.ts` - Added addBlueprint/removeBlueprint methods
+- `src/components/BlueprintUpload.tsx` - New component for uploading/displaying blueprints
+- `src/screens/ProjectLibraryDetailScreen.tsx` - Integrated BlueprintUpload component
+- `storage.rules` - Added project-blueprints path with 50MB limit
+
+**Deployed**: 2026-01-22
+- Storage rules deployed to Firebase
+- Code pushed to GitHub and Vibecode
+
 ## Recent Feature: Piece Ticket Import with Single-Page PDF Extraction ✅
 
 **Feature**: Import piece tickets from multi-page PDFs and link them to quality log entries.
