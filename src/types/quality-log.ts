@@ -259,10 +259,14 @@ export const ISSUE_CODE_OPTIONS: string[] = Array.from({ length: 46 }, (_, i) =>
 // Reject codes 1-46
 export const REJECT_CODE_OPTIONS: string[] = Array.from({ length: 46 }, (_, i) => String(i + 1));
 
-// Location validation regex: first digit 1-4, hyphen, then 1-2 digit number 1-80
-export const LOCATION_REGEX = /^[1-4]-([1-9]|[1-7][0-9]|80)$/;
+// Location validation regex: first digit 1-9, hyphen, then 1-2 digit number 1-99
+export const LOCATION_REGEX = /^[1-9]-([1-9]|[1-9][0-9])$/;
 
-// Validate location format
+// Validate location format: X-YY where X is 1-9 and YY is 1-99, OR "Short"
 export const isValidLocation = (location: string): boolean => {
+  // Allow "Short" as an alternative location (case-insensitive)
+  if (location.toLowerCase() === 'short') {
+    return true;
+  }
   return LOCATION_REGEX.test(location);
 };

@@ -237,7 +237,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       // Validate location format
       if (field === 'location' && editValue.trim() !== '') {
         if (!isValidLocation(editValue.trim())) {
-          Alert.alert('Invalid Location', 'Location must be in format: (1-4)-(1-80)\nExample: 2-45');
+          Alert.alert('Invalid Location', 'Location must be in format: X-YY (e.g., 2-34) or "Short"');
           return;
         }
       }
