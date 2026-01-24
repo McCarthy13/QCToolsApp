@@ -2,6 +2,40 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
+## Recent Feature: Quality Log Attachment Management
+
+**Feature**: Delete and edit attachments directly from the Quality Log attachments modal.
+
+**How it works**:
+1. In the Quality Log Dashboard, click the folder icon on any piece with attachments
+2. The attachments modal shows all photos and slippage reports
+3. **Delete any attachment**: Click the red trash icon and confirm
+4. **Edit slippage reports**: Click the purple pencil icon to reopen the Slippage Identifier with all values pre-populated
+5. Make your changes and generate a new report - it saves to the same Quality Log entry
+
+**Technical Details**:
+- Slippage data is now stored with attachments (`slippageData` field) for edit capability
+- Legacy reports without stored data show "Cannot Edit" message
+- Delete removes from Firestore; Firebase Storage cleanup may be needed separately
+
+**Files Modified**:
+- `src/types/quality-log.ts` - Added `SlippageAttachmentData` interface and `slippageData` field to Attachment
+- `src/screens/QualityLogDashboardScreen.tsx` - Added delete/edit functions and updated attachments modal UI
+- `src/screens/SlippageSummaryScreen.tsx` - Now stores slippage data with attachments for edit capability
+
+## Recent Feature: Slippage Reports Save to Quality Log
+
+**Feature**: Slippage reports now automatically save to Quality Log attachments without triggering local download.
+
+**How it works**:
+1. When generating a report from Quality Log - saves directly to that entry's attachments
+2. When generating from standalone Slippage Identifier - searches for matching entry by Job #, Mark #, ID #
+3. If no match found - alerts user to go back and edit product details
+4. Never triggers local save-as dialog
+
+**Files Modified**:
+- `src/screens/SlippageSummaryScreen.tsx` - Auto-lookup matching Quality Log entry, always save to attachments
+
 ## Recent Feature: Project Library Blueprint Uploads
 
 **Feature**: Upload blueprint drawings and documents to projects in the Project Library.

@@ -20,7 +20,7 @@ import { captureRef } from "react-native-view-shot";
 import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { firestore, storage } from "../config/firebase";
-import { Attachment, AttachmentType, QualityLogEntry } from "../types/quality-log";
+import { Attachment, AttachmentType, QualityLogEntry, SlippageAttachmentData } from "../types/quality-log";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -122,7 +122,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
       // Upload PDF to Firebase Storage
       const timestamp = Date.now();
-      const storagePath = `quality-log-attachments/${qualityEntryId}/slippage-reports/${timestamp}_${fileName}`;
+      const storagePath = `quality-log-attachments/${entryId}/slippage-reports/${timestamp}_${fileName}`;
       const storageRef = ref(storage, storagePath);
 
       await uploadBytes(storageRef, pdfBlob);
@@ -130,7 +130,33 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
 
       console.log('[SlippageSummary] PDF uploaded to Firebase Storage:', downloadUrl);
 
-      // Create attachment object
+      // Create slippage data for editing later
+      const slippageData: SlippageAttachmentData = {
+        slippages: slippages.map(s => ({
+          strandId: s.strandId,
+          leftSlippage: s.leftSlippage,
+          rightSlippage: s.rightSlippage,
+          leftExceedsOne: s.leftExceedsOne,
+          rightExceedsOne: s.rightExceedsOne,
+        })),
+        config: {
+          projectName: config.projectName,
+          projectNumber: config.projectNumber,
+          markNumber: config.markNumber,
+          idNumber: config.idNumber,
+          span: config.span,
+          pourDate: config.pourDate,
+          productType: config.productType,
+          strandPattern: config.strandPattern,
+          castStrandPattern: config.castStrandPattern,
+          topStrandPattern: config.topStrandPattern,
+          topCastStrandPattern: config.topCastStrandPattern,
+          productWidth: config.productWidth,
+          productSide: config.productSide,
+        },
+      };
+
+      // Create attachment object with slippage data for edit capability
       const newAttachment: Attachment = {
         id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
         type: 'slippage-report' as AttachmentType,
@@ -138,6 +164,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         name: fileName,
         createdAt: timestamp,
         createdBy: currentUser?.email || undefined,
+        slippageData,
       };
 
       // Get current entry and update attachments
@@ -158,7 +185,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         updatedBy: currentUser?.email || undefined,
       });
 
-      console.log('[SlippageSummary] Attachment saved to quality log entry');
+      console.log('[SlippageSummary] Attachment saved to quality log entry with slippage data');
       return downloadUrl;
     } catch (error) {
       console.error('[SlippageSummary] Error saving slippage report as attachment:', error);

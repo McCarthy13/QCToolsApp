@@ -18,6 +18,32 @@ export type BedNumber = '1' | '2' | '3' | '4' | '5' | '6';
 // Attachment types
 export type AttachmentType = 'photo' | 'file' | 'slippage-report';
 
+// Slippage data for editing (stored with slippage-report attachments)
+export interface SlippageAttachmentData {
+  slippages: Array<{
+    strandId: string;
+    leftSlippage: string;
+    rightSlippage: string;
+    leftExceedsOne: boolean;
+    rightExceedsOne: boolean;
+  }>;
+  config: {
+    projectName?: string;
+    projectNumber?: string;
+    markNumber?: string;
+    idNumber?: string;
+    span?: number;
+    pourDate?: string;
+    productType: string;
+    strandPattern: string;
+    castStrandPattern?: string;
+    topStrandPattern?: string;
+    topCastStrandPattern?: string;
+    productWidth?: number;
+    productSide?: 'L1' | 'L2';
+  };
+}
+
 // Individual attachment item
 export interface Attachment {
   id: string;
@@ -26,6 +52,8 @@ export interface Attachment {
   name: string;
   createdAt: number;
   createdBy?: string;
+  // For slippage-report type - stores the data needed to edit
+  slippageData?: SlippageAttachmentData;
 }
 
 // Issue/Reject code definition

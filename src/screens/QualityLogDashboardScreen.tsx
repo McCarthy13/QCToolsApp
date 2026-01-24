@@ -383,6 +383,78 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     await updateEntry(entry.id, { attachments: [...existingAttachments, newAttachment] });
   };
 
+  // Delete attachment from entry
+  const deleteAttachment = async (entry: QualityLogEntry, attachmentId: string) => {
+    try {
+      const existingAttachments = entry.attachments || [];
+      const updatedAttachments = existingAttachments.filter(a => a.id !== attachmentId);
+      await updateEntry(entry.id, { attachments: updatedAttachments });
+      // Refresh the modal state
+      const updatedEntry = { ...entry, attachments: updatedAttachments };
+      setShowAttachmentsModal({ entry: updatedEntry });
+      console.log('[QualityLogDashboard] Attachment deleted successfully');
+    } catch (error) {
+      console.error('[QualityLogDashboard] Failed to delete attachment:', error);
+      Alert.alert('Error', 'Failed to delete attachment. Please try again.');
+    }
+  };
+
+  // Delete legacy photo URL from entry
+  const deleteLegacyPhoto = async (entry: QualityLogEntry, photoIndex: number) => {
+    try {
+      const existingUrls = entry.photoUrls || [];
+      const updatedUrls = existingUrls.filter((_, idx) => idx !== photoIndex);
+      await updateEntry(entry.id, { photoUrls: updatedUrls });
+      // Refresh the modal state
+      const updatedEntry = { ...entry, photoUrls: updatedUrls };
+      setShowAttachmentsModal({ entry: updatedEntry });
+      console.log('[QualityLogDashboard] Legacy photo deleted successfully');
+    } catch (error) {
+      console.error('[QualityLogDashboard] Failed to delete legacy photo:', error);
+      Alert.alert('Error', 'Failed to delete photo. Please try again.');
+    }
+  };
+
+  // Navigate to edit slippage report
+  const handleEditSlippageReport = (entry: QualityLogEntry, attachment: Attachment) => {
+    if (!attachment.slippageData) {
+      Alert.alert(
+        'Cannot Edit',
+        'This slippage report does not contain editable data. Reports created before this feature was added cannot be edited.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const { slippages, config } = attachment.slippageData;
+
+    // Close the modal
+    setShowAttachmentsModal(null);
+
+    // Navigate to SlippageIdentifier with edit mode
+    navigation.navigate('SlippageIdentifier', {
+      config: {
+        projectName: config.projectName,
+        projectNumber: config.projectNumber,
+        markNumber: config.markNumber,
+        idNumber: config.idNumber,
+        span: config.span,
+        pourDate: config.pourDate,
+        productType: config.productType,
+        strandPattern: config.strandPattern,
+        castStrandPattern: config.castStrandPattern,
+        topStrandPattern: config.topStrandPattern,
+        topCastStrandPattern: config.topCastStrandPattern,
+        productWidth: config.productWidth,
+        productSide: config.productSide,
+      },
+      fromQualityLog: true,
+      qualityEntryId: entry.id,
+      editMode: true,
+      existingSlippages: slippages,
+    });
+  };
+
   // Handle taking a photo with camera
   const handleTakePhoto = async (entry: QualityLogEntry) => {
     const entryId = entry.id;
@@ -1739,60 +1811,122 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {showAttachmentsModal && (
                 <>
                   {/* New attachments system */}
-                  {showAttachmentsModal.entry.attachments?.map((attachment, index) => (
-                    <Pressable
+                  {showAttachmentsModal.entry.attachments?.map((attachment) => (
+                    <View
                       key={attachment.id}
-                      onPress={() => Linking.openURL(attachment.url)}
                       className="flex-row items-center py-3 px-4 bg-gray-50 rounded-lg mb-2"
                     >
-                      <View className="bg-white rounded-full p-2 mr-3">
-                        <Ionicons
-                          name={
-                            attachment.type === 'photo' ? 'image' :
-                            attachment.type === 'slippage-report' ? 'document-text' :
-                            'document'
-                          }
-                          size={20}
-                          color={
-                            attachment.type === 'photo' ? '#2563EB' :
-                            attachment.type === 'slippage-report' ? '#9333EA' :
-                            '#16A34A'
-                          }
-                        />
+                      {/* Open attachment */}
+                      <Pressable
+                        onPress={() => Linking.openURL(attachment.url)}
+                        className="flex-row items-center flex-1"
+                      >
+                        <View className="bg-white rounded-full p-2 mr-3">
+                          <Ionicons
+                            name={
+                              attachment.type === 'photo' ? 'image' :
+                              attachment.type === 'slippage-report' ? 'document-text' :
+                              'document'
+                            }
+                            size={20}
+                            color={
+                              attachment.type === 'photo' ? '#2563EB' :
+                              attachment.type === 'slippage-report' ? '#9333EA' :
+                              '#16A34A'
+                            }
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+                            {attachment.name}
+                          </Text>
+                          <Text className="text-xs text-gray-500">
+                            {attachment.type === 'photo' ? 'Photo' :
+                             attachment.type === 'slippage-report' ? 'Slippage Report' : 'File'}
+                            {' • '}
+                            {new Date(attachment.createdAt).toLocaleDateString()}
+                          </Text>
+                        </View>
+                      </Pressable>
+
+                      {/* Action buttons */}
+                      <View className="flex-row items-center gap-2">
+                        {/* Edit button for slippage reports */}
+                        {attachment.type === 'slippage-report' && (
+                          <Pressable
+                            onPress={() => handleEditSlippageReport(showAttachmentsModal.entry, attachment)}
+                            className="p-2 bg-purple-100 rounded-full"
+                          >
+                            <Ionicons name="pencil" size={18} color="#9333EA" />
+                          </Pressable>
+                        )}
+
+                        {/* Delete button */}
+                        <Pressable
+                          onPress={() => {
+                            Alert.alert(
+                              'Delete Attachment',
+                              `Are you sure you want to delete "${attachment.name}"?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
+                                },
+                              ]
+                            );
+                          }}
+                          className="p-2 bg-red-100 rounded-full"
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                        </Pressable>
                       </View>
-                      <View className="flex-1">
-                        <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
-                          {attachment.name}
-                        </Text>
-                        <Text className="text-xs text-gray-500">
-                          {attachment.type === 'photo' ? 'Photo' :
-                           attachment.type === 'slippage-report' ? 'Slippage Report' : 'File'}
-                          {' • '}
-                          {new Date(attachment.createdAt).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <Ionicons name="open-outline" size={18} color="#9CA3AF" />
-                    </Pressable>
+                    </View>
                   ))}
 
                   {/* Legacy photoUrls */}
                   {showAttachmentsModal.entry.photoUrls?.map((url, index) => (
-                    <Pressable
+                    <View
                       key={`legacy-${index}`}
-                      onPress={() => Linking.openURL(url)}
                       className="flex-row items-center py-3 px-4 bg-gray-50 rounded-lg mb-2"
                     >
-                      <View className="bg-white rounded-full p-2 mr-3">
-                        <Ionicons name="image" size={20} color="#2563EB" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
-                          Photo {index + 1}
-                        </Text>
-                        <Text className="text-xs text-gray-500">Legacy photo</Text>
-                      </View>
-                      <Ionicons name="open-outline" size={18} color="#9CA3AF" />
-                    </Pressable>
+                      <Pressable
+                        onPress={() => Linking.openURL(url)}
+                        className="flex-row items-center flex-1"
+                      >
+                        <View className="bg-white rounded-full p-2 mr-3">
+                          <Ionicons name="image" size={20} color="#2563EB" />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+                            Photo {index + 1}
+                          </Text>
+                          <Text className="text-xs text-gray-500">Legacy photo</Text>
+                        </View>
+                      </Pressable>
+
+                      {/* Delete button for legacy photos */}
+                      <Pressable
+                        onPress={() => {
+                          Alert.alert(
+                            'Delete Photo',
+                            `Are you sure you want to delete Photo ${index + 1}?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Delete',
+                                style: 'destructive',
+                                onPress: () => deleteLegacyPhoto(showAttachmentsModal.entry, index),
+                              },
+                            ]
+                          );
+                        }}
+                        className="p-2 bg-red-100 rounded-full"
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                      </Pressable>
+                    </View>
                   ))}
 
                   {((showAttachmentsModal.entry.attachments?.length || 0) + (showAttachmentsModal.entry.photoUrls?.length || 0)) === 0 && (
