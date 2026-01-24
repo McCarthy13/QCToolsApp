@@ -25,6 +25,7 @@ import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useInsightsStore } from '../state/insightsStore';
 import { reAuthenticateWithMicrosoft } from '../services/sharepoint';
 import AttachmentActionButton from '../components/AttachmentActionButton';
+import InspectionNotesCell from '../components/InspectionNotesCell';
 import {
   QualityLogEntry,
   getStatusFromDisposition,
@@ -41,6 +42,7 @@ import {
   BedNumber,
   Attachment,
   AttachmentType,
+  InspectionNote,
 } from '../types/quality-log';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
@@ -48,7 +50,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
 // Column filter types
 type ColumnFilterType = 'pourDate' | 'disposition' | 'status' | 'approvalDate' | 'productType' |
   'jobNumber' | 'markNumber' | 'idNumber' | 'length' | 'width' | 'designStrandPattern' | 'castStrandPattern' | 'bed' | 'location' |
-  'qualityComments' | 'engineer' | 'engineerFeedback' | 'issueCodes' | 'rejectCodes';
+  'inspectionNotes' | 'engineer' | 'engineerFeedback' | 'issueCodes' | 'rejectCodes';
 
 interface ColumnFilters {
   pourDate: string;
@@ -65,7 +67,7 @@ interface ColumnFilters {
   castStrandPattern: string;
   bed: string;
   location: string;
-  qualityComments: string;
+  inspectionNotes: string;
   engineer: string;
   engineerFeedback: string;
   issueCodes: string;
@@ -110,7 +112,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     castStrandPattern: '',
     bed: '',
     location: '',
-    qualityComments: '',
+    inspectionNotes: '',
     engineer: '',
     engineerFeedback: '',
     issueCodes: '',
@@ -162,7 +164,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         entry.jobNumber?.toLowerCase().includes(query) ||
         entry.markNumber?.toLowerCase().includes(query) ||
         entry.engineer?.toLowerCase().includes(query) ||
-        entry.qualityComments?.toLowerCase().includes(query);
+        entry.inspectionNotes?.some(n => n.note.toLowerCase().includes(query) || n.type.toLowerCase().includes(query));
       if (!matchesSearch) return false;
     }
 
@@ -181,7 +183,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     if (columnFilters.castStrandPattern && !entry.castStrandPattern?.toLowerCase().includes(columnFilters.castStrandPattern.toLowerCase())) return false;
     if (columnFilters.bed && entry.bed !== columnFilters.bed) return false;
     if (columnFilters.location && !entry.location?.toLowerCase().includes(columnFilters.location.toLowerCase())) return false;
-    if (columnFilters.qualityComments && !entry.qualityComments?.toLowerCase().includes(columnFilters.qualityComments.toLowerCase())) return false;
+    if (columnFilters.inspectionNotes && !entry.inspectionNotes?.some(n => n.note.toLowerCase().includes(columnFilters.inspectionNotes.toLowerCase()) || n.type.toLowerCase().includes(columnFilters.inspectionNotes.toLowerCase()))) return false;
     if (columnFilters.engineer && !entry.engineer?.toLowerCase().includes(columnFilters.engineer.toLowerCase())) return false;
     if (columnFilters.engineerFeedback && !entry.engineerFeedback?.toLowerCase().includes(columnFilters.engineerFeedback.toLowerCase())) return false;
     if (columnFilters.issueCodes && !entry.issueCodes.some(code => code.includes(columnFilters.issueCodes))) return false;
@@ -397,6 +399,20 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     } catch (error) {
       console.error('[QualityLogDashboard] Failed to delete attachment:', error);
       Alert.alert('Error', 'Failed to delete attachment. Please try again.');
+    }
+  };
+
+  // Update inspection notes for an entry
+  const handleUpdateInspectionNotes = async (entryId: string, notes: InspectionNote[]) => {
+    try {
+      await updateEntry(entryId, { inspectionNotes: notes });
+    } catch (error) {
+      console.error('[QualityLogDashboard] Failed to update inspection notes:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to update inspection notes. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update inspection notes. Please try again.');
+      }
     }
   };
 
@@ -871,7 +887,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     castStrandPattern: 110,
     bed: 40,
     location: 58,
-    qualityComments: 350,
+    inspectionNotes: 180,
     attachments: 36, // New attachments folder column
     engineer: 80,
     engineerFeedback: 280,
@@ -1011,7 +1027,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       castStrandPattern: '',
       bed: '',
       location: '',
-      qualityComments: '',
+      inspectionNotes: '',
       engineer: '',
       engineerFeedback: '',
       issueCodes: '',
@@ -1382,7 +1398,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 pourDate: '', disposition: '', status: '', approvalDate: '', productType: '',
                 jobNumber: '', markNumber: '', idNumber: '', length: '', width: '',
                 designStrandPattern: '', castStrandPattern: '', bed: '',
-                location: '', qualityComments: '', engineer: '', engineerFeedback: '',
+                location: '', inspectionNotes: '', engineer: '', engineerFeedback: '',
                 issueCodes: '', rejectCodes: '',
               })}
               className="ml-2"
@@ -1428,7 +1444,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('castStrandPattern', 'Cast Strand Pattern', COLUMN_WIDTHS.castStrandPattern)}
               {renderFilterableHeader('bed', 'Bed', COLUMN_WIDTHS.bed)}
               {renderFilterableHeader('location', 'Location', COLUMN_WIDTHS.location)}
-              {renderFilterableHeader('qualityComments', 'Quality Comments', COLUMN_WIDTHS.qualityComments)}
+              {renderFilterableHeader('inspectionNotes', 'Inspection Notes', COLUMN_WIDTHS.inspectionNotes)}
               <Text style={{ width: COLUMN_WIDTHS.attachments, paddingHorizontal: 4, paddingVertical: 4, borderRightWidth: 1, borderRightColor: 'rgba(156, 163, 175, 0.4)' }} className="text-xs font-semibold text-white"></Text>
               {renderFilterableHeader('engineer', 'Engineer', COLUMN_WIDTHS.engineer)}
               {renderFilterableHeader('engineerFeedback', 'Engineer Feedback', COLUMN_WIDTHS.engineerFeedback)}
@@ -1527,7 +1543,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'castStrandPattern', entry.castStrandPattern, COLUMN_WIDTHS.castStrandPattern)}
                   {renderPickerCell(entry, 'bed', entry.bed, COLUMN_WIDTHS.bed)}
                   {renderEditableTextCell(entry, 'location', entry.location, COLUMN_WIDTHS.location)}
-                  {renderEditableTextCell(entry, 'qualityComments', entry.qualityComments, COLUMN_WIDTHS.qualityComments)}
+                  <InspectionNotesCell
+                    entry={entry}
+                    width={COLUMN_WIDTHS.inspectionNotes}
+                    onUpdateNotes={handleUpdateInspectionNotes}
+                    currentUserEmail={currentUser?.email}
+                  />
                   {/* Attachments folder icon */}
                   <Pressable
                     onPress={() => {

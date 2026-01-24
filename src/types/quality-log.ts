@@ -18,6 +18,18 @@ export type BedNumber = '1' | '2' | '3' | '4' | '5' | '6';
 // Attachment types
 export type AttachmentType = 'photo' | 'file' | 'slippage-report';
 
+// Inspection Note types
+export type InspectionNoteType = 'Eng' | 'WIP' | 'Note' | 'Yard Cut';
+
+// Individual inspection note
+export interface InspectionNote {
+  id: string;
+  type: InspectionNoteType;
+  note: string;
+  createdAt: number;
+  createdBy?: string;
+}
+
 // Slippage data interface (used by slippage tool and PDF generator)
 export interface SlippageData {
   strandId: string;
@@ -120,6 +132,9 @@ export interface QualityLogEntry {
 
   // Attachments (photos, files, slippage reports)
   attachments?: Attachment[];
+
+  // Inspection notes (multiple notes per entry, each with a type)
+  inspectionNotes?: InspectionNote[];
 
   // Auto-calculated based on disposition
   disposition?: DispositionValue;
