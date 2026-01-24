@@ -1859,12 +1859,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                               console.log('[QualityLogDashboard] Edit button pressed for attachment:', attachment.id);
                               handleEditSlippageReport(showAttachmentsModal.entry, attachment);
                             }}
-                            style={({ pressed }) => ({
+                            style={{
                               padding: 8,
-                              backgroundColor: pressed ? '#E9D5FF' : '#F3E8FF',
+                              backgroundColor: '#F3E8FF',
                               borderRadius: 999,
                               marginRight: 8,
-                            })}
+                              cursor: 'pointer',
+                            }}
+                            // @ts-ignore - web accessibility
+                            role="button"
+                            tabIndex={0}
                           >
                             <Ionicons name="pencil" size={18} color="#9333EA" />
                           </Pressable>
@@ -1887,11 +1891,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                               ]
                             );
                           }}
-                          style={({ pressed }) => ({
+                          style={{
                             padding: 8,
-                            backgroundColor: pressed ? '#FECACA' : '#FEE2E2',
+                            backgroundColor: '#FEE2E2',
                             borderRadius: 999,
-                          })}
+                            cursor: 'pointer',
+                          }}
+                          // @ts-ignore - web accessibility
+                          role="button"
+                          tabIndex={0}
                         >
                           <Ionicons name="trash-outline" size={18} color="#DC2626" />
                         </Pressable>
@@ -1937,11 +1945,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                             ]
                           );
                         }}
-                        style={({ pressed }) => ({
+                        style={{
                           padding: 8,
-                          backgroundColor: pressed ? '#FECACA' : '#FEE2E2',
+                          backgroundColor: '#FEE2E2',
                           borderRadius: 999,
-                        })}
+                          cursor: 'pointer',
+                        }}
+                        // @ts-ignore - web accessibility
+                        role="button"
+                        tabIndex={0}
                       >
                         <Ionicons name="trash-outline" size={18} color="#DC2626" />
                       </Pressable>
@@ -1960,12 +1972,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
             <Pressable
               onPress={() => setShowAttachmentsModal(null)}
-              style={({ pressed }) => ({
+              style={{
                 paddingVertical: 12,
                 marginTop: 16,
-                backgroundColor: pressed ? '#D1D5DB' : '#E5E7EB',
+                backgroundColor: '#E5E7EB',
                 borderRadius: 8,
-              })}
+                cursor: 'pointer',
+              }}
+              // @ts-ignore - web accessibility
+              role="button"
+              tabIndex={0}
             >
               <Text className="text-center text-base text-gray-700">Close</Text>
             </Pressable>
