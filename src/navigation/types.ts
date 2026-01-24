@@ -176,4 +176,5 @@ export type RootStackParamList = {
   YardSearch: undefined;
   AdminApproval: undefined;
   AccountSettings: undefined;
+  Insights: undefined;
 };

@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
 import { useAuthStore } from '../state/authStore';
 import { useStrandPatternStore } from '../state/strandPatternStore';
+import { useInsightsStore } from '../state/insightsStore';
 import { reAuthenticateWithMicrosoft } from '../services/sharepoint';
 import {
   QualityLogEntry,
@@ -81,6 +82,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const isAdmin = currentUser?.role === 'admin';
   const customPatterns = useStrandPatternStore((s) => s.customPatterns);
 
+  // Insights store
+  const insightsSummary = useInsightsStore((s) => s.getSummary)(entries);
+  const insightsLoading = useInsightsStore((s) => s.isLoading);
+  const initializeInsights = useInsightsStore((s) => s.initialize);
+  const checkAndTriggerAnalysis = useInsightsStore((s) => s.checkAndTriggerAnalysis);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
@@ -128,7 +135,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   useEffect(() => {
     initialize();
+    initializeInsights();
   }, []);
+
+  // Check for auto-analysis when entries change
+  useEffect(() => {
+    if (entries.length > 0 && insightsSummary.pendingAnalysisDate) {
+      checkAndTriggerAnalysis(entries);
+    }
+  }, [entries, insightsSummary.pendingAnalysisDate]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -1218,6 +1233,52 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           ) : (
             <Text className="text-xs text-slate-400">No pour data available</Text>
           )}
+        </Pressable>
+
+        {/* AI Insights Card */}
+        <Pressable
+          onPress={() => navigation.navigate('Insights')}
+          className="mt-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-3 border border-indigo-200 active:bg-indigo-100"
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              <View className="bg-indigo-100 rounded-full p-2 mr-3">
+                <Ionicons name="sparkles" size={18} color="#6366F1" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-indigo-900">AI Insights</Text>
+                {insightsSummary.topConcern ? (
+                  <Text className="text-xs text-indigo-600" numberOfLines={1}>
+                    {insightsSummary.topConcern}
+                  </Text>
+                ) : insightsSummary.pendingAnalysisDate ? (
+                  <Text className="text-xs text-amber-600">
+                    Analysis ready for {insightsSummary.pendingAnalysisDate}
+                  </Text>
+                ) : (
+                  <Text className="text-xs text-gray-500">
+                    Trend analysis & correlations
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View className="flex-row items-center gap-2">
+              {insightsLoading && (
+                <ActivityIndicator size="small" color="#6366F1" />
+              )}
+              {insightsSummary.criticalTrends > 0 && (
+                <View className="bg-red-100 px-2 py-0.5 rounded-full">
+                  <Text className="text-red-700 text-xs font-bold">{insightsSummary.criticalTrends}</Text>
+                </View>
+              )}
+              {insightsSummary.warningTrends > 0 && (
+                <View className="bg-amber-100 px-2 py-0.5 rounded-full">
+                  <Text className="text-amber-700 text-xs font-bold">{insightsSummary.warningTrends}</Text>
+                </View>
+              )}
+              <Ionicons name="chevron-forward" size={16} color="#6366F1" />
+            </View>
+          </View>
         </Pressable>
       </View>
 

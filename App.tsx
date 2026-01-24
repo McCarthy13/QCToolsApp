@@ -39,6 +39,7 @@ import QualityLogDashboardScreen from "./src/screens/QualityLogDashboardScreen";
 import QualityLogDetailScreen from "./src/screens/QualityLogDetailScreen";
 import QualityLogImportScreen from "./src/screens/QualityLogImportScreen";
 import QualityLogAdminScreen from "./src/screens/QualityLogAdminScreen";
+import InsightsScreen from "./src/screens/InsightsScreen";
 import ProductLibraryScreen from "./src/screens/ProductLibraryScreen";
 import ProjectLibraryScreen from "./src/screens/ProjectLibraryScreen";
 import ProjectLibraryDetailScreen from "./src/screens/ProjectLibraryDetailScreen";
@@ -648,6 +649,11 @@ export default function App() {
             <Stack.Screen
               name="QualityLogAdmin"
               component={QualityLogAdminScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Insights"
+              component={InsightsScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen
