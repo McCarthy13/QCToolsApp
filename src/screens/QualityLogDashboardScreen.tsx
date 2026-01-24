@@ -1850,56 +1850,50 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                         </View>
                       </Pressable>
 
-                      {/* Action buttons */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
-                        {/* Edit button for slippage reports */}
-                        {attachment.type === 'slippage-report' && (
-                          <Pressable
-                            onPress={() => {
-                              console.log('[QualityLogDashboard] Edit button pressed for attachment:', attachment.id);
-                              handleEditSlippageReport(showAttachmentsModal.entry, attachment);
-                            }}
-                            style={{
-                              padding: 8,
-                              backgroundColor: '#F3E8FF',
-                              borderRadius: 999,
-                              marginRight: 8,
-                            }}
-                          >
-                            {({ pressed }) => (
-                              <Ionicons name="pencil" size={18} color={pressed ? '#7C3AED' : '#9333EA'} />
-                            )}
-                          </Pressable>
-                        )}
-
-                        {/* Delete button */}
+                      {/* Edit button for slippage reports */}
+                      {attachment.type === 'slippage-report' && (
                         <Pressable
                           onPress={() => {
-                            console.log('[QualityLogDashboard] Delete button pressed for attachment:', attachment.id);
-                            Alert.alert(
-                              'Delete Attachment',
-                              `Are you sure you want to delete "${attachment.name}"?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Delete',
-                                  style: 'destructive',
-                                  onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
-                                },
-                              ]
-                            );
+                            console.log('[QualityLogDashboard] Edit button pressed');
+                            handleEditSlippageReport(showAttachmentsModal.entry, attachment);
                           }}
                           style={{
                             padding: 8,
-                            backgroundColor: '#FEE2E2',
+                            backgroundColor: '#F3E8FF',
                             borderRadius: 999,
+                            marginLeft: 8,
                           }}
                         >
-                          {({ pressed }) => (
-                            <Ionicons name="trash-outline" size={18} color={pressed ? '#B91C1C' : '#DC2626'} />
-                          )}
+                          <Ionicons name="pencil" size={18} color="#9333EA" />
                         </Pressable>
-                      </View>
+                      )}
+
+                      {/* Delete button */}
+                      <Pressable
+                        onPress={() => {
+                          console.log('[QualityLogDashboard] Delete button pressed');
+                          Alert.alert(
+                            'Delete Attachment',
+                            `Are you sure you want to delete "${attachment.name}"?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Delete',
+                                style: 'destructive',
+                                onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
+                              },
+                            ]
+                          );
+                        }}
+                        style={{
+                          padding: 8,
+                          backgroundColor: '#FEE2E2',
+                          borderRadius: 999,
+                          marginLeft: 8,
+                        }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                      </Pressable>
                     </View>
                   ))}
 
@@ -1924,10 +1918,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                         </View>
                       </Pressable>
 
-                      {/* Delete button for legacy photos */}
+                      {/* Delete button */}
                       <Pressable
                         onPress={() => {
-                          console.log('[QualityLogDashboard] Delete button pressed for legacy photo:', index);
+                          console.log('[QualityLogDashboard] Delete legacy photo pressed');
                           Alert.alert(
                             'Delete Photo',
                             `Are you sure you want to delete Photo ${index + 1}?`,
@@ -1945,11 +1939,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                           padding: 8,
                           backgroundColor: '#FEE2E2',
                           borderRadius: 999,
+                          marginLeft: 8,
                         }}
                       >
-                        {({ pressed }) => (
-                          <Ionicons name="trash-outline" size={18} color={pressed ? '#B91C1C' : '#DC2626'} />
-                        )}
+                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
                       </Pressable>
                     </View>
                   ))}
