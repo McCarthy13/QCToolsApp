@@ -1159,6 +1159,113 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     yardCut: postPourEntries.filter((e) => e.disposition === 'Yard Cut' || e.disposition?.includes('Yard Cut')).length,
   };
 
+  // Generate email report for today
+  const generateTodaysReport = () => {
+    // Current date formatted
+    const today = new Date();
+    const currentDateFormatted = today.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+
+    // Email subject
+    const subject = `Extruded Report ${currentDateFormatted}`;
+
+    // Get entries for each section
+    // Previous Day's Production - entries with inspection notes from most recent pour date
+    const previousDayEntries = mostRecentPourDateStr
+      ? entries.filter((e) => e.pourDate === mostRecentPourDateStr && e.inspectionNotes && e.inspectionNotes.length > 0)
+      : [];
+
+    // Open Eng - all entries with Eng disposition
+    const openEngEntries = entries.filter((e) => e.disposition?.includes('Eng'));
+
+    // Open WIP - all entries with WIP disposition
+    const openWipEntries = entries.filter((e) => e.disposition?.includes('WIP'));
+
+    // Open Yard Cuts - all entries with Yard Cut disposition
+    const openYardCutEntries = entries.filter((e) => e.disposition?.includes('Yard Cut'));
+
+    // Check if any rows have "Residential" as engineer
+    const hasResidentialEngineer = [
+      ...previousDayEntries,
+      ...openEngEntries,
+      ...openWipEntries,
+      ...openYardCutEntries
+    ].some(e => e.engineer?.toLowerCase() === 'residential');
+
+    // Format a single entry as a line
+    const formatEntryLine = (entry: QualityLogEntry): string => {
+      const parts = [
+        entry.jobNumber || '-',
+        entry.markNumber || '-',
+        entry.idNumber || '-',
+        entry.length || '-',
+        entry.productType || '-',
+        entry.engineer || '-',
+      ];
+      const notes = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('; ') || '';
+      const program = entry.program ? `Program: ${entry.program}` : '';
+      return `  ${parts.join(' | ')}${notes ? ` | ${notes}` : ''}${program ? ` | ${program}` : ''}`;
+    };
+
+    // Build email body with HTML formatting
+    let body = `<p><strong>Report Date: ${currentDateFormatted}</strong></p>\n\n`;
+
+    // Add residential note if applicable
+    if (hasResidentialEngineer) {
+      body += `<p style="color: #DC2626; font-style: italic;">Engineers - Please note that some pieces are assigned Residential. Please provide feedback if they belong to you.</p>\n\n`;
+    }
+
+    // Previous Day's Production section
+    body += `<p><strong><u>Previous Day's Production${mostRecentPourDateStr ? ` (${mostRecentPourDateStr})` : ''}</u></strong></p>\n`;
+    if (previousDayEntries.length > 0) {
+      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
+      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
+      body += previousDayEntries.map(formatEntryLine).join('\n');
+      body += `</p>\n\n`;
+    } else {
+      body += `<p><em>No entries with inspection notes from previous pour date</em></p>\n\n`;
+    }
+
+    // Open Eng section
+    body += `<p><strong><u>Open Eng</u></strong></p>\n`;
+    if (openEngEntries.length > 0) {
+      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
+      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
+      body += openEngEntries.map(formatEntryLine).join('\n');
+      body += `</p>\n\n`;
+    } else {
+      body += `<p><em>No open Eng items</em></p>\n\n`;
+    }
+
+    // Open WIP section
+    body += `<p><strong><u>Open WIP</u></strong></p>\n`;
+    if (openWipEntries.length > 0) {
+      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
+      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
+      body += openWipEntries.map(formatEntryLine).join('\n');
+      body += `</p>\n\n`;
+    } else {
+      body += `<p><em>No open WIP items</em></p>\n\n`;
+    }
+
+    // Open Yard Cuts section
+    body += `<p><strong><u>Open Yard Cuts</u></strong></p>\n`;
+    if (openYardCutEntries.length > 0) {
+      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
+      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
+      body += openYardCutEntries.map(formatEntryLine).join('\n');
+      body += `</p>\n`;
+    } else {
+      body += `<p><em>No open Yard Cut items</em></p>\n`;
+    }
+
+    // Navigate to EmailComposer
+    navigation.navigate('EmailComposer', { subject, body });
+  };
+
   // Handle metric card clicks to filter the log
   const handleMetricCardPress = (filterType: 'scheduled' | 'wip' | 'eng' | 'yardCut' | 'postPour') => {
     // Clear existing filters first
@@ -1380,6 +1487,17 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             </Pressable>
           </View>
         </View>
+
+        {/* Send Today's Report Button */}
+        <Pressable
+          onPress={generateTodaysReport}
+          className="bg-green-600 rounded-lg py-2 px-4 flex-row items-center justify-center mb-3"
+          disabled={entries.length === 0}
+          style={{ opacity: entries.length === 0 ? 0.5 : 1 }}
+        >
+          <Ionicons name="mail-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Text className="text-white font-semibold text-base">Send Today's Report</Text>
+        </Pressable>
 
         {/* Search Bar */}
         <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mb-3">

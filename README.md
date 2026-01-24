@@ -230,6 +230,19 @@ The following environment variables are required and should be configured via th
 
 **Note**: API keys for Firebase Functions are managed through Firebase Secret Manager and deployed via `.env.prod` file during deployment.
 
+### Recent Updates (2026-01-24)
+- ✅ **Send Today's Report Button**:
+  - **New Button**: Added "Send Today's Report" button at the top of Quality Log Dashboard
+  - **Email Generation**: Automatically generates formatted email with the following sections:
+    - Subject: "Extruded Report [Current Date]"
+    - Report Date (bold)
+    - Residential Engineer Note (if applicable): "Engineers - Please note that some pieces are assigned Residential. Please provide feedback if they belong to you."
+    - Previous Day's Production (bold/underlined): All rows with inspection notes from most recent pour date
+    - Open Eng (bold/underlined): All rows with Eng disposition
+    - Open WIP (bold/underlined): All rows with WIP disposition
+    - Open Yard Cuts (bold/underlined): All rows with Yard Cut disposition
+  - **Email Composer Integration**: Opens EmailComposer screen with pre-filled subject and body
+
 ### Recent Updates (2026-01-19)
 - ✅ **Design & Cast Strand Pattern Columns Added to Quality Log**:
   - **Design Strand Pattern Column**: Added after Width column, automatically extracted from uploaded schedule PDFs (e.g., "217-70")
