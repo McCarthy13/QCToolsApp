@@ -150,6 +150,7 @@ export interface QualityLogEntry {
 
   // Yard status tracking
   yardStatusUpdated?: boolean; // True when user has physically marked the piece in the yard
+  hadEngDisposition?: boolean; // True once Eng disposition is ever set (triggers yard status workflow)
 
   // Metadata
   importedAt: number;

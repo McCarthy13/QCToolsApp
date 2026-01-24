@@ -937,12 +937,25 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   // Render location cell with special Eng highlighting logic
   const renderLocationCell = (entry: QualityLogEntry, width: number) => {
     const isEditing = editingCell?.entryId === entry.id && editingCell?.field === 'location';
-    const displayValue = entry.location ?? '-';
 
-    // Check if disposition includes Eng and yard status is not updated
+    // Check if this entry ever had Eng disposition (or currently has it)
     const hasEngDisposition = entry.disposition?.includes('Eng') || false;
-    const needsYardUpdate = hasEngDisposition && !entry.yardStatusUpdated;
-    const bgColor = needsYardUpdate ? '#FF9933' : undefined;
+    const everHadEng = entry.hadEngDisposition || hasEngDisposition;
+
+    // Determine if we need to show highlighting (ever had Eng and not yet marked as yard status updated)
+    const needsYardUpdate = everHadEng && !entry.yardStatusUpdated;
+
+    // Get the background color based on current status (matches status column)
+    let bgColor: string | undefined = undefined;
+    if (needsYardUpdate) {
+      // Get color from status/disposition
+      const statusColor = getStatusColor(entry);
+      bgColor = statusColor !== '#FFFFFF' ? statusColor : '#FF9933'; // Default to orange if no status color
+    }
+
+    // Determine display value - show "Yard Status Pending" if no location and needs update
+    const displayValue = entry.location || (needsYardUpdate ? 'Yard Status Pending' : '-');
+    const isPending = !entry.location && needsYardUpdate;
 
     if (isEditing) {
       return (
@@ -953,6 +966,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             onBlur={saveEdit}
             onSubmitEditing={saveEdit}
             autoFocus
+            placeholder="e.g., 2-34 or Short"
+            placeholderTextColor="#9CA3AF"
             className="text-sm bg-blue-50 border border-blue-300 rounded px-1 py-1 text-gray-900"
             style={{ minHeight: 24 }}
           />
@@ -964,8 +979,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       <Pressable
         onPress={() => startEditing(entry.id, 'location', entry.location)}
         onLongPress={() => {
-          // Long press to toggle yard status updated (only if has Eng disposition)
-          if (hasEngDisposition) {
+          // Long press to toggle yard status updated (only if ever had Eng disposition)
+          if (everHadEng) {
             handleToggleYardStatus(entry);
           }
         }}
@@ -973,15 +988,21 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         style={{
           width,
           paddingHorizontal: 6,
-          paddingVertical: 10,
+          paddingVertical: 6,
           justifyContent: 'center',
           backgroundColor: bgColor,
           ...cellBorderStyle
         }}
       >
-        <Text className="text-sm text-gray-900" numberOfLines={2}>{displayValue}</Text>
+        <Text
+          className={isPending ? "text-xs font-medium" : "text-sm"}
+          style={isPending ? { color: '#7C2D12' } : { color: '#111827' }}
+          numberOfLines={2}
+        >
+          {displayValue}
+        </Text>
         {needsYardUpdate && (
-          <Text style={{ fontSize: 8, color: '#7C2D12', marginTop: 2 }}>Hold to mark updated</Text>
+          <Text style={{ fontSize: 7, color: '#7C2D12', marginTop: 1 }}>Hold to clear</Text>
         )}
       </Pressable>
     );
@@ -991,7 +1012,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const handleToggleYardStatus = async (entry: QualityLogEntry) => {
     const newStatus = !entry.yardStatusUpdated;
     const message = newStatus
-      ? 'Mark this piece as Yard Status Updated? This means you have physically marked the piece in the yard.'
+      ? 'Mark this piece as Yard Status Updated? This confirms you have physically marked the piece in the yard.'
       : 'Remove Yard Status Updated? The location cell will be highlighted again.';
 
     if (Platform.OS === 'web') {
@@ -1006,12 +1027,13 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       }
     } else {
       Alert.alert(
-        newStatus ? 'Mark Yard Status Updated' : 'Remove Yard Status Updated',
+        newStatus ? 'Yard Status Updated' : 'Remove Yard Status',
         message,
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: newStatus ? 'Mark Updated' : 'Remove',
+            text: newStatus ? 'Confirm' : 'Remove',
+            style: newStatus ? 'default' : 'destructive',
             onPress: async () => {
               try {
                 await updateEntry(entry.id, { yardStatusUpdated: newStatus });

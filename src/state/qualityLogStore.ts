@@ -260,6 +260,11 @@ export const useQualityLogStore = create<QualityLogState>()(
           updates.approvalRejectionDate = formatDate(new Date());
         }
 
+        // Mark hadEngDisposition if disposition includes Eng (triggers yard status workflow)
+        if (disposition.includes('Eng') && !entry.hadEngDisposition) {
+          updates.hadEngDisposition = true;
+        }
+
         await get().updateEntry(id, updates);
       },
 
