@@ -148,6 +148,9 @@ export interface QualityLogEntry {
   issueCodes: string[]; // Array of code IDs
   rejectCodes: string[]; // Array of code IDs
 
+  // Yard status tracking
+  yardStatusUpdated?: boolean; // True when user has physically marked the piece in the yard
+
   // Metadata
   importedAt: number;
   importedBy: string;

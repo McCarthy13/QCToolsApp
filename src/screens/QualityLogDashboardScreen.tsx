@@ -934,6 +934,98 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     );
   };
 
+  // Render location cell with special Eng highlighting logic
+  const renderLocationCell = (entry: QualityLogEntry, width: number) => {
+    const isEditing = editingCell?.entryId === entry.id && editingCell?.field === 'location';
+    const displayValue = entry.location ?? '-';
+
+    // Check if disposition includes Eng and yard status is not updated
+    const hasEngDisposition = entry.disposition?.includes('Eng') || false;
+    const needsYardUpdate = hasEngDisposition && !entry.yardStatusUpdated;
+    const bgColor = needsYardUpdate ? '#FF9933' : undefined;
+
+    if (isEditing) {
+      return (
+        <View style={{ width, paddingHorizontal: 6, paddingVertical: 4, backgroundColor: bgColor, ...cellBorderStyle }}>
+          <TextInput
+            value={editValue}
+            onChangeText={setEditValue}
+            onBlur={saveEdit}
+            onSubmitEditing={saveEdit}
+            autoFocus
+            className="text-sm bg-blue-50 border border-blue-300 rounded px-1 py-1 text-gray-900"
+            style={{ minHeight: 24 }}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={() => startEditing(entry.id, 'location', entry.location)}
+        onLongPress={() => {
+          // Long press to toggle yard status updated (only if has Eng disposition)
+          if (hasEngDisposition) {
+            handleToggleYardStatus(entry);
+          }
+        }}
+        delayLongPress={500}
+        style={{
+          width,
+          paddingHorizontal: 6,
+          paddingVertical: 10,
+          justifyContent: 'center',
+          backgroundColor: bgColor,
+          ...cellBorderStyle
+        }}
+      >
+        <Text className="text-sm text-gray-900" numberOfLines={2}>{displayValue}</Text>
+        {needsYardUpdate && (
+          <Text style={{ fontSize: 8, color: '#7C2D12', marginTop: 2 }}>Hold to mark updated</Text>
+        )}
+      </Pressable>
+    );
+  };
+
+  // Toggle yard status updated for an entry
+  const handleToggleYardStatus = async (entry: QualityLogEntry) => {
+    const newStatus = !entry.yardStatusUpdated;
+    const message = newStatus
+      ? 'Mark this piece as Yard Status Updated? This means you have physically marked the piece in the yard.'
+      : 'Remove Yard Status Updated? The location cell will be highlighted again.';
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(message);
+      if (confirmed) {
+        try {
+          await updateEntry(entry.id, { yardStatusUpdated: newStatus });
+        } catch (error) {
+          console.error('Error updating yard status:', error);
+          window.alert('Failed to update yard status');
+        }
+      }
+    } else {
+      Alert.alert(
+        newStatus ? 'Mark Yard Status Updated' : 'Remove Yard Status Updated',
+        message,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: newStatus ? 'Mark Updated' : 'Remove',
+            onPress: async () => {
+              try {
+                await updateEntry(entry.id, { yardStatusUpdated: newStatus });
+              } catch (error) {
+                console.error('Error updating yard status:', error);
+                Alert.alert('Error', 'Failed to update yard status');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
   // Render a picker cell (disposition, product type, bed, castStrandPattern)
   const renderPickerCell = (
     entry: QualityLogEntry,
@@ -1582,7 +1674,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   {renderEditableTextCell(entry, 'designStrandPattern', entry.designStrandPattern, COLUMN_WIDTHS.designStrandPattern)}
                   {renderEditableTextCell(entry, 'castStrandPattern', entry.castStrandPattern, COLUMN_WIDTHS.castStrandPattern)}
                   {renderPickerCell(entry, 'bed', entry.bed, COLUMN_WIDTHS.bed)}
-                  {renderEditableTextCell(entry, 'location', entry.location, COLUMN_WIDTHS.location)}
+                  {renderLocationCell(entry, COLUMN_WIDTHS.location)}
                   <InspectionNotesCell
                     entry={entry}
                     width={COLUMN_WIDTHS.inspectionNotes}
