@@ -21,11 +21,12 @@ interface InspectionNotesCellProps {
 
 const NOTE_TYPE_OPTIONS: InspectionNoteType[] = ['Eng', 'WIP', 'Note', 'Yard Cut'];
 
+// Background colors for note types (used for note text display)
 const NOTE_TYPE_COLORS: Record<InspectionNoteType, { bg: string; text: string; border: string }> = {
-  'Eng': { bg: '#F3E8FF', text: '#7C3AED', border: '#DDD6FE' },
-  'WIP': { bg: '#DBEAFE', text: '#2563EB', border: '#BFDBFE' },
+  'Eng': { bg: '#FF9933', text: '#000000', border: '#E68A2E' },
+  'WIP': { bg: '#FFFF00', text: '#000000', border: '#E6E600' },
   'Note': { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' },
-  'Yard Cut': { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' },
+  'Yard Cut': { bg: '#00CCFF', text: '#000000', border: '#00B8E6' },
 };
 
 export default function InspectionNotesCell({
@@ -158,13 +159,13 @@ export default function InspectionNotesCell({
     }
   };
 
-  // Render compact note badges for table view
-  const renderNoteBadges = () => {
+  // Render colored notes for table view (each note with its type's background color)
+  const renderColoredNotes = () => {
     if (notes.length === 0) return null;
 
     return (
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-        {notes.slice(0, 3).map((note) => {
+      <View style={{ gap: 3 }}>
+        {notes.map((note) => {
           const colors = NOTE_TYPE_COLORS[note.type];
           return (
             <View
@@ -173,31 +174,18 @@ export default function InspectionNotesCell({
                 backgroundColor: colors.bg,
                 borderRadius: 4,
                 paddingHorizontal: 6,
-                paddingVertical: 2,
-                borderWidth: 1,
-                borderColor: colors.border,
+                paddingVertical: 3,
               }}
             >
-              <Text style={{ fontSize: 10, color: colors.text, fontWeight: '600' }}>
-                {note.type}
+              <Text
+                numberOfLines={2}
+                style={{ fontSize: 11, color: colors.text, fontWeight: '500' }}
+              >
+                {note.note}
               </Text>
             </View>
           );
         })}
-        {notes.length > 3 && (
-          <View
-            style={{
-              backgroundColor: '#E5E7EB',
-              borderRadius: 4,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-            }}
-          >
-            <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '600' }}>
-              +{notes.length - 3}
-            </Text>
-          </View>
-        )}
       </View>
     );
   };
@@ -233,13 +221,7 @@ export default function InspectionNotesCell({
           </View>
         ) : (
           <View>
-            {renderNoteBadges()}
-            <Text
-              numberOfLines={2}
-              style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}
-            >
-              {notes[0].note}
-            </Text>
+            {renderColoredNotes()}
           </View>
         )}
       </Pressable>
