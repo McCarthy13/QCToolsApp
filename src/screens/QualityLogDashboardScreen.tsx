@@ -24,6 +24,7 @@ import { useAuthStore } from '../state/authStore';
 import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useInsightsStore } from '../state/insightsStore';
 import { reAuthenticateWithMicrosoft } from '../services/sharepoint';
+import AttachmentActionButton from '../components/AttachmentActionButton';
 import {
   QualityLogEntry,
   getStatusFromDisposition,
@@ -1852,48 +1853,42 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
                       {/* Edit button for slippage reports */}
                       {attachment.type === 'slippage-report' && (
-                        <Pressable
-                          onPress={() => {
-                            console.log('[QualityLogDashboard] Edit button pressed');
-                            handleEditSlippageReport(showAttachmentsModal.entry, attachment);
-                          }}
-                          style={{
-                            padding: 8,
-                            backgroundColor: '#F3E8FF',
-                            borderRadius: 999,
-                            marginLeft: 8,
-                          }}
-                        >
-                          <Ionicons name="pencil" size={18} color="#9333EA" />
-                        </Pressable>
+                        <View style={{ marginLeft: 8 }}>
+                          <AttachmentActionButton
+                            iconName="pencil"
+                            iconColor="#9333EA"
+                            backgroundColor="#F3E8FF"
+                            onPress={() => {
+                              console.log('[QualityLogDashboard] Edit button pressed');
+                              handleEditSlippageReport(showAttachmentsModal.entry, attachment);
+                            }}
+                          />
+                        </View>
                       )}
 
                       {/* Delete button */}
-                      <Pressable
-                        onPress={() => {
-                          console.log('[QualityLogDashboard] Delete button pressed');
-                          Alert.alert(
-                            'Delete Attachment',
-                            `Are you sure you want to delete "${attachment.name}"?`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Delete',
-                                style: 'destructive',
-                                onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
-                              },
-                            ]
-                          );
-                        }}
-                        style={{
-                          padding: 8,
-                          backgroundColor: '#FEE2E2',
-                          borderRadius: 999,
-                          marginLeft: 8,
-                        }}
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
-                      </Pressable>
+                      <View style={{ marginLeft: 8 }}>
+                        <AttachmentActionButton
+                          iconName="trash-outline"
+                          iconColor="#DC2626"
+                          backgroundColor="#FEE2E2"
+                          onPress={() => {
+                            console.log('[QualityLogDashboard] Delete button pressed');
+                            Alert.alert(
+                              'Delete Attachment',
+                              `Are you sure you want to delete "${attachment.name}"?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
+                                },
+                              ]
+                            );
+                          }}
+                        />
+                      </View>
                     </View>
                   ))}
 
@@ -1919,31 +1914,28 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       </Pressable>
 
                       {/* Delete button */}
-                      <Pressable
-                        onPress={() => {
-                          console.log('[QualityLogDashboard] Delete legacy photo pressed');
-                          Alert.alert(
-                            'Delete Photo',
-                            `Are you sure you want to delete Photo ${index + 1}?`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Delete',
-                                style: 'destructive',
-                                onPress: () => deleteLegacyPhoto(showAttachmentsModal.entry, index),
-                              },
-                            ]
-                          );
-                        }}
-                        style={{
-                          padding: 8,
-                          backgroundColor: '#FEE2E2',
-                          borderRadius: 999,
-                          marginLeft: 8,
-                        }}
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
-                      </Pressable>
+                      <View style={{ marginLeft: 8 }}>
+                        <AttachmentActionButton
+                          iconName="trash-outline"
+                          iconColor="#DC2626"
+                          backgroundColor="#FEE2E2"
+                          onPress={() => {
+                            console.log('[QualityLogDashboard] Delete legacy photo pressed');
+                            Alert.alert(
+                              'Delete Photo',
+                              `Are you sure you want to delete Photo ${index + 1}?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Delete',
+                                  style: 'destructive',
+                                  onPress: () => deleteLegacyPhoto(showAttachmentsModal.entry, index),
+                                },
+                              ]
+                            );
+                          }}
+                        />
+                      </View>
                     </View>
                   ))}
 
