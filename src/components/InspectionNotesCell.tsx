@@ -159,12 +159,12 @@ export default function InspectionNotesCell({
     }
   };
 
-  // Render colored notes for table view (each note with its type's background color)
+  // Render colored notes for table view (inline wrapping bubbles)
   const renderColoredNotes = () => {
     if (notes.length === 0) return null;
 
     return (
-      <View style={{ gap: 3 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3 }}>
         {notes.map((note) => {
           const colors = NOTE_TYPE_COLORS[note.type];
           return (
@@ -173,13 +173,12 @@ export default function InspectionNotesCell({
               style={{
                 backgroundColor: colors.bg,
                 borderRadius: 4,
-                paddingHorizontal: 6,
-                paddingVertical: 3,
+                paddingHorizontal: 4,
+                paddingVertical: 2,
               }}
             >
               <Text
-                numberOfLines={2}
-                style={{ fontSize: 11, color: colors.text, fontWeight: '500' }}
+                style={{ fontSize: 10, color: colors.text, fontWeight: '500' }}
               >
                 {note.note}
               </Text>

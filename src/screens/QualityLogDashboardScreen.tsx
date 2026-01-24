@@ -966,7 +966,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       return (
         <Pressable
           onPress={handlePress}
-          style={{ width, paddingHorizontal: 4, paddingVertical: 6, flexDirection: 'column', gap: 3, justifyContent: 'center', ...cellBorderStyle }}
+          style={{ width, paddingHorizontal: 4, paddingVertical: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', alignContent: 'flex-start', gap: 3, ...cellBorderStyle }}
         >
           {dispositions.map((disp, idx) => {
             const bgColor = getDispositionBgColor(disp);
@@ -976,22 +976,19 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 style={{
                   backgroundColor: bgColor || '#F3F4F6',
                   borderRadius: 4,
-                  paddingHorizontal: 6,
-                  paddingVertical: 3,
+                  paddingHorizontal: 4,
+                  paddingVertical: 2,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
                 }}
               >
-                <Text style={{ fontSize: 11, color: '#000000', fontWeight: '500', flex: 1 }}>
+                <Text style={{ fontSize: 10, color: '#000000', fontWeight: '500' }}>
                   {disp}
                 </Text>
-                {idx === dispositions.length - 1 && (
-                  <Ionicons name="chevron-down" size={10} color="#6B7280" />
-                )}
               </View>
             );
           })}
+          <Ionicons name="chevron-down" size={10} color="#6B7280" style={{ marginLeft: 2, marginTop: 3 }} />
         </Pressable>
       );
     }
