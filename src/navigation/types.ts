@@ -120,7 +120,6 @@ export type RootStackParamList = {
     qualityLogId?: string;
     qualityEntryId?: string;
   };
-  SlippageHistory: undefined;
   EmailComposer: {
     subject: string;
     body: string;

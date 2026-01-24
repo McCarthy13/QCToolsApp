@@ -2,7 +2,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
-import { SlippageData, SlippageConfig } from '../state/slippageHistoryStore';
+import { SlippageData, SlippageConfig } from '../types/quality-log';
 import { parseMeasurementInput, decimalToFraction, formatSpanForPDF } from './cn';
 import { StrandPatternComparison, formatComparisonForPDF } from './strandPatternComparison';
 import { uploadPDFToSharePoint, generateFolderName, isSignedInToMicrosoft } from '../services/sharepoint';

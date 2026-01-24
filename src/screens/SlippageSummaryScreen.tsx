@@ -7,10 +7,8 @@ import { RootStackParamList } from "../navigation/types";
 import { Ionicons } from "@expo/vector-icons";
 import { decimalToFraction, parseMeasurementInput } from "../utils/cn";
 import { useStrandPatternStore } from "../state/strandPatternStore";
-import { useSlippageHistoryStore, SlippageRecord } from "../state/slippageHistoryStore";
 import { useAuthStore } from "../state/authStore";
 import { compareStrandPatterns } from "../utils/strandPatternComparison";
-import ConfirmModal from "../components/ConfirmModal";
 import CrossSection8048 from "../components/CrossSection8048";
 import CrossSection1047 from "../components/CrossSection1047";
 import CrossSection1247 from "../components/CrossSection1247";
@@ -40,7 +38,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { slippages, config, fromQualityLog, qualityEntryId } = route.params;
   const { customPatterns } = useStrandPatternStore();
-  const { addUserRecord, publishRecord } = useSlippageHistoryStore();
   const currentUser = useAuthStore((state) => state.currentUser);
 
   // Debug logging for quality log integration
@@ -48,10 +45,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   console.log('[SlippageSummary] fromQualityLog:', fromQualityLog);
   console.log('[SlippageSummary] qualityEntryId:', qualityEntryId);
 
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showPublishModal, setShowPublishModal] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [reportSavedSuccess, setReportSavedSuccess] = useState(false);
 
@@ -185,7 +178,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       const updatedAttachments = [...existingAttachments, newAttachment];
 
       // Build update object, only including fields with values
-      const updateData: Record<string, unknown> = {
+      const updateData: { attachments: Attachment[]; updatedAt: number; updatedBy?: string } = {
         attachments: updatedAttachments,
         updatedAt: timestamp,
       };
@@ -309,82 +302,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const pattern = isTopStrand ? selectedTopPattern : selectedPattern;
     const size = pattern?.strandSizes?.[index];
     return size ? `${size}"` : '';
-  };
-
-  // Save and publish handlers
-  const handleSave = async () => {
-    console.log('[SlippageSummaryScreen] ========== SAVE BUTTON PRESSED ==========');
-    console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
-    console.log('[SlippageSummaryScreen] Current user ID:', currentUser?.id);
-    console.log('[SlippageSummaryScreen] Current user ID type:', typeof currentUser?.id);
-    console.log('[SlippageSummaryScreen] Current user email:', currentUser?.email);
-    console.log('[SlippageSummaryScreen] Is user ID defined?:', currentUser?.id !== undefined);
-    console.log('[SlippageSummaryScreen] Is user ID empty string?:', currentUser?.id === '');
-
-    if (!currentUser || !currentUser.id || currentUser.id === '') {
-      console.error('[SlippageSummaryScreen] ERROR: Cannot save - user ID is missing or empty!');
-      console.error('[SlippageSummaryScreen] currentUser:', currentUser);
-      alert('Error: User not logged in properly. Please sign out and sign back in.');
-      return;
-    }
-
-    const record: SlippageRecord = {
-      id: `slippage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      slippages,
-      config,
-      createdBy: currentUser?.email || 'Unknown',
-      userId: currentUser?.id || '',
-    };
-
-    console.log('[SlippageSummaryScreen] Created record with userId:', record.userId);
-    console.log('[SlippageSummaryScreen] Full record:', JSON.stringify(record, null, 2));
-
-    try {
-      await addUserRecord(record);
-      console.log('[SlippageSummaryScreen] ✅ Record saved successfully!');
-      setSaveSuccess(true);
-      setShowSaveModal(false);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error('[SlippageSummaryScreen] ❌ Failed to save record:', error);
-      alert(`Failed to save record: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  const handlePublish = async () => {
-    console.log('[SlippageSummaryScreen] ========== PUBLISH BUTTON PRESSED ==========');
-    console.log('[SlippageSummaryScreen] Current user object:', JSON.stringify(currentUser, null, 2));
-    console.log('[SlippageSummaryScreen] Current user ID:', currentUser?.id);
-    console.log('[SlippageSummaryScreen] Current user email:', currentUser?.email);
-
-    if (!currentUser || !currentUser.id || currentUser.id === '') {
-      console.error('[SlippageSummaryScreen] ERROR: Cannot publish - user ID is missing or empty!');
-      alert('Error: User not logged in properly. Please sign out and sign back in.');
-      return;
-    }
-
-    const record: SlippageRecord = {
-      id: `slippage-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      slippages,
-      config,
-      createdBy: currentUser?.email || 'Unknown',
-      userId: currentUser?.id || '',
-    };
-
-    console.log('[SlippageSummaryScreen] Publishing record with userId:', record.userId);
-
-    try {
-      await publishRecord(record, currentUser?.email || 'Unknown');
-      console.log('[SlippageSummaryScreen] ✅ Record published successfully!');
-      setPublishSuccess(true);
-      setShowPublishModal(false);
-      setTimeout(() => setPublishSuccess(false), 3000);
-    } catch (error) {
-      console.error('[SlippageSummaryScreen] ❌ Failed to publish record:', error);
-      alert(`Failed to publish record: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
   };
 
   const handleGeneratePDFReport = async () => {
@@ -1153,24 +1070,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           </View>
 
           {/* Success Messages */}
-          {saveSuccess && (
-            <View className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 flex-row items-center">
-              <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-              <Text className="text-green-700 font-semibold ml-3">
-                Record saved successfully!
-              </Text>
-            </View>
-          )}
-          
-          {publishSuccess && (
-            <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex-row items-center">
-              <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
-              <Text className="text-blue-700 font-semibold ml-3">
-                Record published successfully!
-              </Text>
-            </View>
-          )}
-
           {reportSavedSuccess && (
             <View className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex-row items-center">
               <Ionicons name="document-attach" size={24} color="#059669" />
@@ -1181,32 +1080,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           )}
 
           {/* Action Buttons */}
-          <View className="flex-row gap-3 mb-3">
-            <Pressable
-              className="flex-1 bg-green-500 rounded-xl py-4 items-center active:bg-green-600"
-              onPress={() => setShowSaveModal(true)}
-            >
-              <View className="flex-row items-center">
-                <Ionicons name="save-outline" size={20} color="white" />
-                <Text className="text-white text-base font-semibold ml-2">
-                  Save
-                </Text>
-              </View>
-            </Pressable>
-            
-            <Pressable
-              className="flex-1 bg-purple-500 rounded-xl py-4 items-center active:bg-purple-600"
-              onPress={() => setShowPublishModal(true)}
-            >
-              <View className="flex-row items-center">
-                <Ionicons name="cloud-upload-outline" size={20} color="white" />
-                <Text className="text-white text-base font-semibold ml-2">
-                  Publish
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-
           <Pressable
             className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mb-3"
             onPress={handleGeneratePDFReport}
@@ -1230,30 +1103,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           </Pressable>
         </View>
       </ScrollView>
-
-      {/* Save Confirmation Modal */}
-      <ConfirmModal
-        visible={showSaveModal}
-        title="Save Record"
-        message="Save this slippage record to your personal records?"
-        confirmText="Save"
-        cancelText="Cancel"
-        confirmStyle="default"
-        onConfirm={handleSave}
-        onCancel={() => setShowSaveModal(false)}
-      />
-
-      {/* Publish Confirmation Modal */}
-      <ConfirmModal
-        visible={showPublishModal}
-        title="Publish Record"
-        message="Publish this slippage record to the official records visible to all users?"
-        confirmText="Publish"
-        cancelText="Cancel"
-        confirmStyle="default"
-        onConfirm={handlePublish}
-        onCancel={() => setShowPublishModal(false)}
-      />
     </View>
   );
 }

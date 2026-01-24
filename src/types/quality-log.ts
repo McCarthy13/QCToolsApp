@@ -18,6 +18,34 @@ export type BedNumber = '1' | '2' | '3' | '4' | '5' | '6';
 // Attachment types
 export type AttachmentType = 'photo' | 'file' | 'slippage-report';
 
+// Slippage data interface (used by slippage tool and PDF generator)
+export interface SlippageData {
+  strandId: string;
+  leftSlippage: string;
+  rightSlippage: string;
+  leftExceedsOne: boolean;
+  rightExceedsOne: boolean;
+  strandSource?: 'bottom' | 'top'; // Which pattern this strand comes from
+  size?: '3/8' | '1/2' | '0.6'; // Strand size from pattern
+}
+
+// Slippage config interface (used by slippage tool and PDF generator)
+export interface SlippageConfig {
+  projectName?: string;
+  projectNumber?: string;
+  markNumber?: string;
+  idNumber?: string;
+  span?: number;
+  pourDate?: string;
+  productType: string;
+  strandPattern: string;
+  castStrandPattern?: string;
+  topStrandPattern?: string;
+  topCastStrandPattern?: string;
+  productWidth?: number;  // For cut-width products
+  productSide?: 'L1' | 'L2';  // Which side is the product side (keeper side)
+}
+
 // Slippage data for editing (stored with slippage-report attachments)
 export interface SlippageAttachmentData {
   slippages: Array<{

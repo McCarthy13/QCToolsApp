@@ -15,7 +15,6 @@ import StrandPatternsScreen from "./src/screens/StrandPatternsScreen";
 import ProductDetailsScreen from "./src/screens/ProductDetailsScreen";
 import SlippageIdentifierScreen from "./src/screens/SlippageIdentifierScreen";
 import SlippageSummaryScreen from "./src/screens/SlippageSummaryScreen";
-import SlippageHistoryScreen from "./src/screens/SlippageHistoryScreen";
 import EmailComposerScreen from "./src/screens/EmailComposerScreen";
 import StressingCalculatorScreen from "./src/screens/StressingCalculatorScreen";
 import StressingResultsScreen from "./src/screens/StressingResultsScreen";
@@ -333,11 +332,6 @@ export default function App() {
                     >
                       <Ionicons name="albums-outline" size={24} color="#111827" />
                     </Pressable>
-                    <Pressable
-                      onPress={() => navigation.navigate("SlippageHistory")}
-                    >
-                      <Ionicons name="time-outline" size={24} color="#111827" />
-                    </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
                       <Ionicons name="home-outline" size={24} color="#111827" />
                     </Pressable>
@@ -352,11 +346,6 @@ export default function App() {
                 title: "Slippage Identifier",
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
-                    <Pressable
-                      onPress={() => navigation.navigate("SlippageHistory")}
-                    >
-                      <Ionicons name="time-outline" size={24} color="#111827" />
-                    </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
                       <Ionicons name="home-outline" size={24} color="#111827" />
                     </Pressable>
@@ -369,18 +358,6 @@ export default function App() {
               component={SlippageSummaryScreen}
               options={({ navigation }) => ({
                 title: "Slippage Summary",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
-            />
-            <Stack.Screen
-              name="SlippageHistory"
-              component={SlippageHistoryScreen}
-              options={({ navigation }) => ({
-                title: "Slippage History",
                 headerRight: () => (
                   <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
                     <Ionicons name="home-outline" size={24} color="#111827" />
