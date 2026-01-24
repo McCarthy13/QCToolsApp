@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
   Modal,
   Linking,
   Platform,
@@ -1785,11 +1786,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
       {/* Attachments Modal */}
       <Modal visible={!!showAttachmentsModal} transparent animationType="slide">
-        <Pressable
-          className="flex-1 bg-black/50 justify-end"
-          onPress={() => setShowAttachmentsModal(null)}
-        >
-          <Pressable className="bg-white rounded-t-2xl p-4 max-h-[80%]" onPress={(e) => e.stopPropagation()}>
+        <View className="flex-1 bg-black/50 justify-end">
+          <Pressable
+            className="flex-1"
+            onPress={() => setShowAttachmentsModal(null)}
+          />
+          <View className="bg-white rounded-t-2xl p-4 max-h-[80%]">
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-1">
                 <Text className="text-lg font-semibold text-gray-900">Attachments</Text>
@@ -1799,15 +1801,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   </Text>
                 )}
               </View>
-              <Pressable
+              <TouchableOpacity
                 onPress={() => setShowAttachmentsModal(null)}
-                className="p-2"
+                style={{ padding: 8 }}
               >
                 <Ionicons name="close" size={24} color="#6B7280" />
-              </Pressable>
+              </TouchableOpacity>
             </View>
 
-            <ScrollView className="max-h-96">
+            <ScrollView style={{ maxHeight: 384 }}>
               {showAttachmentsModal && (
                 <>
                   {/* New attachments system */}
@@ -1817,9 +1819,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       className="flex-row items-center py-3 px-4 bg-gray-50 rounded-lg mb-2"
                     >
                       {/* Open attachment */}
-                      <Pressable
+                      <TouchableOpacity
                         onPress={() => Linking.openURL(attachment.url)}
-                        className="flex-row items-center flex-1"
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                       >
                         <View className="bg-white rounded-full p-2 mr-3">
                           <Ionicons
@@ -1847,26 +1849,26 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                             {new Date(attachment.createdAt).toLocaleDateString()}
                           </Text>
                         </View>
-                      </Pressable>
+                      </TouchableOpacity>
 
                       {/* Action buttons */}
-                      <View className="flex-row items-center" style={{ gap: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         {/* Edit button for slippage reports */}
                         {attachment.type === 'slippage-report' && (
-                          <Pressable
+                          <TouchableOpacity
                             onPress={() => {
                               console.log('[QualityLogDashboard] Edit button pressed for attachment:', attachment.id);
                               handleEditSlippageReport(showAttachmentsModal.entry, attachment);
                             }}
-                            className="p-2 bg-purple-100 rounded-full active:bg-purple-200"
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            style={{ padding: 8, backgroundColor: '#F3E8FF', borderRadius: 999 }}
+                            activeOpacity={0.7}
                           >
                             <Ionicons name="pencil" size={18} color="#9333EA" />
-                          </Pressable>
+                          </TouchableOpacity>
                         )}
 
                         {/* Delete button */}
-                        <Pressable
+                        <TouchableOpacity
                           onPress={() => {
                             console.log('[QualityLogDashboard] Delete button pressed for attachment:', attachment.id);
                             Alert.alert(
@@ -1882,11 +1884,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                               ]
                             );
                           }}
-                          className="p-2 bg-red-100 rounded-full active:bg-red-200"
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={{ padding: 8, backgroundColor: '#FEE2E2', borderRadius: 999 }}
+                          activeOpacity={0.7}
                         >
                           <Ionicons name="trash-outline" size={18} color="#DC2626" />
-                        </Pressable>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   ))}
@@ -1897,9 +1899,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       key={`legacy-${index}`}
                       className="flex-row items-center py-3 px-4 bg-gray-50 rounded-lg mb-2"
                     >
-                      <Pressable
+                      <TouchableOpacity
                         onPress={() => Linking.openURL(url)}
-                        className="flex-row items-center flex-1"
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                       >
                         <View className="bg-white rounded-full p-2 mr-3">
                           <Ionicons name="image" size={20} color="#2563EB" />
@@ -1910,10 +1912,10 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                           </Text>
                           <Text className="text-xs text-gray-500">Legacy photo</Text>
                         </View>
-                      </Pressable>
+                      </TouchableOpacity>
 
                       {/* Delete button for legacy photos */}
-                      <Pressable
+                      <TouchableOpacity
                         onPress={() => {
                           console.log('[QualityLogDashboard] Delete button pressed for legacy photo:', index);
                           Alert.alert(
@@ -1929,11 +1931,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                             ]
                           );
                         }}
-                        className="p-2 bg-red-100 rounded-full active:bg-red-200"
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={{ padding: 8, backgroundColor: '#FEE2E2', borderRadius: 999 }}
+                        activeOpacity={0.7}
                       >
                         <Ionicons name="trash-outline" size={18} color="#DC2626" />
-                      </Pressable>
+                      </TouchableOpacity>
                     </View>
                   ))}
 
@@ -1947,14 +1949,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               )}
             </ScrollView>
 
-            <Pressable
+            <TouchableOpacity
               onPress={() => setShowAttachmentsModal(null)}
-              className="py-3 mt-4 bg-gray-200 rounded-lg"
+              style={{ paddingVertical: 12, marginTop: 16, backgroundColor: '#E5E7EB', borderRadius: 8 }}
+              activeOpacity={0.7}
             >
               <Text className="text-center text-base text-gray-700">Close</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
