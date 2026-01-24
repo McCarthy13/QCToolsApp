@@ -255,29 +255,31 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     try {
       if (field === 'disposition') {
-        // Handle disposition multi-select with Yard Cut logic
+        // Handle disposition selection
         const isYardCutCompatible = value === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(value);
+        const hasYardCutCompatibleSelected = selectedDispositions.some(d => d === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(d));
 
-        if (isYardCutCompatible) {
-          // Toggle the disposition
+        if (isYardCutCompatible && hasYardCutCompatibleSelected) {
+          // Toggle Yard Cut compatible options (multi-select allowed)
           setSelectedDispositions((prev) => {
             if (prev.includes(value)) {
               return prev.filter((d) => d !== value);
             } else {
-              // If selecting a non-Yard Cut compatible option while having one selected,
-              // replace with the new selection
-              if (!YARD_CUT_COMPATIBLE.includes(value) && value !== 'Yard Cut') {
-                return [value];
-              }
-              return [...prev, value];
+              // Filter out any non-compatible options and add the new one
+              const compatiblePrev = prev.filter(d => d === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(d));
+              return [...compatiblePrev, value];
             }
           });
           return; // Don't close modal yet
-        } else {
-          // Non-compatible options (Ok to Ship, Not Cast, Repour) - single select only
+        } else if (!isYardCutCompatible) {
+          // Non-compatible options (Ok to Ship, Not Cast, Repour) - single select, save immediately
           await setDisposition(entryId, value as Disposition);
           setShowPickerModal(null);
           setSelectedDispositions([]);
+        } else {
+          // First selection of a Yard Cut compatible option
+          setSelectedDispositions([value]);
+          return; // Don't close modal yet, allow adding Yard Cut
         }
       } else if (field === 'issueCodes' || field === 'rejectCodes') {
         // Multi-select: toggle the code
@@ -996,17 +998,29 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     // If nothing is selected, all options are enabled
     if (selectedDispositions.length === 0) return true;
 
-    // If Yard Cut is selected, only compatible options are enabled
+    // If only one option is selected, allow selecting any other option
+    // (user can always change their mind before saving)
+    if (selectedDispositions.length === 1) {
+      const currentSelection = selectedDispositions[0];
+
+      // If current selection is Yard Cut compatible, allow Yard Cut to be added
+      if (YARD_CUT_COMPATIBLE.includes(currentSelection) || currentSelection === 'Yard Cut') {
+        // Allow the current selection, Yard Cut, and compatible options
+        if (option === currentSelection || option === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(option)) {
+          return true;
+        }
+      }
+
+      // Always allow selecting any single option (to change the selection)
+      return true;
+    }
+
+    // If multiple options are selected (Yard Cut combo), restrict to compatible options
     if (selectedDispositions.includes('Yard Cut')) {
       return option === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(option);
     }
 
-    // If a compatible option is selected, only Yard Cut is allowed to be added
-    if (YARD_CUT_COMPATIBLE.includes(selectedDispositions[0])) {
-      return selectedDispositions.includes(option) || option === 'Yard Cut';
-    }
-
-    // For other options (Ok to Ship, Not Cast, Repour), no multi-select allowed
+    // For other multi-select scenarios, only allow already selected options
     return selectedDispositions.includes(option);
   };
 
