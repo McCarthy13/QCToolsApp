@@ -17,14 +17,6 @@ import CrossSection1247 from "../components/CrossSection1247";
 import CrossSection1250 from "../components/CrossSection1250";
 import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
 import { captureRef } from "react-native-view-shot";
-import {
-  signInToMicrosoft,
-  isSignedInToMicrosoft,
-  getCurrentMicrosoftAccount,
-  signOutFromMicrosoft,
-  getSharePointFolderUrl,
-  generateFolderName,
-} from "../services/sharepoint";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { firestore, storage } from "../config/firebase";
@@ -56,57 +48,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [isSharePointSignedIn, setIsSharePointSignedIn] = useState(false);
-  const [microsoftAccount, setMicrosoftAccount] = useState<{ name?: string; username?: string } | null>(null);
-  const [uploadToSharePoint, setUploadToSharePoint] = useState(true); // Auto-upload by default when signed in
 
   // Ref for capturing cross-section as image
   const crossSectionRef = useRef<View>(null);
-
-  // Check SharePoint sign-in status on mount
-  React.useEffect(() => {
-    if (Platform.OS === 'web') {
-      checkSharePointStatus();
-    }
-  }, []);
-
-  const checkSharePointStatus = async () => {
-    try {
-      const signedIn = await isSignedInToMicrosoft();
-      setIsSharePointSignedIn(signedIn);
-      if (signedIn) {
-        const account = await getCurrentMicrosoftAccount();
-        setMicrosoftAccount(account);
-      }
-    } catch (error) {
-      console.error('[SharePoint] Error checking sign-in status:', error);
-    }
-  };
-
-  const handleSharePointSignIn = async () => {
-    try {
-      const account = await signInToMicrosoft();
-      setIsSharePointSignedIn(true);
-      setMicrosoftAccount(account);
-      Alert.alert('Success', `Signed in as ${account.name || account.username}`);
-    } catch (error) {
-      console.error('[SharePoint] Sign-in error:', error);
-      Alert.alert('Error', `Failed to sign in: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  const handleSharePointSignOut = async () => {
-    try {
-      await signOutFromMicrosoft();
-      setIsSharePointSignedIn(false);
-      setMicrosoftAccount(null);
-      setUploadToSharePoint(false);
-      Alert.alert('Success', 'Signed out from Microsoft 365');
-    } catch (error) {
-      console.error('[SharePoint] Sign-out error:', error);
-      Alert.alert('Error', 'Failed to sign out');
-    }
-  };
 
   // Save slippage report as attachment to quality log entry
   const saveSlippageReportAsAttachment = async (pdfBlob: Blob, fileName: string) => {
@@ -444,7 +388,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         castTopStrandSizes: selectedTopPattern?.strandSizes,
         activeStrandIndices,
         activeTopStrandIndices,
-        uploadToSharePoint: isSharePointSignedIn && uploadToSharePoint && Platform.OS === 'web',
+        uploadToSharePoint: false, // SharePoint upload disabled
         // Callback to save PDF as attachment to quality log entry
         onPdfBlobCreated: qualityEntryId ? async (blob, filename) => {
           try {
@@ -458,34 +402,13 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       if (filePath) {
         console.log('[PDF] PDF generated successfully:', filePath);
 
-        // Handle different web responses
-        if (filePath.startsWith('web-pdf-downloaded-sharepoint:')) {
-          // Extract SharePoint URL
-          const sharePointUrl = filePath.replace('web-pdf-downloaded-sharepoint:', '');
-          console.log('[PDF] PDF uploaded to SharePoint:', sharePointUrl);
-
-          // Generate folder URL for easier navigation
-          const folderName = generateFolderName(
-            config.projectNumber || '',
-            config.markNumber || '',
-            config.idNumber || ''
-          );
-          const folderUrl = getSharePointFolderUrl(folderName);
-
+        // Show success message based on context
+        if (qualityEntryId) {
+          // Coming from Quality Log - PDF saved as attachment
           Alert.alert(
-            'PDF Saved Successfully',
-            `The slippage report has been:\n\n✓ Downloaded to your computer\n✓ Uploaded to SharePoint folder: ${folderName}\n\nWould you like to open the SharePoint folder?`,
-            [
-              { text: 'Not Now', style: 'cancel' },
-              {
-                text: 'Open Folder',
-                onPress: () => {
-                  if (Platform.OS === 'web') {
-                    window.open(folderUrl, '_blank');
-                  }
-                },
-              },
-            ]
+            'Report Generated',
+            'The slippage report has been generated and saved to the quality log attachments.',
+            [{ text: 'OK' }]
           );
         } else if (filePath === 'web-pdf-downloaded') {
           console.log('[PDF] PDF downloaded successfully on web');
@@ -1154,69 +1077,6 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               </View>
             </Pressable>
           </View>
-
-          {/* SharePoint Integration (Web Only) */}
-          {Platform.OS === 'web' && (
-            <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-3">
-              <View className="flex-row items-center mb-3">
-                <Ionicons name="cloud-outline" size={20} color="#6B7280" />
-                <Text className="text-gray-700 text-sm font-semibold ml-2">
-                  SharePoint Integration
-                </Text>
-              </View>
-
-              {!isSharePointSignedIn ? (
-                <Pressable
-                  className="bg-blue-600 rounded-lg py-3 items-center active:bg-blue-700"
-                  onPress={handleSharePointSignIn}
-                >
-                  <View className="flex-row items-center">
-                    <Ionicons name="log-in-outline" size={18} color="white" />
-                    <Text className="text-white text-sm font-semibold ml-2">
-                      Sign in with Microsoft 365
-                    </Text>
-                  </View>
-                </Pressable>
-              ) : (
-                <>
-                  <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
-                    <View className="flex-row items-center mb-1">
-                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                      <Text className="text-green-700 text-xs font-semibold ml-2">
-                        Signed in as {microsoftAccount?.name || microsoftAccount?.username}
-                      </Text>
-                    </View>
-                    <Text className="text-green-600 text-xs ml-6">
-                      PDFs will auto-upload to SharePoint
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Text className="text-gray-600 text-xs">Auto-upload to SharePoint</Text>
-                    <Pressable
-                      onPress={() => setUploadToSharePoint(!uploadToSharePoint)}
-                      className={`w-12 h-6 rounded-full ${uploadToSharePoint ? 'bg-blue-500' : 'bg-gray-300'} justify-center`}
-                    >
-                      <View className={`w-5 h-5 bg-white rounded-full ${uploadToSharePoint ? 'ml-6' : 'ml-1'}`} />
-                    </Pressable>
-                  </View>
-
-                  {config.projectNumber && config.markNumber && config.idNumber && (
-                    <Text className="text-gray-500 text-xs mb-2">
-                      📁 Folder: {generateFolderName(config.projectNumber, config.markNumber, config.idNumber)}
-                    </Text>
-                  )}
-
-                  <Pressable
-                    className="border border-gray-300 rounded-lg py-2 items-center active:bg-gray-100"
-                    onPress={handleSharePointSignOut}
-                  >
-                    <Text className="text-gray-600 text-xs font-medium">Sign Out</Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-          )}
 
           <Pressable
             className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mb-3"
