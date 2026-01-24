@@ -122,7 +122,8 @@ export interface QualityLogEntry {
   designStrandPattern?: string; // Design strand pattern from schedule (e.g., "117-70" or "117-70+T32-70")
   castStrandPattern?: string; // Cast strand pattern selected by user (e.g., "117-70" or "117-70+T32-70")
   bed?: BedNumber;
-  location?: string; // Format: "1-80" (1-4)-(1-80)
+  location?: string; // Format: "X-YY" (1-9)-(1-99) or "Short"
+  program?: string; // Casting program for this piece
 
   // Piece ticket attachment
   pieceTicketUrl?: string; // URL to the piece ticket PDF page in Firebase Storage
@@ -139,7 +140,7 @@ export interface QualityLogEntry {
   // Auto-calculated based on disposition
   disposition?: DispositionValue;
   status?: StatusCode;
-  approvalRejectionDate?: string; // Auto-set when disposition changes
+  approvalRejectionDate?: string; // Auto-set when disposition changes to Ok to Ship, Not Cast, or Repour
 
   // Manual entry fields
   qualityComments?: string;
