@@ -1864,13 +1864,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                               backgroundColor: '#F3E8FF',
                               borderRadius: 999,
                               marginRight: 8,
-                              cursor: 'pointer',
                             }}
-                            // @ts-ignore - web accessibility
-                            role="button"
-                            tabIndex={0}
                           >
-                            <Ionicons name="pencil" size={18} color="#9333EA" />
+                            {({ pressed }) => (
+                              <Ionicons name="pencil" size={18} color={pressed ? '#7C3AED' : '#9333EA'} />
+                            )}
                           </Pressable>
                         )}
 
@@ -1895,13 +1893,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                             padding: 8,
                             backgroundColor: '#FEE2E2',
                             borderRadius: 999,
-                            cursor: 'pointer',
                           }}
-                          // @ts-ignore - web accessibility
-                          role="button"
-                          tabIndex={0}
                         >
-                          <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                          {({ pressed }) => (
+                            <Ionicons name="trash-outline" size={18} color={pressed ? '#B91C1C' : '#DC2626'} />
+                          )}
                         </Pressable>
                       </View>
                     </View>
@@ -1949,13 +1945,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                           padding: 8,
                           backgroundColor: '#FEE2E2',
                           borderRadius: 999,
-                          cursor: 'pointer',
                         }}
-                        // @ts-ignore - web accessibility
-                        role="button"
-                        tabIndex={0}
                       >
-                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                        {({ pressed }) => (
+                          <Ionicons name="trash-outline" size={18} color={pressed ? '#B91C1C' : '#DC2626'} />
+                        )}
                       </Pressable>
                     </View>
                   ))}
@@ -1977,11 +1971,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 marginTop: 16,
                 backgroundColor: '#E5E7EB',
                 borderRadius: 8,
-                cursor: 'pointer',
               }}
-              // @ts-ignore - web accessibility
-              role="button"
-              tabIndex={0}
             >
               <Text className="text-center text-base text-gray-700">Close</Text>
             </Pressable>
