@@ -1850,12 +1850,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       </Pressable>
 
                       {/* Action buttons */}
-                      <View className="flex-row items-center gap-2">
+                      <View className="flex-row items-center" style={{ gap: 8 }}>
                         {/* Edit button for slippage reports */}
                         {attachment.type === 'slippage-report' && (
                           <Pressable
-                            onPress={() => handleEditSlippageReport(showAttachmentsModal.entry, attachment)}
-                            className="p-2 bg-purple-100 rounded-full"
+                            onPress={() => {
+                              console.log('[QualityLogDashboard] Edit button pressed for attachment:', attachment.id);
+                              handleEditSlippageReport(showAttachmentsModal.entry, attachment);
+                            }}
+                            className="p-2 bg-purple-100 rounded-full active:bg-purple-200"
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                           >
                             <Ionicons name="pencil" size={18} color="#9333EA" />
                           </Pressable>
@@ -1864,6 +1868,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                         {/* Delete button */}
                         <Pressable
                           onPress={() => {
+                            console.log('[QualityLogDashboard] Delete button pressed for attachment:', attachment.id);
                             Alert.alert(
                               'Delete Attachment',
                               `Are you sure you want to delete "${attachment.name}"?`,
@@ -1877,7 +1882,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                               ]
                             );
                           }}
-                          className="p-2 bg-red-100 rounded-full"
+                          className="p-2 bg-red-100 rounded-full active:bg-red-200"
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
                           <Ionicons name="trash-outline" size={18} color="#DC2626" />
                         </Pressable>
@@ -1909,6 +1915,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       {/* Delete button for legacy photos */}
                       <Pressable
                         onPress={() => {
+                          console.log('[QualityLogDashboard] Delete button pressed for legacy photo:', index);
                           Alert.alert(
                             'Delete Photo',
                             `Are you sure you want to delete Photo ${index + 1}?`,
@@ -1922,7 +1929,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                             ]
                           );
                         }}
-                        className="p-2 bg-red-100 rounded-full"
+                        className="p-2 bg-red-100 rounded-full active:bg-red-200"
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
                         <Ionicons name="trash-outline" size={18} color="#DC2626" />
                       </Pressable>
