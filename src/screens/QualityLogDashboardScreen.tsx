@@ -419,11 +419,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   // Navigate to edit slippage report
   const handleEditSlippageReport = (entry: QualityLogEntry, attachment: Attachment) => {
     if (!attachment.slippageData) {
-      Alert.alert(
-        'Cannot Edit',
-        'This slippage report does not contain editable data. Reports created before this feature was added cannot be edited.',
-        [{ text: 'OK' }]
-      );
+      if (Platform.OS === 'web') {
+        window.alert('This slippage report does not contain editable data. Reports created before this feature was added cannot be edited.');
+      } else {
+        Alert.alert(
+          'Cannot Edit',
+          'This slippage report does not contain editable data. Reports created before this feature was added cannot be edited.',
+          [{ text: 'OK' }]
+        );
+      }
       return;
     }
 
@@ -1874,18 +1878,26 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                           backgroundColor="#FEE2E2"
                           onPress={() => {
                             console.log('[QualityLogDashboard] Delete button pressed');
-                            Alert.alert(
-                              'Delete Attachment',
-                              `Are you sure you want to delete "${attachment.name}"?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Delete',
-                                  style: 'destructive',
-                                  onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
-                                },
-                              ]
-                            );
+                            if (Platform.OS === 'web') {
+                              // Use window.confirm for web
+                              const confirmed = window.confirm(`Are you sure you want to delete "${attachment.name}"?`);
+                              if (confirmed) {
+                                deleteAttachment(showAttachmentsModal.entry, attachment.id);
+                              }
+                            } else {
+                              Alert.alert(
+                                'Delete Attachment',
+                                `Are you sure you want to delete "${attachment.name}"?`,
+                                [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  {
+                                    text: 'Delete',
+                                    style: 'destructive',
+                                    onPress: () => deleteAttachment(showAttachmentsModal.entry, attachment.id),
+                                  },
+                                ]
+                              );
+                            }
                           }}
                         />
                       </View>
@@ -1921,18 +1933,26 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                           backgroundColor="#FEE2E2"
                           onPress={() => {
                             console.log('[QualityLogDashboard] Delete legacy photo pressed');
-                            Alert.alert(
-                              'Delete Photo',
-                              `Are you sure you want to delete Photo ${index + 1}?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Delete',
-                                  style: 'destructive',
-                                  onPress: () => deleteLegacyPhoto(showAttachmentsModal.entry, index),
-                                },
-                              ]
-                            );
+                            if (Platform.OS === 'web') {
+                              // Use window.confirm for web
+                              const confirmed = window.confirm(`Are you sure you want to delete Photo ${index + 1}?`);
+                              if (confirmed) {
+                                deleteLegacyPhoto(showAttachmentsModal.entry, index);
+                              }
+                            } else {
+                              Alert.alert(
+                                'Delete Photo',
+                                `Are you sure you want to delete Photo ${index + 1}?`,
+                                [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  {
+                                    text: 'Delete',
+                                    style: 'destructive',
+                                    onPress: () => deleteLegacyPhoto(showAttachmentsModal.entry, index),
+                                  },
+                                ]
+                              );
+                            }
                           }}
                         />
                       </View>
