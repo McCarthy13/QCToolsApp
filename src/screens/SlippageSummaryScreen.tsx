@@ -43,6 +43,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const { addUserRecord, publishRecord } = useSlippageHistoryStore();
   const currentUser = useAuthStore((state) => state.currentUser);
 
+  // Debug logging for quality log integration
+  console.log('[SlippageSummary] Component mounted');
+  console.log('[SlippageSummary] fromQualityLog:', fromQualityLog);
+  console.log('[SlippageSummary] qualityEntryId:', qualityEntryId);
+
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -391,13 +396,20 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         uploadToSharePoint: false, // SharePoint upload disabled
         // Callback to save PDF as attachment to quality log entry
         onPdfBlobCreated: qualityEntryId ? async (blob, filename) => {
+          console.log('[SlippageSummary] onPdfBlobCreated callback triggered');
+          console.log('[SlippageSummary] qualityEntryId:', qualityEntryId);
+          console.log('[SlippageSummary] blob size:', blob.size);
+          console.log('[SlippageSummary] filename:', filename);
           try {
-            await saveSlippageReportAsAttachment(blob, filename);
+            const result = await saveSlippageReportAsAttachment(blob, filename);
+            console.log('[SlippageSummary] saveSlippageReportAsAttachment result:', result);
           } catch (err) {
             console.error('[PDF] Error saving attachment:', err);
           }
         } : undefined,
       });
+
+      console.log('[SlippageSummary] PDF generation complete, qualityEntryId:', qualityEntryId);
 
       if (filePath) {
         console.log('[PDF] PDF generated successfully:', filePath);
