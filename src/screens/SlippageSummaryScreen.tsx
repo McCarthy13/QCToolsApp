@@ -394,6 +394,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         activeStrandIndices,
         activeTopStrandIndices,
         uploadToSharePoint: false, // SharePoint upload disabled
+        skipLocalDownload: !!qualityEntryId, // Skip download when saving to Quality Log attachments
         // Callback to save PDF as attachment to quality log entry
         onPdfBlobCreated: qualityEntryId ? async (blob, filename) => {
           console.log('[SlippageSummary] onPdfBlobCreated callback triggered');

@@ -66,6 +66,7 @@ interface PDFGenerationParams {
   activeTopStrandIndices?: number[] | null;
   uploadToSharePoint?: boolean; // New parameter for SharePoint upload
   onPdfBlobCreated?: (blob: Blob, filename: string) => void | Promise<void>; // Callback when PDF blob is created (can be async)
+  skipLocalDownload?: boolean; // Skip local download when saving to Quality Log attachments
 }
 
 export interface PDFGenerationResult {
@@ -1146,9 +1147,12 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         }
 
         // Only download locally if SharePoint upload was not requested or failed
-        if (!sharePointUrl) {
+        // AND skipLocalDownload is not set
+        if (!sharePointUrl && !params.skipLocalDownload) {
           pdf.save(`${filename}.pdf`);
           console.log('[PDF Generator] PDF downloaded locally');
+        } else if (params.skipLocalDownload) {
+          console.log('[PDF Generator] Skipping local download (saving to Quality Log attachments)');
         } else {
           console.log('[PDF Generator] PDF uploaded to SharePoint, skipping local download');
         }
@@ -1159,6 +1163,9 @@ export async function generateSlippagePDF(params: PDFGenerationParams): Promise<
         // Return special string with SharePoint URL if uploaded
         if (sharePointUrl) {
           return `web-pdf-downloaded-sharepoint:${sharePointUrl}`;
+        }
+        if (params.skipLocalDownload) {
+          return 'web-pdf-saved-to-attachments';
         }
         return 'web-pdf-downloaded';
       } catch (error: any) {
