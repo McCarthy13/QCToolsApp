@@ -48,7 +48,7 @@ import {
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
 
 // Column filter types
-type ColumnFilterType = 'pourDate' | 'disposition' | 'status' | 'approvalDate' | 'productType' |
+type ColumnFilterType = 'pourDate' | 'disposition' | 'status' | 'productType' |
   'jobNumber' | 'markNumber' | 'idNumber' | 'length' | 'width' | 'designStrandPattern' | 'castStrandPattern' | 'bed' | 'location' |
   'inspectionNotes' | 'engineer' | 'engineerFeedback' | 'issueCodes' | 'rejectCodes';
 
@@ -56,7 +56,6 @@ interface ColumnFilters {
   pourDate: string;
   disposition: string;
   status: string;
-  approvalDate: string;
   productType: string;
   jobNumber: string;
   markNumber: string;
@@ -101,7 +100,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     pourDate: '',
     disposition: '',
     status: '',
-    approvalDate: '',
     productType: '',
     jobNumber: '',
     markNumber: '',
@@ -172,7 +170,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     if (columnFilters.pourDate && !entry.pourDate?.toLowerCase().includes(columnFilters.pourDate.toLowerCase())) return false;
     if (columnFilters.disposition && entry.disposition !== columnFilters.disposition) return false;
     if (columnFilters.status && entry.status !== columnFilters.status) return false;
-    if (columnFilters.approvalDate && !entry.approvalRejectionDate?.toLowerCase().includes(columnFilters.approvalDate.toLowerCase())) return false;
     if (columnFilters.productType && entry.productType !== columnFilters.productType) return false;
     if (columnFilters.jobNumber && !entry.jobNumber?.toLowerCase().includes(columnFilters.jobNumber.toLowerCase())) return false;
     if (columnFilters.markNumber && !entry.markNumber?.toLowerCase().includes(columnFilters.markNumber.toLowerCase())) return false;
@@ -875,7 +872,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     pourDate: 78,
     disposition: 85,
     status: 48,
-    approvalDate: 85,
     productType: 50,
     jobNumber: 62,
     markNumber: 72,
@@ -1170,7 +1166,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       pourDate: '',
       disposition: '',
       status: '',
-      approvalDate: '',
       productType: '',
       jobNumber: '',
       markNumber: '',
@@ -1549,7 +1544,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
             })}
             <Pressable
               onPress={() => setColumnFilters({
-                pourDate: '', disposition: '', status: '', approvalDate: '', productType: '',
+                pourDate: '', disposition: '', status: '', productType: '',
                 jobNumber: '', markNumber: '', idNumber: '', length: '', width: '',
                 designStrandPattern: '', castStrandPattern: '', bed: '',
                 location: '', inspectionNotes: '', engineer: '', engineerFeedback: '',
@@ -1586,7 +1581,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               {renderFilterableHeader('pourDate', 'Pour Date', COLUMN_WIDTHS.pourDate)}
               {renderFilterableHeader('disposition', 'Disposition', COLUMN_WIDTHS.disposition)}
               {renderFilterableHeader('status', 'Status', COLUMN_WIDTHS.status)}
-              {renderFilterableHeader('approvalDate', 'Approval Date', COLUMN_WIDTHS.approvalDate)}
               {renderFilterableHeader('productType', 'Type', COLUMN_WIDTHS.productType)}
               {renderFilterableHeader('jobNumber', 'Job #', COLUMN_WIDTHS.jobNumber)}
               {renderFilterableHeader('markNumber', 'Mark #', COLUMN_WIDTHS.markNumber)}
@@ -1664,11 +1658,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                   <View style={{ width: COLUMN_WIDTHS.status, paddingHorizontal: 8, paddingVertical: 10, backgroundColor: getStatusColor(entry), borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)', justifyContent: 'center' }}>
                     <Text className="text-sm font-bold text-gray-900">
                       {entry.status || '40'}
-                    </Text>
-                  </View>
-                  <View style={{ width: COLUMN_WIDTHS.approvalDate, paddingHorizontal: 8, paddingVertical: 10, borderRightWidth: 1, borderRightColor: 'rgba(209, 213, 219, 0.5)', justifyContent: 'center' }}>
-                    <Text className="text-sm text-gray-900">
-                      {entry.approvalRejectionDate || '-'}
                     </Text>
                   </View>
                   {renderPickerCell(entry, 'productType', entry.productType, COLUMN_WIDTHS.productType)}
