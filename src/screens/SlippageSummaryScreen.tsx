@@ -131,6 +131,25 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       console.log('[SlippageSummary] PDF uploaded to Firebase Storage:', downloadUrl);
 
       // Create slippage data for editing later
+      // Filter out undefined values to avoid Firestore errors
+      const configData: Record<string, unknown> = {
+        productType: config.productType,
+        strandPattern: config.strandPattern,
+      };
+
+      // Only add defined values to config
+      if (config.projectName) configData.projectName = config.projectName;
+      if (config.projectNumber) configData.projectNumber = config.projectNumber;
+      if (config.markNumber) configData.markNumber = config.markNumber;
+      if (config.idNumber) configData.idNumber = config.idNumber;
+      if (config.span !== undefined) configData.span = config.span;
+      if (config.pourDate) configData.pourDate = config.pourDate;
+      if (config.castStrandPattern) configData.castStrandPattern = config.castStrandPattern;
+      if (config.topStrandPattern) configData.topStrandPattern = config.topStrandPattern;
+      if (config.topCastStrandPattern) configData.topCastStrandPattern = config.topCastStrandPattern;
+      if (config.productWidth !== undefined) configData.productWidth = config.productWidth;
+      if (config.productSide) configData.productSide = config.productSide;
+
       const slippageData: SlippageAttachmentData = {
         slippages: slippages.map(s => ({
           strandId: s.strandId,
@@ -139,21 +158,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           leftExceedsOne: s.leftExceedsOne,
           rightExceedsOne: s.rightExceedsOne,
         })),
-        config: {
-          projectName: config.projectName,
-          projectNumber: config.projectNumber,
-          markNumber: config.markNumber,
-          idNumber: config.idNumber,
-          span: config.span,
-          pourDate: config.pourDate,
-          productType: config.productType,
-          strandPattern: config.strandPattern,
-          castStrandPattern: config.castStrandPattern,
-          topStrandPattern: config.topStrandPattern,
-          topCastStrandPattern: config.topCastStrandPattern,
-          productWidth: config.productWidth,
-          productSide: config.productSide,
-        },
+        config: configData as SlippageAttachmentData['config'],
       };
 
       // Create attachment object with slippage data for edit capability
@@ -163,7 +168,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         url: downloadUrl,
         name: fileName,
         createdAt: timestamp,
-        createdBy: currentUser?.email || undefined,
+        createdBy: currentUser?.email,
         slippageData,
       };
 
@@ -179,11 +184,16 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       const existingAttachments = entrySnap.data()?.attachments || [];
       const updatedAttachments = [...existingAttachments, newAttachment];
 
-      await updateDoc(entryRef, {
+      // Build update object, only including fields with values
+      const updateData: Record<string, unknown> = {
         attachments: updatedAttachments,
         updatedAt: timestamp,
-        updatedBy: currentUser?.email || undefined,
-      });
+      };
+      if (currentUser?.email) {
+        updateData.updatedBy = currentUser.email;
+      }
+
+      await updateDoc(entryRef, updateData);
 
       console.log('[SlippageSummary] Attachment saved to quality log entry with slippage data');
       return downloadUrl;
