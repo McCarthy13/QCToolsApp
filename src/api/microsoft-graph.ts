@@ -1,42 +1,47 @@
 /**
  * Microsoft Graph API Integration
- * 
+ *
  * This module handles authentication and email sending via Microsoft Graph API.
  * Emails sent through this API will appear in the user's Outlook Sent folder.
- * 
- * SETUP REQUIRED:
- * 1. Register an app in Azure AD (portal.azure.com)
- * 2. Add redirect URI: exp://[your-app-slug]/--/redirect
- * 3. Grant API permissions: Mail.Send (delegated)
- * 4. Add your Azure AD app credentials to .env file
+ *
+ * Uses MSAL (same as SharePoint integration) for consistent authentication.
  */
 
-import * as AuthSession from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PublicClientApplication, AccountInfo, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { Platform } from 'react-native';
 
-// Enable browser dismiss on iOS
-WebBrowser.maybeCompleteAuthSession();
+// MSAL configuration - same as SharePoint but with Mail.Send scope
+const msalConfig = {
+  auth: {
+    clientId: process.env.EXPO_PUBLIC_MICROSOFT_CLIENT_ID || '',
+    authority: `https://login.microsoftonline.com/${process.env.EXPO_PUBLIC_MICROSOFT_TENANT_ID || 'common'}`,
+    redirectUri: Platform.OS === 'web'
+      ? window.location.origin
+      : 'msauth://com.vibecodeapp.precast-qc-tools/auth',
+  },
+  cache: {
+    cacheLocation: 'sessionStorage',
+    storeAuthStateInCookie: false,
+  },
+  system: {
+    allowRedirectInIframe: false,
+    windowHashTimeout: 60000,
+    iframeHashTimeout: 6000,
+    loadFrameTimeout: 0,
+  },
+};
 
-// Microsoft Graph API configuration
-// TODO: These need to be configured in your .env file or Azure AD app registration
-const AZURE_AD_CONFIG = {
-  clientId: process.env.EXPO_PUBLIC_AZURE_AD_CLIENT_ID || "YOUR_CLIENT_ID_HERE",
-  tenantId: process.env.EXPO_PUBLIC_AZURE_AD_TENANT_ID || "common", // Use "common" for multi-tenant or your specific tenant ID
-  redirectUri: AuthSession.makeRedirectUri({
-    scheme: "exp", // Change to your custom scheme if needed
-  }),
-  scopes: ["Mail.Send", "User.Read"], // Mail.Send allows sending emails, User.Read for user info
+// Scopes required for sending email
+const emailRequest = {
+  scopes: [
+    'User.Read',
+    'Mail.Send',
+  ],
 };
 
 const GRAPH_API_ENDPOINT = "https://graph.microsoft.com/v1.0";
-const TOKEN_STORAGE_KEY = "microsoft_graph_token";
 
-interface GraphAPIToken {
-  accessToken: string;
-  refreshToken?: string;
-  expiresAt: number;
-}
+let msalInstance: PublicClientApplication | null = null;
 
 interface EmailParams {
   from: string;
@@ -46,113 +51,104 @@ interface EmailParams {
   body: string;
 }
 
+// Initialize MSAL
+async function initializeMSAL(): Promise<PublicClientApplication> {
+  if (msalInstance) {
+    return msalInstance;
+  }
+
+  if (Platform.OS !== 'web') {
+    throw new Error('Email sending via Microsoft is only available on web platform');
+  }
+
+  msalInstance = new PublicClientApplication(msalConfig);
+  await msalInstance.initialize();
+  return msalInstance;
+}
+
 /**
  * Authenticate with Microsoft and get access token
  */
-export async function authenticateWithMicrosoft(): Promise<GraphAPIToken> {
+export async function authenticateWithMicrosoft(): Promise<AccountInfo> {
   try {
-    const discovery = {
-      authorizationEndpoint: `https://login.microsoftonline.com/${AZURE_AD_CONFIG.tenantId}/oauth2/v2.0/authorize`,
-      tokenEndpoint: `https://login.microsoftonline.com/${AZURE_AD_CONFIG.tenantId}/oauth2/v2.0/token`,
-    };
+    const msal = await initializeMSAL();
 
-    const request = new AuthSession.AuthRequest({
-      clientId: AZURE_AD_CONFIG.clientId,
-      scopes: AZURE_AD_CONFIG.scopes,
-      redirectUri: AZURE_AD_CONFIG.redirectUri,
-      responseType: AuthSession.ResponseType.Code,
-      usePKCE: true,
+    // Try to acquire token silently first
+    const accounts = msal.getAllAccounts();
+    if (accounts.length > 0) {
+      try {
+        const response = await msal.acquireTokenSilent({
+          ...emailRequest,
+          account: accounts[0],
+        });
+        return response.account;
+      } catch (error) {
+        if (error instanceof InteractionRequiredAuthError) {
+          // Fall through to interactive login
+          console.log('[MicrosoftGraph] Silent token acquisition failed, showing login popup');
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Interactive login with popup
+    const response = await msal.loginPopup({
+      ...emailRequest,
+      prompt: 'select_account',
     });
 
-    const result = await request.promptAsync(discovery);
-
-    if (result.type === "success") {
-      const { code } = result.params;
-
-      // Exchange code for tokens
-      const tokenResponse = await fetch(discovery.tokenEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          client_id: AZURE_AD_CONFIG.clientId,
-          code: code,
-          redirect_uri: AZURE_AD_CONFIG.redirectUri,
-          grant_type: "authorization_code",
-          code_verifier: request.codeVerifier || "",
-        }).toString(),
-      });
-
-      const tokens = await tokenResponse.json();
-
-      if (tokens.error) {
-        throw new Error(tokens.error_description || tokens.error);
-      }
-
-      const tokenData: GraphAPIToken = {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        expiresAt: Date.now() + tokens.expires_in * 1000,
-      };
-
-      // Store tokens securely
-      await AsyncStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenData));
-
-      return tokenData;
-    } else if (result.type === "error") {
-      throw new Error(result.params.error_description || "Authentication failed");
-    } else {
-      // User cancelled - don't log as error, just throw for caller to handle
+    console.log('[MicrosoftGraph] Login successful, account:', response.account.username);
+    return response.account;
+  } catch (error: any) {
+    // Check if user cancelled
+    if (error.errorCode === 'user_cancelled' || error.errorMessage?.includes('cancelled')) {
       const cancelError = new Error("Authentication was cancelled");
       cancelError.name = "AuthCancelledError";
       throw cancelError;
     }
-  } catch (error: any) {
-    // Only log errors that aren't user cancellations
-    if (error.name !== "AuthCancelledError") {
-      console.error("Microsoft authentication error:", error);
-    }
-    throw error;
+    console.error('[MicrosoftGraph] Sign in error:', error);
+    throw new Error(`Failed to sign in to Microsoft: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
- * Get stored access token or refresh if expired
+ * Get access token for Microsoft Graph API (with Mail.Send scope)
  */
-async function getValidAccessToken(): Promise<string> {
+async function getAccessToken(): Promise<string> {
   try {
-    const storedToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
+    const msal = await initializeMSAL();
+    const accounts = msal.getAllAccounts();
 
-    if (!storedToken) {
-      throw new Error("No authentication token found. Please sign in.");
+    if (accounts.length === 0) {
+      throw new Error('No account found. Please sign in first.');
     }
 
-    const tokenData: GraphAPIToken = JSON.parse(storedToken);
+    const response = await msal.acquireTokenSilent({
+      ...emailRequest,
+      account: accounts[0],
+    });
 
-    // Check if token is expired (with 5 minute buffer)
-    if (Date.now() >= tokenData.expiresAt - 5 * 60 * 1000) {
-      // Token expired or about to expire, need to re-authenticate
-      // In a production app, you'd use the refresh token here
-      throw new Error("Token expired. Please sign in again.");
-    }
-
-    return tokenData.accessToken;
+    return response.accessToken;
   } catch (error) {
-    console.error("Token retrieval error:", error);
+    if (error instanceof InteractionRequiredAuthError) {
+      const msal = await initializeMSAL();
+      const response = await msal.acquireTokenPopup(emailRequest);
+      return response.accessToken;
+    }
     throw error;
   }
 }
 
 /**
  * Send email via Microsoft Graph API
- * 
+ *
  * The email will be sent from the authenticated user's account and will
  * appear in their Outlook Sent folder automatically.
  */
 export async function sendEmailViaGraphAPI(params: EmailParams): Promise<void> {
   try {
-    const accessToken = await getValidAccessToken();
+    const accessToken = await getAccessToken();
 
     // Prepare recipients
     const toRecipients = params.to.split(",").map((email) => ({
@@ -169,12 +165,12 @@ export async function sendEmailViaGraphAPI(params: EmailParams): Promise<void> {
         }))
       : undefined;
 
-    // Prepare email message
+    // Prepare email message with HTML body
     const message = {
       message: {
         subject: params.subject,
         body: {
-          contentType: "Text",
+          contentType: "HTML", // Changed to HTML to support formatting
           content: params.body,
         },
         toRecipients: toRecipients,
@@ -201,30 +197,39 @@ export async function sendEmailViaGraphAPI(params: EmailParams): Promise<void> {
     }
 
     // Success - no response body for sendMail endpoint
-    console.log("Email sent successfully via Graph API");
+    console.log("[MicrosoftGraph] Email sent successfully via Graph API");
   } catch (error: any) {
-    console.error("Graph API send email error:", error);
-    
-    // Check if it's an authentication error
-    if (error.message?.includes("token") || error.message?.includes("authentication")) {
-      // Clear invalid token
-      await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
-    }
-    
+    console.error("[MicrosoftGraph] Send email error:", error);
     throw error;
   }
 }
 
 /**
- * Check if user is authenticated
+ * Check if user is authenticated for email sending
  */
 export async function isAuthenticated(): Promise<boolean> {
   try {
-    const storedToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!storedToken) return false;
+    if (Platform.OS !== 'web') {
+      return false;
+    }
 
-    const tokenData: GraphAPIToken = JSON.parse(storedToken);
-    return Date.now() < tokenData.expiresAt;
+    const msal = await initializeMSAL();
+    const accounts = msal.getAllAccounts();
+
+    if (accounts.length === 0) {
+      return false;
+    }
+
+    // Try to acquire token silently to verify we have Mail.Send permission
+    try {
+      await msal.acquireTokenSilent({
+        ...emailRequest,
+        account: accounts[0],
+      });
+      return true;
+    } catch {
+      return false;
+    }
   } catch {
     return false;
   }
@@ -234,5 +239,16 @@ export async function isAuthenticated(): Promise<boolean> {
  * Sign out and clear stored tokens
  */
 export async function signOutMicrosoft(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+  try {
+    const msal = await initializeMSAL();
+    const accounts = msal.getAllAccounts();
+
+    if (accounts.length > 0) {
+      msal.setActiveAccount(null);
+      await msal.clearCache();
+      console.log('[MicrosoftGraph] Signed out from Microsoft');
+    }
+  } catch (error) {
+    console.error('[MicrosoftGraph] Sign out error:', error);
+  }
 }
