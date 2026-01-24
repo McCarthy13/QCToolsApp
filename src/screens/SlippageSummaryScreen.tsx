@@ -17,10 +17,10 @@ import CrossSection1247 from "../components/CrossSection1247";
 import CrossSection1250 from "../components/CrossSection1250";
 import { generateSlippagePDF, sharePDF } from "../utils/pdfGenerator";
 import { captureRef } from "react-native-view-shot";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { firestore, storage } from "../config/firebase";
-import { Attachment, AttachmentType } from "../types/quality-log";
+import { Attachment, AttachmentType, QualityLogEntry } from "../types/quality-log";
 
 type SlippageSummaryScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -53,19 +53,72 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [reportSavedSuccess, setReportSavedSuccess] = useState(false);
 
   // Ref for capturing cross-section as image
   const crossSectionRef = useRef<View>(null);
 
+  // Find a matching Quality Log entry by job number, mark number, and ID number
+  const findMatchingQualityEntry = async (): Promise<QualityLogEntry | null> => {
+    try {
+      console.log('[SlippageSummary] Searching for matching Quality Log entry...');
+      console.log('[SlippageSummary] Search criteria:', {
+        jobNumber: config.projectNumber,
+        markNumber: config.markNumber,
+        idNumber: config.idNumber,
+      });
+
+      // Query by job number first (most specific filter)
+      const entriesRef = collection(firestore, 'qualityLogEntries');
+      const q = query(entriesRef, where('jobNumber', '==', config.projectNumber || ''));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        console.log('[SlippageSummary] No entries found with matching job number');
+        return null;
+      }
+
+      // Filter results by mark number and ID number
+      const matchingEntries: QualityLogEntry[] = [];
+      snapshot.forEach((doc) => {
+        const entry = { id: doc.id, ...doc.data() } as QualityLogEntry;
+
+        // Check if mark number matches (if provided)
+        const markMatches = !config.markNumber ||
+          entry.markNumber?.toLowerCase() === config.markNumber?.toLowerCase();
+
+        // Check if ID number matches (if provided)
+        const idMatches = !config.idNumber ||
+          entry.idNumber?.toLowerCase() === config.idNumber?.toLowerCase();
+
+        if (markMatches && idMatches) {
+          matchingEntries.push(entry);
+        }
+      });
+
+      console.log('[SlippageSummary] Found', matchingEntries.length, 'matching entries');
+
+      if (matchingEntries.length === 0) {
+        return null;
+      }
+
+      // Return the first match (most recent if multiple)
+      return matchingEntries[0];
+    } catch (error) {
+      console.error('[SlippageSummary] Error finding matching entry:', error);
+      return null;
+    }
+  };
+
   // Save slippage report as attachment to quality log entry
-  const saveSlippageReportAsAttachment = async (pdfBlob: Blob, fileName: string) => {
-    if (!qualityEntryId) {
-      console.log('[SlippageSummary] No qualityEntryId - skipping attachment save');
+  const saveSlippageReportAsAttachment = async (pdfBlob: Blob, fileName: string, entryId: string) => {
+    if (!entryId) {
+      console.log('[SlippageSummary] No entryId provided - cannot save attachment');
       return null;
     }
 
     try {
-      console.log('[SlippageSummary] Saving slippage report as attachment for entry:', qualityEntryId);
+      console.log('[SlippageSummary] Saving slippage report as attachment for entry:', entryId);
 
       // Upload PDF to Firebase Storage
       const timestamp = Date.now();
@@ -88,11 +141,11 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       };
 
       // Get current entry and update attachments
-      const entryRef = doc(firestore, 'qualityLogEntries', qualityEntryId);
+      const entryRef = doc(firestore, 'qualityLogEntries', entryId);
       const entrySnap = await getDoc(entryRef);
 
       if (!entrySnap.exists()) {
-        console.error('[SlippageSummary] Quality log entry not found:', qualityEntryId);
+        console.error('[SlippageSummary] Quality log entry not found:', entryId);
         return null;
       }
 
@@ -301,6 +354,37 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     setIsGeneratingPDF(true);
 
     try {
+      // Determine the target Quality Log entry ID
+      let targetEntryId = qualityEntryId;
+
+      // If not coming from Quality Log, try to find a matching entry
+      if (!targetEntryId) {
+        console.log('[PDF] Not from Quality Log - searching for matching entry...');
+        const matchingEntry = await findMatchingQualityEntry();
+
+        if (matchingEntry) {
+          targetEntryId = matchingEntry.id;
+          console.log('[PDF] Found matching Quality Log entry:', targetEntryId);
+        } else {
+          // No matching entry found - alert user and allow them to go back
+          console.log('[PDF] No matching Quality Log entry found');
+          Alert.alert(
+            'No Matching Entry Found',
+            'Could not find a matching piece in the Quality Log.\n\nPlease verify the following product details are correct:\n' +
+            `• Job Number: ${config.projectNumber || '(not set)'}\n` +
+            `• Mark Number: ${config.markNumber || '(not set)'}\n` +
+            `• ID Number: ${config.idNumber || '(not set)'}\n\n` +
+            'Go back to edit the product details, or the piece may need to be added to the Quality Log first.',
+            [
+              { text: 'Go Back', onPress: () => navigation.goBack() },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          );
+          setIsGeneratingPDF(false);
+          return;
+        }
+      }
+
       // Capture the cross-section diagram as an image
       let crossSectionImageUri: string | undefined;
       const isWeb = Platform.OS === 'web';
@@ -368,7 +452,9 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
       const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
 
       console.log('[PDF] Generating PDF...');
-      // Generate the PDF
+      console.log('[PDF] Target entry ID:', targetEntryId);
+
+      // Generate the PDF - always skip local download since we save to Quality Log
       const filePath = await generateSlippagePDF({
         slippages,
         config,
@@ -393,53 +479,37 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
         castTopStrandSizes: selectedTopPattern?.strandSizes,
         activeStrandIndices,
         activeTopStrandIndices,
-        uploadToSharePoint: false, // SharePoint upload disabled
-        skipLocalDownload: !!qualityEntryId, // Skip download when saving to Quality Log attachments
+        uploadToSharePoint: false,
+        skipLocalDownload: true, // Always skip local download - save to Quality Log instead
         // Callback to save PDF as attachment to quality log entry
-        onPdfBlobCreated: qualityEntryId ? async (blob, filename) => {
+        onPdfBlobCreated: async (blob, filename) => {
           console.log('[SlippageSummary] onPdfBlobCreated callback triggered');
-          console.log('[SlippageSummary] qualityEntryId:', qualityEntryId);
+          console.log('[SlippageSummary] targetEntryId:', targetEntryId);
           console.log('[SlippageSummary] blob size:', blob.size);
           console.log('[SlippageSummary] filename:', filename);
           try {
-            const result = await saveSlippageReportAsAttachment(blob, filename);
+            const result = await saveSlippageReportAsAttachment(blob, filename, targetEntryId!);
             console.log('[SlippageSummary] saveSlippageReportAsAttachment result:', result);
+            if (result) {
+              setReportSavedSuccess(true);
+              setTimeout(() => setReportSavedSuccess(false), 3000);
+            }
           } catch (err) {
             console.error('[PDF] Error saving attachment:', err);
           }
-        } : undefined,
+        },
       });
 
-      console.log('[SlippageSummary] PDF generation complete, qualityEntryId:', qualityEntryId);
+      console.log('[SlippageSummary] PDF generation complete, targetEntryId:', targetEntryId);
 
       if (filePath) {
         console.log('[PDF] PDF generated successfully:', filePath);
-
-        // Show success message based on context
-        if (qualityEntryId) {
-          // Coming from Quality Log - PDF saved as attachment
-          Alert.alert(
-            'Report Generated',
-            'The slippage report has been generated and saved to the quality log attachments.',
-            [{ text: 'OK' }]
-          );
-        } else if (filePath === 'web-pdf-downloaded') {
-          console.log('[PDF] PDF downloaded successfully on web');
-          Alert.alert(
-            'PDF Downloaded',
-            'The slippage report has been downloaded to your Downloads folder.'
-          );
-        } else if (filePath === 'web-print-dialog-opened') {
-          console.log('[PDF] Web print dialog opened - user can save as PDF from browser');
-          Alert.alert(
-            'Print Dialog Opened',
-            'Use your browser\'s print dialog to save the report as PDF. Select "Save as PDF" as the printer destination.'
-          );
-        } else {
-          // On native platforms, share the PDF file
-          await sharePDF(filePath);
-          console.log('[PDF] PDF shared successfully');
-        }
+        // PDF saved as attachment to Quality Log
+        Alert.alert(
+          'Report Generated',
+          'The slippage report has been generated and saved to the Quality Log attachments.',
+          [{ text: 'OK' }]
+        );
       } else {
         console.log('[PDF] Failed to generate PDF - no file path returned');
         Alert.alert('Error', 'Failed to generate PDF report. Please try again.');
@@ -1060,6 +1130,15 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
               <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
               <Text className="text-blue-700 font-semibold ml-3">
                 Record published successfully!
+              </Text>
+            </View>
+          )}
+
+          {reportSavedSuccess && (
+            <View className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex-row items-center">
+              <Ionicons name="document-attach" size={24} color="#059669" />
+              <Text className="text-emerald-700 font-semibold ml-3">
+                Report saved to Quality Log attachments!
               </Text>
             </View>
           )}
