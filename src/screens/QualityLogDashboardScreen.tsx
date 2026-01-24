@@ -843,13 +843,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       }
     };
 
+    // Allow text wrapping for disposition field to show multi-select values
+    const allowWrap = field === 'disposition';
+
     return (
       <Pressable
         onPress={handlePress}
-        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', ...cellBorderStyle }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: allowWrap ? 'flex-start' : 'center', ...cellBorderStyle }}
       >
-        <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
-        <Ionicons name="chevron-down" size={10} color="#9CA3AF" />
+        <Text className="text-sm text-gray-900 flex-1" numberOfLines={allowWrap ? undefined : 1} style={allowWrap ? { flexWrap: 'wrap' } : undefined}>{displayValue}</Text>
+        <Ionicons name="chevron-down" size={10} color="#9CA3AF" style={allowWrap ? { marginTop: 4 } : undefined} />
       </Pressable>
     );
   };
