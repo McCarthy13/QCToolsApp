@@ -951,16 +951,59 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       }
     };
 
-    // Allow text wrapping for disposition field to show multi-select values
-    const allowWrap = field === 'disposition';
+    // Get background color for disposition values
+    const getDispositionBgColor = (disp: string): string | null => {
+      if (disp.includes('Eng')) return '#FF9933';
+      if (disp.includes('WIP')) return '#FFFF00';
+      if (disp.includes('Yard Cut')) return '#00CCFF';
+      return null;
+    };
 
+    // For disposition field, render colored bubbles for each disposition
+    if (field === 'disposition' && value) {
+      const dispositions = value.split(', ').map(d => d.trim()).filter(d => d);
+
+      return (
+        <Pressable
+          onPress={handlePress}
+          style={{ width, paddingHorizontal: 4, paddingVertical: 6, flexDirection: 'column', gap: 3, justifyContent: 'center', ...cellBorderStyle }}
+        >
+          {dispositions.map((disp, idx) => {
+            const bgColor = getDispositionBgColor(disp);
+            return (
+              <View
+                key={idx}
+                style={{
+                  backgroundColor: bgColor || '#F3F4F6',
+                  borderRadius: 4,
+                  paddingHorizontal: 6,
+                  paddingVertical: 3,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Text style={{ fontSize: 11, color: '#000000', fontWeight: '500', flex: 1 }}>
+                  {disp}
+                </Text>
+                {idx === dispositions.length - 1 && (
+                  <Ionicons name="chevron-down" size={10} color="#6B7280" />
+                )}
+              </View>
+            );
+          })}
+        </Pressable>
+      );
+    }
+
+    // Default rendering for other fields
     return (
       <Pressable
         onPress={handlePress}
-        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: allowWrap ? 'flex-start' : 'center', ...cellBorderStyle }}
+        style={{ width, paddingHorizontal: 6, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', ...cellBorderStyle }}
       >
-        <Text className="text-sm text-gray-900 flex-1" numberOfLines={allowWrap ? undefined : 1} style={allowWrap ? { flexWrap: 'wrap' } : undefined}>{displayValue}</Text>
-        <Ionicons name="chevron-down" size={10} color="#9CA3AF" style={allowWrap ? { marginTop: 4 } : undefined} />
+        <Text className="text-sm text-gray-900 flex-1" numberOfLines={1}>{displayValue}</Text>
+        <Ionicons name="chevron-down" size={10} color="#9CA3AF" />
       </Pressable>
     );
   };
