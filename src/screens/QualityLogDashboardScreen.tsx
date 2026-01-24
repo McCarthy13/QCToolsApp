@@ -852,11 +852,83 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     );
   };
 
-  const stats = {
-    total: entries.length,
-    pending: entries.filter((e) => !e.disposition).length,
-    okToShip: entries.filter((e) => e.disposition === 'Ok to Ship').length,
-    issues: entries.filter((e) => e.issueCodes.length > 0 || e.rejectCodes.length > 0).length,
+  // Calculate stats for metric cards
+  const awaitingInspection = entries.filter((e) => e.disposition === 'Scheduled' || e.disposition?.includes('Scheduled')).length;
+  const openWip = entries.filter((e) => e.disposition === 'WIP' || e.disposition?.includes('WIP')).length;
+  const openEng = entries.filter((e) => e.disposition === 'Eng' || e.disposition?.includes('Eng')).length;
+  const openYardCuts = entries.filter((e) => e.disposition === 'Yard Cut' || e.disposition?.includes('Yard Cut')).length;
+
+  // Calculate most recent pour date before today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const pourDates = entries
+    .map((e) => e.pourDate)
+    .filter((d): d is string => !!d)
+    .map((d) => new Date(d))
+    .filter((d) => !isNaN(d.getTime()) && d < today)
+    .sort((a, b) => b.getTime() - a.getTime());
+
+  const mostRecentPourDate = pourDates.length > 0 ? pourDates[0] : null;
+  const mostRecentPourDateStr = mostRecentPourDate
+    ? mostRecentPourDate.toISOString().split('T')[0]
+    : null;
+
+  // Get entries for most recent pour date
+  const postPourEntries = mostRecentPourDateStr
+    ? entries.filter((e) => e.pourDate === mostRecentPourDateStr)
+    : [];
+  const postPourStats = {
+    total: postPourEntries.length,
+    scheduled: postPourEntries.filter((e) => e.disposition === 'Scheduled' || e.disposition?.includes('Scheduled')).length,
+    wip: postPourEntries.filter((e) => e.disposition === 'WIP' || e.disposition?.includes('WIP')).length,
+    eng: postPourEntries.filter((e) => e.disposition === 'Eng' || e.disposition?.includes('Eng')).length,
+    yardCut: postPourEntries.filter((e) => e.disposition === 'Yard Cut' || e.disposition?.includes('Yard Cut')).length,
+  };
+
+  // Handle metric card clicks to filter the log
+  const handleMetricCardPress = (filterType: 'scheduled' | 'wip' | 'eng' | 'yardCut' | 'postPour') => {
+    // Clear existing filters first
+    const clearedFilters: ColumnFilters = {
+      pourDate: '',
+      disposition: '',
+      status: '',
+      approvalDate: '',
+      productType: '',
+      jobNumber: '',
+      markNumber: '',
+      idNumber: '',
+      length: '',
+      width: '',
+      designStrandPattern: '',
+      castStrandPattern: '',
+      bed: '',
+      location: '',
+      qualityComments: '',
+      engineer: '',
+      engineerFeedback: '',
+      issueCodes: '',
+      rejectCodes: '',
+    };
+
+    switch (filterType) {
+      case 'scheduled':
+        setColumnFilters({ ...clearedFilters, disposition: 'Scheduled' });
+        break;
+      case 'wip':
+        setColumnFilters({ ...clearedFilters, disposition: 'WIP' });
+        break;
+      case 'eng':
+        setColumnFilters({ ...clearedFilters, disposition: 'Eng' });
+        break;
+      case 'yardCut':
+        setColumnFilters({ ...clearedFilters, disposition: 'Yard Cut' });
+        break;
+      case 'postPour':
+        if (mostRecentPourDateStr) {
+          setColumnFilters({ ...clearedFilters, pourDate: mostRecentPourDateStr });
+        }
+        break;
+    }
   };
 
   // Get picker options based on field
@@ -1041,25 +1113,84 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           ) : null}
         </View>
 
-        {/* Quick Stats */}
-        <View className="flex-row gap-2">
-          <View className="flex-1 bg-gray-50 rounded-lg p-2">
-            <Text className="text-xs text-gray-500">Total</Text>
-            <Text className="text-lg font-bold text-gray-900">{stats.total}</Text>
-          </View>
-          <View className="flex-1 bg-yellow-50 rounded-lg p-2">
-            <Text className="text-xs text-gray-500">Pending</Text>
-            <Text className="text-lg font-bold text-yellow-600">{stats.pending}</Text>
-          </View>
-          <View className="flex-1 bg-green-50 rounded-lg p-2">
-            <Text className="text-xs text-gray-500">Ok to Ship</Text>
-            <Text className="text-lg font-bold text-green-600">{stats.okToShip}</Text>
-          </View>
-          <View className="flex-1 bg-red-50 rounded-lg p-2">
-            <Text className="text-xs text-gray-500">Issues</Text>
-            <Text className="text-lg font-bold text-red-600">{stats.issues}</Text>
-          </View>
+        {/* Metric Cards */}
+        <View className="flex-row flex-wrap gap-2">
+          {/* Awaiting Inspection */}
+          <Pressable
+            onPress={() => handleMetricCardPress('scheduled')}
+            className="flex-1 min-w-[80px] bg-amber-50 rounded-lg p-2 border border-amber-200 active:bg-amber-100"
+          >
+            <Text className="text-xs text-amber-700">Awaiting Inspection</Text>
+            <Text className="text-lg font-bold text-amber-600">{awaitingInspection}</Text>
+          </Pressable>
+
+          {/* Open WIP */}
+          <Pressable
+            onPress={() => handleMetricCardPress('wip')}
+            className="flex-1 min-w-[80px] bg-blue-50 rounded-lg p-2 border border-blue-200 active:bg-blue-100"
+          >
+            <Text className="text-xs text-blue-700">Open WIP</Text>
+            <Text className="text-lg font-bold text-blue-600">{openWip}</Text>
+          </Pressable>
+
+          {/* Open Eng */}
+          <Pressable
+            onPress={() => handleMetricCardPress('eng')}
+            className="flex-1 min-w-[80px] bg-purple-50 rounded-lg p-2 border border-purple-200 active:bg-purple-100"
+          >
+            <Text className="text-xs text-purple-700">Open Eng</Text>
+            <Text className="text-lg font-bold text-purple-600">{openEng}</Text>
+          </Pressable>
+
+          {/* Open Yard Cuts */}
+          <Pressable
+            onPress={() => handleMetricCardPress('yardCut')}
+            className="flex-1 min-w-[80px] bg-orange-50 rounded-lg p-2 border border-orange-200 active:bg-orange-100"
+          >
+            <Text className="text-xs text-orange-700">Open Yard Cuts</Text>
+            <Text className="text-lg font-bold text-orange-600">{openYardCuts}</Text>
+          </Pressable>
         </View>
+
+        {/* Post-Pour Report Card */}
+        <Pressable
+          onPress={() => handleMetricCardPress('postPour')}
+          className="mt-2 bg-slate-50 rounded-lg p-3 border border-slate-200 active:bg-slate-100"
+          disabled={!mostRecentPourDateStr}
+        >
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-sm font-semibold text-slate-700">
+              Post-Pour Report {mostRecentPourDateStr ? `(${mostRecentPourDateStr})` : ''}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#64748B" />
+          </View>
+          {mostRecentPourDateStr ? (
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Text className="text-[10px] text-slate-500">Total</Text>
+                <Text className="text-sm font-bold text-slate-700">{postPourStats.total}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] text-amber-600">Awaiting</Text>
+                <Text className="text-sm font-bold text-amber-600">{postPourStats.scheduled}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] text-blue-600">WIP</Text>
+                <Text className="text-sm font-bold text-blue-600">{postPourStats.wip}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] text-purple-600">Eng</Text>
+                <Text className="text-sm font-bold text-purple-600">{postPourStats.eng}</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] text-orange-600">Yard Cut</Text>
+                <Text className="text-sm font-bold text-orange-600">{postPourStats.yardCut}</Text>
+              </View>
+            </View>
+          ) : (
+            <Text className="text-xs text-slate-400">No pour data available</Text>
+          )}
+        </Pressable>
       </View>
 
       {/* Active Filters Row */}
