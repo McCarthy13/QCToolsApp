@@ -859,21 +859,32 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const openYardCuts = entries.filter((e) => e.disposition === 'Yard Cut' || e.disposition?.includes('Yard Cut')).length;
 
   // Calculate most recent pour date before today
+  // Pour dates are stored in MM/DD/YYYY format
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const pourDates = entries
-    .map((e) => e.pourDate)
-    .filter((d): d is string => !!d)
-    .map((d) => new Date(d))
-    .filter((d) => !isNaN(d.getTime()) && d < today)
-    .sort((a, b) => b.getTime() - a.getTime());
 
-  const mostRecentPourDate = pourDates.length > 0 ? pourDates[0] : null;
-  const mostRecentPourDateStr = mostRecentPourDate
-    ? mostRecentPourDate.toISOString().split('T')[0]
-    : null;
+  // Get unique pour dates with their parsed Date objects
+  const pourDateMap = new Map<string, Date>();
+  entries.forEach((e) => {
+    if (e.pourDate) {
+      const parsed = new Date(e.pourDate);
+      if (!isNaN(parsed.getTime()) && parsed < today) {
+        pourDateMap.set(e.pourDate, parsed);
+      }
+    }
+  });
 
-  // Get entries for most recent pour date
+  // Find the most recent pour date string (in original format)
+  let mostRecentPourDateStr: string | null = null;
+  let mostRecentTime = 0;
+  pourDateMap.forEach((date, dateStr) => {
+    if (date.getTime() > mostRecentTime) {
+      mostRecentTime = date.getTime();
+      mostRecentPourDateStr = dateStr;
+    }
+  });
+
+  // Get entries for most recent pour date (using original string format)
   const postPourEntries = mostRecentPourDateStr
     ? entries.filter((e) => e.pourDate === mostRecentPourDateStr)
     : [];
