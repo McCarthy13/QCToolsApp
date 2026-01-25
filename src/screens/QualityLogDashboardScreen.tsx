@@ -1253,8 +1253,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     const tdStyle = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis;"`;
     const tdStyleWrap = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; word-wrap: break-word; overflow-wrap: break-word;"`;
 
+    // Firebase hosting URL for feedback page
+    const feedbackBaseUrl = 'https://precast-qc-tools-web-app.web.app/feedback';
+
     // Format a single entry as a table row
-    const formatEntryRow = (entry: QualityLogEntry): string => {
+    const formatEntryRow = (entry: QualityLogEntry, includeEngineerFeedback: boolean = false): string => {
       // Format inspection notes - wrap in div for better containment
       const notesText = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('<br/>') || '-';
 
@@ -1275,6 +1278,19 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           : attachmentLinks;
       }
 
+      // Engineer feedback cell with "Provide Feedback" link
+      let engineerFeedbackCell = '';
+      if (includeEngineerFeedback) {
+        if (entry.engineerFeedback) {
+          // Show existing feedback
+          engineerFeedbackCell = `<td ${tdStyleWrap}><div style="max-width: 100%; word-wrap: break-word;">${entry.engineerFeedback}</div></td>`;
+        } else {
+          // Show "Provide Feedback" link
+          const feedbackUrl = `${feedbackBaseUrl}?entryId=${encodeURIComponent(entry.id)}&subject=${encodeURIComponent(subject)}`;
+          engineerFeedbackCell = `<td ${tdStyle}><a href="${feedbackUrl}" target="_blank" style="color: #7c3aed; font-weight: bold;">Provide Feedback</a></td>`;
+        }
+      }
+
       return `<tr>
         <td ${tdStyle}>${entry.pourDate || '-'}</td>
         <td ${tdStyle}>${entry.disposition || '-'}</td>
@@ -1292,10 +1308,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         <td ${tdStyleWrap}><div style="max-width: 100%; word-wrap: break-word;">${notesText}</div></td>
         <td ${tdStyle}>${attachmentsCell}</td>
         <td ${tdStyle}>${entry.engineer || '-'}</td>
+        ${engineerFeedbackCell}
       </tr>`;
     };
 
-    // Table header with column widths
+    // Table header with column widths (standard - without engineer feedback)
     const tableHeader = `
       <colgroup>
         <col style="width: 70px;">
@@ -1334,12 +1351,54 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       <th ${thStyle}>Engineer</th>
     </tr>`;
 
+    // Table header for Open ENG section (includes Engineer Feedback column)
+    const tableHeaderWithFeedback = `
+      <colgroup>
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+        <col style="width: 40px;">
+        <col style="width: 40px;">
+        <col style="width: 60px;">
+        <col style="width: 70px;">
+        <col style="width: 45px;">
+        <col style="width: 70px;">
+        <col style="width: 65px;">
+        <col style="width: 45px;">
+        <col style="width: 80px;">
+        <col style="width: 80px;">
+        <col style="width: 35px;">
+        <col style="width: 180px;">
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+        <col style="width: 120px;">
+      </colgroup>
+      <tr>
+      <th ${thStyle}>Pour Date</th>
+      <th ${thStyle}>Disposition</th>
+      <th ${thStyle}>Status</th>
+      <th ${thStyle}>Type</th>
+      <th ${thStyle}>Job #</th>
+      <th ${thStyle}>Mark #</th>
+      <th ${thStyle}>Ticket</th>
+      <th ${thStyle}>ID #</th>
+      <th ${thStyle}>Length</th>
+      <th ${thStyle}>Width</th>
+      <th ${thStyle}>Design Pattern</th>
+      <th ${thStyle}>Cast Pattern</th>
+      <th ${thStyle}>Bed</th>
+      <th ${thStyle}>Inspection Notes</th>
+      <th ${thStyle}>Attachments</th>
+      <th ${thStyle}>Engineer</th>
+      <th ${thStyle}>Engineer Feedback</th>
+    </tr>`;
+
     // Build table for a section
-    const buildSectionTable = (sectionEntries: QualityLogEntry[]): string => {
+    const buildSectionTable = (sectionEntries: QualityLogEntry[], includeEngineerFeedback: boolean = false): string => {
       if (sectionEntries.length === 0) return '';
+      const header = includeEngineerFeedback ? tableHeaderWithFeedback : tableHeader;
       return `<table ${tableStyle}>
-        <thead>${tableHeader}</thead>
-        <tbody>${sectionEntries.map(formatEntryRow).join('')}</tbody>
+        <thead>${header}</thead>
+        <tbody>${sectionEntries.map(e => formatEntryRow(e, includeEngineerFeedback)).join('')}</tbody>
       </table>`;
     };
 
@@ -1363,7 +1422,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     // Open Eng section
     body += `<p><strong><u>Open Eng</u></strong></p>\n`;
     if (openEngEntries.length > 0) {
-      body += buildSectionTable(openEngEntries);
+      body += buildSectionTable(openEngEntries, true); // Include Engineer Feedback column
     } else {
       body += `<p><em>No open Eng items</em></p>`;
     }

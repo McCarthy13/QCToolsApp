@@ -16,6 +16,16 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "rewrites": [
+      {
+        "source": "/feedback",
+        "function": "feedbackPage"
+      },
+      {
+        "source": "/api/submitFeedback",
+        "function": "submitEngineerFeedback"
+      }
+    ],
     "headers": [
       {
         "source": "**",

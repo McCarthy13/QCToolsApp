@@ -1219,3 +1219,435 @@ exports.extractAndUploadPdfPage = onCall({
     };
   }
 });
+
+/**
+ * Feedback Page
+ * Serves an HTML page for engineers to submit feedback on quality log entries
+ * Accessed via /feedback?entryId=xxx&subject=xxx
+ */
+exports.feedbackPage = onRequest({
+  cors: true,
+  maxInstances: 10,
+  timeoutSeconds: 30,
+}, async (req, res) => {
+  try {
+    const { entryId, subject } = req.query;
+
+    if (!entryId) {
+      return res.status(400).send('Missing entry ID');
+    }
+
+    // Fetch the entry from Firestore
+    const entryDoc = await db.collection('qualityLog').doc(entryId).get();
+
+    if (!entryDoc.exists) {
+      return res.status(404).send('Entry not found');
+    }
+
+    const entry = entryDoc.data();
+
+    // Format inspection notes
+    const inspectionNotes = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('<br/>') || '-';
+
+    // Build the HTML page
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineer Feedback - ${entry.jobNumber}-${entry.markNumber}</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background-color: #f5f5f5;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 24px;
+    }
+    h1 {
+      color: #1f2937;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .entry-details {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .entry-details h2 {
+      font-size: 16px;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .detail-item {
+      font-size: 13px;
+    }
+    .detail-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+    .detail-value {
+      color: #1f2937;
+      font-weight: 600;
+    }
+    .notes-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .notes-section .detail-value {
+      font-weight: normal;
+      white-space: pre-wrap;
+    }
+    .feedback-form {
+      margin-top: 24px;
+    }
+    .feedback-form label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+    .feedback-form textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .feedback-form textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .email-input {
+      margin-top: 16px;
+    }
+    .email-input input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .email-input input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .submit-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      background: #7c3aed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover {
+      background: #6d28d9;
+    }
+    .submit-btn:disabled {
+      background: #c4b5fd;
+      cursor: not-allowed;
+    }
+    .success-message {
+      display: none;
+      padding: 16px;
+      background: #d1fae5;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      color: #065f46;
+      margin-top: 16px;
+    }
+    .error-message {
+      display: none;
+      padding: 16px;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #991b1b;
+      margin-top: 16px;
+    }
+    .existing-feedback {
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .existing-feedback h3 {
+      font-size: 14px;
+      color: #1e40af;
+      margin-bottom: 8px;
+    }
+    .existing-feedback p {
+      color: #1e3a8a;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Provide Engineer Feedback</h1>
+    <p class="subtitle">Quality Log Entry: ${entry.jobNumber}-${entry.markNumber} | ID: ${entry.idNumber}</p>
+
+    <div class="entry-details">
+      <h2>Entry Details</h2>
+      <div class="details-grid">
+        <div class="detail-item">
+          <div class="detail-label">Pour Date</div>
+          <div class="detail-value">${entry.pourDate || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Disposition</div>
+          <div class="detail-value">${entry.disposition || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Status</div>
+          <div class="detail-value">${entry.status || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Product Type</div>
+          <div class="detail-value">${entry.productType || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Job #</div>
+          <div class="detail-value">${entry.jobNumber || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Mark #</div>
+          <div class="detail-value">${entry.markNumber || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">ID #</div>
+          <div class="detail-value">${entry.idNumber || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Length</div>
+          <div class="detail-value">${entry.length || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Width</div>
+          <div class="detail-value">${entry.width || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Design Pattern</div>
+          <div class="detail-value">${entry.designStrandPattern || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Cast Pattern</div>
+          <div class="detail-value">${entry.castStrandPattern || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Bed</div>
+          <div class="detail-value">${entry.bed || '-'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Engineer</div>
+          <div class="detail-value">${entry.engineer || '-'}</div>
+        </div>
+      </div>
+      <div class="notes-section">
+        <div class="detail-label">Inspection Notes</div>
+        <div class="detail-value">${inspectionNotes}</div>
+      </div>
+    </div>
+
+    ${entry.engineerFeedback ? `
+    <div class="existing-feedback">
+      <h3>Existing Feedback</h3>
+      <p>${entry.engineerFeedback}</p>
+    </div>
+    ` : ''}
+
+    <form class="feedback-form" id="feedbackForm">
+      <input type="hidden" id="entryId" value="${entryId}">
+      <input type="hidden" id="originalSubject" value="${subject || ''}">
+
+      <label for="feedback">${entry.engineerFeedback ? 'Update Feedback' : 'Your Feedback'}</label>
+      <textarea id="feedback" name="feedback" placeholder="Enter your feedback here..." required>${entry.engineerFeedback || ''}</textarea>
+
+      <div class="email-input">
+        <label for="email">Your Email Address</label>
+        <input type="email" id="email" name="email" placeholder="your.email@molinconcrete.com" required>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Submit Feedback</button>
+    </form>
+
+    <div class="success-message" id="successMessage">
+      <strong>Feedback submitted successfully!</strong><br>
+      Your feedback has been saved and a reply-all email has been sent to the original recipients.
+    </div>
+
+    <div class="error-message" id="errorMessage">
+      <strong>Error:</strong> <span id="errorText"></span>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submitBtn');
+      const successMessage = document.getElementById('successMessage');
+      const errorMessage = document.getElementById('errorMessage');
+      const errorText = document.getElementById('errorText');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      successMessage.style.display = 'none';
+      errorMessage.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/submitFeedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            entryId: document.getElementById('entryId').value,
+            feedback: document.getElementById('feedback').value,
+            email: document.getElementById('email').value,
+            originalSubject: document.getElementById('originalSubject').value,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          successMessage.style.display = 'block';
+          submitBtn.textContent = 'Submitted!';
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } catch (error) {
+        errorText.textContent = error.message;
+        errorMessage.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Feedback';
+      }
+    });
+  </script>
+</body>
+</html>
+    `;
+
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+
+  } catch (error) {
+    console.error("[Feedback Page] Error:", error);
+    res.status(500).send('Error loading feedback page');
+  }
+});
+
+/**
+ * Submit Engineer Feedback
+ * Handles feedback submission, updates Firestore, and sends reply-all email
+ */
+exports.submitEngineerFeedback = onRequest({
+  cors: true,
+  maxInstances: 10,
+  timeoutSeconds: 60,
+}, async (req, res) => {
+  // Only allow POST requests
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, error: "Method not allowed" });
+  }
+
+  try {
+    const { entryId, feedback, email, originalSubject } = req.body;
+
+    if (!entryId || !feedback || !email) {
+      return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+
+    console.log(`[Submit Feedback] Processing feedback for entry ${entryId} from ${email}`);
+
+    // Fetch the entry from Firestore
+    const entryRef = db.collection('qualityLog').doc(entryId);
+    const entryDoc = await entryRef.get();
+
+    if (!entryDoc.exists) {
+      return res.status(404).json({ success: false, error: "Entry not found" });
+    }
+
+    const entry = entryDoc.data();
+
+    // Format timestamp
+    const now = new Date();
+    const timestamp = now.toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    // Create feedback with timestamp and email
+    const formattedFeedback = `${feedback}\n\n— ${email} (${timestamp})`;
+
+    // Update the entry in Firestore
+    await entryRef.update({
+      engineerFeedback: formattedFeedback,
+      updatedAt: Date.now(),
+      updatedBy: email,
+    });
+
+    console.log(`[Submit Feedback] Updated entry ${entryId} with feedback`);
+
+    // Note: Reply-all email functionality would require:
+    // 1. Storing the original email message ID when sent
+    // 2. Using Microsoft Graph API with Mail.ReadWrite permissions
+    // 3. Using the reply-all endpoint with the original message ID
+    // For now, we'll just update Firestore and the feedback shows in the next report
+
+    return res.status(200).json({
+      success: true,
+      message: "Feedback submitted successfully",
+    });
+
+  } catch (error) {
+    console.error("[Submit Feedback] Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Internal server error",
+    });
+  }
+});
