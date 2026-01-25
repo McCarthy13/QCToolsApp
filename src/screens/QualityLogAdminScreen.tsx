@@ -6,130 +6,148 @@ import {
   Pressable,
   TextInput,
   Alert,
-  Modal,
   Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../navigation/types';
-import { useQualityLogStore } from '../state/qualityLogStore';
-import { QualityCode } from '../types/quality-log';
+import { ISSUE_CODE_DEFINITIONS, getIssueCodeDescription } from '../types/quality-log';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogAdmin'>;
 
-type CodeType = 'issue' | 'reject';
+type TabType = 'columns' | 'codes' | 'email';
+
+// All available columns in the Quality Log table
+const ALL_COLUMNS = [
+  { key: 'pourDate', label: 'Pour Date', defaultVisible: true },
+  { key: 'disposition', label: 'Disposition', defaultVisible: true },
+  { key: 'status', label: 'Status', defaultVisible: true },
+  { key: 'productType', label: 'Product Type', defaultVisible: true },
+  { key: 'jobNumber', label: 'Job #', defaultVisible: true },
+  { key: 'markNumber', label: 'Mark #', defaultVisible: true },
+  { key: 'pieceTicket', label: 'Piece Ticket (PDF)', defaultVisible: true },
+  { key: 'idNumber', label: 'ID #', defaultVisible: true },
+  { key: 'length', label: 'Length', defaultVisible: true },
+  { key: 'width', label: 'Width', defaultVisible: true },
+  { key: 'designStrandPattern', label: 'Design Strand Pattern', defaultVisible: true },
+  { key: 'castStrandPattern', label: 'Cast Strand Pattern', defaultVisible: true },
+  { key: 'bed', label: 'Bed', defaultVisible: true },
+  { key: 'location', label: 'Location', defaultVisible: true },
+  { key: 'inspectionNotes', label: 'Inspection Notes', defaultVisible: true },
+  { key: 'attachments', label: 'Attachments', defaultVisible: true },
+  { key: 'engineer', label: 'Engineer', defaultVisible: true },
+  { key: 'engineerFeedback', label: 'Engineer Feedback', defaultVisible: true },
+  { key: 'issueCodes', label: 'Issue Codes', defaultVisible: true },
+  { key: 'rejectCodes', label: 'Reject Codes', defaultVisible: true },
+];
+
+const COLUMN_VISIBILITY_KEY = 'quality_log_column_visibility';
+const DEFAULT_RECIPIENTS_KEY = 'daily_report_default_recipients';
+
+interface ColumnVisibility {
+  [key: string]: boolean;
+}
+
+interface DefaultRecipients {
+  to: string;
+  cc: string;
+}
 
 export default function QualityLogAdminScreen({ navigation }: Props) {
-  const issueCodes = useQualityLogStore((s) => s.issueCodes);
-  const rejectCodes = useQualityLogStore((s) => s.rejectCodes);
-  const addIssueCode = useQualityLogStore((s) => s.addIssueCode);
-  const updateIssueCode = useQualityLogStore((s) => s.updateIssueCode);
-  const deleteIssueCode = useQualityLogStore((s) => s.deleteIssueCode);
-  const addRejectCode = useQualityLogStore((s) => s.addRejectCode);
-  const updateRejectCode = useQualityLogStore((s) => s.updateRejectCode);
-  const deleteRejectCode = useQualityLogStore((s) => s.deleteRejectCode);
+  const [activeTab, setActiveTab] = useState<TabType>('columns');
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({});
+  const [recipients, setRecipients] = useState<DefaultRecipients>({ to: '', cc: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<CodeType>('issue');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingCode, setEditingCode] = useState<QualityCode | null>(null);
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
-  // Form state
-  const [formCode, setFormCode] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formIsActive, setFormIsActive] = useState(true);
-
-  const currentCodes = activeTab === 'issue' ? issueCodes : rejectCodes;
-
-  const resetForm = () => {
-    setFormCode('');
-    setFormDescription('');
-    setFormIsActive(true);
-    setEditingCode(null);
-  };
-
-  const handleOpenAdd = () => {
-    resetForm();
-    setShowAddModal(true);
-  };
-
-  const handleOpenEdit = (code: QualityCode) => {
-    setEditingCode(code);
-    setFormCode(code.code);
-    setFormDescription(code.description);
-    setFormIsActive(code.isActive);
-    setShowAddModal(true);
-  };
-
-  const handleSave = async () => {
-    if (!formCode.trim()) {
-      Alert.alert('Error', 'Please enter a code');
-      return;
-    }
-
-    if (!formDescription.trim()) {
-      Alert.alert('Error', 'Please enter a description');
-      return;
-    }
-
+  const loadSettings = async () => {
     try {
-      if (editingCode) {
-        // Update existing
-        if (activeTab === 'issue') {
-          await updateIssueCode(editingCode.id, {
-            code: formCode.trim(),
-            description: formDescription.trim(),
-            isActive: formIsActive,
-          });
-        } else {
-          await updateRejectCode(editingCode.id, {
-            code: formCode.trim(),
-            description: formDescription.trim(),
-            isActive: formIsActive,
-          });
-        }
+      // Load column visibility
+      const storedColumns = await AsyncStorage.getItem(COLUMN_VISIBILITY_KEY);
+      if (storedColumns) {
+        setColumnVisibility(JSON.parse(storedColumns));
       } else {
-        // Add new
-        const newCode = {
-          code: formCode.trim(),
-          description: formDescription.trim(),
-          isActive: formIsActive,
-        };
-
-        if (activeTab === 'issue') {
-          await addIssueCode(newCode);
-        } else {
-          await addRejectCode(newCode);
-        }
+        // Initialize with defaults
+        const defaults: ColumnVisibility = {};
+        ALL_COLUMNS.forEach(col => {
+          defaults[col.key] = col.defaultVisible;
+        });
+        setColumnVisibility(defaults);
       }
 
-      setShowAddModal(false);
-      resetForm();
+      // Load email recipients
+      const storedRecipients = await AsyncStorage.getItem(DEFAULT_RECIPIENTS_KEY);
+      if (storedRecipients) {
+        setRecipients(JSON.parse(storedRecipients));
+      }
     } catch (error) {
-      console.error('Error saving code:', error);
-      Alert.alert('Error', 'Failed to save code. Please try again.');
+      console.error('Error loading settings:', error);
     }
   };
 
-  const handleDelete = (code: QualityCode) => {
+  const toggleColumn = async (columnKey: string) => {
+    const newVisibility = {
+      ...columnVisibility,
+      [columnKey]: !columnVisibility[columnKey],
+    };
+    setColumnVisibility(newVisibility);
+
+    try {
+      await AsyncStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(newVisibility));
+    } catch (error) {
+      console.error('Error saving column visibility:', error);
+    }
+  };
+
+  const resetColumnsToDefault = async () => {
+    const defaults: ColumnVisibility = {};
+    ALL_COLUMNS.forEach(col => {
+      defaults[col.key] = col.defaultVisible;
+    });
+    setColumnVisibility(defaults);
+
+    try {
+      await AsyncStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(defaults));
+      Alert.alert('Reset', 'Column visibility reset to defaults.');
+    } catch (error) {
+      console.error('Error resetting columns:', error);
+    }
+  };
+
+  const saveRecipients = async () => {
+    setIsSaving(true);
+    try {
+      await AsyncStorage.setItem(DEFAULT_RECIPIENTS_KEY, JSON.stringify(recipients));
+      Alert.alert('Saved', 'Email recipients saved successfully.');
+    } catch (error) {
+      console.error('Error saving recipients:', error);
+      Alert.alert('Error', 'Failed to save recipients.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const clearRecipients = async () => {
     Alert.alert(
-      'Delete Code',
-      `Are you sure you want to delete "${code.code}"? This cannot be undone.`,
+      'Clear Recipients',
+      'Are you sure you want to clear all default recipients?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Clear',
           style: 'destructive',
           onPress: async () => {
+            setRecipients({ to: '', cc: '' });
             try {
-              if (activeTab === 'issue') {
-                await deleteIssueCode(code.id);
-              } else {
-                await deleteRejectCode(code.id);
-              }
+              await AsyncStorage.removeItem(DEFAULT_RECIPIENTS_KEY);
+              Alert.alert('Cleared', 'Default recipients cleared.');
             } catch (error) {
-              console.error('Error deleting code:', error);
-              Alert.alert('Error', 'Failed to delete code. Please try again.');
+              console.error('Error clearing recipients:', error);
             }
           },
         },
@@ -137,255 +155,209 @@ export default function QualityLogAdminScreen({ navigation }: Props) {
     );
   };
 
-  const handleToggleActive = async (code: QualityCode) => {
-    try {
-      if (activeTab === 'issue') {
-        await updateIssueCode(code.id, { isActive: !code.isActive });
-      } else {
-        await updateRejectCode(code.id, { isActive: !code.isActive });
-      }
-    } catch (error) {
-      console.error('Error toggling code:', error);
-      Alert.alert('Error', 'Failed to update code. Please try again.');
-    }
-  };
+  const renderColumnsTab = () => (
+    <ScrollView className="flex-1 px-4 py-4">
+      <Text className="text-sm text-gray-500 mb-4">
+        Toggle which columns are visible in the Quality Log table. Changes are saved automatically.
+      </Text>
+
+      {ALL_COLUMNS.map((column) => (
+        <View
+          key={column.key}
+          className="flex-row items-center justify-between bg-white rounded-lg p-4 mb-2 border border-gray-200"
+        >
+          <Text className="text-base text-gray-900 flex-1">{column.label}</Text>
+          <Switch
+            value={columnVisibility[column.key] !== false}
+            onValueChange={() => toggleColumn(column.key)}
+            trackColor={{ false: '#D1D5DB', true: '#93C5FD' }}
+            thumbColor={columnVisibility[column.key] !== false ? '#3B82F6' : '#9CA3AF'}
+          />
+        </View>
+      ))}
+
+      <Pressable
+        onPress={resetColumnsToDefault}
+        className="mt-4 mb-8 py-3 bg-gray-200 rounded-lg items-center"
+      >
+        <Text className="text-gray-700 font-medium">Reset to Defaults</Text>
+      </Pressable>
+    </ScrollView>
+  );
+
+  const renderCodesTab = () => (
+    <ScrollView className="flex-1 px-4 py-4">
+      <Text className="text-sm text-gray-500 mb-4">
+        Reference list of all Issue Codes and Reject Codes. These codes are used to categorize quality issues.
+      </Text>
+
+      {ISSUE_CODE_DEFINITIONS.map((item) => (
+        <View
+          key={item.code}
+          className="flex-row items-center bg-white rounded-lg p-3 mb-2 border border-gray-200"
+        >
+          <View className="bg-blue-100 rounded-lg px-3 py-1 mr-3">
+            <Text className="text-blue-800 font-bold text-base">{item.code}</Text>
+          </View>
+          <Text className="text-base text-gray-900 flex-1">{item.description}</Text>
+        </View>
+      ))}
+
+      <View className="h-8" />
+    </ScrollView>
+  );
+
+  const renderEmailTab = () => (
+    <ScrollView className="flex-1 px-4 py-4">
+      <Text className="text-sm text-gray-500 mb-4">
+        Set default recipients for the "Send Today's Report" email. These will be pre-filled when sending reports.
+      </Text>
+
+      <View className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">To (Recipients)</Text>
+        <TextInput
+          value={recipients.to}
+          onChangeText={(text) => setRecipients(prev => ({ ...prev, to: text }))}
+          placeholder="email@example.com, email2@example.com"
+          placeholderTextColor="#9CA3AF"
+          className="bg-gray-100 rounded-lg px-4 py-3 text-gray-900"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          multiline
+        />
+        <Text className="text-xs text-gray-400 mt-1">
+          Separate multiple emails with commas
+        </Text>
+      </View>
+
+      <View className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">CC (Carbon Copy)</Text>
+        <TextInput
+          value={recipients.cc}
+          onChangeText={(text) => setRecipients(prev => ({ ...prev, cc: text }))}
+          placeholder="cc@example.com, cc2@example.com"
+          placeholderTextColor="#9CA3AF"
+          className="bg-gray-100 rounded-lg px-4 py-3 text-gray-900"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          multiline
+        />
+        <Text className="text-xs text-gray-400 mt-1">
+          Separate multiple emails with commas
+        </Text>
+      </View>
+
+      <View className="flex-row gap-3">
+        <Pressable
+          onPress={saveRecipients}
+          disabled={isSaving}
+          className="flex-1 py-3 bg-blue-600 rounded-lg items-center active:bg-blue-700"
+        >
+          <Text className="text-white font-semibold">
+            {isSaving ? 'Saving...' : 'Save Recipients'}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={clearRecipients}
+          className="py-3 px-4 bg-gray-200 rounded-lg items-center active:bg-gray-300"
+        >
+          <Ionicons name="trash-outline" size={20} color="#6B7280" />
+        </Pressable>
+      </View>
+
+      <View className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <View className="flex-row items-start">
+          <Ionicons name="information-circle" size={20} color="#3B82F6" style={{ marginRight: 8, marginTop: 2 }} />
+          <Text className="text-sm text-blue-800 flex-1">
+            When you click "Save as Default Recipients" in the Email Composer after clicking "Send Today's Report", it will automatically update the recipients here.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       {/* Header */}
       <View className="bg-white px-4 py-3 border-b border-gray-200">
-        <View className="flex-row items-center justify-between">
-          <Pressable onPress={() => navigation.goBack()} className="p-1">
+        <View className="flex-row items-center">
+          <Pressable onPress={() => navigation.goBack()} className="p-1 mr-3">
             <Ionicons name="arrow-back" size={24} color="#374151" />
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900">Quality Log Settings</Text>
-          <Pressable onPress={handleOpenAdd} className="p-1">
-            <Ionicons name="add-circle" size={28} color="#3B82F6" />
-          </Pressable>
+          <Text className="text-lg font-bold text-gray-900">Admin Settings</Text>
         </View>
       </View>
 
       {/* Tabs */}
       <View className="flex-row bg-white border-b border-gray-200">
         <Pressable
-          onPress={() => setActiveTab('issue')}
+          onPress={() => setActiveTab('columns')}
           className={`flex-1 py-3 items-center border-b-2 ${
-            activeTab === 'issue' ? 'border-orange-500' : 'border-transparent'
+            activeTab === 'columns' ? 'border-blue-500' : 'border-transparent'
           }`}
         >
+          <Ionicons
+            name="grid-outline"
+            size={20}
+            color={activeTab === 'columns' ? '#3B82F6' : '#9CA3AF'}
+          />
           <Text
-            className={`font-semibold ${
-              activeTab === 'issue' ? 'text-orange-600' : 'text-gray-500'
+            className={`text-xs mt-1 ${
+              activeTab === 'columns' ? 'text-blue-600 font-semibold' : 'text-gray-500'
+            }`}
+          >
+            Columns
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setActiveTab('codes')}
+          className={`flex-1 py-3 items-center border-b-2 ${
+            activeTab === 'codes' ? 'border-orange-500' : 'border-transparent'
+          }`}
+        >
+          <Ionicons
+            name="list-outline"
+            size={20}
+            color={activeTab === 'codes' ? '#F97316' : '#9CA3AF'}
+          />
+          <Text
+            className={`text-xs mt-1 ${
+              activeTab === 'codes' ? 'text-orange-600 font-semibold' : 'text-gray-500'
             }`}
           >
             Issue Codes
           </Text>
-          <Text
-            className={`text-xs ${
-              activeTab === 'issue' ? 'text-orange-500' : 'text-gray-400'
-            }`}
-          >
-            {issueCodes.length} codes
-          </Text>
         </Pressable>
+
         <Pressable
-          onPress={() => setActiveTab('reject')}
+          onPress={() => setActiveTab('email')}
           className={`flex-1 py-3 items-center border-b-2 ${
-            activeTab === 'reject' ? 'border-red-500' : 'border-transparent'
+            activeTab === 'email' ? 'border-green-500' : 'border-transparent'
           }`}
         >
+          <Ionicons
+            name="mail-outline"
+            size={20}
+            color={activeTab === 'email' ? '#22C55E' : '#9CA3AF'}
+          />
           <Text
-            className={`font-semibold ${
-              activeTab === 'reject' ? 'text-red-600' : 'text-gray-500'
+            className={`text-xs mt-1 ${
+              activeTab === 'email' ? 'text-green-600 font-semibold' : 'text-gray-500'
             }`}
           >
-            Reject Codes
-          </Text>
-          <Text
-            className={`text-xs ${
-              activeTab === 'reject' ? 'text-red-500' : 'text-gray-400'
-            }`}
-          >
-            {rejectCodes.length} codes
+            Email
           </Text>
         </Pressable>
       </View>
 
-      {/* Code List */}
-      <ScrollView className="flex-1">
-        {currentCodes.length === 0 ? (
-          <View className="flex-1 justify-center items-center py-20">
-            <Ionicons
-              name={activeTab === 'issue' ? 'warning-outline' : 'close-circle-outline'}
-              size={48}
-              color="#9CA3AF"
-            />
-            <Text className="text-gray-500 mt-4">
-              No {activeTab === 'issue' ? 'issue' : 'reject'} codes yet
-            </Text>
-            <Pressable
-              onPress={handleOpenAdd}
-              className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
-            >
-              <Text className="text-white font-semibold">Add First Code</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View className="px-4 py-4">
-            {currentCodes.map((code) => (
-              <View
-                key={code.id}
-                className={`bg-white rounded-xl p-4 mb-3 border-l-4 ${
-                  code.isActive
-                    ? activeTab === 'issue'
-                      ? 'border-l-orange-500'
-                      : 'border-l-red-500'
-                    : 'border-l-gray-300'
-                }`}
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <View className="flex-row items-center">
-                      <Text
-                        className={`text-lg font-bold ${
-                          code.isActive ? 'text-gray-900' : 'text-gray-400'
-                        }`}
-                      >
-                        {code.code}
-                      </Text>
-                      {!code.isActive && (
-                        <View className="ml-2 bg-gray-200 px-2 py-0.5 rounded">
-                          <Text className="text-xs text-gray-500">Inactive</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text
-                      className={`text-sm mt-1 ${
-                        code.isActive ? 'text-gray-600' : 'text-gray-400'
-                      }`}
-                    >
-                      {code.description}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center gap-2">
-                    <Switch
-                      value={code.isActive}
-                      onValueChange={() => handleToggleActive(code)}
-                      trackColor={{
-                        false: '#D1D5DB',
-                        true: activeTab === 'issue' ? '#FDBA74' : '#FCA5A5',
-                      }}
-                      thumbColor={
-                        code.isActive
-                          ? activeTab === 'issue'
-                            ? '#EA580C'
-                            : '#DC2626'
-                          : '#9CA3AF'
-                      }
-                    />
-                    <Pressable
-                      onPress={() => handleOpenEdit(code)}
-                      className="p-2 active:bg-gray-100 rounded-lg"
-                    >
-                      <Ionicons name="pencil" size={18} color="#6B7280" />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleDelete(code)}
-                      className="p-2 active:bg-red-50 rounded-lg"
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Add/Edit Modal */}
-      <Modal visible={showAddModal} transparent animationType="slide">
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-2xl p-6">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-bold text-gray-900">
-                {editingCode ? 'Edit' : 'Add'} {activeTab === 'issue' ? 'Issue' : 'Reject'} Code
-              </Text>
-              <Pressable
-                onPress={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
-              >
-                <Ionicons name="close" size={24} color="#6B7280" />
-              </Pressable>
-            </View>
-
-            {/* Code Input */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-1">Code</Text>
-              <TextInput
-                value={formCode}
-                onChangeText={setFormCode}
-                placeholder="e.g., 1, R1, A"
-                className="bg-gray-100 rounded-lg px-4 py-3 text-gray-900"
-                autoCapitalize="characters"
-              />
-            </View>
-
-            {/* Description Input */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-1">Description</Text>
-              <TextInput
-                value={formDescription}
-                onChangeText={setFormDescription}
-                placeholder="Describe what this code means"
-                className="bg-gray-100 rounded-lg px-4 py-3 text-gray-900"
-                multiline
-                numberOfLines={2}
-              />
-            </View>
-
-            {/* Active Toggle */}
-            <View className="flex-row items-center justify-between mb-6 py-3">
-              <View>
-                <Text className="text-sm font-medium text-gray-700">Active</Text>
-                <Text className="text-xs text-gray-500">
-                  Inactive codes won't appear in selection
-                </Text>
-              </View>
-              <Switch
-                value={formIsActive}
-                onValueChange={setFormIsActive}
-                trackColor={{
-                  false: '#D1D5DB',
-                  true: activeTab === 'issue' ? '#FDBA74' : '#FCA5A5',
-                }}
-                thumbColor={
-                  formIsActive
-                    ? activeTab === 'issue'
-                      ? '#EA580C'
-                      : '#DC2626'
-                    : '#9CA3AF'
-                }
-              />
-            </View>
-
-            {/* Save Button */}
-            <Pressable
-              onPress={handleSave}
-              className={`py-4 rounded-xl items-center ${
-                activeTab === 'issue' ? 'bg-orange-500' : 'bg-red-500'
-              } active:opacity-80`}
-            >
-              <Text className="text-white font-bold text-base">
-                {editingCode ? 'Update' : 'Add'} Code
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      {/* Tab Content */}
+      {activeTab === 'columns' && renderColumnsTab()}
+      {activeTab === 'codes' && renderCodesTab()}
+      {activeTab === 'email' && renderEmailTab()}
     </SafeAreaView>
   );
 }

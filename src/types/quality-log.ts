@@ -263,11 +263,72 @@ export const BED_OPTIONS: BedNumber[] = ['1', '2', '3', '4', '5', '6'];
 // All status options (for display only - auto-set)
 export const STATUS_OPTIONS: StatusCode[] = ['40', '50', '90'];
 
-// Issue codes 1-46
-export const ISSUE_CODE_OPTIONS: string[] = Array.from({ length: 46 }, (_, i) => String(i + 1));
+// Issue/Reject Code definitions with descriptions
+export interface IssueCodeDefinition {
+  code: string;
+  description: string;
+}
 
-// Reject codes 1-46
-export const REJECT_CODE_OPTIONS: string[] = Array.from({ length: 46 }, (_, i) => String(i + 1));
+export const ISSUE_CODE_DEFINITIONS: IssueCodeDefinition[] = [
+  { code: '1', description: 'Length' },
+  { code: '2', description: 'Width' },
+  { code: '3', description: 'Height' },
+  { code: '4', description: 'Blockout Missing/Mislocated' },
+  { code: '5', description: 'Embed Miscellaneous' },
+  { code: '6', description: 'Embed Missing/Mislocated' },
+  { code: '7', description: 'Missing Lift Loop(s)' },
+  { code: '8', description: 'Wrong Strand Pattern' },
+  { code: '9', description: 'Spall' },
+  { code: '10', description: 'TIF Slip Strand' },
+  { code: '11', description: 'BIF Slipped Strand' },
+  { code: '12', description: 'Strand Location Off' },
+  { code: '13', description: 'Broke While on Cart/Handling' },
+  { code: '14', description: 'Found Broke in Yard' },
+  { code: '15', description: 'Cumulative Core Width' },
+  { code: '16', description: 'Transverse Crack' },
+  { code: '17', description: 'Tearing (S Cracks in side of plank)' },
+  { code: '18', description: 'Webs Cracked (formerly cores cracked)' },
+  { code: '19', description: 'Crack Misc.' },
+  { code: '20', description: 'Miscellaneous Aesthetic' },
+  { code: '21', description: 'Poor Consolidation/Honeycomb' },
+  { code: '22', description: 'Poor Consolidation in Brick Joint' },
+  { code: '23', description: 'Bugholes' },
+  { code: '24', description: 'Incorrect Finish' },
+  { code: '25', description: 'Aggregate Contamination' },
+  { code: '26', description: 'Blemishes from Form' },
+  { code: '27', description: 'Tipped Brick' },
+  { code: '28', description: 'Brick Misc' },
+  { code: '29', description: 'Chairs Exposed' },
+  { code: '30', description: 'Inconsistent Color/Finish' },
+  { code: '31', description: 'Chamfer Missing/Skewed' },
+  { code: '32', description: 'Reveal Missing or Mislocated' },
+  { code: '33', description: 'Return Finish Missing' },
+  { code: '34', description: 'Grout Joint Off Benchmarks' },
+  { code: '35', description: 'Liner Seam' },
+  { code: '36', description: 'Misc. Formliner' },
+  { code: '37', description: 'Gaps Between Nailer/Concrete' },
+  { code: '38', description: 'Inadequate Concrete Coverage' },
+  { code: '39', description: 'Missing Corefill' },
+  { code: '40', description: 'Miscellaneous Issues' },
+  { code: '41', description: 'Drafting Error' },
+  { code: '42', description: 'No Pour - Misc.' },
+  { code: '43', description: 'No Pour - Batching Issues' },
+  { code: '44', description: 'No Pour - Machine Issues' },
+  { code: '45', description: 'No Pour - Cumulative Length' },
+  { code: '46', description: 'No Pour - Piece Switched Out' },
+];
+
+// Issue codes 1-46 (just the code numbers)
+export const ISSUE_CODE_OPTIONS: string[] = ISSUE_CODE_DEFINITIONS.map(ic => ic.code);
+
+// Reject codes use the same list as issue codes
+export const REJECT_CODE_OPTIONS: string[] = ISSUE_CODE_OPTIONS;
+
+// Helper to get description for a code
+export const getIssueCodeDescription = (code: string): string => {
+  const found = ISSUE_CODE_DEFINITIONS.find(ic => ic.code === code);
+  return found?.description || code;
+};
 
 // Location validation regex: first digit 1-9, hyphen, then 1-2 digit number 1-99
 export const LOCATION_REGEX = /^[1-9]-([1-9]|[1-9][0-9])$/;
