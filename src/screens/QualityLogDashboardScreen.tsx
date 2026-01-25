@@ -1195,19 +1195,82 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       ...openYardCutEntries
     ].some(e => e.engineer?.toLowerCase() === 'residential');
 
-    // Format a single entry as a line
-    const formatEntryLine = (entry: QualityLogEntry): string => {
-      const parts = [
-        entry.jobNumber || '-',
-        entry.markNumber || '-',
-        entry.idNumber || '-',
-        entry.length || '-',
-        entry.productType || '-',
-        entry.engineer || '-',
-      ];
-      const notes = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('; ') || '';
-      const program = entry.program ? `Program: ${entry.program}` : '';
-      return `  ${parts.join(' | ')}${notes ? ` | ${notes}` : ''}${program ? ` | ${program}` : ''}`;
+    // Table styles
+    const tableStyle = `style="border-collapse: collapse; width: 100%; font-size: 12px; font-family: Arial, sans-serif;"`;
+    const thStyle = `style="border: 1px solid #ccc; padding: 6px 8px; background-color: #f5f5f5; text-align: left; font-weight: bold;"`;
+    const tdStyle = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left;"`;
+
+    // Format a single entry as a table row
+    const formatEntryRow = (entry: QualityLogEntry): string => {
+      // Format inspection notes
+      const notesText = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('<br/>') || '-';
+
+      // Piece ticket link
+      const pieceTicketCell = entry.pieceTicketUrl
+        ? `<a href="${entry.pieceTicketUrl}" target="_blank" style="color: #2563eb;">PDF</a>`
+        : '-';
+
+      // Attachments link (count and link to first attachment or folder representation)
+      const attachmentCount = entry.attachments?.length || 0;
+      let attachmentsCell = '-';
+      if (attachmentCount > 0) {
+        const attachmentLinks = entry.attachments!.slice(0, 3).map((att, idx) =>
+          `<a href="${att.url}" target="_blank" style="color: #7c3aed;">${idx + 1}</a>`
+        ).join(', ');
+        attachmentsCell = attachmentCount > 3
+          ? `${attachmentLinks}... (${attachmentCount} total)`
+          : attachmentLinks;
+      }
+
+      return `<tr>
+        <td ${tdStyle}>${entry.pourDate || '-'}</td>
+        <td ${tdStyle}>${entry.disposition || '-'}</td>
+        <td ${tdStyle}>${entry.status || '-'}</td>
+        <td ${tdStyle}>${entry.productType || '-'}</td>
+        <td ${tdStyle}>${entry.jobNumber || '-'}</td>
+        <td ${tdStyle}>${entry.markNumber || '-'}</td>
+        <td ${tdStyle}>${pieceTicketCell}</td>
+        <td ${tdStyle}>${entry.idNumber || '-'}</td>
+        <td ${tdStyle}>${entry.length || '-'}</td>
+        <td ${tdStyle}>${entry.width || '-'}</td>
+        <td ${tdStyle}>${entry.designStrandPattern || '-'}</td>
+        <td ${tdStyle}>${entry.castStrandPattern || '-'}</td>
+        <td ${tdStyle}>${entry.bed || '-'}</td>
+        <td ${tdStyle}>${entry.location || '-'}</td>
+        <td ${tdStyle}>${notesText}</td>
+        <td ${tdStyle}>${attachmentsCell}</td>
+        <td ${tdStyle}>${entry.engineer || '-'}</td>
+      </tr>`;
+    };
+
+    // Table header
+    const tableHeader = `<tr>
+      <th ${thStyle}>Pour Date</th>
+      <th ${thStyle}>Disposition</th>
+      <th ${thStyle}>Status</th>
+      <th ${thStyle}>Type</th>
+      <th ${thStyle}>Job #</th>
+      <th ${thStyle}>Mark #</th>
+      <th ${thStyle}>Ticket</th>
+      <th ${thStyle}>ID #</th>
+      <th ${thStyle}>Length</th>
+      <th ${thStyle}>Width</th>
+      <th ${thStyle}>Design Pattern</th>
+      <th ${thStyle}>Cast Pattern</th>
+      <th ${thStyle}>Bed</th>
+      <th ${thStyle}>Location</th>
+      <th ${thStyle}>Inspection Notes</th>
+      <th ${thStyle}>Attachments</th>
+      <th ${thStyle}>Engineer</th>
+    </tr>`;
+
+    // Build table for a section
+    const buildSectionTable = (sectionEntries: QualityLogEntry[]): string => {
+      if (sectionEntries.length === 0) return '';
+      return `<table ${tableStyle}>
+        <thead>${tableHeader}</thead>
+        <tbody>${sectionEntries.map(formatEntryRow).join('')}</tbody>
+      </table>`;
     };
 
     // Build email body with HTML formatting
@@ -1221,45 +1284,36 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     // Previous Day's Production section
     body += `<p><strong><u>Previous Day's Production${mostRecentPourDateStr ? ` (${mostRecentPourDateStr})` : ''}</u></strong></p>\n`;
     if (previousDayEntries.length > 0) {
-      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
-      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
-      body += previousDayEntries.map(formatEntryLine).join('\n');
-      body += `</p>\n\n`;
+      body += buildSectionTable(previousDayEntries);
     } else {
-      body += `<p><em>No entries with inspection notes from previous pour date</em></p>\n\n`;
+      body += `<p><em>No entries with inspection notes from previous pour date</em></p>`;
     }
+    body += `<br/><br/>\n`;
 
     // Open Eng section
     body += `<p><strong><u>Open Eng</u></strong></p>\n`;
     if (openEngEntries.length > 0) {
-      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
-      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
-      body += openEngEntries.map(formatEntryLine).join('\n');
-      body += `</p>\n\n`;
+      body += buildSectionTable(openEngEntries);
     } else {
-      body += `<p><em>No open Eng items</em></p>\n\n`;
+      body += `<p><em>No open Eng items</em></p>`;
     }
+    body += `<br/><br/>\n`;
 
     // Open WIP section
     body += `<p><strong><u>Open WIP</u></strong></p>\n`;
     if (openWipEntries.length > 0) {
-      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
-      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
-      body += openWipEntries.map(formatEntryLine).join('\n');
-      body += `</p>\n\n`;
+      body += buildSectionTable(openWipEntries);
     } else {
-      body += `<p><em>No open WIP items</em></p>\n\n`;
+      body += `<p><em>No open WIP items</em></p>`;
     }
+    body += `<br/><br/>\n`;
 
     // Open Yard Cuts section
     body += `<p><strong><u>Open Yard Cuts</u></strong></p>\n`;
     if (openYardCutEntries.length > 0) {
-      body += `<p style="font-family: monospace; white-space: pre-wrap;">`;
-      body += `Job # | Mark # | ID # | Length | Type | Engineer | Notes\n`;
-      body += openYardCutEntries.map(formatEntryLine).join('\n');
-      body += `</p>\n`;
+      body += buildSectionTable(openYardCutEntries);
     } else {
-      body += `<p><em>No open Yard Cut items</em></p>\n`;
+      body += `<p><em>No open Yard Cut items</em></p>`;
     }
 
     // Navigate to EmailComposer
