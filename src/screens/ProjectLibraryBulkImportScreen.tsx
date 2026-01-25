@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import { useAuthStore } from '../state/authStore';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibraryBulkImport'>;
 
@@ -204,15 +204,8 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <Pressable onPress={() => navigation.goBack()} className="p-2">
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </Pressable>
-        <Text className="text-lg font-bold text-gray-900">Bulk Import Projects</Text>
-        <View className="w-10" />
-      </View>
+    <View className="flex-1 bg-gray-50">
+      <ScreenHeader title="Bulk Import Projects" />
 
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         <View className="p-4 gap-4">
@@ -368,6 +361,6 @@ export default function ProjectLibraryBulkImportScreen({ navigation }: Props) {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

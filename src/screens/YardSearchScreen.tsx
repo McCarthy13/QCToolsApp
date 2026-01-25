@@ -1,11 +1,11 @@
 import { View, Text, ScrollView, Pressable, TextInput } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/types";
 import { useYardLocationStore } from "../state/yardLocationStore";
 import { PourDepartment } from "../types/pour-schedule";
 import { useState } from "react";
+import ScreenHeader from "../components/ScreenHeader";
 
 type Props = NativeStackScreenProps<RootStackParamList, "YardSearch">;
 
@@ -50,9 +50,10 @@ export default function YardSearchScreen({ navigation }: Props) {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+      <ScreenHeader title="Search Yard" />
       <View style={{ flex: 1 }}>
-        {/* Header */}
+        {/* Search Bar */}
         <View
           style={{
             backgroundColor: "#FFFFFF",
@@ -61,16 +62,6 @@ export default function YardSearchScreen({ navigation }: Props) {
             borderBottomColor: "#E5E7EB",
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <Pressable onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
-              <Ionicons name="arrow-back" size={24} color="#111827" />
-            </Pressable>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: "#111827" }}>
-              Search Yard
-            </Text>
-          </View>
-
-          {/* Search Bar */}
           <View
             style={{
               flexDirection: "row",
@@ -296,6 +287,6 @@ export default function YardSearchScreen({ navigation }: Props) {
           )}
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

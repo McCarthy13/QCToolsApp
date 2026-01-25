@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { usePourScheduleStore } from '../state/pourScheduleStore';
 import { PourEntry, PourDepartment, PourStatus } from '../types/pour-schedule';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ScheduleSearch'>;
 
@@ -248,21 +248,15 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white border-b border-gray-200 px-4 py-3">
-        <View className="flex-row items-center justify-between mb-3">
-          <Pressable onPress={() => navigation.goBack()} className="p-2">
-            <Ionicons name="arrow-back" size={24} color="#111827" />
+    <View className="flex-1 bg-gray-50">
+      <ScreenHeader
+        title="Search Schedule"
+        rightContent={
+          <Pressable onPress={handleClear} className="p-1 active:opacity-70">
+            <Text className="text-sm font-semibold text-white">Clear</Text>
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900 flex-1 ml-2">
-            Search Schedule
-          </Text>
-          <Pressable onPress={handleClear} className="px-3 py-2">
-            <Text className="text-sm font-semibold text-gray-600">Clear</Text>
-          </Pressable>
-        </View>
-      </View>
+        }
+      />
 
       <ScrollView className="flex-1">
         {/* Advanced Filters Toggle */}
@@ -649,6 +643,6 @@ export default function ScheduleSearchScreen({ navigation }: Props) {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useAuthStore } from "../state/authStore";
 import { validatePassword } from "../utils/passwordValidation";
+import ScreenHeader from "../components/ScreenHeader";
 
 export default function AccountSettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -100,28 +101,11 @@ export default function AccountSettingsScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
+      <ScreenHeader title="Account Settings" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
       >
-        {/* Header */}
-        <View
-          className="bg-white px-5 pt-4 pb-5 border-b border-gray-200"
-          style={{ paddingTop: insets.top + 16 }}
-        >
-          <View className="flex-row items-center">
-            <Pressable
-              onPress={() => navigation.goBack()}
-              className="mr-4 p-2 -ml-2"
-            >
-              <Ionicons name="arrow-back" size={24} color="#111827" />
-            </Pressable>
-            <Text className="text-2xl font-bold text-gray-900">
-              Account Settings
-            </Text>
-          </View>
-        </View>
-
         <View className="p-5">
           {/* User Info Card */}
           <View className="bg-white rounded-2xl p-5 shadow-sm mb-6">
