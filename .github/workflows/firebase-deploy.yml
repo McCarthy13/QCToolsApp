@@ -47,12 +47,13 @@ jobs:
           cd functions && npm install && cd ..
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRECAST_QC_TOOLS_WEB_APP }}' > $HOME/gcloud-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json
-          cat > functions/.env.prod << EOF
+          cat > functions/.env.prod << 'EOF'
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=${{ secrets.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT }}
           AZURE_DOCUMENT_INTELLIGENCE_KEY=${{ secrets.AZURE_DOCUMENT_INTELLIGENCE_KEY }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           EOF
+          sed -i 's/^[[:space:]]*//' functions/.env.prod
           firebase deploy --only functions,storage --force --project precast-qc-tools-web-app
 
       - name: Deploy to Firebase Hosting
