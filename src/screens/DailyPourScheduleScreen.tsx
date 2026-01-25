@@ -10,6 +10,7 @@ import { PourDepartment, PourEntry, PourStatus } from "../types/pour-schedule";
 import { isEliPlanConfigured } from "../api/eliplan";
 import JobAutocompleteInput from "../components/JobAutocompleteInput";
 import { Calendar, DateData } from 'react-native-calendars';
+import ScreenHeader from "../components/ScreenHeader";
 
 type Props = NativeStackScreenProps<RootStackParamList, "DailyPourSchedule">;
 
@@ -332,24 +333,24 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   // If no department selected, show department selector
   if (!viewingDepartment) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+      <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+        <ScreenHeader
+          title="Daily Pour Schedule"
+          rightContent={
+            <Pressable
+              onPress={() => navigation.navigate("ScheduleSearch")}
+              className="p-1 active:opacity-70"
+            >
+              <Ionicons name="search" size={22} color="#FFFFFF" />
+            </Pressable>
+          }
+        />
         <ScrollView style={{ flex: 1 }}>
           <View style={{ padding: 12 }}>
-            <View style={{ marginBottom: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 20, fontWeight: "700", color: "#111827", marginBottom: 2 }}>
-                  Daily Pour Schedule
-                </Text>
-                <Text style={{ fontSize: 13, color: "#6B7280" }}>
-                  Select a department to view and manage
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => navigation.navigate("ScheduleSearch")}
-                style={{ backgroundColor: "#3B82F6", borderRadius: 10, padding: 12, marginLeft: 8 }}
-              >
-                <Ionicons name="search" size={22} color="#FFFFFF" />
-              </Pressable>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 13, color: "#6B7280" }}>
+                Select a department to view and manage
+              </Text>
             </View>
 
             <View style={{ marginBottom: 12 }}>
@@ -420,7 +421,7 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -430,32 +431,23 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
   const deptColors = getDepartmentColor(viewingDepartment);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 10 }}>
-          {/* Compact Header */}
-          <View style={{ marginBottom: 8 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: deptColors.color }}>
-                {viewingDepartment}
-              </Text>
-              <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                  <Text style={{ fontSize: 10, color: "#6B7280" }}>Pours</Text>
-                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827", textAlign: "center" }}>
-                    {departmentEntries.length}
-                  </Text>
-                </View>
-                <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#E5E7EB" }}>
-                  <Text style={{ fontSize: 10, color: "#6B7280" }}>Yards</Text>
-                  <Text style={{ fontSize: 16, fontWeight: "700", color: deptColors.accent, textAlign: "center" }}>
-                    {departmentYards.toFixed(1)}
-                  </Text>
-                </View>
-              </View>
+    <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+      <ScreenHeader
+        title={viewingDepartment}
+        onBackPress={() => setViewingDepartment(null)}
+        rightContent={
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 12, color: "#FFFFFF" }}>{departmentEntries.length} pours</Text>
+            </View>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 12, color: "#FFFFFF" }}>{departmentYards.toFixed(1)} yds</Text>
             </View>
           </View>
-
+        }
+      />
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ padding: 10 }}>
           {/* Compact Date Selector */}
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8, backgroundColor: "#FFFFFF", borderRadius: 8, padding: 8, borderWidth: 1, borderColor: "#E5E7EB" }}>
             <Pressable onPress={() => changeDate(-1)} style={{ padding: 4 }}>
@@ -1129,6 +1121,6 @@ export default function DailyPourScheduleScreen({ navigation, route }: Props) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

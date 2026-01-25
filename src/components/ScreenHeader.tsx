@@ -36,8 +36,8 @@ export default function ScreenHeader({
   };
 
   return (
-    <View className="bg-gray-900">
-      <SafeAreaView edges={['top']} className="bg-gray-900">
+    <View style={{ backgroundColor: '#111827' }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: '#111827' }}>
         <View className="flex-row items-center justify-between px-4 py-3 min-h-[48px]">
           {/* Left side - Back button */}
           <View className="flex-row items-center flex-1">

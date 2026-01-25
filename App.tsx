@@ -609,10 +609,7 @@ export default function App() {
             <Stack.Screen
               name="DailyPourSchedule"
               component={DailyPourScheduleScreen}
-              options={{
-                title: "Daily Pour Schedule",
-                headerBackVisible: true,
-              }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="ScheduleSearch"
