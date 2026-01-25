@@ -1602,12 +1602,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           ) : null}
         </View>
 
-        {/* Metric Cards */}
-        <View className="flex-row flex-wrap gap-2">
+        {/* Metric Cards - All 6 in one row */}
+        <View className="flex-row gap-2">
           {/* Awaiting Inspection */}
           <Pressable
             onPress={() => handleMetricCardPress('scheduled')}
-            className="flex-1 min-w-[80px] bg-amber-50 rounded-lg p-2 border border-amber-200 active:bg-amber-100"
+            className="flex-1 bg-amber-50 rounded-lg p-2 border border-amber-200 active:bg-amber-100"
           >
             <Text className="text-xs text-amber-700">Awaiting Inspection</Text>
             <Text className="text-lg font-bold text-amber-600">{awaitingInspection}</Text>
@@ -1616,7 +1616,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           {/* Open WIP */}
           <Pressable
             onPress={() => handleMetricCardPress('wip')}
-            className="flex-1 min-w-[80px] bg-blue-50 rounded-lg p-2 border border-blue-200 active:bg-blue-100"
+            className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-200 active:bg-blue-100"
           >
             <Text className="text-xs text-blue-700">Open WIP</Text>
             <Text className="text-lg font-bold text-blue-600">{openWip}</Text>
@@ -1625,7 +1625,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           {/* Open Eng */}
           <Pressable
             onPress={() => handleMetricCardPress('eng')}
-            className="flex-1 min-w-[80px] bg-purple-50 rounded-lg p-2 border border-purple-200 active:bg-purple-100"
+            className="flex-1 bg-purple-50 rounded-lg p-2 border border-purple-200 active:bg-purple-100"
           >
             <Text className="text-xs text-purple-700">Open Eng</Text>
             <Text className="text-lg font-bold text-purple-600">{openEng}</Text>
@@ -1634,98 +1634,71 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           {/* Open Yard Cuts */}
           <Pressable
             onPress={() => handleMetricCardPress('yardCut')}
-            className="flex-1 min-w-[80px] bg-orange-50 rounded-lg p-2 border border-orange-200 active:bg-orange-100"
+            className="flex-1 bg-orange-50 rounded-lg p-2 border border-orange-200 active:bg-orange-100"
           >
             <Text className="text-xs text-orange-700">Open Yard Cuts</Text>
             <Text className="text-lg font-bold text-orange-600">{openYardCuts}</Text>
           </Pressable>
+
+          {/* Post-Pour Report Card */}
+          <Pressable
+            onPress={() => handleMetricCardPress('postPour')}
+            className="flex-1 bg-slate-50 rounded-lg p-2 border border-slate-200 active:bg-slate-100"
+            disabled={!mostRecentPourDateStr}
+          >
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs text-slate-700">Post-Pour Report</Text>
+              <Ionicons name="chevron-forward" size={12} color="#64748B" />
+            </View>
+            {mostRecentPourDateStr ? (
+              <>
+                <Text className="text-[10px] text-slate-500">{mostRecentPourDateStr}</Text>
+                <View className="flex-row justify-between mt-0.5">
+                  <Text className="text-[10px] text-slate-600">Tot:<Text className="font-bold">{postPourStats.total}</Text></Text>
+                  <Text className="text-[10px] text-amber-600">Aw:<Text className="font-bold">{postPourStats.scheduled}</Text></Text>
+                  <Text className="text-[10px] text-blue-600">W:<Text className="font-bold">{postPourStats.wip}</Text></Text>
+                  <Text className="text-[10px] text-purple-600">E:<Text className="font-bold">{postPourStats.eng}</Text></Text>
+                  <Text className="text-[10px] text-orange-600">Y:<Text className="font-bold">{postPourStats.yardCut}</Text></Text>
+                </View>
+              </>
+            ) : (
+              <Text className="text-xs text-slate-400">No data</Text>
+            )}
+          </Pressable>
+
+          {/* AI Insights Card */}
+          <Pressable
+            onPress={() => navigation.navigate('Insights')}
+            className="flex-1 bg-indigo-50 rounded-lg p-2 border border-indigo-200 active:bg-indigo-100"
+          >
+            <View className="flex-row items-center justify-between">
+              <Text className="text-xs text-indigo-900">AI Insights</Text>
+              <Ionicons name="chevron-forward" size={12} color="#6366F1" />
+            </View>
+            <View className="flex-row items-center mt-0.5">
+              <Ionicons name="sparkles" size={14} color="#6366F1" />
+              {insightsLoading ? (
+                <ActivityIndicator size="small" color="#6366F1" style={{ marginLeft: 4 }} />
+              ) : (
+                <View className="flex-row items-center ml-1 gap-1">
+                  {insightsSummary.criticalTrends > 0 && (
+                    <View className="bg-red-100 px-1.5 py-0.5 rounded-full">
+                      <Text className="text-red-700 text-[10px] font-bold">{insightsSummary.criticalTrends}</Text>
+                    </View>
+                  )}
+                  {insightsSummary.warningTrends > 0 && (
+                    <View className="bg-amber-100 px-1.5 py-0.5 rounded-full">
+                      <Text className="text-amber-700 text-[10px] font-bold">{insightsSummary.warningTrends}</Text>
+                    </View>
+                  )}
+                  {!insightsSummary.criticalTrends && !insightsSummary.warningTrends && (
+                    <Text className="text-[10px] text-indigo-600">Trends</Text>
+                  )}
+                </View>
+              )}
+            </View>
+          </Pressable>
         </View>
-
-        {/* Post-Pour Report Card */}
-        <Pressable
-          onPress={() => handleMetricCardPress('postPour')}
-          className="mt-2 bg-slate-50 rounded-lg p-3 border border-slate-200 active:bg-slate-100"
-          disabled={!mostRecentPourDateStr}
-        >
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-sm font-semibold text-slate-700">
-              Post-Pour Report {mostRecentPourDateStr ? `(${mostRecentPourDateStr})` : ''}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color="#64748B" />
-          </View>
-          {mostRecentPourDateStr ? (
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Text className="text-[10px] text-slate-500">Total</Text>
-                <Text className="text-sm font-bold text-slate-700">{postPourStats.total}</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-[10px] text-amber-600">Awaiting</Text>
-                <Text className="text-sm font-bold text-amber-600">{postPourStats.scheduled}</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-[10px] text-blue-600">WIP</Text>
-                <Text className="text-sm font-bold text-blue-600">{postPourStats.wip}</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-[10px] text-purple-600">Eng</Text>
-                <Text className="text-sm font-bold text-purple-600">{postPourStats.eng}</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-[10px] text-orange-600">Yard Cut</Text>
-                <Text className="text-sm font-bold text-orange-600">{postPourStats.yardCut}</Text>
-              </View>
-            </View>
-          ) : (
-            <Text className="text-xs text-slate-400">No pour data available</Text>
-          )}
-        </Pressable>
-
-        {/* AI Insights Card */}
-        <Pressable
-          onPress={() => navigation.navigate('Insights')}
-          className="mt-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-3 border border-indigo-200 active:bg-indigo-100"
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center flex-1">
-              <View className="bg-indigo-100 rounded-full p-2 mr-3">
-                <Ionicons name="sparkles" size={18} color="#6366F1" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-indigo-900">AI Insights</Text>
-                {insightsSummary.topConcern ? (
-                  <Text className="text-xs text-indigo-600" numberOfLines={1}>
-                    {insightsSummary.topConcern}
-                  </Text>
-                ) : insightsSummary.pendingAnalysisDate ? (
-                  <Text className="text-xs text-amber-600">
-                    Analysis ready for {insightsSummary.pendingAnalysisDate}
-                  </Text>
-                ) : (
-                  <Text className="text-xs text-gray-500">
-                    Trend analysis & correlations
-                  </Text>
-                )}
-              </View>
-            </View>
-            <View className="flex-row items-center gap-2">
-              {insightsLoading && (
-                <ActivityIndicator size="small" color="#6366F1" />
-              )}
-              {insightsSummary.criticalTrends > 0 && (
-                <View className="bg-red-100 px-2 py-0.5 rounded-full">
-                  <Text className="text-red-700 text-xs font-bold">{insightsSummary.criticalTrends}</Text>
-                </View>
-              )}
-              {insightsSummary.warningTrends > 0 && (
-                <View className="bg-amber-100 px-2 py-0.5 rounded-full">
-                  <Text className="text-amber-700 text-xs font-bold">{insightsSummary.warningTrends}</Text>
-                </View>
-              )}
-              <Ionicons name="chevron-forward" size={16} color="#6366F1" />
-            </View>
-          </View>
-        </Pressable>
       </View>
 
       {/* Active Filters Row */}
