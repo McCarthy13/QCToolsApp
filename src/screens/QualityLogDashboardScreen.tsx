@@ -1557,14 +1557,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                 <Ionicons name="trash" size={22} color={entries.length === 0 ? '#FCA5A5' : '#DC2626'} />
               </Pressable>
             )}
-            {isAdmin && (
-              <Pressable
-                onPress={() => navigation.navigate('QualityLogAdmin' as any)}
-                className="bg-gray-100 rounded-full p-2"
-              >
-                <Ionicons name="settings-outline" size={22} color="#374151" />
-              </Pressable>
-            )}
             <Pressable
               onPress={() => navigation.navigate('QualityLogImport' as any)}
               className="bg-blue-600 rounded-full p-2"
