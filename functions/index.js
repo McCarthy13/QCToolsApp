@@ -1238,7 +1238,7 @@ exports.feedbackPage = onRequest({
     }
 
     // Fetch the entry from Firestore
-    const entryDoc = await db.collection('qualityLog').doc(entryId).get();
+    const entryDoc = await db.collection('qualityLogEntries').doc(entryId).get();
 
     if (!entryDoc.exists) {
       return res.status(404).send('Entry not found');
@@ -1600,7 +1600,7 @@ exports.submitEngineerFeedback = onRequest({
     console.log(`[Submit Feedback] Processing feedback for entry ${entryId} from ${email}`);
 
     // Fetch the entry from Firestore
-    const entryRef = db.collection('qualityLog').doc(entryId);
+    const entryRef = db.collection('qualityLogEntries').doc(entryId);
     const entryDoc = await entryRef.get();
 
     if (!entryDoc.exists) {
