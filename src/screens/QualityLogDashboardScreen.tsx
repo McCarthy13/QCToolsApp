@@ -2020,14 +2020,17 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               </View>
             )}
             {(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') && selectedCodes.length > 0 && (
-              <View className="mb-3 pb-3 border-b border-gray-200">
-                <Text className="text-xs text-gray-500 mb-1">Selected: {selectedCodes.sort((a, b) => Number(a) - Number(b)).join(', ')}</Text>
+              <View className="mb-2 pb-2 border-b border-gray-200">
+                <Text className="text-xs text-gray-500">Selected: {selectedCodes.sort((a, b) => Number(a) - Number(b)).join(', ')}</Text>
               </View>
             )}
-            <ScrollView className="max-h-80">
+            <ScrollView
+              className={showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes' ? '' : 'max-h-80'}
+              style={(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') ? { maxHeight: 600 } : {}}
+            >
               {(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') ? (
-                // Issue/Reject codes with descriptions - full width list
-                <View>
+                // Issue/Reject codes with descriptions - two column compact layout
+                <View className="flex-row flex-wrap">
                   {getPickerOptions().map((option) => {
                     const isSelected = selectedCodes.includes(option);
                     const description = getIssueCodeDescription(option);
@@ -2036,29 +2039,28 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       <Pressable
                         key={option}
                         onPress={() => handlePickerSelect(option)}
-                        className={`py-3 px-4 mb-1 rounded-lg flex-row items-center ${
+                        className={`py-1.5 px-2 mb-1 mr-1 rounded flex-row items-center ${
                           isSelected ? 'bg-blue-600' : 'bg-gray-100'
                         }`}
+                        style={{ width: '49%' }}
                       >
                         <Text
-                          className={`text-base font-semibold w-10 ${
+                          className={`text-xs font-bold w-6 ${
                             isSelected ? 'text-white' : 'text-gray-900'
                           }`}
                         >
                           {option}
                         </Text>
                         <Text
-                          className={`text-sm flex-1 ${
+                          className={`text-xs flex-1 ${
                             isSelected ? 'text-blue-100' : 'text-gray-600'
                           }`}
-                          numberOfLines={2}
+                          numberOfLines={1}
                         >
                           {description}
                         </Text>
                         {isSelected && (
-                          <View className="ml-2">
-                            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                          </View>
+                          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                         )}
                       </Pressable>
                     );
