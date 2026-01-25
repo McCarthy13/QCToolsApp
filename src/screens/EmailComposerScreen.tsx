@@ -15,12 +15,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "../navigation/types";
 import { useAuthStore } from "../state/authStore";
-import { 
-  sendEmailViaGraphAPI, 
-  authenticateWithMicrosoft, 
-  isAuthenticated 
+import {
+  sendEmailViaGraphAPI,
+  authenticateWithMicrosoft,
+  isAuthenticated
 } from "../api/microsoft-graph";
 
 type EmailComposerScreenNavigationProp = NativeStackNavigationProp<
@@ -34,6 +35,13 @@ interface Props {
   route: EmailComposerScreenRouteProp;
 }
 
+const DEFAULT_RECIPIENTS_KEY = "daily_report_default_recipients";
+
+interface DefaultRecipients {
+  to: string;
+  cc: string;
+}
+
 export default function EmailComposerScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore((state) => state.currentUser);
@@ -45,13 +53,68 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
   const [showPreview, setShowPreview] = useState(false);
   const [isMicrosoftAuthenticated, setIsMicrosoftAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [hasDefaultRecipients, setHasDefaultRecipients] = useState(false);
 
   const fromEmail = currentUser?.email || "";
 
-  // Check Microsoft authentication status on mount
+  // Load default recipients on mount
   useEffect(() => {
+    loadDefaultRecipients();
     checkAuthStatus();
   }, []);
+
+  const loadDefaultRecipients = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(DEFAULT_RECIPIENTS_KEY);
+      if (stored) {
+        const defaults: DefaultRecipients = JSON.parse(stored);
+        setToEmail(defaults.to || "");
+        setCcEmail(defaults.cc || "");
+        setHasDefaultRecipients(true);
+      }
+    } catch (error) {
+      console.error("Error loading default recipients:", error);
+    }
+  };
+
+  const saveDefaultRecipients = async () => {
+    try {
+      const defaults: DefaultRecipients = {
+        to: toEmail.trim(),
+        cc: ccEmail.trim(),
+      };
+      await AsyncStorage.setItem(DEFAULT_RECIPIENTS_KEY, JSON.stringify(defaults));
+      setHasDefaultRecipients(true);
+
+      if (Platform.OS === 'web') {
+        window.alert("Default recipients saved successfully!");
+      } else {
+        Alert.alert("Saved", "Default recipients saved successfully!");
+      }
+    } catch (error) {
+      console.error("Error saving default recipients:", error);
+      if (Platform.OS === 'web') {
+        window.alert("Failed to save default recipients.");
+      } else {
+        Alert.alert("Error", "Failed to save default recipients.");
+      }
+    }
+  };
+
+  const clearDefaultRecipients = async () => {
+    try {
+      await AsyncStorage.removeItem(DEFAULT_RECIPIENTS_KEY);
+      setHasDefaultRecipients(false);
+
+      if (Platform.OS === 'web') {
+        window.alert("Default recipients cleared.");
+      } else {
+        Alert.alert("Cleared", "Default recipients cleared.");
+      }
+    } catch (error) {
+      console.error("Error clearing default recipients:", error);
+    }
+  };
 
   const checkAuthStatus = async () => {
     setIsCheckingAuth(true);
@@ -142,7 +205,7 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
       );
     } catch (error: any) {
       console.error("Email send error:", error);
-      
+
       if (error.message?.includes("authentication") || error.message?.includes("token")) {
         setIsMicrosoftAuthenticated(false);
         Alert.alert(
@@ -256,6 +319,28 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
               autoCorrect={false}
               editable={!isSending}
             />
+          </View>
+
+          {/* Save/Clear Default Recipients */}
+          <View style={styles.defaultRecipientsContainer}>
+            <Pressable
+              style={styles.saveDefaultButton}
+              onPress={saveDefaultRecipients}
+              disabled={isSending || (!toEmail.trim() && !ccEmail.trim())}
+            >
+              <Ionicons name="bookmark-outline" size={18} color="#10B981" />
+              <Text style={styles.saveDefaultText}>Save as Default Recipients</Text>
+            </Pressable>
+            {hasDefaultRecipients && (
+              <Pressable
+                style={styles.clearDefaultButton}
+                onPress={clearDefaultRecipients}
+                disabled={isSending}
+              >
+                <Ionicons name="close-circle-outline" size={18} color="#6B7280" />
+                <Text style={styles.clearDefaultText}>Clear</Text>
+              </Pressable>
+            )}
           </View>
 
           {/* Subject (Read-only) */}
@@ -440,6 +525,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#10B981",
     fontWeight: "600",
+  },
+  defaultRecipientsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 16,
+    marginBottom: 20,
+  },
+  saveDefaultButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  saveDefaultText: {
+    fontSize: 14,
+    color: "#059669",
+    fontWeight: "500",
+  },
+  clearDefaultButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  clearDefaultText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
   },
   readOnlyField: {
     backgroundColor: "#F9FAFB",

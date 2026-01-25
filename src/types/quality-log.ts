@@ -4,7 +4,7 @@
 export type ProductType = '8048' | '1047' | '1247' | '1250' | '1647' | '1648';
 
 // Disposition options (single values)
-export type Disposition = 'Scheduled' | 'Ok to Ship' | 'Eng' | 'WIP' | 'Yard Cut' | 'Not Cast' | 'Repour';
+export type Disposition = 'Scheduled' | 'Poured' | 'Ok to Ship' | 'Eng' | 'WIP' | 'Yard Cut' | 'Not Cast' | 'Repour';
 
 // Combined disposition type (can be single or comma-separated for Yard Cut combos)
 export type DispositionValue = Disposition | string; // string allows "WIP, Yard Cut" etc.
@@ -185,9 +185,13 @@ export const getStatusFromDisposition = (disposition: DispositionValue): { statu
     return { status: '90', color: '#FF0000' }; // Red
   }
 
+  // Scheduled and Poured have no highlight color (white/transparent)
+  if (dispositions[0] === 'Scheduled' || dispositions[0] === 'Poured') {
+    return { status: '40', color: '#FFFFFF' }; // White (no highlight)
+  }
+
   // Otherwise, it's a status 40 (yellow) disposition
   switch (dispositions[0] as Disposition) {
-    case 'Scheduled':
     case 'Eng':
     case 'WIP':
     case 'Yard Cut':
@@ -234,6 +238,7 @@ export const getAmbiguousProductTypes = (thickness: number): ProductType[] => {
 // All disposition options for dropdown
 export const DISPOSITION_OPTIONS: Disposition[] = [
   'Scheduled',
+  'Poured',
   'Ok to Ship',
   'Eng',
   'WIP',

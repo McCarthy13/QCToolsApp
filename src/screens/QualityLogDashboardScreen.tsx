@@ -268,29 +268,35 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     const { entryId, field } = showPickerModal;
 
+    // Single-select-only dispositions
+    const SINGLE_SELECT_DISPOSITIONS = ['Scheduled', 'Poured', 'Ok to Ship', 'Not Cast', 'Repour'];
+    // Yard Cut compatible dispositions
+    const YARD_CUT_COMPAT = ['WIP', 'Eng'];
+
     try {
       if (field === 'disposition') {
         // Handle disposition selection
-        const isYardCutCompatible = value === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(value);
-        const hasYardCutCompatibleSelected = selectedDispositions.some(d => d === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(d));
+        const isSingleSelectOnly = SINGLE_SELECT_DISPOSITIONS.includes(value);
+        const isYardCutCompatible = value === 'Yard Cut' || YARD_CUT_COMPAT.includes(value);
+        const hasYardCutCompatibleSelected = selectedDispositions.some(d => d === 'Yard Cut' || YARD_CUT_COMPAT.includes(d));
 
-        if (isYardCutCompatible && hasYardCutCompatibleSelected) {
+        if (isSingleSelectOnly) {
+          // Single-select-only options - save immediately and close
+          await setDisposition(entryId, value as Disposition);
+          setShowPickerModal(null);
+          setSelectedDispositions([]);
+        } else if (isYardCutCompatible && hasYardCutCompatibleSelected) {
           // Toggle Yard Cut compatible options (multi-select allowed)
           setSelectedDispositions((prev) => {
             if (prev.includes(value)) {
               return prev.filter((d) => d !== value);
             } else {
               // Filter out any non-compatible options and add the new one
-              const compatiblePrev = prev.filter(d => d === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(d));
+              const compatiblePrev = prev.filter(d => d === 'Yard Cut' || YARD_CUT_COMPAT.includes(d));
               return [...compatiblePrev, value];
             }
           });
           return; // Don't close modal yet
-        } else if (!isYardCutCompatible) {
-          // Non-compatible options (Ok to Ship, Not Cast, Repour) - single select, save immediately
-          await setDisposition(entryId, value as Disposition);
-          setShowPickerModal(null);
-          setSelectedDispositions([]);
         } else {
           // First selection of a Yard Cut compatible option
           setSelectedDispositions([value]);
@@ -1427,8 +1433,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
   const isMultiSelect = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes' || showPickerModal?.field === 'disposition';
 
-  // Yard Cut can only be paired with these dispositions
-  const YARD_CUT_COMPATIBLE = ['WIP', 'Scheduled', 'Eng'];
+  // Yard Cut can only be paired with these dispositions (NOT Scheduled or Poured)
+  const YARD_CUT_COMPATIBLE = ['WIP', 'Eng'];
+
+  // These dispositions are single-select only (cannot be combined with anything)
+  const SINGLE_SELECT_ONLY = ['Scheduled', 'Poured', 'Ok to Ship', 'Not Cast', 'Repour'];
 
   // Check if a disposition option should be enabled based on current selections
   const isDispositionOptionEnabled = (option: string): boolean => {
@@ -1437,14 +1446,19 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     // If nothing is selected, all options are enabled
     if (selectedDispositions.length === 0) return true;
 
-    // If only one option is selected, allow selecting any other option
-    // (user can always change their mind before saving)
+    // If only one option is selected
     if (selectedDispositions.length === 1) {
       const currentSelection = selectedDispositions[0];
+
+      // If current selection is single-select only, only allow that option or switching to another
+      if (SINGLE_SELECT_ONLY.includes(currentSelection)) {
+        return true; // Allow any option (will replace the current one)
+      }
 
       // If current selection is Yard Cut compatible, allow Yard Cut to be added
       if (YARD_CUT_COMPATIBLE.includes(currentSelection) || currentSelection === 'Yard Cut') {
         // Allow the current selection, Yard Cut, and compatible options
+        // But NOT single-select-only options (they would replace everything)
         if (option === currentSelection || option === 'Yard Cut' || YARD_CUT_COMPATIBLE.includes(option)) {
           return true;
         }
