@@ -44,6 +44,7 @@ import {
   Attachment,
   AttachmentType,
   InspectionNote,
+  getIssueCodeDescription,
 } from '../types/quality-log';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogDashboard'>;
@@ -2024,44 +2025,83 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               </View>
             )}
             <ScrollView className="max-h-80">
-              <View className="flex-row flex-wrap">
-                {getPickerOptions().map((option) => {
-                  const isDisposition = showPickerModal?.field === 'disposition';
-                  const isCodeField = showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes';
-                  const isSelected = isDisposition
-                    ? selectedDispositions.includes(option)
-                    : isCodeField
-                    ? selectedCodes.includes(option)
-                    : false;
-                  const isEnabled = isDisposition ? isDispositionOptionEnabled(option) : true;
+              {(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') ? (
+                // Issue/Reject codes with descriptions - full width list
+                <View>
+                  {getPickerOptions().map((option) => {
+                    const isSelected = selectedCodes.includes(option);
+                    const description = getIssueCodeDescription(option);
 
-                  return (
-                    <Pressable
-                      key={option}
-                      onPress={() => isEnabled && handlePickerSelect(option)}
-                      className={`py-2 px-3 m-1 rounded-lg ${
-                        isSelected
-                          ? 'bg-blue-600'
-                          : !isEnabled
-                          ? 'bg-gray-200'
-                          : isMultiSelect
-                          ? 'bg-gray-100'
-                          : 'border-b border-gray-100'
-                      }`}
-                      style={!isMultiSelect && !isDisposition ? { width: '100%', marginHorizontal: 0 } : {}}
-                      disabled={!isEnabled}
-                    >
-                      <Text
-                        className={`text-center text-base ${
-                          isSelected ? 'text-white' : !isEnabled ? 'text-gray-400' : 'text-gray-900'
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => handlePickerSelect(option)}
+                        className={`py-3 px-4 mb-1 rounded-lg flex-row items-center ${
+                          isSelected ? 'bg-blue-600' : 'bg-gray-100'
                         }`}
                       >
-                        {showPickerModal?.field === 'bed' ? `Bed ${option}` : option}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                        <Text
+                          className={`text-base font-semibold w-10 ${
+                            isSelected ? 'text-white' : 'text-gray-900'
+                          }`}
+                        >
+                          {option}
+                        </Text>
+                        <Text
+                          className={`text-sm flex-1 ${
+                            isSelected ? 'text-blue-100' : 'text-gray-600'
+                          }`}
+                          numberOfLines={2}
+                        >
+                          {description}
+                        </Text>
+                        {isSelected && (
+                          <View className="ml-2">
+                            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                // Other pickers - original grid layout
+                <View className="flex-row flex-wrap">
+                  {getPickerOptions().map((option) => {
+                    const isDisposition = showPickerModal?.field === 'disposition';
+                    const isSelected = isDisposition
+                      ? selectedDispositions.includes(option)
+                      : false;
+                    const isEnabled = isDisposition ? isDispositionOptionEnabled(option) : true;
+
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => isEnabled && handlePickerSelect(option)}
+                        className={`py-2 px-3 m-1 rounded-lg ${
+                          isSelected
+                            ? 'bg-blue-600'
+                            : !isEnabled
+                            ? 'bg-gray-200'
+                            : isMultiSelect
+                            ? 'bg-gray-100'
+                            : 'border-b border-gray-100'
+                        }`}
+                        style={!isMultiSelect && !isDisposition ? { width: '100%', marginHorizontal: 0 } : {}}
+                        disabled={!isEnabled}
+                      >
+                        <Text
+                          className={`text-center text-base ${
+                            isSelected ? 'text-white' : !isEnabled ? 'text-gray-400' : 'text-gray-900'
+                          }`}
+                        >
+                          {showPickerModal?.field === 'bed' ? `Bed ${option}` : option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
             </ScrollView>
             {showPickerModal?.field === 'disposition' && (
               <View className="mt-2 pb-2 border-b border-gray-100">
