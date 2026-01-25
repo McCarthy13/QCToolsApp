@@ -8,6 +8,7 @@ import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import { useAuthStore } from '../state/authStore';
 import ProjectDocumentsSection from '../components/ProjectDocumentsSection';
 import { ProjectDocument } from '../types/project-library';
+import ScreenHeader from '../components/ScreenHeader';
 
 type DocumentCategoryKey = 'pieceTickets' | 'layout' | 'embeds' | 'projectManagement' | 'engineering';
 
@@ -25,9 +26,12 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
 
   if (!project) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <Text className="text-gray-500">Project not found</Text>
-      </SafeAreaView>
+      <View className="flex-1 bg-gray-50">
+        <ScreenHeader title="Project Details" />
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-gray-500">Project not found</Text>
+        </View>
+      </View>
     );
   }
 
@@ -71,25 +75,23 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <Pressable onPress={() => navigation.goBack()} className="p-2">
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </Pressable>
-        <Text className="text-lg font-bold text-gray-900">Project Details</Text>
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() => navigation.navigate('ProjectLibraryAddEdit', { projectId })}
-            className="p-2"
-          >
-            <Ionicons name="create-outline" size={24} color="#3B82F6" />
-          </Pressable>
-          <Pressable onPress={handleDelete} className="p-2">
-            <Ionicons name="trash-outline" size={24} color="#EF4444" />
-          </Pressable>
-        </View>
-      </View>
+    <View className="flex-1 bg-gray-50">
+      <ScreenHeader
+        title="Project Details"
+        rightContent={
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => navigation.navigate('ProjectLibraryAddEdit', { projectId })}
+              className="p-1 active:opacity-70"
+            >
+              <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+            </Pressable>
+            <Pressable onPress={handleDelete} className="p-1 active:opacity-70">
+              <Ionicons name="trash-outline" size={24} color="#EF4444" />
+            </Pressable>
+          </View>
+        }
+      />
 
       <ScrollView className="flex-1">
         <View className="p-4 gap-4">
@@ -225,6 +227,6 @@ export default function ProjectLibraryDetailScreen({ navigation, route }: Props)
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

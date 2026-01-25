@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -8,6 +7,7 @@ import { useProjectLibraryStore } from '../state/projectLibraryStore';
 import { useAuthStore } from '../state/authStore';
 import { PieceCountByType } from '../types/project-library';
 import { validateJobNumber, getValidationMessage } from '../utils/jobNumberValidation';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibraryAddEdit'>;
 
@@ -115,24 +115,15 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
   const totalPieces = pieceCountByType.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <Pressable onPress={() => navigation.goBack()} className="p-2">
-          <Ionicons name="close" size={24} color="#111827" />
-        </Pressable>
-        <View className="flex-1 items-center">
-          <Text className="text-lg font-bold text-gray-900">
-            {isEditing ? 'Edit Project' : 'New Project'}
-          </Text>
-          {returnScreen === 'current' && !isEditing && (
-            <Text className="text-xs text-gray-500">Creating from job entry</Text>
-          )}
-        </View>
-        <Pressable onPress={handleSave} className="p-2">
-          <Text className="text-base font-semibold text-blue-600">Save</Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-gray-50">
+      <ScreenHeader
+        title={isEditing ? 'Edit Project' : 'New Project'}
+        rightContent={
+          <Pressable onPress={handleSave} className="p-1 active:opacity-70">
+            <Text className="text-base font-semibold text-white">Save</Text>
+          </Pressable>
+        }
+      />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -332,6 +323,6 @@ export default function ProjectLibraryAddEditScreen({ navigation, route }: Props
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

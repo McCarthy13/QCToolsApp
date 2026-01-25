@@ -15,6 +15,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useInsightsStore } from '../state/insightsStore';
 import { useQualityLogStore } from '../state/qualityLogStore';
 import { AnalysisReport, TrendInsight } from '../types/insights';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Insights'>;
 
@@ -157,22 +158,11 @@ export default function InsightsScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100" edges={['top']}>
-      {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-200">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <Pressable onPress={() => navigation.goBack()} className="mr-3">
-              <Ionicons name="arrow-back" size={24} color="#374151" />
-            </Pressable>
-            <View>
-              <Text className="text-xl font-bold text-gray-900">AI Insights</Text>
-              <Text className="text-xs text-gray-500">Trend Analysis & Correlations</Text>
-            </View>
-          </View>
-          {isLoading && <ActivityIndicator size="small" color="#3B82F6" />}
-        </View>
-      </View>
+    <View className="flex-1 bg-gray-100">
+      <ScreenHeader
+        title="AI Insights"
+        rightContent={isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : undefined}
+      />
 
       <ScrollView
         className="flex-1"
@@ -256,6 +246,6 @@ export default function InsightsScreen({ navigation }: Props) {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

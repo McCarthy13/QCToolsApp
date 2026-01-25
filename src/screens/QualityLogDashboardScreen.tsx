@@ -24,6 +24,7 @@ import { useAuthStore } from '../state/authStore';
 import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useInsightsStore } from '../state/insightsStore';
 import { reAuthenticateWithMicrosoft } from '../services/sharepoint';
+import ScreenHeader from '../components/ScreenHeader';
 import AttachmentActionButton from '../components/AttachmentActionButton';
 import InspectionNotesCell from '../components/InspectionNotesCell';
 import {
@@ -1532,7 +1533,37 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-gray-100">
+      <ScreenHeader
+        title="Quality Log"
+        rightContent={
+          <View className="flex-row gap-2">
+            {isAdmin && (
+              <Pressable
+                onPress={handleDeleteAllEntries}
+                className="p-1 active:opacity-70"
+                disabled={entries.length === 0 || isDeletingAll}
+              >
+                <Ionicons name="trash" size={22} color={entries.length === 0 ? '#9CA3AF' : '#FFFFFF'} />
+              </Pressable>
+            )}
+            {isAdmin && (
+              <Pressable
+                onPress={() => navigation.navigate('QualityLogAdmin' as any)}
+                className="p-1 active:opacity-70"
+              >
+                <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => navigation.navigate('QualityLogImport' as any)}
+              className="p-1 active:opacity-70"
+            >
+              <Ionicons name="add" size={22} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        }
+      />
       {/* Loading overlay for delete all */}
       {isDeletingAll && (
         <View className="absolute inset-0 bg-black/50 z-50 items-center justify-center">
@@ -1543,36 +1574,8 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* Header */}
+      {/* Content Header */}
       <View className="bg-white px-4 py-3 border-b border-gray-200">
-        <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-2xl font-bold text-gray-900">Quality Log</Text>
-          <View className="flex-row gap-2">
-            {isAdmin && (
-              <Pressable
-                onPress={handleDeleteAllEntries}
-                className="bg-red-100 rounded-full p-2"
-                disabled={entries.length === 0 || isDeletingAll}
-              >
-                <Ionicons name="trash" size={22} color={entries.length === 0 ? '#FCA5A5' : '#DC2626'} />
-              </Pressable>
-            )}
-            {isAdmin && (
-              <Pressable
-                onPress={() => navigation.navigate('QualityLogAdmin' as any)}
-                className="bg-gray-100 rounded-full p-2"
-              >
-                <Ionicons name="settings-outline" size={22} color="#374151" />
-              </Pressable>
-            )}
-            <Pressable
-              onPress={() => navigation.navigate('QualityLogImport' as any)}
-              className="bg-blue-600 rounded-full p-2"
-            >
-              <Ionicons name="add" size={22} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        </View>
 
         {/* Send Today's Report Button */}
         <Pressable
@@ -2324,6 +2327,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

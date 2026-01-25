@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useProjectLibraryStore } from '../state/projectLibraryStore';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProjectLibrary'>;
 
@@ -22,28 +22,26 @@ export default function ProjectLibraryScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <Pressable onPress={() => navigation.goBack()} className="p-2">
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </Pressable>
-        <Text className="text-xl font-bold text-gray-900">Project Library</Text>
-        <View className="flex-row items-center">
-          <Pressable
-            onPress={() => navigation.navigate('ProjectLibraryBulkImport')}
-            className="p-2"
-          >
-            <Ionicons name="cloud-upload" size={26} color="#059669" />
-          </Pressable>
-          <Pressable
-            onPress={() => navigation.navigate('ProjectLibraryAddEdit', {})}
-            className="p-2"
-          >
-            <Ionicons name="add-circle" size={28} color="#3B82F6" />
-          </Pressable>
-        </View>
-      </View>
+    <View className="flex-1 bg-gray-50">
+      <ScreenHeader
+        title="Project Library"
+        rightContent={
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => navigation.navigate('ProjectLibraryBulkImport')}
+              className="p-1 active:opacity-70"
+            >
+              <Ionicons name="cloud-upload" size={24} color="#FFFFFF" />
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate('ProjectLibraryAddEdit', {})}
+              className="p-1 active:opacity-70"
+            >
+              <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        }
+      />
 
       {/* Search Bar */}
       <View className="px-4 py-3 bg-white border-b border-gray-200">
@@ -145,6 +143,6 @@ export default function ProjectLibraryScreen({ navigation }: Props) {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

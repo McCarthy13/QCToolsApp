@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
+import ScreenHeader from '../components/ScreenHeader';
 import {
   QualityLogEntry,
   Disposition,
@@ -200,17 +201,10 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View
-        className="px-4 py-3 border-b border-gray-200"
-        style={{ backgroundColor: getRowColor() }}
-      >
-        <View className="flex-row items-center justify-between">
-          <Pressable onPress={() => navigation.goBack()} className="p-1">
-            <Ionicons name="arrow-back" size={24} color="#374151" />
-          </Pressable>
-          <Text className="text-lg font-bold text-gray-900">ID # {entry.idNumber}</Text>
+    <View className="flex-1 bg-gray-100">
+      <ScreenHeader
+        title={`ID # ${entry.idNumber}`}
+        rightContent={
           <View className="flex-row gap-2">
             {isEditing ? (
               <>
@@ -219,27 +213,30 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
                     setIsEditing(false);
                     setEditedEntry(entry);
                   }}
-                  className="p-2"
+                  className="p-1 active:opacity-70"
                 >
                   <Ionicons name="close" size={24} color="#EF4444" />
                 </Pressable>
-                <Pressable onPress={handleSave} className="p-2">
+                <Pressable onPress={handleSave} className="p-1 active:opacity-70">
                   <Ionicons name="checkmark" size={24} color="#10B981" />
                 </Pressable>
               </>
             ) : (
               <>
-                <Pressable onPress={() => setIsEditing(true)} className="p-2">
-                  <Ionicons name="pencil" size={22} color="#374151" />
+                <Pressable onPress={() => setIsEditing(true)} className="p-1 active:opacity-70">
+                  <Ionicons name="pencil" size={22} color="#FFFFFF" />
                 </Pressable>
-                <Pressable onPress={handleDelete} className="p-2">
+                <Pressable onPress={handleDelete} className="p-1 active:opacity-70">
                   <Ionicons name="trash-outline" size={22} color="#EF4444" />
                 </Pressable>
               </>
             )}
           </View>
-        </View>
-      </View>
+        }
+      />
+
+      {/* Color indicator bar */}
+      <View className="h-2" style={{ backgroundColor: getRowColor() }} />
 
       <ScrollView className="flex-1">
         {/* Status Section */}
@@ -610,6 +607,6 @@ export default function QualityLogDetailScreen({ navigation, route }: Props) {
           </View>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

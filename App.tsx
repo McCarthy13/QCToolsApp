@@ -243,16 +243,22 @@ export default function App() {
         >
           <Stack.Navigator
             initialRouteName="Dashboard"
-            screenOptions={{
+            screenOptions={({ navigation }) => ({
               headerStyle: {
-                backgroundColor: "#FFFFFF",
+                backgroundColor: "#111827",
               },
-              headerTintColor: "#111827",
+              headerTintColor: "#FFFFFF",
               headerTitleStyle: {
                 fontWeight: "600",
               },
               headerShadowVisible: false,
-            }}
+              headerBackTitleVisible: false,
+              headerRight: () => (
+                <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
+                  <Ionicons name="home-outline" size={24} color="#FFFFFF" />
+                </Pressable>
+              ),
+            })}
           >
             <Stack.Screen
               name="Dashboard"
@@ -260,6 +266,8 @@ export default function App() {
               options={{
                 title: "Precast Quality Tools",
                 headerShown: true,
+                headerLeft: () => null,
+                headerRight: () => null,
               }}
             />
             <Stack.Screen
@@ -272,13 +280,13 @@ export default function App() {
                     <Pressable
                       onPress={() => navigation.navigate("StrandPatterns")}
                     >
-                      <Ionicons name="albums-outline" size={24} color="#111827" />
+                      <Ionicons name="albums-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("History")}>
-                      <Ionicons name="time-outline" size={24} color="#111827" />
+                      <Ionicons name="time-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -287,38 +295,23 @@ export default function App() {
             <Stack.Screen
               name="Results"
               component={ResultsScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Results",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="History"
               component={HistoryScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "History",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="StrandPatterns"
               component={StrandPatternsScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Strand Patterns",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="ProductDetails"
@@ -330,10 +323,10 @@ export default function App() {
                     <Pressable
                       onPress={() => navigation.navigate("StrandPatterns")}
                     >
-                      <Ionicons name="albums-outline" size={24} color="#111827" />
+                      <Ionicons name="albums-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -342,28 +335,16 @@ export default function App() {
             <Stack.Screen
               name="SlippageIdentifier"
               component={SlippageIdentifierScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Slippage Identifier",
-                headerRight: () => (
-                  <View className="flex-row gap-3 mr-1">
-                    <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
-                    </Pressable>
-                  </View>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="SlippageSummary"
               component={SlippageSummaryScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Slippage Summary",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="EmailComposer"
@@ -381,10 +362,10 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("StrandLibrary")}>
-                      <Ionicons name="library-outline" size={24} color="#111827" />
+                      <Ionicons name="library-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -393,26 +374,16 @@ export default function App() {
             <Stack.Screen
               name="StressingResults"
               component={StressingResultsScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Elongation Results",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="StrandLibrary"
               component={StrandLibraryScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Strand Library",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="AggregateGradation"
@@ -422,13 +393,13 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
-                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                      <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("GradationHistory")}>
-                      <Ionicons name="time-outline" size={24} color="#111827" />
+                      <Ionicons name="time-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -442,13 +413,13 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
-                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                      <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("GradationHistory")}>
-                      <Ionicons name="time-outline" size={24} color="#111827" />
+                      <Ionicons name="time-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -462,13 +433,13 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
-                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                      <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("GradationHistory")}>
-                      <Ionicons name="time-outline" size={24} color="#111827" />
+                      <Ionicons name="time-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -482,10 +453,10 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("GradationAdmin")}>
-                      <Ionicons name="settings-outline" size={24} color="#111827" />
+                      <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -499,10 +470,10 @@ export default function App() {
                 headerRight: () => (
                   <View className="flex-row gap-3 mr-1">
                     <Pressable onPress={() => navigation.navigate("GradationHistory")}>
-                      <Ionicons name="time-outline" size={24} color="#111827" />
+                      <Ionicons name="time-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                     <Pressable onPress={() => navigation.navigate("Dashboard")}>
-                      <Ionicons name="home-outline" size={24} color="#111827" />
+                      <Ionicons name="home-outline" size={24} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 ),
@@ -518,26 +489,16 @@ export default function App() {
             <Stack.Screen
               name="AggregateLibrary"
               component={AggregateLibraryScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Aggregate Library",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="AggregateLibraryDetail"
               component={AggregateLibraryDetailScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Aggregate Details",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="AggregateLibraryAddEdit"
@@ -549,26 +510,16 @@ export default function App() {
             <Stack.Screen
               name="AdmixLibrary"
               component={AdmixLibraryScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Admix Library",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="AdmixLibraryDetail"
               component={AdmixLibraryDetailScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Admixture Details",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="AdmixLibraryAddEdit"
@@ -580,26 +531,16 @@ export default function App() {
             <Stack.Screen
               name="Contacts"
               component={ContactsScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Contacts",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="ContactDetail"
               component={ContactDetailScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Contact Details",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} className="mr-1">
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="ContactAddEdit"
@@ -636,14 +577,9 @@ export default function App() {
             <Stack.Screen
               name="ProductLibrary"
               component={ProductLibraryScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Product Library",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="ProjectLibrary"
@@ -673,15 +609,10 @@ export default function App() {
             <Stack.Screen
               name="DailyPourSchedule"
               component={DailyPourScheduleScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Daily Pour Schedule",
                 headerBackVisible: true,
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="ScheduleSearch"
@@ -714,25 +645,15 @@ export default function App() {
             <Stack.Screen
               name="YardMap"
               component={YardMapScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "Yard Maps",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="YardDepartment"
               component={YardDepartmentScreen}
-              options={({ navigation, route }) => ({
+              options={({ route }) => ({
                 title: `${route.params?.department} Yard`,
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
               })}
             />
             <Stack.Screen
@@ -750,14 +671,9 @@ export default function App() {
             <Stack.Screen
               name="AdminApproval"
               component={AdminApprovalScreen}
-              options={({ navigation }) => ({
+              options={{
                 title: "User Management",
-                headerRight: () => (
-                  <Pressable onPress={() => navigation.navigate("Dashboard")} style={{ marginRight: 4 }}>
-                    <Ionicons name="home-outline" size={24} color="#111827" />
-                  </Pressable>
-                ),
-              })}
+              }}
             />
             <Stack.Screen
               name="AccountSettings"

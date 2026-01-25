@@ -19,6 +19,7 @@ import * as FileSystem from 'expo-file-system';
 import { RootStackParamList } from '../navigation/types';
 import { useQualityLogStore } from '../state/qualityLogStore';
 import { useStrandPatternStore } from '../state/strandPatternStore';
+import ScreenHeader from '../components/ScreenHeader';
 import {
   QualityLogEntry,
   ProductType,
@@ -822,17 +823,8 @@ export default function QualityLogImportScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-200">
-        <View className="flex-row items-center justify-between">
-          <Pressable onPress={() => navigation.goBack()} className="p-1">
-            <Ionicons name="arrow-back" size={24} color="#374151" />
-          </Pressable>
-          <Text className="text-lg font-bold text-gray-900">Import</Text>
-          <View className="w-8" />
-        </View>
-      </View>
+    <View className="flex-1 bg-gray-100">
+      <ScreenHeader title="Import" />
 
       {/* Loading State */}
       {isLoading && (
@@ -1423,6 +1415,6 @@ export default function QualityLogImportScreen({ navigation }: Props) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

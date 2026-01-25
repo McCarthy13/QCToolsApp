@@ -14,6 +14,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../navigation/types';
 import { ISSUE_CODE_DEFINITIONS, getIssueCodeDescription } from '../types/quality-log';
+import ScreenHeader from '../components/ScreenHeader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QualityLogAdmin'>;
 
@@ -280,16 +281,8 @@ export default function QualityLogAdminScreen({ navigation }: Props) {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-200">
-        <View className="flex-row items-center">
-          <Pressable onPress={() => navigation.goBack()} className="p-1 mr-3">
-            <Ionicons name="arrow-back" size={24} color="#374151" />
-          </Pressable>
-          <Text className="text-lg font-bold text-gray-900">Admin Settings</Text>
-        </View>
-      </View>
+    <View className="flex-1 bg-gray-100">
+      <ScreenHeader title="Admin Settings" />
 
       {/* Tabs */}
       <View className="flex-row bg-white border-b border-gray-200">
@@ -358,6 +351,6 @@ export default function QualityLogAdminScreen({ navigation }: Props) {
       {activeTab === 'columns' && renderColumnsTab()}
       {activeTab === 'codes' && renderCodesTab()}
       {activeTab === 'email' && renderEmailTab()}
-    </SafeAreaView>
+    </View>
   );
 }
