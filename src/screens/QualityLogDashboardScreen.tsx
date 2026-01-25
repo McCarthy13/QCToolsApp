@@ -1195,15 +1195,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       ...openYardCutEntries
     ].some(e => e.engineer?.toLowerCase() === 'residential');
 
-    // Table styles
-    const tableStyle = `style="border-collapse: collapse; width: 100%; font-size: 12px; font-family: Arial, sans-serif;"`;
-    const thStyle = `style="border: 1px solid #ccc; padding: 6px 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; white-space: nowrap;"`;
-    const tdStyle = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; white-space: nowrap;"`;
-    const tdStyleWrap = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; white-space: normal; word-wrap: break-word; max-width: 300px;"`;
+    // Table styles - using table-layout: fixed for proper column width control
+    const tableStyle = `style="border-collapse: collapse; width: 100%; font-size: 12px; font-family: Arial, sans-serif; table-layout: fixed;"`;
+    const thStyle = `style="border: 1px solid #ccc; padding: 6px 8px; background-color: #f5f5f5; text-align: left; font-weight: bold;"`;
+    const tdStyle = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis;"`;
+    const tdStyleWrap = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; word-wrap: break-word; overflow-wrap: break-word;"`;
 
     // Format a single entry as a table row
     const formatEntryRow = (entry: QualityLogEntry): string => {
-      // Format inspection notes
+      // Format inspection notes - wrap in div for better containment
       const notesText = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('<br/>') || '-';
 
       // Piece ticket link
@@ -1237,14 +1237,33 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         <td ${tdStyle}>${entry.designStrandPattern || '-'}</td>
         <td ${tdStyle}>${entry.castStrandPattern || '-'}</td>
         <td ${tdStyle}>${entry.bed || '-'}</td>
-        <td ${tdStyleWrap}>${notesText}</td>
+        <td ${tdStyleWrap}><div style="max-width: 100%; word-wrap: break-word;">${notesText}</div></td>
         <td ${tdStyle}>${attachmentsCell}</td>
         <td ${tdStyle}>${entry.engineer || '-'}</td>
       </tr>`;
     };
 
-    // Table header
-    const tableHeader = `<tr>
+    // Table header with column widths
+    const tableHeader = `
+      <colgroup>
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+        <col style="width: 40px;">
+        <col style="width: 40px;">
+        <col style="width: 60px;">
+        <col style="width: 70px;">
+        <col style="width: 45px;">
+        <col style="width: 70px;">
+        <col style="width: 65px;">
+        <col style="width: 45px;">
+        <col style="width: 80px;">
+        <col style="width: 80px;">
+        <col style="width: 35px;">
+        <col style="width: 200px;">
+        <col style="width: 70px;">
+        <col style="width: 70px;">
+      </colgroup>
+      <tr>
       <th ${thStyle}>Pour Date</th>
       <th ${thStyle}>Disposition</th>
       <th ${thStyle}>Status</th>
