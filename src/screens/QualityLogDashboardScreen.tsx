@@ -1197,8 +1197,9 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
 
     // Table styles
     const tableStyle = `style="border-collapse: collapse; width: 100%; font-size: 12px; font-family: Arial, sans-serif;"`;
-    const thStyle = `style="border: 1px solid #ccc; padding: 6px 8px; background-color: #f5f5f5; text-align: left; font-weight: bold;"`;
-    const tdStyle = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left;"`;
+    const thStyle = `style="border: 1px solid #ccc; padding: 6px 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; white-space: nowrap;"`;
+    const tdStyle = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; white-space: nowrap;"`;
+    const tdStyleWrap = `style="border: 1px solid #ccc; padding: 6px 8px; text-align: left; white-space: normal; word-wrap: break-word; max-width: 300px;"`;
 
     // Format a single entry as a table row
     const formatEntryRow = (entry: QualityLogEntry): string => {
@@ -1236,7 +1237,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         <td ${tdStyle}>${entry.designStrandPattern || '-'}</td>
         <td ${tdStyle}>${entry.castStrandPattern || '-'}</td>
         <td ${tdStyle}>${entry.bed || '-'}</td>
-        <td ${tdStyle}>${notesText}</td>
+        <td ${tdStyleWrap}>${notesText}</td>
         <td ${tdStyle}>${attachmentsCell}</td>
         <td ${tdStyle}>${entry.engineer || '-'}</td>
       </tr>`;
