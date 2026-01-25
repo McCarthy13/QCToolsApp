@@ -1298,11 +1298,11 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     };
 
     // Build email body with HTML formatting
-    let body = `<p><strong>Report Date: ${currentDateFormatted}</strong></p>\n\n`;
+    let body = `<p><strong>Report Date: ${currentDateFormatted}</strong></p><br/>\n\n`;
 
     // Add residential note if applicable
     if (hasResidentialEngineer) {
-      body += `<p style="color: #DC2626; font-style: italic;">Engineers - Please note that some pieces are assigned Residential. Please provide feedback if they belong to you.</p>\n\n`;
+      body += `<p style="color: #DC2626; font-style: italic;">Engineers - Please note that some pieces are assigned Residential. Please provide feedback if they belong to you.</p><br/>\n\n`;
     }
 
     // Previous Day's Production section
