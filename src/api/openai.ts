@@ -24,5 +24,6 @@ export const getOpenAIClient = () => {
   return new OpenAI({
     apiKey: apiKey,
     baseURL: baseURL,
+    dangerouslyAllowBrowser: true,
   });
 };
