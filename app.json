@@ -17,7 +17,7 @@
       "package": "com.yourcompany.precastqualitytools"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "webpack"
     }
   }
 }
