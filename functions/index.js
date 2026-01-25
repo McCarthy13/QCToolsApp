@@ -105,6 +105,78 @@ exports.claudeVisionProxy = onRequest({
 });
 
 /**
+ * OpenAI Chat Proxy
+ * Proxies OpenAI API requests from the web app to avoid CORS issues
+ * Used by AI Insights feature for quality log analysis
+ */
+exports.openaiChatProxy = onRequest({
+  cors: true,
+  maxInstances: 10,
+  timeoutSeconds: 120,
+}, async (req, res) => {
+  // Only allow POST requests
+  if (req.method !== "POST") {
+    return res.status(405).json({error: "Method not allowed"});
+  }
+
+  try {
+    const {messages, model = "gpt-4o-2024-11-20", temperature = 0.7, max_tokens = 4096} = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({error: "Missing or invalid messages"});
+    }
+
+    // Get API key from environment variable
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+    if (!OPENAI_API_KEY) {
+      console.error("[OpenAI Chat Proxy] Missing API key");
+      return res.status(500).json({
+        error: "OpenAI API key not configured",
+        details: "Please set OPENAI_API_KEY environment variable"
+      });
+    }
+
+    console.log("[OpenAI Chat Proxy] Making request to OpenAI API");
+
+    // Make request to OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[OpenAI Chat Proxy] API Error:", response.status, errorText);
+      return res.status(response.status).json({
+        error: `OpenAI API error: ${response.status}`,
+        details: errorText,
+      });
+    }
+
+    const result = await response.json();
+    console.log("[OpenAI Chat Proxy] Success");
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("[OpenAI Chat Proxy] Error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
+  }
+});
+
+/**
  * Bootstrap Admin User
  * Adds a Microsoft 365 user as an admin to Firestore
  * This function bypasses security rules and should only be used for initial setup
