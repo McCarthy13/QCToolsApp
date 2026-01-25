@@ -2029,7 +2029,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               style={(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') ? { maxHeight: 600 } : {}}
             >
               {(showPickerModal?.field === 'issueCodes' || showPickerModal?.field === 'rejectCodes') ? (
-                // Issue/Reject codes with descriptions - two column compact layout
+                // Issue/Reject codes with descriptions - three column compact layout
                 <View className="flex-row flex-wrap">
                   {getPickerOptions().map((option) => {
                     const isSelected = selectedCodes.includes(option);
@@ -2039,15 +2039,16 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                       <Pressable
                         key={option}
                         onPress={() => handlePickerSelect(option)}
-                        className={`py-1.5 px-2 mb-1 mr-1 rounded flex-row items-center ${
+                        className={`py-1 px-1.5 mb-0.5 rounded flex-row items-center ${
                           isSelected ? 'bg-blue-600' : 'bg-gray-100'
                         }`}
-                        style={{ width: '49%' }}
+                        style={{ width: '32.5%', marginRight: '0.5%' }}
                       >
                         <Text
-                          className={`text-xs font-bold w-6 ${
+                          className={`text-xs font-bold ${
                             isSelected ? 'text-white' : 'text-gray-900'
                           }`}
+                          style={{ width: 18 }}
                         >
                           {option}
                         </Text>
@@ -2056,11 +2057,12 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
                             isSelected ? 'text-blue-100' : 'text-gray-600'
                           }`}
                           numberOfLines={1}
+                          style={{ fontSize: 10 }}
                         >
                           {description}
                         </Text>
                         {isSelected && (
-                          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                          <Ionicons name="checkmark" size={12} color="#FFFFFF" />
                         )}
                       </Pressable>
                     );
