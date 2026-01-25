@@ -51,6 +51,7 @@ jobs:
           ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=${{ secrets.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT }}
           AZURE_DOCUMENT_INTELLIGENCE_KEY=${{ secrets.AZURE_DOCUMENT_INTELLIGENCE_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           EOF
           firebase deploy --only functions,storage --force --project precast-qc-tools-web-app
 
