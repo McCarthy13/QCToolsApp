@@ -1236,7 +1236,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
         <td ${tdStyle}>${entry.designStrandPattern || '-'}</td>
         <td ${tdStyle}>${entry.castStrandPattern || '-'}</td>
         <td ${tdStyle}>${entry.bed || '-'}</td>
-        <td ${tdStyle}>${entry.location || '-'}</td>
         <td ${tdStyle}>${notesText}</td>
         <td ${tdStyle}>${attachmentsCell}</td>
         <td ${tdStyle}>${entry.engineer || '-'}</td>
@@ -1258,7 +1257,6 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       <th ${thStyle}>Design Pattern</th>
       <th ${thStyle}>Cast Pattern</th>
       <th ${thStyle}>Bed</th>
-      <th ${thStyle}>Location</th>
       <th ${thStyle}>Inspection Notes</th>
       <th ${thStyle}>Attachments</th>
       <th ${thStyle}>Engineer</th>
