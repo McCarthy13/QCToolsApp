@@ -23,7 +23,7 @@ import { useQualityLogStore } from '../state/qualityLogStore';
 import { useAuthStore } from '../state/authStore';
 import { useStrandPatternStore } from '../state/strandPatternStore';
 import { useInsightsStore } from '../state/insightsStore';
-import { reAuthenticateWithMicrosoft } from '../services/sharepoint';
+import { reAuthenticateWithMicrosoft, isSignedInToMicrosoft, signInToMicrosoft } from '../services/sharepoint';
 import ScreenHeader from '../components/ScreenHeader';
 import AttachmentActionButton from '../components/AttachmentActionButton';
 import InspectionNotesCell from '../components/InspectionNotesCell';
@@ -81,6 +81,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const updateEntry = useQualityLogStore((s) => s.updateEntry);
   const deleteEntry = useQualityLogStore((s) => s.deleteEntry);
   const clearAllEntries = useQualityLogStore((s) => s.clearAllEntries);
+  const syncEngineersFromExcel = useQualityLogStore((s) => s.syncEngineersFromExcel);
   const currentUser = useAuthStore((s) => s.currentUser);
   const isAdmin = currentUser?.role === 'admin';
   const customPatterns = useStrandPatternStore((s) => s.customPatterns);
@@ -95,6 +96,7 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isSyncingEngineers, setIsSyncingEngineers] = useState(false);
 
   // Column filters state
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
@@ -1166,6 +1168,48 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
     yardCut: postPourEntries.filter((e) => e.disposition === 'Yard Cut' || e.disposition?.includes('Yard Cut')).length,
   };
 
+  // Handle syncing engineers from Excel/SharePoint
+  const handleSyncEngineers = async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Web Only', 'Engineer sync is only available in the web browser.');
+      return;
+    }
+
+    try {
+      setIsSyncingEngineers(true);
+
+      // Check if signed in to Microsoft
+      const isSignedIn = await isSignedInToMicrosoft();
+      if (!isSignedIn) {
+        // Prompt to sign in
+        await signInToMicrosoft();
+      }
+
+      // Sync engineers
+      const result = await syncEngineersFromExcel();
+
+      if (result.updated > 0) {
+        Alert.alert(
+          'Sync Complete',
+          `Updated ${result.updated} entries with engineer data from Excel.`
+        );
+      } else {
+        Alert.alert(
+          'Sync Complete',
+          'No entries needed engineer updates. Either all entries already have engineers assigned, or no matching job numbers were found in the Excel file.'
+        );
+      }
+    } catch (error: any) {
+      console.error('[QualityLogDashboard] Sync engineers error:', error);
+      Alert.alert(
+        'Sync Failed',
+        error.message || 'Failed to sync engineer data from Excel. Please try again.'
+      );
+    } finally {
+      setIsSyncingEngineers(false);
+    }
+  };
+
   // Generate email report for today
   const generateTodaysReport = () => {
     // Current date formatted
@@ -1577,16 +1621,38 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
       {/* Content Header */}
       <View className="bg-white px-4 py-3 border-b border-gray-200">
 
-        {/* Send Today's Report Button */}
-        <Pressable
-          onPress={generateTodaysReport}
-          className="bg-green-600 rounded-lg py-2 px-4 flex-row items-center justify-center mb-3"
-          disabled={entries.length === 0}
-          style={{ opacity: entries.length === 0 ? 0.5 : 1 }}
-        >
-          <Ionicons name="mail-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-          <Text className="text-white font-semibold text-base">Send Today's Report</Text>
-        </Pressable>
+        {/* Action Buttons Row */}
+        <View className="flex-row gap-2 mb-3">
+          {/* Send Today's Report Button */}
+          <Pressable
+            onPress={generateTodaysReport}
+            className="flex-1 bg-green-600 rounded-lg py-2 px-4 flex-row items-center justify-center"
+            disabled={entries.length === 0}
+            style={{ opacity: entries.length === 0 ? 0.5 : 1 }}
+          >
+            <Ionicons name="mail-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text className="text-white font-semibold text-base">Send Today's Report</Text>
+          </Pressable>
+
+          {/* Sync Engineers Button - Web Only */}
+          {Platform.OS === 'web' && (
+            <Pressable
+              onPress={handleSyncEngineers}
+              className="bg-blue-600 rounded-lg py-2 px-4 flex-row items-center justify-center"
+              disabled={isSyncingEngineers || entries.length === 0}
+              style={{ opacity: (isSyncingEngineers || entries.length === 0) ? 0.5 : 1 }}
+            >
+              {isSyncingEngineers ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="sync-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              )}
+              <Text className="text-white font-semibold text-base">
+                {isSyncingEngineers ? 'Syncing...' : 'Sync Engineers'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
 
         {/* Search Bar */}
         <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mb-3">

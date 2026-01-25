@@ -23,6 +23,7 @@ import {
   orderBy,
   Unsubscribe,
 } from 'firebase/firestore';
+import { batchLookupEngineers, lookupEngineerByJobNumber } from '../services/sharepoint';
 
 interface QualityLogState {
   // Data
@@ -62,6 +63,10 @@ interface QualityLogState {
 
   // Import batch tracking
   addImportBatch: (batch: Omit<ImportBatch, 'id' | 'importedAt'>) => Promise<string>;
+
+  // Engineer sync
+  syncEngineersFromExcel: () => Promise<{ updated: number; total: number }>;
+  lookupEngineerForEntry: (entryId: string) => Promise<string | null>;
 
   // Utility
   clearAllEntries: () => Promise<void>;
@@ -347,6 +352,55 @@ export const useQualityLogStore = create<QualityLogState>()(
         for (const entry of entries) {
           await deleteDoc(doc(firestore, 'qualityLogEntries', entry.id));
         }
+      },
+
+      syncEngineersFromExcel: async () => {
+        const entries = get().entries;
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error('User not logged in');
+
+        // Get unique job numbers that don't have engineers assigned
+        const jobNumbersToLookup = [...new Set(
+          entries
+            .filter(e => e.jobNumber && !e.engineer)
+            .map(e => e.jobNumber)
+        )];
+
+        if (jobNumbersToLookup.length === 0) {
+          console.log('[QualityLogStore] No entries need engineer lookup');
+          return { updated: 0, total: entries.length };
+        }
+
+        console.log(`[QualityLogStore] Looking up engineers for ${jobNumbersToLookup.length} job numbers`);
+
+        // Batch lookup engineers from Excel
+        const engineerMap = await batchLookupEngineers(jobNumbersToLookup);
+
+        // Update entries with found engineers
+        let updatedCount = 0;
+        for (const entry of entries) {
+          if (entry.jobNumber && !entry.engineer && engineerMap.has(entry.jobNumber)) {
+            const engineer = engineerMap.get(entry.jobNumber);
+            if (engineer) {
+              await get().updateEntry(entry.id, { engineer });
+              updatedCount++;
+            }
+          }
+        }
+
+        console.log(`[QualityLogStore] Updated ${updatedCount} entries with engineer data`);
+        return { updated: updatedCount, total: entries.length };
+      },
+
+      lookupEngineerForEntry: async (entryId: string) => {
+        const entry = get().entries.find(e => e.id === entryId);
+        if (!entry || !entry.jobNumber) return null;
+
+        const engineer = await lookupEngineerByJobNumber(entry.jobNumber);
+        if (engineer) {
+          await get().updateEntry(entryId, { engineer });
+        }
+        return engineer;
       },
 
       initializeDefaultCodes: async () => {

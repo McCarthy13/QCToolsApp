@@ -402,3 +402,200 @@ export function getSharePointFolderUrl(folderName: string): string {
 
   return `${siteUrl}/${SHAREPOINT_CONFIG.library}/Forms/AllItems.aspx?id=${encodedPath}`;
 }
+
+// ============================================================================
+// Excel/Engineering Backlog Data Integration
+// ============================================================================
+
+// Cache for engineering data to avoid repeated API calls
+interface EngineerLookupCache {
+  data: Map<string, string>; // projectNumber -> engineer
+  lastFetched: number;
+  expiresIn: number; // milliseconds
+}
+
+let engineerCache: EngineerLookupCache | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Excel file configuration
+const EXCEL_CONFIG = {
+  fileName: '2026_Quality_Log-Extruded_VERSION_9.xlsx',
+  worksheetName: 'EngineeringBacklogData',
+  projectNumberColumn: 'A', // Job Contact Data[Project #]
+  engineerColumn: 'C', // Job Contact Data[Engineer]
+  dataStartRow: 4, // Data starts at row 4 (after headers)
+};
+
+/**
+ * Fetch engineering backlog data from Excel worksheet in SharePoint
+ * Returns a Map of project number -> engineer name
+ */
+export async function fetchEngineeringBacklogData(): Promise<Map<string, string>> {
+  try {
+    // Check cache first
+    if (engineerCache && Date.now() - engineerCache.lastFetched < engineerCache.expiresIn) {
+      console.log('[SharePoint] Using cached engineering data');
+      return engineerCache.data;
+    }
+
+    console.log('[SharePoint] Fetching engineering backlog data from Excel...');
+
+    const client = await getGraphClient();
+    const siteId = await getSiteId();
+    const driveId = await getDriveId(siteId);
+
+    // Find the Excel file in SharePoint
+    // Search in the root and common folders
+    const searchPaths = [
+      `/root:/${EXCEL_CONFIG.fileName}`,
+      `/root:/Quality Control/${EXCEL_CONFIG.fileName}`,
+      `/root:/QC/${EXCEL_CONFIG.fileName}`,
+    ];
+
+    let fileId: string | null = null;
+
+    for (const path of searchPaths) {
+      try {
+        const file = await client
+          .api(`/sites/${siteId}/drives/${driveId}${path}`)
+          .get();
+        fileId = file.id;
+        console.log('[SharePoint] Found Excel file at:', path);
+        break;
+      } catch (e: any) {
+        if (e.statusCode !== 404) {
+          console.warn('[SharePoint] Error searching path:', path, e.message);
+        }
+      }
+    }
+
+    // If not found in common paths, search the drive
+    if (!fileId) {
+      console.log('[SharePoint] Searching for Excel file in drive...');
+      const searchResult = await client
+        .api(`/sites/${siteId}/drives/${driveId}/root/search(q='${EXCEL_CONFIG.fileName}')`)
+        .get();
+
+      if (searchResult.value && searchResult.value.length > 0) {
+        fileId = searchResult.value[0].id;
+        console.log('[SharePoint] Found Excel file via search');
+      }
+    }
+
+    if (!fileId) {
+      throw new Error(`Excel file "${EXCEL_CONFIG.fileName}" not found in SharePoint`);
+    }
+
+    // Read the worksheet data using Microsoft Graph Excel API
+    // Get the used range of the worksheet
+    const worksheetData = await client
+      .api(`/sites/${siteId}/drives/${driveId}/items/${fileId}/workbook/worksheets('${EXCEL_CONFIG.worksheetName}')/usedRange`)
+      .get();
+
+    const rows = worksheetData.values;
+    const engineerMap = new Map<string, string>();
+
+    // Process rows (skip header rows - data starts at row 4, index 3)
+    for (let i = EXCEL_CONFIG.dataStartRow - 1; i < rows.length; i++) {
+      const row = rows[i];
+      const projectNumber = row[0]?.toString().trim(); // Column A
+      const engineer = row[2]?.toString().trim(); // Column C
+
+      if (projectNumber && engineer) {
+        engineerMap.set(projectNumber, engineer);
+      }
+    }
+
+    console.log(`[SharePoint] Loaded ${engineerMap.size} project-engineer mappings`);
+
+    // Update cache
+    engineerCache = {
+      data: engineerMap,
+      lastFetched: Date.now(),
+      expiresIn: CACHE_DURATION,
+    };
+
+    return engineerMap;
+  } catch (error) {
+    console.error('[SharePoint] Error fetching engineering backlog data:', error);
+    throw new Error(`Failed to fetch engineering data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Look up engineer for a specific job number
+ * Returns the engineer name or null if not found
+ */
+export async function lookupEngineerByJobNumber(jobNumber: string): Promise<string | null> {
+  try {
+    if (!jobNumber) return null;
+
+    const cleanJobNumber = jobNumber.trim();
+    const engineerMap = await fetchEngineeringBacklogData();
+
+    // Direct lookup
+    if (engineerMap.has(cleanJobNumber)) {
+      return engineerMap.get(cleanJobNumber) || null;
+    }
+
+    // Try numeric comparison (in case of formatting differences)
+    const numericJobNumber = cleanJobNumber.replace(/\D/g, '');
+    for (const [projectNum, engineer] of engineerMap.entries()) {
+      if (projectNum.replace(/\D/g, '') === numericJobNumber) {
+        return engineer;
+      }
+    }
+
+    console.log(`[SharePoint] No engineer found for job number: ${jobNumber}`);
+    return null;
+  } catch (error) {
+    console.error('[SharePoint] Error looking up engineer:', error);
+    return null;
+  }
+}
+
+/**
+ * Batch lookup engineers for multiple job numbers
+ * Returns a Map of jobNumber -> engineer
+ */
+export async function batchLookupEngineers(jobNumbers: string[]): Promise<Map<string, string>> {
+  const results = new Map<string, string>();
+
+  try {
+    const engineerMap = await fetchEngineeringBacklogData();
+
+    for (const jobNumber of jobNumbers) {
+      const cleanJobNumber = jobNumber.trim();
+
+      // Direct lookup
+      if (engineerMap.has(cleanJobNumber)) {
+        results.set(jobNumber, engineerMap.get(cleanJobNumber)!);
+        continue;
+      }
+
+      // Try numeric comparison
+      const numericJobNumber = cleanJobNumber.replace(/\D/g, '');
+      for (const [projectNum, engineer] of engineerMap.entries()) {
+        if (projectNum.replace(/\D/g, '') === numericJobNumber) {
+          results.set(jobNumber, engineer);
+          break;
+        }
+      }
+    }
+
+    console.log(`[SharePoint] Batch lookup: ${results.size}/${jobNumbers.length} engineers found`);
+  } catch (error) {
+    console.error('[SharePoint] Error in batch lookup:', error);
+  }
+
+  return results;
+}
+
+/**
+ * Clear the engineering data cache
+ * Call this when you want to force a refresh
+ */
+export function clearEngineerCache(): void {
+  engineerCache = null;
+  console.log('[SharePoint] Engineer cache cleared');
+}
