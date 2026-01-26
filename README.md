@@ -2,6 +2,8 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
+**Last deployed**: January 26, 2026
+
 ## Recent Feature: Quality Log Attachment Management
 
 **Feature**: Delete and edit attachments directly from the Quality Log attachments modal.
