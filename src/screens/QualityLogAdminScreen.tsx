@@ -85,6 +85,14 @@ export default function QualityLogAdminScreen({ navigation }: Props) {
       const storedRecipients = await AsyncStorage.getItem(DEFAULT_RECIPIENTS_KEY);
       if (storedRecipients) {
         setRecipients(JSON.parse(storedRecipients));
+      } else {
+        // Initialize with default recipients if none are set
+        const defaultRecipients: DefaultRecipients = {
+          to: 'patrick.mccarthy@molin.com',
+          cc: 'patrick.mccarthy@molin.com',
+        };
+        setRecipients(defaultRecipients);
+        await AsyncStorage.setItem(DEFAULT_RECIPIENTS_KEY, JSON.stringify(defaultRecipients));
       }
     } catch (error) {
       console.error('Error loading settings:', error);

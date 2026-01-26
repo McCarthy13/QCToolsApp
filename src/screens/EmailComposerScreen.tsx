@@ -71,6 +71,16 @@ export default function EmailComposerScreen({ navigation, route }: Props) {
         setToEmail(defaults.to || "");
         setCcEmail(defaults.cc || "");
         setHasDefaultRecipients(true);
+      } else {
+        // Initialize with default recipients if none are set
+        const defaultRecipients: DefaultRecipients = {
+          to: "patrick.mccarthy@molin.com",
+          cc: "patrick.mccarthy@molin.com",
+        };
+        setToEmail(defaultRecipients.to);
+        setCcEmail(defaultRecipients.cc);
+        await AsyncStorage.setItem(DEFAULT_RECIPIENTS_KEY, JSON.stringify(defaultRecipients));
+        setHasDefaultRecipients(true);
       }
     } catch (error) {
       console.error("Error loading default recipients:", error);
