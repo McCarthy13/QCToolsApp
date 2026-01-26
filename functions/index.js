@@ -1534,6 +1534,10 @@ exports.feedbackPage = onRequest({
       errorMessage.style.display = 'none';
 
       try {
+        const feedback = document.getElementById('feedback').value;
+        const email = document.getElementById('email').value;
+        const originalSubject = document.getElementById('originalSubject').value;
+
         const response = await fetch('/api/submitFeedback', {
           method: 'POST',
           headers: {
@@ -1541,9 +1545,9 @@ exports.feedbackPage = onRequest({
           },
           body: JSON.stringify({
             entryId: document.getElementById('entryId').value,
-            feedback: document.getElementById('feedback').value,
-            email: document.getElementById('email').value,
-            originalSubject: document.getElementById('originalSubject').value,
+            feedback: feedback,
+            email: email,
+            originalSubject: originalSubject,
           }),
         });
 
@@ -1552,6 +1556,18 @@ exports.feedbackPage = onRequest({
         if (result.success) {
           successMessage.style.display = 'block';
           submitBtn.textContent = 'Submitted!';
+
+          // Build mailto link for reply-all
+          const replySubject = 'RE: ' + (originalSubject || 'Engineer Feedback');
+          const emailBody = result.emailBody || feedback;
+
+          // Open mailto link
+          const mailtoLink = 'mailto:?subject=' + encodeURIComponent(replySubject) + '&body=' + encodeURIComponent(emailBody);
+
+          // Small delay to show success message, then open email client
+          setTimeout(() => {
+            window.location.href = mailtoLink;
+          }, 500);
         } else {
           throw new Error(result.error || 'Unknown error');
         }
@@ -1632,15 +1648,42 @@ exports.submitEngineerFeedback = onRequest({
 
     console.log(`[Submit Feedback] Updated entry ${entryId} with feedback`);
 
-    // Note: Reply-all email functionality would require:
-    // 1. Storing the original email message ID when sent
-    // 2. Using Microsoft Graph API with Mail.ReadWrite permissions
-    // 3. Using the reply-all endpoint with the original message ID
-    // For now, we'll just update Firestore and the feedback shows in the next report
+    // Format inspection notes for email
+    const inspectionNotes = entry.inspectionNotes?.map(n => `${n.type}: ${n.note}`).join('\n') || '-';
+
+    // Build email body with entry details and feedback
+    const emailBody = `Engineer Feedback for ${entry.jobNumber}-${entry.markNumber}
+
+ENTRY DETAILS:
+--------------
+Pour Date: ${entry.pourDate || '-'}
+Disposition: ${entry.disposition || '-'}
+Status: ${entry.status || '-'}
+Product Type: ${entry.productType || '-'}
+Job #: ${entry.jobNumber || '-'}
+Mark #: ${entry.markNumber || '-'}
+ID #: ${entry.idNumber || '-'}
+Length: ${entry.length || '-'}
+Width: ${entry.width || '-'}
+Design Pattern: ${entry.designStrandPattern || '-'}
+Cast Pattern: ${entry.castStrandPattern || '-'}
+Bed: ${entry.bed || '-'}
+Engineer: ${entry.engineer || '-'}
+
+Inspection Notes:
+${inspectionNotes}
+
+ENGINEER FEEDBACK:
+------------------
+${feedback}
+
+— ${email} (${timestamp})
+`;
 
     return res.status(200).json({
       success: true,
       message: "Feedback submitted successfully",
+      emailBody: emailBody,
     });
 
   } catch (error) {
