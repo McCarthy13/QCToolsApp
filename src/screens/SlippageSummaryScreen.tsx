@@ -46,6 +46,7 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
   console.log('[SlippageSummary] qualityEntryId:', qualityEntryId);
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isPreviewingPDF, setIsPreviewingPDF] = useState(false);
   const [reportSavedSuccess, setReportSavedSuccess] = useState(false);
 
   // Ref for capturing cross-section as image
@@ -302,6 +303,108 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
     const pattern = isTopStrand ? selectedTopPattern : selectedPattern;
     const size = pattern?.strandSizes?.[index];
     return size ? `${size}"` : '';
+  };
+
+  // Preview PDF without saving to Quality Log - opens in new browser tab
+  const handlePreviewPDF = async () => {
+    setIsPreviewingPDF(true);
+
+    try {
+      // Capture the cross-section diagram as an image
+      let crossSectionImageUri: string | undefined;
+      const isWeb = Platform.OS === 'web';
+
+      if (crossSectionRef.current) {
+        try {
+          console.log('[PDF Preview] Capturing cross-section...');
+
+          if (isWeb) {
+            const html2canvas = await import('html2canvas');
+            let element = crossSectionRef.current as any;
+
+            if (element._nativeTag || element._internalFiberInstanceHandleDEV) {
+              const container = document.querySelector('[data-testid="cross-section-container"]');
+              if (container) {
+                element = container;
+              }
+            }
+
+            const canvas = await html2canvas.default(element, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+            });
+
+            crossSectionImageUri = canvas.toDataURL('image/png');
+            console.log('[PDF Preview] Cross-section captured successfully');
+          } else {
+            crossSectionImageUri = await captureRef(crossSectionRef, {
+              format: 'png',
+              quality: 1.0,
+            });
+          }
+        } catch (captureError) {
+          console.error('[PDF Preview] Error capturing cross-section:', captureError);
+          crossSectionImageUri = undefined;
+        }
+      }
+
+      const userEmail = currentUser?.email || 'unknown@example.com';
+      const userName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Unknown User';
+
+      console.log('[PDF Preview] Generating PDF for preview...');
+
+      // Generate PDF with a custom callback to open in new tab
+      await generateSlippagePDF({
+        slippages,
+        config,
+        slippageStats,
+        userEmail,
+        userName,
+        crossSectionImageUri,
+        getStrandSize,
+        strandPatternName: formatPatternName(selectedPattern, selectedTopPattern),
+        castStrandPatternName: formatPatternName(selectedCastPattern, selectedTopCastPattern),
+        topStrandPatternName: selectedTopPattern?.name,
+        topCastStrandPatternName: selectedTopCastPattern?.name,
+        bottomPatternComparison,
+        topPatternComparison,
+        castStrandCoordinates: selectedPattern?.strandCoordinates,
+        castTopStrandCoordinates: selectedTopPattern?.strandCoordinates,
+        designStrandCoordinates: designPattern?.strandCoordinates,
+        designTopStrandCoordinates: designTopPattern?.strandCoordinates,
+        designStrandSizes: designPattern?.strandSizes,
+        designTopStrandSizes: designTopPattern?.strandSizes,
+        castStrandSizes: selectedPattern?.strandSizes,
+        castTopStrandSizes: selectedTopPattern?.strandSizes,
+        activeStrandIndices,
+        activeTopStrandIndices,
+        uploadToSharePoint: false,
+        skipLocalDownload: true,
+        // Open the PDF blob in a new browser tab for preview
+        onPdfBlobCreated: async (blob, filename) => {
+          console.log('[PDF Preview] Opening PDF in new tab...');
+          if (isWeb) {
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            // Clean up the URL after a delay
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+          } else {
+            // On native, we can share the PDF
+            Alert.alert('Preview', 'PDF preview is available on web. Use "Generate Report" to save to Quality Log.');
+          }
+        },
+      });
+
+      console.log('[PDF Preview] PDF preview generated successfully');
+    } catch (error) {
+      console.error('[PDF Preview] Error generating PDF preview:', error);
+      Alert.alert('Error', 'Failed to generate PDF preview. Please try again.');
+    } finally {
+      setIsPreviewingPDF(false);
+    }
   };
 
   const handleGeneratePDFReport = async () => {
@@ -1080,15 +1183,30 @@ export default function SlippageSummaryScreen({ navigation, route }: Props) {
           )}
 
           {/* Action Buttons */}
+          {/* Preview Report - Opens PDF in new tab without saving */}
+          <Pressable
+            className="bg-indigo-500 rounded-xl py-4 items-center active:bg-indigo-600 mb-3"
+            onPress={handlePreviewPDF}
+            disabled={isPreviewingPDF || isGeneratingPDF}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name={isPreviewingPDF ? "hourglass-outline" : "eye-outline"} size={20} color="white" />
+              <Text className="text-white text-base font-semibold ml-2">
+                {isPreviewingPDF ? 'Generating Preview...' : 'Preview Report'}
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* Generate Report - Saves to Quality Log */}
           <Pressable
             className="bg-blue-500 rounded-xl py-4 items-center active:bg-blue-600 mb-3"
             onPress={handleGeneratePDFReport}
-            disabled={isGeneratingPDF}
+            disabled={isGeneratingPDF || isPreviewingPDF}
           >
             <View className="flex-row items-center">
               <Ionicons name={isGeneratingPDF ? "hourglass-outline" : "document-text-outline"} size={20} color="white" />
               <Text className="text-white text-base font-semibold ml-2">
-                {isGeneratingPDF ? 'Generating PDF...' : 'Generate Report'}
+                {isGeneratingPDF ? 'Saving to Quality Log...' : 'Save to Quality Log'}
               </Text>
             </View>
           </Pressable>
