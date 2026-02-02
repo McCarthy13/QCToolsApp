@@ -1712,6 +1712,15 @@ export default function QualityLogDashboardScreen({ navigation }: Props) {
               </Text>
             </Pressable>
           )}
+
+          {/* Reports Button */}
+          <Pressable
+            onPress={() => navigation.navigate('QualityReports' as any)}
+            className="bg-purple-600 rounded-lg py-2 px-4 flex-row items-center justify-center"
+          >
+            <Ionicons name="bar-chart-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text className="text-white font-semibold text-base">Reports</Text>
+          </Pressable>
         </View>
 
         {/* Search Bar */}

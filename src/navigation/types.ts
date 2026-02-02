@@ -176,4 +176,5 @@ export type RootStackParamList = {
   AdminApproval: undefined;
   AccountSettings: undefined;
   Insights: undefined;
+  QualityReports: undefined;
 };
