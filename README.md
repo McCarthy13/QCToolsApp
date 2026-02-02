@@ -2,7 +2,36 @@
 
 A comprehensive mobile app for precast concrete quality management, built with React Native and Expo.
 
-**Last deployed**: January 26, 2026
+**Last deployed**: February 2, 2026
+
+## Recent Feature: Quality Reports Dashboard
+
+**Feature**: Comprehensive data visualization and trend analysis for quality metrics.
+
+**How it works**:
+1. In the Quality Log Dashboard, click the purple "Reports" button
+2. The Reports screen shows customizable data visualizations including:
+   - **Pareto Charts**: Identify the vital few issue/reject codes (80/20 analysis)
+   - **Bar Charts**: Distribution views for codes, dispositions, and product types
+   - **Trend Charts**: Weekly/monthly trends for issues and rejects over time
+3. **Filter Options**:
+   - Report Type: Issue Codes, Reject Codes, Dispositions, Product Types
+   - Time Range: Rolling 13 Weeks, Monthly, Yearly
+   - Chart Type: Pareto, Bar Chart
+4. Summary statistics show total pieces, issues, rejects, and rates
+
+**Features**:
+- Rolling 13-week and monthly/yearly time range options
+- Pareto analysis with cumulative percentage line
+- Top 10/15 codes with descriptions in data tables
+- Summary statistics with issue/reject rates
+- Responsive design for mobile and web
+
+**Files Added/Modified**:
+- `src/screens/QualityReportsScreen.tsx` - New comprehensive reports screen
+- `src/navigation/types.ts` - Added QualityReports route
+- `App.tsx` - Registered QualityReportsScreen
+- `src/screens/QualityLogDashboardScreen.tsx` - Added Reports button
 
 ## Recent Feature: Quality Log Attachment Management
 
