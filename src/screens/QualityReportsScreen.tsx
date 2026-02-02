@@ -42,22 +42,13 @@ interface ChartDataPoint {
 }
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_PADDING = 32;
+const CHART_PADDING = 16;
 const CHART_WIDTH = SCREEN_WIDTH - CHART_PADDING * 2 - 32;
-const CHART_HEIGHT = 280;
 
-// Color palette for charts
+// Color palette for pie chart
 const CHART_COLORS = [
-  '#3B82F6', // blue
-  '#EF4444', // red
-  '#10B981', // green
-  '#F59E0B', // amber
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#06B6D4', // cyan
-  '#84CC16', // lime
-  '#F97316', // orange
-  '#6366F1', // indigo
+  '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
 ];
 
 export default function QualityReportsScreen({ navigation }: Props) {
@@ -97,9 +88,7 @@ export default function QualityReportsScreen({ navigation }: Props) {
           thirteenWeeksAgo.setDate(thirteenWeeksAgo.getDate() - 91);
           return entryDate >= thirteenWeeksAgo && entryDate <= now;
         }
-        case 'monthly': {
-          return entryDate.getFullYear() === (filters.year || now.getFullYear());
-        }
+        case 'monthly':
         case 'yearly': {
           return entryDate.getFullYear() === (filters.year || now.getFullYear());
         }
@@ -120,19 +109,16 @@ export default function QualityReportsScreen({ navigation }: Props) {
   // Calculate issue code frequency data
   const issueCodeData = useMemo(() => {
     const codeCounts: Record<string, number> = {};
-
     filteredEntries.forEach((entry) => {
       entry.issueCodes?.forEach((code) => {
         codeCounts[code] = (codeCounts[code] || 0) + 1;
       });
     });
 
-    // Sort by count descending
     const sorted = Object.entries(codeCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 15); // Top 15
+      .slice(0, 10);
 
-    // Calculate cumulative percentage for Pareto
     const total = sorted.reduce((sum, [_, count]) => sum + count, 0);
     let cumulative = 0;
 
@@ -150,7 +136,6 @@ export default function QualityReportsScreen({ navigation }: Props) {
   // Calculate reject code frequency data
   const rejectCodeData = useMemo(() => {
     const codeCounts: Record<string, number> = {};
-
     filteredEntries.forEach((entry) => {
       entry.rejectCodes?.forEach((code) => {
         codeCounts[code] = (codeCounts[code] || 0) + 1;
@@ -159,7 +144,7 @@ export default function QualityReportsScreen({ navigation }: Props) {
 
     const sorted = Object.entries(codeCounts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 15);
+      .slice(0, 10);
 
     const total = sorted.reduce((sum, [_, count]) => sum + count, 0);
     let cumulative = 0;
@@ -178,22 +163,19 @@ export default function QualityReportsScreen({ navigation }: Props) {
   // Calculate disposition distribution
   const dispositionData = useMemo(() => {
     const dispCounts: Record<string, number> = {};
-
     filteredEntries.forEach((entry) => {
-      const disp = entry.disposition || 'No Disposition';
+      const disp = entry.disposition || 'None';
       dispCounts[disp] = (dispCounts[disp] || 0) + 1;
     });
 
-    const sorted = Object.entries(dispCounts)
-      .sort((a, b) => b[1] - a[1]);
-
+    const sorted = Object.entries(dispCounts).sort((a, b) => b[1] - a[1]);
     const total = sorted.reduce((sum, [_, count]) => sum + count, 0);
     let cumulative = 0;
 
     return sorted.map(([disp, count]) => {
       cumulative += count;
       return {
-        x: disp,
+        x: disp.length > 12 ? disp.slice(0, 10) + '..' : disp,
         y: count,
         label: disp,
         cumulative: total > 0 ? (cumulative / total) * 100 : 0,
@@ -204,15 +186,12 @@ export default function QualityReportsScreen({ navigation }: Props) {
   // Calculate product type distribution
   const productData = useMemo(() => {
     const productCounts: Record<string, number> = {};
-
     filteredEntries.forEach((entry) => {
       const product = entry.productType || 'Unknown';
       productCounts[product] = (productCounts[product] || 0) + 1;
     });
 
-    const sorted = Object.entries(productCounts)
-      .sort((a, b) => b[1] - a[1]);
-
+    const sorted = Object.entries(productCounts).sort((a, b) => b[1] - a[1]);
     const total = sorted.reduce((sum, [_, count]) => sum + count, 0);
     let cumulative = 0;
 
@@ -227,12 +206,38 @@ export default function QualityReportsScreen({ navigation }: Props) {
     });
   }, [filteredEntries]);
 
+  // Calculate weekly trend data for rolling 13 weeks
+  const weeklyTrendData = useMemo(() => {
+    const weekData: Array<{ x: string; issues: number; rejects: number; total: number }> = [];
+    const now = new Date();
+
+    for (let i = 12; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - (i * 7) - 6);
+      const weekEnd = new Date(now);
+      weekEnd.setDate(weekEnd.getDate() - (i * 7));
+
+      let issues = 0, rejects = 0, total = 0;
+      filteredEntries.forEach((entry) => {
+        if (!entry.pourDate) return;
+        const entryDate = new Date(entry.pourDate);
+        if (entryDate >= weekStart && entryDate <= weekEnd) {
+          total += 1;
+          issues += entry.issueCodes?.length || 0;
+          rejects += entry.rejectCodes?.length || 0;
+        }
+      });
+
+      weekData.push({ x: `W${13 - i}`, issues, rejects, total });
+    }
+    return weekData;
+  }, [filteredEntries]);
+
   // Calculate monthly trend data
   const monthlyTrendData = useMemo(() => {
-    const monthCounts: Record<string, { issues: number; rejects: number; total: number }> = {};
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthCounts: Record<string, { issues: number; rejects: number; total: number }> = {};
 
-    // Initialize all months
     months.forEach((month) => {
       monthCounts[month] = { issues: 0, rejects: 0, total: 0 };
     });
@@ -250,63 +255,20 @@ export default function QualityReportsScreen({ navigation }: Props) {
 
     return months.map((month) => ({
       x: month,
-      issues: monthCounts[month].issues,
-      rejects: monthCounts[month].rejects,
-      total: monthCounts[month].total,
+      ...monthCounts[month],
     }));
   }, [filteredEntries]);
 
-  // Calculate weekly trend data for rolling 13 weeks
-  const weeklyTrendData = useMemo(() => {
-    const weekData: Array<{ x: string; issues: number; rejects: number; total: number }> = [];
-    const now = new Date();
-
-    // Create 13 week buckets
-    for (let i = 12; i >= 0; i--) {
-      const weekStart = new Date(now);
-      weekStart.setDate(weekStart.getDate() - (i * 7) - 6);
-      const weekEnd = new Date(now);
-      weekEnd.setDate(weekEnd.getDate() - (i * 7));
-
-      const weekLabel = `W${13 - i}`;
-
-      let issues = 0;
-      let rejects = 0;
-      let total = 0;
-
-      filteredEntries.forEach((entry) => {
-        if (!entry.pourDate) return;
-        const entryDate = new Date(entry.pourDate);
-        if (entryDate >= weekStart && entryDate <= weekEnd) {
-          total += 1;
-          issues += entry.issueCodes?.length || 0;
-          rejects += entry.rejectCodes?.length || 0;
-        }
-      });
-
-      weekData.push({ x: weekLabel, issues, rejects, total });
-    }
-
-    return weekData;
-  }, [filteredEntries]);
-
-  // Get current chart data based on report type
   const currentChartData = useMemo(() => {
     switch (filters.reportType) {
-      case 'issue-codes':
-        return issueCodeData;
-      case 'reject-codes':
-        return rejectCodeData;
-      case 'dispositions':
-        return dispositionData;
-      case 'products':
-        return productData;
-      default:
-        return [];
+      case 'issue-codes': return issueCodeData;
+      case 'reject-codes': return rejectCodeData;
+      case 'dispositions': return dispositionData;
+      case 'products': return productData;
+      default: return [];
     }
   }, [filters.reportType, issueCodeData, rejectCodeData, dispositionData, productData]);
 
-  // Get trend data based on time range
   const trendData = useMemo(() => {
     return filters.timeRange === 'rolling-13-weeks' ? weeklyTrendData : monthlyTrendData;
   }, [filters.timeRange, weeklyTrendData, monthlyTrendData]);
@@ -331,11 +293,11 @@ export default function QualityReportsScreen({ navigation }: Props) {
 
   const getChartTypeLabel = (type: ChartType): string => {
     switch (type) {
-      case 'pareto': return 'Pareto Chart';
-      case 'vertical-bar': return 'Column Chart';
-      case 'horizontal-bar': return 'Bar Chart';
-      case 'line': return 'Line Chart';
-      case 'pie': return 'Pie Chart';
+      case 'pareto': return 'Pareto';
+      case 'vertical-bar': return 'Column';
+      case 'horizontal-bar': return 'Bar';
+      case 'line': return 'Line';
+      case 'pie': return 'Pie';
     }
   };
 
@@ -356,504 +318,64 @@ export default function QualityReportsScreen({ navigation }: Props) {
     };
   }, [filteredEntries]);
 
-  // Render Vertical Bar Chart (Column Chart) with SVG
+  // No data placeholder
+  const renderNoData = () => (
+    <View className="h-40 items-center justify-center">
+      <Ionicons name="bar-chart-outline" size={40} color="#D1D5DB" />
+      <Text className="text-gray-400 mt-2 text-sm">No data available</Text>
+    </View>
+  );
+
+  // Clean Vertical Bar Chart
   const renderVerticalBarChart = (data: ChartDataPoint[], color: string) => {
     if (data.length === 0) return renderNoData();
 
     const maxValue = Math.max(...data.map((d) => d.y), 1);
-    const barWidth = Math.min(30, (CHART_WIDTH - 60) / data.length - 4);
-    const chartAreaWidth = CHART_WIDTH - 40;
-    const chartAreaHeight = CHART_HEIGHT - 60;
-    const startX = 40;
-    const startY = 20;
+    const chartHeight = 200;
+    const barAreaWidth = CHART_WIDTH - 30;
+    const barWidth = Math.min(32, (barAreaWidth / data.length) - 8);
+    const startX = 30;
+    const startY = 10;
 
     return (
       <View>
-        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-          {/* Y-axis */}
-          <Line x1={startX} y1={startY} x2={startX} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
+        <Svg width={CHART_WIDTH} height={chartHeight + 30}>
+          {/* Y-axis line */}
+          <Line x1={startX} y1={startY} x2={startX} y2={startY + chartHeight} stroke="#E5E7EB" strokeWidth={1} />
 
-          {/* X-axis */}
-          <Line x1={startX} y1={startY + chartAreaHeight} x2={startX + chartAreaWidth} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
-
-          {/* Y-axis labels and grid lines */}
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-            const y = startY + chartAreaHeight * (1 - ratio);
+          {/* Y-axis labels - only 3 */}
+          {[0, 0.5, 1].map((ratio, i) => {
+            const y = startY + chartHeight * (1 - ratio);
             const value = Math.round(maxValue * ratio);
             return (
-              <G key={i}>
-                <Line x1={startX} y1={y} x2={startX + chartAreaWidth} y2={y} stroke="#F3F4F6" strokeWidth={1} />
-                <SvgText x={startX - 5} y={y + 4} fontSize={10} fill="#6B7280" textAnchor="end">
-                  {value}
-                </SvgText>
-              </G>
-            );
-          })}
-
-          {/* Bars */}
-          {data.map((item, index) => {
-            const barHeight = (item.y / maxValue) * chartAreaHeight;
-            const x = startX + (index * (chartAreaWidth / data.length)) + ((chartAreaWidth / data.length) - barWidth) / 2;
-            const y = startY + chartAreaHeight - barHeight;
-
-            return (
-              <G key={index}>
-                <Rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barHeight}
-                  fill={color}
-                  rx={2}
-                />
-                {/* Value on top of bar */}
-                {item.y > 0 && (
-                  <SvgText
-                    x={x + barWidth / 2}
-                    y={y - 5}
-                    fontSize={9}
-                    fill="#374151"
-                    textAnchor="middle"
-                    fontWeight="600"
-                  >
-                    {item.y}
-                  </SvgText>
-                )}
-                {/* X-axis label */}
-                <SvgText
-                  x={x + barWidth / 2}
-                  y={startY + chartAreaHeight + 15}
-                  fontSize={9}
-                  fill="#6B7280"
-                  textAnchor="middle"
-                >
-                  {item.x.length > 4 ? item.x.slice(0, 4) : item.x}
-                </SvgText>
-              </G>
-            );
-          })}
-        </Svg>
-
-        {/* Legend below chart */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2">
-          <View className="flex-row flex-wrap px-2">
-            {data.slice(0, 10).map((item, index) => (
-              <View key={index} className="flex-row items-center mr-4 mb-1">
-                <Text className="text-xs text-gray-600">
-                  <Text className="font-semibold">{item.x}</Text>: {item.label || item.x}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-    );
-  };
-
-  // Render Horizontal Bar Chart with SVG
-  const renderHorizontalBarChart = (data: ChartDataPoint[], color: string) => {
-    if (data.length === 0) return renderNoData();
-
-    const maxValue = Math.max(...data.map((d) => d.y), 1);
-    const barHeight = 24;
-    const barSpacing = 8;
-    const labelWidth = 50;
-    const valueWidth = 40;
-    const chartAreaWidth = CHART_WIDTH - labelWidth - valueWidth - 20;
-    const totalHeight = data.length * (barHeight + barSpacing) + 20;
-
-    return (
-      <View>
-        <Svg width={CHART_WIDTH} height={totalHeight}>
-          {data.map((item, index) => {
-            const barWidth = (item.y / maxValue) * chartAreaWidth;
-            const y = index * (barHeight + barSpacing) + 10;
-
-            return (
-              <G key={index}>
-                {/* Label */}
-                <SvgText
-                  x={labelWidth - 5}
-                  y={y + barHeight / 2 + 4}
-                  fontSize={11}
-                  fill="#374151"
-                  textAnchor="end"
-                  fontWeight="500"
-                >
-                  {item.x}
-                </SvgText>
-
-                {/* Background bar */}
-                <Rect
-                  x={labelWidth}
-                  y={y}
-                  width={chartAreaWidth}
-                  height={barHeight}
-                  fill="#F3F4F6"
-                  rx={4}
-                />
-
-                {/* Value bar */}
-                <Rect
-                  x={labelWidth}
-                  y={y}
-                  width={Math.max(barWidth, 2)}
-                  height={barHeight}
-                  fill={color}
-                  rx={4}
-                />
-
-                {/* Value text */}
-                <SvgText
-                  x={labelWidth + chartAreaWidth + 8}
-                  y={y + barHeight / 2 + 4}
-                  fontSize={11}
-                  fill="#374151"
-                  textAnchor="start"
-                  fontWeight="600"
-                >
-                  {item.y}
-                </SvgText>
-              </G>
-            );
-          })}
-        </Svg>
-
-        {/* Description legend */}
-        <View className="mt-3 border-t border-gray-200 pt-3">
-          {data.slice(0, 8).map((item, index) => (
-            <Text key={index} className="text-xs text-gray-600 mb-1">
-              <Text className="font-semibold text-gray-800">{item.x}</Text> - {item.label || item.x}
-            </Text>
-          ))}
-        </View>
-      </View>
-    );
-  };
-
-  // Render Pareto Chart with SVG (Bars + Cumulative Line)
-  const renderParetoChart = (data: ChartDataPoint[], color: string) => {
-    if (data.length === 0) return renderNoData();
-
-    const maxValue = Math.max(...data.map((d) => d.y), 1);
-    const barWidth = Math.min(28, (CHART_WIDTH - 70) / data.length - 4);
-    const chartAreaWidth = CHART_WIDTH - 50;
-    const chartAreaHeight = CHART_HEIGHT - 70;
-    const startX = 45;
-    const startY = 25;
-
-    // Build cumulative line path
-    let linePath = '';
-    data.forEach((item, index) => {
-      const x = startX + (index * (chartAreaWidth / data.length)) + (chartAreaWidth / data.length) / 2;
-      const y = startY + chartAreaHeight - ((item.cumulative || 0) / 100) * chartAreaHeight;
-      if (index === 0) {
-        linePath = `M ${x} ${y}`;
-      } else {
-        linePath += ` L ${x} ${y}`;
-      }
-    });
-
-    return (
-      <View>
-        {/* Legend */}
-        <View className="flex-row items-center justify-center mb-3 gap-6">
-          <View className="flex-row items-center">
-            <View className="w-4 h-3 rounded mr-2" style={{ backgroundColor: color }} />
-            <Text className="text-xs text-gray-600">Count</Text>
-          </View>
-          <View className="flex-row items-center">
-            <View className="w-4 h-0.5 bg-orange-500 mr-2" />
-            <Text className="text-xs text-gray-600">Cumulative %</Text>
-          </View>
-          <View className="flex-row items-center">
-            <View className="w-4 h-0.5 bg-red-400 mr-2" style={{ borderStyle: 'dashed' }} />
-            <Text className="text-xs text-gray-600">80% Line</Text>
-          </View>
-        </View>
-
-        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-          {/* Y-axis (left - count) */}
-          <Line x1={startX} y1={startY} x2={startX} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
-
-          {/* Y-axis (right - percentage) */}
-          <Line x1={startX + chartAreaWidth} y1={startY} x2={startX + chartAreaWidth} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
-
-          {/* X-axis */}
-          <Line x1={startX} y1={startY + chartAreaHeight} x2={startX + chartAreaWidth} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
-
-          {/* Grid lines and Y-axis labels (left - count) */}
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-            const y = startY + chartAreaHeight * (1 - ratio);
-            const value = Math.round(maxValue * ratio);
-            return (
-              <G key={`left-${i}`}>
-                <Line x1={startX} y1={y} x2={startX + chartAreaWidth} y2={y} stroke="#F3F4F6" strokeWidth={1} />
-                <SvgText x={startX - 5} y={y + 4} fontSize={9} fill="#6B7280" textAnchor="end">
-                  {value}
-                </SvgText>
-              </G>
-            );
-          })}
-
-          {/* Y-axis labels (right - percentage) */}
-          {[0, 25, 50, 75, 100].map((percent, i) => {
-            const y = startY + chartAreaHeight * (1 - percent / 100);
-            return (
-              <SvgText key={`right-${i}`} x={startX + chartAreaWidth + 5} y={y + 4} fontSize={9} fill="#F97316" textAnchor="start">
-                {percent}%
+              <SvgText key={i} x={startX - 4} y={y + 3} fontSize={10} fill="#9CA3AF" textAnchor="end">
+                {value}
               </SvgText>
             );
           })}
 
-          {/* 80% horizontal line */}
-          <Line
-            x1={startX}
-            y1={startY + chartAreaHeight * 0.2}
-            x2={startX + chartAreaWidth}
-            y2={startY + chartAreaHeight * 0.2}
-            stroke="#F87171"
-            strokeWidth={1}
-            strokeDasharray="5,5"
-          />
-
           {/* Bars */}
           {data.map((item, index) => {
-            const barHeight = (item.y / maxValue) * chartAreaHeight;
-            const x = startX + (index * (chartAreaWidth / data.length)) + ((chartAreaWidth / data.length) - barWidth) / 2;
-            const y = startY + chartAreaHeight - barHeight;
+            const barHeight = Math.max((item.y / maxValue) * chartHeight, 2);
+            const x = startX + 10 + index * (barAreaWidth / data.length) + (barAreaWidth / data.length - barWidth) / 2;
+            const y = startY + chartHeight - barHeight;
 
             return (
               <G key={index}>
-                <Rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barHeight}
-                  fill={color}
-                  rx={2}
-                />
-                {/* X-axis label */}
-                <SvgText
-                  x={x + barWidth / 2}
-                  y={startY + chartAreaHeight + 12}
-                  fontSize={8}
-                  fill="#6B7280"
-                  textAnchor="middle"
-                >
-                  {item.x}
-                </SvgText>
-              </G>
-            );
-          })}
-
-          {/* Cumulative line */}
-          <Path d={linePath} stroke="#F97316" strokeWidth={2} fill="none" />
-
-          {/* Cumulative line points */}
-          {data.map((item, index) => {
-            const x = startX + (index * (chartAreaWidth / data.length)) + (chartAreaWidth / data.length) / 2;
-            const y = startY + chartAreaHeight - ((item.cumulative || 0) / 100) * chartAreaHeight;
-            return (
-              <Circle key={`point-${index}`} cx={x} cy={y} r={4} fill="#F97316" />
-            );
-          })}
-        </Svg>
-
-        {/* Data table */}
-        <View className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
-          <View className="flex-row bg-gray-100 p-2 border-b border-gray-200">
-            <Text className="w-12 text-xs font-semibold text-gray-700">Code</Text>
-            <Text className="flex-1 text-xs font-semibold text-gray-700">Description</Text>
-            <Text className="w-14 text-xs font-semibold text-gray-700 text-right">Count</Text>
-            <Text className="w-14 text-xs font-semibold text-gray-700 text-right">Cum%</Text>
-          </View>
-          <ScrollView style={{ maxHeight: 150 }}>
-            {data.map((item, index) => (
-              <View key={index} className={`flex-row p-2 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                <Text className="w-12 text-xs text-gray-900 font-medium">{item.x}</Text>
-                <Text className="flex-1 text-xs text-gray-600" numberOfLines={1}>{item.label}</Text>
-                <Text className="w-14 text-xs text-gray-900 text-right font-semibold">{item.y}</Text>
-                <Text className="w-14 text-xs text-orange-600 text-right">{(item.cumulative || 0).toFixed(0)}%</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-    );
-  };
-
-  // Render Line Chart with SVG
-  const renderLineChart = (data: ChartDataPoint[], color: string) => {
-    if (data.length === 0) return renderNoData();
-
-    const maxValue = Math.max(...data.map((d) => d.y), 1);
-    const chartAreaWidth = CHART_WIDTH - 50;
-    const chartAreaHeight = CHART_HEIGHT - 60;
-    const startX = 40;
-    const startY = 20;
-
-    // Build line path
-    let linePath = '';
-    data.forEach((item, index) => {
-      const x = startX + (index / (data.length - 1 || 1)) * chartAreaWidth;
-      const y = startY + chartAreaHeight - (item.y / maxValue) * chartAreaHeight;
-      if (index === 0) {
-        linePath = `M ${x} ${y}`;
-      } else {
-        linePath += ` L ${x} ${y}`;
-      }
-    });
-
-    // Build area path (for fill under line)
-    const areaPath = linePath +
-      ` L ${startX + chartAreaWidth} ${startY + chartAreaHeight}` +
-      ` L ${startX} ${startY + chartAreaHeight} Z`;
-
-    return (
-      <View>
-        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-          {/* Y-axis */}
-          <Line x1={startX} y1={startY} x2={startX} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
-
-          {/* X-axis */}
-          <Line x1={startX} y1={startY + chartAreaHeight} x2={startX + chartAreaWidth} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
-
-          {/* Grid lines and Y-axis labels */}
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-            const y = startY + chartAreaHeight * (1 - ratio);
-            const value = Math.round(maxValue * ratio);
-            return (
-              <G key={i}>
-                <Line x1={startX} y1={y} x2={startX + chartAreaWidth} y2={y} stroke="#F3F4F6" strokeWidth={1} />
-                <SvgText x={startX - 5} y={y + 4} fontSize={10} fill="#6B7280" textAnchor="end">
-                  {value}
-                </SvgText>
-              </G>
-            );
-          })}
-
-          {/* Area fill */}
-          <Path d={areaPath} fill={color} fillOpacity={0.15} />
-
-          {/* Line */}
-          <Path d={linePath} stroke={color} strokeWidth={2.5} fill="none" />
-
-          {/* Points and labels */}
-          {data.map((item, index) => {
-            const x = startX + (index / (data.length - 1 || 1)) * chartAreaWidth;
-            const y = startY + chartAreaHeight - (item.y / maxValue) * chartAreaHeight;
-            return (
-              <G key={index}>
-                <Circle cx={x} cy={y} r={5} fill="white" stroke={color} strokeWidth={2} />
-                {/* Value above point */}
-                <SvgText x={x} y={y - 10} fontSize={9} fill="#374151" textAnchor="middle" fontWeight="600">
-                  {item.y}
-                </SvgText>
-                {/* X-axis label */}
-                <SvgText
-                  x={x}
-                  y={startY + chartAreaHeight + 15}
-                  fontSize={9}
-                  fill="#6B7280"
-                  textAnchor="middle"
-                >
-                  {item.x.length > 5 ? item.x.slice(0, 5) : item.x}
-                </SvgText>
+                <Rect x={x} y={y} width={barWidth} height={barHeight} fill={color} rx={3} />
               </G>
             );
           })}
         </Svg>
-      </View>
-    );
-  };
 
-  // Render Pie Chart with SVG
-  const renderPieChart = (data: ChartDataPoint[]) => {
-    if (data.length === 0) return renderNoData();
-
-    const total = data.reduce((sum, d) => sum + d.y, 0);
-    if (total === 0) return renderNoData();
-
-    const centerX = CHART_WIDTH / 2;
-    const centerY = 120;
-    const radius = 90;
-    const innerRadius = 45; // Donut chart
-
-    let currentAngle = -Math.PI / 2; // Start at top
-
-    const slices = data.map((item, index) => {
-      const sliceAngle = (item.y / total) * 2 * Math.PI;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + sliceAngle;
-      currentAngle = endAngle;
-
-      // Calculate arc path
-      const x1 = centerX + radius * Math.cos(startAngle);
-      const y1 = centerY + radius * Math.sin(startAngle);
-      const x2 = centerX + radius * Math.cos(endAngle);
-      const y2 = centerY + radius * Math.sin(endAngle);
-
-      const x1Inner = centerX + innerRadius * Math.cos(startAngle);
-      const y1Inner = centerY + innerRadius * Math.sin(startAngle);
-      const x2Inner = centerX + innerRadius * Math.cos(endAngle);
-      const y2Inner = centerY + innerRadius * Math.sin(endAngle);
-
-      const largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
-
-      const pathData = [
-        `M ${x1Inner} ${y1Inner}`,
-        `L ${x1} ${y1}`,
-        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-        `L ${x2Inner} ${y2Inner}`,
-        `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}`,
-        'Z'
-      ].join(' ');
-
-      // Label position
-      const midAngle = (startAngle + endAngle) / 2;
-      const labelRadius = radius + 20;
-      const labelX = centerX + labelRadius * Math.cos(midAngle);
-      const labelY = centerY + labelRadius * Math.sin(midAngle);
-      const percentage = ((item.y / total) * 100).toFixed(1);
-
-      return {
-        path: pathData,
-        color: CHART_COLORS[index % CHART_COLORS.length],
-        label: item.x,
-        value: item.y,
-        percentage,
-        labelX,
-        labelY,
-        midAngle,
-      };
-    });
-
-    return (
-      <View>
-        <Svg width={CHART_WIDTH} height={260}>
-          {/* Pie slices */}
-          {slices.map((slice, index) => (
-            <Path key={index} d={slice.path} fill={slice.color} />
-          ))}
-
-          {/* Center text */}
-          <SvgText x={centerX} y={centerY - 5} fontSize={20} fill="#374151" textAnchor="middle" fontWeight="bold">
-            {total}
-          </SvgText>
-          <SvgText x={centerX} y={centerY + 12} fontSize={11} fill="#6B7280" textAnchor="middle">
-            Total
-          </SvgText>
-        </Svg>
-
-        {/* Legend */}
-        <View className="flex-row flex-wrap justify-center mt-2 px-4">
-          {slices.map((slice, index) => (
-            <View key={index} className="flex-row items-center mr-4 mb-2">
-              <View className="w-3 h-3 rounded mr-1.5" style={{ backgroundColor: slice.color }} />
-              <Text className="text-xs text-gray-700">
-                {slice.label} ({slice.percentage}%)
-              </Text>
+        {/* Data Table - Clean format */}
+        <View className="mt-2 border-t border-gray-100 pt-2">
+          {data.map((item, i) => (
+            <View key={i} className="flex-row items-center py-1.5 border-b border-gray-50">
+              <View className="w-8 h-4 rounded mr-2" style={{ backgroundColor: color, opacity: 1 - (i * 0.08) }} />
+              <Text className="text-xs text-gray-800 font-medium w-8">{item.x}</Text>
+              <Text className="text-xs text-gray-500 flex-1 mx-2" numberOfLines={1}>{item.label}</Text>
+              <Text className="text-xs text-gray-900 font-semibold w-10 text-right">{item.y}</Text>
             </View>
           ))}
         </View>
@@ -861,163 +383,386 @@ export default function QualityReportsScreen({ navigation }: Props) {
     );
   };
 
-  // Render Trend Chart (Issues vs Rejects over time)
-  const renderTrendChart = () => {
-    const maxIssues = Math.max(...trendData.map((d) => d.issues), 1);
-    const maxRejects = Math.max(...trendData.map((d) => d.rejects), 1);
-    const maxValue = Math.max(maxIssues, maxRejects, 1);
+  // Clean Horizontal Bar Chart
+  const renderHorizontalBarChart = (data: ChartDataPoint[], color: string) => {
+    if (data.length === 0) return renderNoData();
 
-    const chartAreaWidth = CHART_WIDTH - 50;
-    const chartAreaHeight = 180;
-    const startX = 40;
-    const startY = 20;
+    const maxValue = Math.max(...data.map((d) => d.y), 1);
+    const barHeight = 20;
+    const spacing = 6;
+    const labelWidth = 40;
+    const barAreaWidth = CHART_WIDTH - labelWidth - 50;
 
-    // Build line paths
-    let issuesPath = '';
-    let rejectsPath = '';
+    return (
+      <View>
+        {data.map((item, index) => {
+          const barWidth = Math.max((item.y / maxValue) * barAreaWidth, 4);
+          return (
+            <View key={index} className="flex-row items-center" style={{ marginBottom: spacing }}>
+              <Text className="text-xs text-gray-700 font-medium" style={{ width: labelWidth }} numberOfLines={1}>
+                {item.x}
+              </Text>
+              <View className="flex-1 mx-2">
+                <View className="h-5 bg-gray-100 rounded-full overflow-hidden">
+                  <View
+                    className="h-full rounded-full"
+                    style={{ width: barWidth, backgroundColor: color }}
+                  />
+                </View>
+              </View>
+              <Text className="text-xs text-gray-900 font-semibold w-8 text-right">{item.y}</Text>
+            </View>
+          );
+        })}
 
-    trendData.forEach((item, index) => {
-      const x = startX + (index / (trendData.length - 1 || 1)) * chartAreaWidth;
-      const yIssues = startY + chartAreaHeight - (item.issues / maxValue) * chartAreaHeight;
-      const yRejects = startY + chartAreaHeight - (item.rejects / maxValue) * chartAreaHeight;
+        {/* Legend */}
+        <View className="mt-3 pt-3 border-t border-gray-100">
+          {data.slice(0, 5).map((item, i) => (
+            <Text key={i} className="text-xs text-gray-500 mb-0.5">
+              <Text className="font-medium text-gray-700">{item.x}</Text> = {item.label}
+            </Text>
+          ))}
+        </View>
+      </View>
+    );
+  };
 
-      if (index === 0) {
-        issuesPath = `M ${x} ${yIssues}`;
-        rejectsPath = `M ${x} ${yRejects}`;
-      } else {
-        issuesPath += ` L ${x} ${yIssues}`;
-        rejectsPath += ` L ${x} ${yRejects}`;
-      }
+  // Clean Pareto Chart with proper dual axis
+  const renderParetoChart = (data: ChartDataPoint[], color: string) => {
+    if (data.length === 0) return renderNoData();
+
+    const maxValue = Math.max(...data.map((d) => d.y), 1);
+    const chartHeight = 180;
+    const barAreaWidth = CHART_WIDTH - 50;
+    const barWidth = Math.min(28, (barAreaWidth / data.length) - 6);
+    const startX = 30;
+    const startY = 15;
+
+    // Build cumulative line path
+    let linePath = '';
+    data.forEach((item, index) => {
+      const x = startX + index * (barAreaWidth / data.length) + (barAreaWidth / data.length) / 2;
+      const y = startY + chartHeight - ((item.cumulative || 0) / 100) * chartHeight;
+      linePath += index === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
     });
 
     return (
       <View>
         {/* Legend */}
-        <View className="flex-row items-center justify-center mb-3 gap-6">
+        <View className="flex-row justify-center mb-2 gap-4">
           <View className="flex-row items-center">
-            <View className="w-4 h-1 bg-blue-500 rounded mr-2" />
-            <Text className="text-xs text-gray-600">Issues</Text>
+            <View className="w-3 h-3 rounded mr-1" style={{ backgroundColor: color }} />
+            <Text className="text-xs text-gray-500">Count</Text>
           </View>
           <View className="flex-row items-center">
-            <View className="w-4 h-1 bg-red-500 rounded mr-2" />
-            <Text className="text-xs text-gray-600">Rejects</Text>
+            <View className="w-3 h-0.5 bg-orange-500 mr-1" />
+            <Text className="text-xs text-gray-500">Cumulative %</Text>
           </View>
         </View>
 
-        <Svg width={CHART_WIDTH} height={chartAreaHeight + 50}>
-          {/* Y-axis */}
-          <Line x1={startX} y1={startY} x2={startX} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
+        <Svg width={CHART_WIDTH} height={chartHeight + 25}>
+          {/* 80% reference line */}
+          <Line
+            x1={startX}
+            y1={startY + chartHeight * 0.2}
+            x2={startX + barAreaWidth}
+            y2={startY + chartHeight * 0.2}
+            stroke="#FCA5A5"
+            strokeWidth={1}
+            strokeDasharray="4,4"
+          />
 
-          {/* X-axis */}
-          <Line x1={startX} y1={startY + chartAreaHeight} x2={startX + chartAreaWidth} y2={startY + chartAreaHeight} stroke="#E5E7EB" strokeWidth={1} />
+          {/* Y-axis labels (left) */}
+          {[0, maxValue].map((value, i) => {
+            const y = startY + chartHeight * (1 - (value / maxValue));
+            return (
+              <SvgText key={i} x={startX - 4} y={y + 3} fontSize={9} fill="#9CA3AF" textAnchor="end">
+                {value}
+              </SvgText>
+            );
+          })}
 
-          {/* Grid lines and Y-axis labels */}
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-            const y = startY + chartAreaHeight * (1 - ratio);
-            const value = Math.round(maxValue * ratio);
+          {/* Y-axis labels (right - percentage) */}
+          {[0, 80, 100].map((pct) => {
+            const y = startY + chartHeight * (1 - pct / 100);
+            return (
+              <SvgText key={pct} x={startX + barAreaWidth + 4} y={y + 3} fontSize={9} fill="#F97316" textAnchor="start">
+                {pct}%
+              </SvgText>
+            );
+          })}
+
+          {/* Bars */}
+          {data.map((item, index) => {
+            const barH = Math.max((item.y / maxValue) * chartHeight, 2);
+            const x = startX + index * (barAreaWidth / data.length) + (barAreaWidth / data.length - barWidth) / 2;
+            const y = startY + chartHeight - barH;
+            return <Rect key={index} x={x} y={y} width={barWidth} height={barH} fill={color} rx={2} />;
+          })}
+
+          {/* Cumulative line */}
+          <Path d={linePath} stroke="#F97316" strokeWidth={2} fill="none" />
+
+          {/* Line points */}
+          {data.map((item, index) => {
+            const x = startX + index * (barAreaWidth / data.length) + (barAreaWidth / data.length) / 2;
+            const y = startY + chartHeight - ((item.cumulative || 0) / 100) * chartHeight;
+            return <Circle key={index} cx={x} cy={y} r={3} fill="#F97316" />;
+          })}
+        </Svg>
+
+        {/* Data Table */}
+        <View className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+          <View className="flex-row bg-gray-50 px-2 py-1.5">
+            <Text className="text-xs font-semibold text-gray-600 w-8">Code</Text>
+            <Text className="text-xs font-semibold text-gray-600 flex-1">Description</Text>
+            <Text className="text-xs font-semibold text-gray-600 w-10 text-right">Qty</Text>
+            <Text className="text-xs font-semibold text-gray-600 w-12 text-right">Cum%</Text>
+          </View>
+          {data.map((item, i) => (
+            <View key={i} className={`flex-row px-2 py-1.5 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
+              <Text className="text-xs text-gray-800 font-medium w-8">{item.x}</Text>
+              <Text className="text-xs text-gray-500 flex-1" numberOfLines={1}>{item.label}</Text>
+              <Text className="text-xs text-gray-900 font-semibold w-10 text-right">{item.y}</Text>
+              <Text className="text-xs text-orange-600 w-12 text-right">{(item.cumulative || 0).toFixed(0)}%</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // Clean Line Chart
+  const renderLineChart = (data: ChartDataPoint[], color: string) => {
+    if (data.length === 0) return renderNoData();
+
+    const maxValue = Math.max(...data.map((d) => d.y), 1);
+    const chartHeight = 180;
+    const chartAreaWidth = CHART_WIDTH - 40;
+    const startX = 30;
+    const startY = 15;
+
+    let linePath = '';
+    data.forEach((item, index) => {
+      const x = startX + (index / Math.max(data.length - 1, 1)) * chartAreaWidth;
+      const y = startY + chartHeight - (item.y / maxValue) * chartHeight;
+      linePath += index === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+    });
+
+    const areaPath = linePath +
+      ` L ${startX + chartAreaWidth} ${startY + chartHeight}` +
+      ` L ${startX} ${startY + chartHeight} Z`;
+
+    return (
+      <View>
+        <Svg width={CHART_WIDTH} height={chartHeight + 25}>
+          {/* Grid lines */}
+          {[0, 0.5, 1].map((ratio, i) => {
+            const y = startY + chartHeight * (1 - ratio);
             return (
               <G key={i}>
                 <Line x1={startX} y1={y} x2={startX + chartAreaWidth} y2={y} stroke="#F3F4F6" strokeWidth={1} />
-                <SvgText x={startX - 5} y={y + 4} fontSize={9} fill="#6B7280" textAnchor="end">
-                  {value}
+                <SvgText x={startX - 4} y={y + 3} fontSize={9} fill="#9CA3AF" textAnchor="end">
+                  {Math.round(maxValue * ratio)}
                 </SvgText>
               </G>
             );
           })}
 
-          {/* Issues line and points */}
-          <Path d={issuesPath} stroke="#3B82F6" strokeWidth={2.5} fill="none" />
-          {trendData.map((item, index) => {
-            const x = startX + (index / (trendData.length - 1 || 1)) * chartAreaWidth;
-            const y = startY + chartAreaHeight - (item.issues / maxValue) * chartAreaHeight;
+          {/* Area fill */}
+          <Path d={areaPath} fill={color} fillOpacity={0.1} />
+
+          {/* Line */}
+          <Path d={linePath} stroke={color} strokeWidth={2} fill="none" />
+
+          {/* Points */}
+          {data.map((item, index) => {
+            const x = startX + (index / Math.max(data.length - 1, 1)) * chartAreaWidth;
+            const y = startY + chartHeight - (item.y / maxValue) * chartHeight;
+            return <Circle key={index} cx={x} cy={y} r={4} fill="white" stroke={color} strokeWidth={2} />;
+          })}
+        </Svg>
+
+        {/* Data Table */}
+        <View className="mt-2">
+          {data.map((item, i) => (
+            <View key={i} className="flex-row items-center py-1 border-b border-gray-50">
+              <Text className="text-xs text-gray-700 font-medium w-10">{item.x}</Text>
+              <Text className="text-xs text-gray-500 flex-1" numberOfLines={1}>{item.label}</Text>
+              <Text className="text-xs text-gray-900 font-semibold w-10 text-right">{item.y}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // Clean Pie Chart
+  const renderPieChart = (data: ChartDataPoint[]) => {
+    if (data.length === 0) return renderNoData();
+
+    const total = data.reduce((sum, d) => sum + d.y, 0);
+    if (total === 0) return renderNoData();
+
+    const centerX = CHART_WIDTH / 2;
+    const centerY = 100;
+    const radius = 80;
+    const innerRadius = 40;
+
+    let currentAngle = -Math.PI / 2;
+
+    const slices = data.map((item, index) => {
+      const sliceAngle = (item.y / total) * 2 * Math.PI;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sliceAngle;
+      currentAngle = endAngle;
+
+      const x1 = centerX + radius * Math.cos(startAngle);
+      const y1 = centerY + radius * Math.sin(startAngle);
+      const x2 = centerX + radius * Math.cos(endAngle);
+      const y2 = centerY + radius * Math.sin(endAngle);
+      const x1Inner = centerX + innerRadius * Math.cos(startAngle);
+      const y1Inner = centerY + innerRadius * Math.sin(startAngle);
+      const x2Inner = centerX + innerRadius * Math.cos(endAngle);
+      const y2Inner = centerY + innerRadius * Math.sin(endAngle);
+
+      const largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
+      const pathData = `M ${x1Inner} ${y1Inner} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x2Inner} ${y2Inner} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner} Z`;
+
+      return {
+        path: pathData,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+        label: item.x,
+        value: item.y,
+        percentage: ((item.y / total) * 100).toFixed(1),
+      };
+    });
+
+    return (
+      <View>
+        <Svg width={CHART_WIDTH} height={210}>
+          {slices.map((slice, i) => (
+            <Path key={i} d={slice.path} fill={slice.color} />
+          ))}
+          <SvgText x={centerX} y={centerY - 5} fontSize={18} fill="#374151" textAnchor="middle" fontWeight="bold">
+            {total}
+          </SvgText>
+          <SvgText x={centerX} y={centerY + 12} fontSize={10} fill="#9CA3AF" textAnchor="middle">
+            Total
+          </SvgText>
+        </Svg>
+
+        {/* Legend */}
+        <View className="flex-row flex-wrap justify-center mt-1">
+          {slices.map((slice, i) => (
+            <View key={i} className="flex-row items-center mx-2 mb-1">
+              <View className="w-2.5 h-2.5 rounded-sm mr-1" style={{ backgroundColor: slice.color }} />
+              <Text className="text-xs text-gray-600">{slice.label} ({slice.percentage}%)</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // Clean Trend Chart
+  const renderTrendChart = () => {
+    const maxValue = Math.max(...trendData.map((d) => Math.max(d.issues, d.rejects)), 1);
+    const chartHeight = 150;
+    const chartAreaWidth = CHART_WIDTH - 40;
+    const startX = 30;
+    const startY = 10;
+
+    let issuesPath = '';
+    let rejectsPath = '';
+
+    trendData.forEach((item, index) => {
+      const x = startX + (index / Math.max(trendData.length - 1, 1)) * chartAreaWidth;
+      const yIssues = startY + chartHeight - (item.issues / maxValue) * chartHeight;
+      const yRejects = startY + chartHeight - (item.rejects / maxValue) * chartHeight;
+      issuesPath += index === 0 ? `M ${x} ${yIssues}` : ` L ${x} ${yIssues}`;
+      rejectsPath += index === 0 ? `M ${x} ${yRejects}` : ` L ${x} ${yRejects}`;
+    });
+
+    return (
+      <View>
+        {/* Legend */}
+        <View className="flex-row justify-center mb-2 gap-4">
+          <View className="flex-row items-center">
+            <View className="w-3 h-0.5 bg-blue-500 mr-1" />
+            <Text className="text-xs text-gray-500">Issues</Text>
+          </View>
+          <View className="flex-row items-center">
+            <View className="w-3 h-0.5 bg-red-500 mr-1" />
+            <Text className="text-xs text-gray-500">Rejects</Text>
+          </View>
+        </View>
+
+        <Svg width={CHART_WIDTH} height={chartHeight + 20}>
+          {/* Grid */}
+          {[0, 0.5, 1].map((ratio, i) => {
+            const y = startY + chartHeight * (1 - ratio);
             return (
-              <Circle key={`issue-${index}`} cx={x} cy={y} r={4} fill="#3B82F6" />
+              <G key={i}>
+                <Line x1={startX} y1={y} x2={startX + chartAreaWidth} y2={y} stroke="#F3F4F6" strokeWidth={1} />
+                <SvgText x={startX - 4} y={y + 3} fontSize={9} fill="#9CA3AF" textAnchor="end">
+                  {Math.round(maxValue * ratio)}
+                </SvgText>
+              </G>
             );
           })}
 
-          {/* Rejects line and points */}
-          <Path d={rejectsPath} stroke="#EF4444" strokeWidth={2.5} fill="none" />
-          {trendData.map((item, index) => {
-            const x = startX + (index / (trendData.length - 1 || 1)) * chartAreaWidth;
-            const y = startY + chartAreaHeight - (item.rejects / maxValue) * chartAreaHeight;
-            return (
-              <Circle key={`reject-${index}`} cx={x} cy={y} r={4} fill="#EF4444" />
-            );
-          })}
+          {/* Lines */}
+          <Path d={issuesPath} stroke="#3B82F6" strokeWidth={2} fill="none" />
+          <Path d={rejectsPath} stroke="#EF4444" strokeWidth={2} fill="none" />
 
-          {/* X-axis labels */}
+          {/* Points */}
           {trendData.map((item, index) => {
-            const x = startX + (index / (trendData.length - 1 || 1)) * chartAreaWidth;
+            const x = startX + (index / Math.max(trendData.length - 1, 1)) * chartAreaWidth;
+            const yIssues = startY + chartHeight - (item.issues / maxValue) * chartHeight;
+            const yRejects = startY + chartHeight - (item.rejects / maxValue) * chartHeight;
             return (
-              <SvgText
-                key={`label-${index}`}
-                x={x}
-                y={startY + chartAreaHeight + 15}
-                fontSize={8}
-                fill="#6B7280"
-                textAnchor="middle"
-              >
-                {item.x}
-              </SvgText>
+              <G key={index}>
+                <Circle cx={x} cy={yIssues} r={3} fill="#3B82F6" />
+                <Circle cx={x} cy={yRejects} r={3} fill="#EF4444" />
+              </G>
             );
           })}
         </Svg>
 
-        {/* Summary row */}
-        <View className="flex-row justify-around mt-2 px-4">
+        {/* Summary */}
+        <View className="flex-row justify-around mt-2 pt-2 border-t border-gray-100">
           <View className="items-center">
-            <Text className="text-lg font-bold text-blue-600">
-              {trendData.reduce((sum, d) => sum + d.issues, 0)}
-            </Text>
-            <Text className="text-xs text-gray-500">Total Issues</Text>
+            <Text className="text-lg font-bold text-blue-600">{trendData.reduce((s, d) => s + d.issues, 0)}</Text>
+            <Text className="text-xs text-gray-500">Issues</Text>
           </View>
           <View className="items-center">
-            <Text className="text-lg font-bold text-red-600">
-              {trendData.reduce((sum, d) => sum + d.rejects, 0)}
-            </Text>
-            <Text className="text-xs text-gray-500">Total Rejects</Text>
+            <Text className="text-lg font-bold text-red-600">{trendData.reduce((s, d) => s + d.rejects, 0)}</Text>
+            <Text className="text-xs text-gray-500">Rejects</Text>
           </View>
           <View className="items-center">
-            <Text className="text-lg font-bold text-gray-700">
-              {trendData.reduce((sum, d) => sum + d.total, 0)}
-            </Text>
-            <Text className="text-xs text-gray-500">Total Pieces</Text>
+            <Text className="text-lg font-bold text-gray-700">{trendData.reduce((s, d) => s + d.total, 0)}</Text>
+            <Text className="text-xs text-gray-500">Pieces</Text>
           </View>
         </View>
       </View>
     );
   };
 
-  // Render no data message
-  const renderNoData = () => (
-    <View className="h-48 items-center justify-center">
-      <Ionicons name="bar-chart-outline" size={48} color="#D1D5DB" />
-      <Text className="text-gray-400 mt-2">No data for selected filters</Text>
-    </View>
-  );
-
-  // Render the appropriate chart based on filter selection
   const renderChart = () => {
     const color = filters.reportType === 'reject-codes' ? '#EF4444' : '#3B82F6';
-
     switch (filters.chartType) {
-      case 'pareto':
-        return renderParetoChart(currentChartData, color);
-      case 'vertical-bar':
-        return renderVerticalBarChart(currentChartData, color);
-      case 'horizontal-bar':
-        return renderHorizontalBarChart(currentChartData, color);
-      case 'line':
-        return renderLineChart(currentChartData, color);
-      case 'pie':
-        return renderPieChart(currentChartData);
-      default:
-        return renderVerticalBarChart(currentChartData, color);
+      case 'pareto': return renderParetoChart(currentChartData, color);
+      case 'vertical-bar': return renderVerticalBarChart(currentChartData, color);
+      case 'horizontal-bar': return renderHorizontalBarChart(currentChartData, color);
+      case 'line': return renderLineChart(currentChartData, color);
+      case 'pie': return renderPieChart(currentChartData);
+      default: return renderVerticalBarChart(currentChartData, color);
     }
   };
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-gray-50">
       <ScreenHeader
         title="Quality Reports"
         rightContent={
@@ -1028,232 +773,151 @@ export default function QualityReportsScreen({ navigation }: Props) {
       />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Filter Summary */}
-        <View className="bg-white mx-4 mt-4 rounded-xl p-4 border border-gray-200">
+        {/* Quick Filters */}
+        <View className="bg-white mx-4 mt-3 rounded-lg p-3 border border-gray-200">
           <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-xs text-gray-500 uppercase tracking-wide">Report</Text>
-              <Text className="text-gray-900 font-semibold text-sm">{getReportTypeLabel(filters.reportType)}</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-xs text-gray-500 uppercase tracking-wide">Range</Text>
-              <Text className="text-gray-900 font-semibold text-sm">{getTimeRangeLabel(filters.timeRange)}</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-xs text-gray-500 uppercase tracking-wide">Chart</Text>
-              <Text className="text-gray-900 font-semibold text-sm">{getChartTypeLabel(filters.chartType)}</Text>
-            </View>
             <Pressable
               onPress={() => setShowFilterModal(true)}
-              className="bg-blue-100 rounded-lg px-3 py-2"
+              className="flex-1 mr-2"
             >
-              <Ionicons name="settings-outline" size={18} color="#3B82F6" />
+              <Text className="text-xs text-gray-400">Data</Text>
+              <Text className="text-sm font-semibold text-gray-800">{getReportTypeLabel(filters.reportType)}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowFilterModal(true)}
+              className="flex-1 mr-2"
+            >
+              <Text className="text-xs text-gray-400">Range</Text>
+              <Text className="text-sm font-semibold text-gray-800">{getTimeRangeLabel(filters.timeRange)}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowFilterModal(true)}
+              className="flex-1"
+            >
+              <Text className="text-xs text-gray-400">Chart</Text>
+              <Text className="text-sm font-semibold text-gray-800">{getChartTypeLabel(filters.chartType)}</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Summary Stats */}
-        <View className="mx-4 mt-4">
-          <View className="flex-row gap-2">
-            <View className="bg-white rounded-xl p-3 flex-1 border border-gray-200">
-              <Text className="text-xs text-gray-500">Total Pieces</Text>
-              <Text className="text-xl font-bold text-gray-900">{summaryStats.totalPieces}</Text>
-            </View>
-            <View className="bg-white rounded-xl p-3 flex-1 border border-blue-200">
-              <Text className="text-xs text-blue-600">Issues</Text>
-              <Text className="text-xl font-bold text-blue-600">{summaryStats.totalIssues}</Text>
-              <Text className="text-xs text-gray-400">{summaryStats.issueRate}% rate</Text>
-            </View>
-            <View className="bg-white rounded-xl p-3 flex-1 border border-red-200">
-              <Text className="text-xs text-red-600">Rejects</Text>
-              <Text className="text-xl font-bold text-red-600">{summaryStats.totalRejects}</Text>
-              <Text className="text-xs text-gray-400">{summaryStats.rejectRate}% rate</Text>
-            </View>
+        <View className="flex-row mx-4 mt-3 gap-2">
+          <View className="bg-white rounded-lg p-3 flex-1 border border-gray-200">
+            <Text className="text-xs text-gray-400">Pieces</Text>
+            <Text className="text-xl font-bold text-gray-800">{summaryStats.totalPieces}</Text>
+          </View>
+          <View className="bg-blue-50 rounded-lg p-3 flex-1 border border-blue-100">
+            <Text className="text-xs text-blue-500">Issues</Text>
+            <Text className="text-xl font-bold text-blue-600">{summaryStats.totalIssues}</Text>
+          </View>
+          <View className="bg-red-50 rounded-lg p-3 flex-1 border border-red-100">
+            <Text className="text-xs text-red-500">Rejects</Text>
+            <Text className="text-xl font-bold text-red-600">{summaryStats.totalRejects}</Text>
           </View>
         </View>
 
         {/* Main Chart */}
-        <View className="bg-white mx-4 mt-4 rounded-xl p-4 border border-gray-200">
-          <Text className="text-base font-semibold text-gray-900 mb-1">
+        <View className="bg-white mx-4 mt-3 rounded-lg p-4 border border-gray-200">
+          <Text className="text-base font-semibold text-gray-800 mb-3">
             {getReportTypeLabel(filters.reportType)}
           </Text>
-          <Text className="text-xs text-gray-500 mb-4">
-            {getChartTypeLabel(filters.chartType)} • {filteredEntries.length} pieces analyzed
-          </Text>
-
           {renderChart()}
         </View>
 
         {/* Trend Chart */}
-        <View className="bg-white mx-4 mt-4 mb-6 rounded-xl p-4 border border-gray-200">
-          <Text className="text-base font-semibold text-gray-900 mb-1">
+        <View className="bg-white mx-4 mt-3 mb-6 rounded-lg p-4 border border-gray-200">
+          <Text className="text-base font-semibold text-gray-800 mb-3">
             {filters.timeRange === 'rolling-13-weeks' ? 'Weekly' : 'Monthly'} Trend
           </Text>
-          <Text className="text-xs text-gray-500 mb-4">
-            Issues vs Rejects over time
-          </Text>
-
           {renderTrendChart()}
         </View>
       </ScrollView>
 
       {/* Filter Modal */}
-      <Modal
-        visible={showFilterModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <Pressable
-          className="flex-1 bg-black/50"
-          onPress={() => setShowFilterModal(false)}
-        >
+      <Modal visible={showFilterModal} animationType="slide" transparent onRequestClose={() => setShowFilterModal(false)}>
+        <Pressable className="flex-1 bg-black/50" onPress={() => setShowFilterModal(false)}>
           <View className="flex-1 justify-end">
             <Pressable onPress={(e) => e.stopPropagation()}>
-              <View className="bg-white rounded-t-3xl p-6 max-h-[85%]">
-                <View className="flex-row items-center justify-between mb-6">
-                  <Text className="text-xl font-bold text-gray-900">Report Settings</Text>
+              <View className="bg-white rounded-t-2xl p-5 max-h-[80%]">
+                <View className="flex-row items-center justify-between mb-5">
+                  <Text className="text-lg font-bold text-gray-900">Report Settings</Text>
                   <Pressable onPress={() => setShowFilterModal(false)}>
                     <Ionicons name="close" size={24} color="#6B7280" />
                   </Pressable>
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  {/* Report Type */}
-                  <View className="mb-6">
-                    <Text className="text-sm font-semibold text-gray-700 mb-3">Data Source</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {(['issue-codes', 'reject-codes', 'dispositions', 'products'] as ReportType[]).map(
-                        (type) => (
-                          <Pressable
-                            key={type}
-                            onPress={() => setFilters((f) => ({ ...f, reportType: type }))}
-                            className={`px-4 py-2.5 rounded-xl border-2 ${
-                              filters.reportType === type
-                                ? 'bg-blue-500 border-blue-500'
-                                : 'bg-white border-gray-200'
-                            }`}
-                          >
-                            <Text
-                              className={`text-sm font-medium ${
-                                filters.reportType === type ? 'text-white' : 'text-gray-700'
-                              }`}
-                            >
-                              {getReportTypeLabel(type)}
-                            </Text>
-                          </Pressable>
-                        )
-                      )}
-                    </View>
+                  {/* Data Source */}
+                  <Text className="text-sm font-semibold text-gray-700 mb-2">Data Source</Text>
+                  <View className="flex-row flex-wrap gap-2 mb-5">
+                    {(['issue-codes', 'reject-codes', 'dispositions', 'products'] as ReportType[]).map((type) => (
+                      <Pressable
+                        key={type}
+                        onPress={() => setFilters((f) => ({ ...f, reportType: type }))}
+                        className={`px-3 py-2 rounded-lg ${filters.reportType === type ? 'bg-blue-500' : 'bg-gray-100'}`}
+                      >
+                        <Text className={`text-sm ${filters.reportType === type ? 'text-white font-medium' : 'text-gray-700'}`}>
+                          {getReportTypeLabel(type)}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
 
                   {/* Chart Type */}
-                  <View className="mb-6">
-                    <Text className="text-sm font-semibold text-gray-700 mb-3">Chart Type</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {(['pareto', 'vertical-bar', 'horizontal-bar', 'line', 'pie'] as ChartType[]).map((type) => (
-                        <Pressable
-                          key={type}
-                          onPress={() => setFilters((f) => ({ ...f, chartType: type }))}
-                          className={`px-4 py-2.5 rounded-xl border-2 flex-row items-center ${
-                            filters.chartType === type
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'bg-white border-gray-200'
-                          }`}
-                        >
-                          <Ionicons
-                            name={
-                              type === 'pareto' ? 'trending-up' :
-                              type === 'vertical-bar' ? 'bar-chart' :
-                              type === 'horizontal-bar' ? 'stats-chart' :
-                              type === 'line' ? 'analytics' :
-                              'pie-chart'
-                            }
-                            size={16}
-                            color={filters.chartType === type ? '#FFFFFF' : '#6B7280'}
-                            style={{ marginRight: 6 }}
-                          />
-                          <Text
-                            className={`text-sm font-medium ${
-                              filters.chartType === type ? 'text-white' : 'text-gray-700'
-                            }`}
-                          >
-                            {getChartTypeLabel(type)}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                  <Text className="text-sm font-semibold text-gray-700 mb-2">Chart Type</Text>
+                  <View className="flex-row flex-wrap gap-2 mb-5">
+                    {(['pareto', 'vertical-bar', 'horizontal-bar', 'line', 'pie'] as ChartType[]).map((type) => (
+                      <Pressable
+                        key={type}
+                        onPress={() => setFilters((f) => ({ ...f, chartType: type }))}
+                        className={`px-3 py-2 rounded-lg ${filters.chartType === type ? 'bg-blue-500' : 'bg-gray-100'}`}
+                      >
+                        <Text className={`text-sm ${filters.chartType === type ? 'text-white font-medium' : 'text-gray-700'}`}>
+                          {getChartTypeLabel(type)}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
 
                   {/* Time Range */}
-                  <View className="mb-6">
-                    <Text className="text-sm font-semibold text-gray-700 mb-3">Time Range</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {(['rolling-13-weeks', 'monthly', 'yearly'] as TimeRange[]).map((range) => (
-                        <Pressable
-                          key={range}
-                          onPress={() => setFilters((f) => ({ ...f, timeRange: range }))}
-                          className={`px-4 py-2.5 rounded-xl border-2 ${
-                            filters.timeRange === range
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'bg-white border-gray-200'
-                          }`}
-                        >
-                          <Text
-                            className={`text-sm font-medium ${
-                              filters.timeRange === range ? 'text-white' : 'text-gray-700'
-                            }`}
-                          >
-                            {range === 'rolling-13-weeks'
-                              ? 'Rolling 13 Weeks'
-                              : range === 'monthly'
-                              ? 'Monthly'
-                              : 'Yearly'}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
+                  <Text className="text-sm font-semibold text-gray-700 mb-2">Time Range</Text>
+                  <View className="flex-row flex-wrap gap-2 mb-5">
+                    {(['rolling-13-weeks', 'monthly', 'yearly'] as TimeRange[]).map((range) => (
+                      <Pressable
+                        key={range}
+                        onPress={() => setFilters((f) => ({ ...f, timeRange: range }))}
+                        className={`px-3 py-2 rounded-lg ${filters.timeRange === range ? 'bg-blue-500' : 'bg-gray-100'}`}
+                      >
+                        <Text className={`text-sm ${filters.timeRange === range ? 'text-white font-medium' : 'text-gray-700'}`}>
+                          {range === 'rolling-13-weeks' ? '13 Weeks' : range === 'monthly' ? 'Monthly' : 'Yearly'}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
 
-                  {/* Year Selector */}
+                  {/* Year */}
                   {(filters.timeRange === 'monthly' || filters.timeRange === 'yearly') && (
-                    <View className="mb-6">
-                      <Text className="text-sm font-semibold text-gray-700 mb-3">Year</Text>
-                      <View className="flex-row flex-wrap gap-2">
-                        {availableYears.length > 0 ? (
-                          availableYears.map((year) => (
-                            <Pressable
-                              key={year}
-                              onPress={() => setFilters((f) => ({ ...f, year }))}
-                              className={`px-4 py-2.5 rounded-xl border-2 ${
-                                filters.year === year
-                                  ? 'bg-blue-500 border-blue-500'
-                                  : 'bg-white border-gray-200'
-                              }`}
-                            >
-                              <Text
-                                className={`text-sm font-medium ${
-                                  filters.year === year ? 'text-white' : 'text-gray-700'
-                                }`}
-                              >
-                                {year}
-                              </Text>
-                            </Pressable>
-                          ))
-                        ) : (
-                          <Text className="text-gray-500 text-sm">No data available</Text>
-                        )}
+                    <>
+                      <Text className="text-sm font-semibold text-gray-700 mb-2">Year</Text>
+                      <View className="flex-row flex-wrap gap-2 mb-5">
+                        {availableYears.map((year) => (
+                          <Pressable
+                            key={year}
+                            onPress={() => setFilters((f) => ({ ...f, year }))}
+                            className={`px-3 py-2 rounded-lg ${filters.year === year ? 'bg-blue-500' : 'bg-gray-100'}`}
+                          >
+                            <Text className={`text-sm ${filters.year === year ? 'text-white font-medium' : 'text-gray-700'}`}>
+                              {year}
+                            </Text>
+                          </Pressable>
+                        ))}
                       </View>
-                    </View>
+                    </>
                   )}
                 </ScrollView>
 
-                {/* Apply Button */}
-                <Pressable
-                  onPress={() => setShowFilterModal(false)}
-                  className="bg-blue-500 rounded-xl py-4 items-center mt-4"
-                >
-                  <Text className="text-white font-semibold text-base">Apply Settings</Text>
+                <Pressable onPress={() => setShowFilterModal(false)} className="bg-blue-500 rounded-lg py-3 mt-3">
+                  <Text className="text-white font-semibold text-center">Done</Text>
                 </Pressable>
               </View>
             </Pressable>
