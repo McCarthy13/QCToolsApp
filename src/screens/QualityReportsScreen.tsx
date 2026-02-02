@@ -369,13 +369,18 @@ export default function QualityReportsScreen({ navigation }: Props) {
         </Svg>
 
         {/* Data Table - Clean format */}
-        <View className="mt-2 border-t border-gray-100 pt-2">
+        <View className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+          <View className="flex-row bg-gray-50 px-3 py-2">
+            <Text className="text-xs font-semibold text-gray-600" style={{ width: 36 }}>Code</Text>
+            <Text className="text-xs font-semibold text-gray-600 flex-1" style={{ marginHorizontal: 8 }}>Description</Text>
+            <Text className="text-xs font-semibold text-gray-600 text-right" style={{ width: 40 }}>Qty</Text>
+          </View>
           {data.map((item, i) => (
-            <View key={i} className="flex-row items-center py-1.5 border-b border-gray-50">
-              <View className="w-8 h-4 rounded mr-2" style={{ backgroundColor: color, opacity: 1 - (i * 0.08) }} />
-              <Text className="text-xs text-gray-800 font-medium w-8">{item.x}</Text>
-              <Text className="text-xs text-gray-500 flex-1 mx-2" numberOfLines={1}>{item.label}</Text>
-              <Text className="text-xs text-gray-900 font-semibold w-10 text-right">{item.y}</Text>
+            <View key={i} className={`flex-row items-center px-3 py-2 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
+              <View className="rounded mr-2" style={{ width: 12, height: 12, backgroundColor: color, opacity: 1 - (i * 0.08) }} />
+              <Text className="text-xs text-gray-800 font-medium" style={{ width: 24 }}>{item.x}</Text>
+              <Text className="text-xs text-gray-500 flex-1" style={{ marginHorizontal: 8 }} numberOfLines={1}>{item.label}</Text>
+              <Text className="text-xs text-gray-900 font-semibold text-right" style={{ width: 40 }}>{item.y}</Text>
             </View>
           ))}
         </View>
@@ -513,18 +518,18 @@ export default function QualityReportsScreen({ navigation }: Props) {
 
         {/* Data Table */}
         <View className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
-          <View className="flex-row bg-gray-50 px-2 py-1.5">
-            <Text className="text-xs font-semibold text-gray-600 w-8">Code</Text>
-            <Text className="text-xs font-semibold text-gray-600 flex-1">Description</Text>
-            <Text className="text-xs font-semibold text-gray-600 w-10 text-right">Qty</Text>
-            <Text className="text-xs font-semibold text-gray-600 w-12 text-right">Cum%</Text>
+          <View className="flex-row bg-gray-50 px-3 py-2">
+            <Text className="text-xs font-semibold text-gray-600" style={{ width: 36 }}>Code</Text>
+            <Text className="text-xs font-semibold text-gray-600 flex-1" style={{ marginRight: 8 }}>Description</Text>
+            <Text className="text-xs font-semibold text-gray-600 text-right" style={{ width: 36 }}>Qty</Text>
+            <Text className="text-xs font-semibold text-gray-600 text-right" style={{ width: 48, marginLeft: 8 }}>Cum%</Text>
           </View>
           {data.map((item, i) => (
-            <View key={i} className={`flex-row px-2 py-1.5 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
-              <Text className="text-xs text-gray-800 font-medium w-8">{item.x}</Text>
-              <Text className="text-xs text-gray-500 flex-1" numberOfLines={1}>{item.label}</Text>
-              <Text className="text-xs text-gray-900 font-semibold w-10 text-right">{item.y}</Text>
-              <Text className="text-xs text-orange-600 w-12 text-right">{(item.cumulative || 0).toFixed(0)}%</Text>
+            <View key={i} className={`flex-row px-3 py-2 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
+              <Text className="text-xs text-gray-800 font-medium" style={{ width: 36 }}>{item.x}</Text>
+              <Text className="text-xs text-gray-500 flex-1" style={{ marginRight: 8 }} numberOfLines={1}>{item.label}</Text>
+              <Text className="text-xs text-gray-900 font-semibold text-right" style={{ width: 36 }}>{item.y}</Text>
+              <Text className="text-xs text-orange-600 text-right" style={{ width: 48, marginLeft: 8 }}>{(item.cumulative || 0).toFixed(0)}%</Text>
             </View>
           ))}
         </View>
@@ -584,12 +589,17 @@ export default function QualityReportsScreen({ navigation }: Props) {
         </Svg>
 
         {/* Data Table */}
-        <View className="mt-2">
+        <View className="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+          <View className="flex-row bg-gray-50 px-3 py-2">
+            <Text className="text-xs font-semibold text-gray-600" style={{ width: 40 }}>Period</Text>
+            <Text className="text-xs font-semibold text-gray-600 flex-1" style={{ marginHorizontal: 8 }}>Description</Text>
+            <Text className="text-xs font-semibold text-gray-600 text-right" style={{ width: 40 }}>Value</Text>
+          </View>
           {data.map((item, i) => (
-            <View key={i} className="flex-row items-center py-1 border-b border-gray-50">
-              <Text className="text-xs text-gray-700 font-medium w-10">{item.x}</Text>
-              <Text className="text-xs text-gray-500 flex-1" numberOfLines={1}>{item.label}</Text>
-              <Text className="text-xs text-gray-900 font-semibold w-10 text-right">{item.y}</Text>
+            <View key={i} className={`flex-row px-3 py-2 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
+              <Text className="text-xs text-gray-700 font-medium" style={{ width: 40 }}>{item.x}</Text>
+              <Text className="text-xs text-gray-500 flex-1" style={{ marginHorizontal: 8 }} numberOfLines={1}>{item.label}</Text>
+              <Text className="text-xs text-gray-900 font-semibold text-right" style={{ width: 40 }}>{item.y}</Text>
             </View>
           ))}
         </View>
